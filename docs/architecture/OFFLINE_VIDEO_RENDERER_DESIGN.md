@@ -50,6 +50,16 @@ Reglas que el código ya cumple y no se deben romper:
   en vivo. Se decodifica a la frecuencia del `AudioContext` del dispositivo.
   Verificado contra un `AnalyserNode` real: 0 bytes de diferencia sin
   suavizado. Si se toca, repetir esa comparación.
+- **El export no tiene presupuesto de tiempo real** (`getRenderStateSnapshot`):
+  el snapshot fuerza `performanceMode: 'high'`, quita pausa de movimiento y
+  sleep mode y descarta el pulso sintético de calibración. Da igual cuánto
+  tarde cada frame: el vídeo sale siempre a calidad máxima, aunque el editor
+  esté en `low`. Verificado: export con el editor en `low` y en `high` = 0
+  píxeles de diferencia.
+- **Reloj de render fijado al tiempo del vídeo** (`lib/visual/renderClock.ts`):
+  lo que antes leía `performance.now()` al dibujar (rotación de color RGB de
+  spectrum y lyrics) usa `getRenderNowMs()`; el export lo fija con
+  `pinRenderClock(timeMs)` solo mientras dibuja cada frame.
 
 Límites conocidos del MVP:
 

@@ -13,6 +13,7 @@
  * song of encoded audio waiting for video.
  */
 import { formatTrackTitle } from '@/lib/audio/trackTitle';
+import { pinRenderClock } from '@/lib/visual/renderClock';
 import { buildOfflineContext } from '../buildRenderContext';
 import { getRenderStateSnapshot } from '../getRenderStateSnapshot';
 import { createOfflineAudioAnalysisSourceFromBuffer } from '../offlineAudioAnalysis';
@@ -194,21 +195,28 @@ export async function runOfflineVideoExport(
 			target.fillRect(0, 0, width, height);
 
 			const segment = findSlideshowSegmentAt(segments, timeMs);
-			renderFrameAt(
-				buildOfflineContext({
-					canvas,
-					state: segment.state,
-					palette: segment.palette,
-					audio: analysis.getSnapshotAt(timeMs),
-					resolution: { width, height },
-					timeMs,
-					deltaMs: frameStepMs,
-					trackTitle,
-					trackCurrentTime: timeMs / 1000,
-					trackDuration,
-					abortSignal
-				})
-			);
+			// Pinned only while the frame draws: the live preview keeps real
+			// time across the awaits below.
+			pinRenderClock(timeMs);
+			try {
+				renderFrameAt(
+					buildOfflineContext({
+						canvas,
+						state: segment.state,
+						palette: segment.palette,
+						audio: analysis.getSnapshotAt(timeMs),
+						resolution: { width, height },
+						timeMs,
+						deltaMs: frameStepMs,
+						trackTitle,
+						trackCurrentTime: timeMs / 1000,
+						trackDuration,
+						abortSignal
+					})
+				);
+			} finally {
+				pinRenderClock(null);
+			}
 
 			await encoder.addFrame(timeMs / 1000, frameDurationSec);
 
