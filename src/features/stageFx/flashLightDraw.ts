@@ -265,7 +265,8 @@ export function stepFlashLight(
 		settings.flashLightAudioChannel,
 		settings.flashLightThreshold
 	);
-	if (
+	const retriggerMs = Math.max(20, settings.flashLightRetriggerMs);
+	const triggered =
 		audio.bins.length > 0 &&
 		shouldTriggerFxPeak({
 			level,
@@ -273,10 +274,20 @@ export function stepFlashLight(
 			threshold,
 			nowMs,
 			lastTriggerMs: runtime.lastTriggerMs,
-			retriggerMs: Math.max(20, settings.flashLightRetriggerMs),
+			retriggerMs,
 			minRise: 0.012
-		})
-	) {
+		});
+	// A hit usually crosses the threshold a frame before its peak. Inside the
+	// retrigger window the same hit may still climb to that peak; otherwise a
+	// low frame rate (30 fps export) fires on the crossing and the window
+	// swallows the peak.
+	const climbing =
+		!triggered &&
+		audio.bins.length > 0 &&
+		level > threshold &&
+		level > runtime.lastLevel &&
+		nowMs - runtime.lastTriggerMs < retriggerMs;
+	if (triggered || climbing) {
 		const peak = clamp01(
 			((level - threshold) / (1 - threshold)) *
 				settings.flashLightSensitivity
@@ -285,7 +296,7 @@ export function stepFlashLight(
 			STAGE_FX_CAPS.maxFlashOpacity,
 			Math.max(runtime.drive, peak * settings.flashLightIntensity)
 		);
-		runtime.lastTriggerMs = nowMs;
+		if (triggered) runtime.lastTriggerMs = nowMs;
 	}
 	runtime.lastLevel = level;
 	runtime.drive = Math.max(

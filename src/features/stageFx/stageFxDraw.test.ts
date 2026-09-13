@@ -123,6 +123,17 @@ describe('stepFlashLight', () => {
 		expect(runtime.lastTriggerMs).toBe(250);
 	});
 
+	it('lets a hit climb to its peak inside the retrigger window', () => {
+		const runtime = createFlashLightRuntime();
+		stepFlashLight(runtime, flash, audio(0.2), 0, 0);
+		// Crosses the threshold barely: a near-zero flash.
+		const crossing = stepFlashLight(runtime, flash, audio(0.52), 33, 0);
+		expect(crossing).toBeCloseTo(0.04, 5);
+		const peak = stepFlashLight(runtime, flash, audio(0.9), 66, 0);
+		expect(peak).toBeCloseTo(0.8, 5);
+		expect(runtime.lastTriggerMs).toBe(33);
+	});
+
 	it('ignores a snapshot with no analysed bins', () => {
 		const runtime = createFlashLightRuntime();
 		const empty = { ...audio(1), bins: new Uint8Array(0) };

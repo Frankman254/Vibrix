@@ -35,7 +35,7 @@ type UseOfflineVideoExportArgs = {
 	exportNamingState: ExportNamingState;
 	trackTitle: string;
 	fftSize: number;
-	audioChannelSmoothing: number;
+	audioSmoothing: number;
 	extraSubsystems: RenderSubsystem[];
 	canExport: boolean;
 };
@@ -70,7 +70,7 @@ export function useOfflineVideoExport({
 	exportNamingState,
 	trackTitle,
 	fftSize,
-	audioChannelSmoothing,
+	audioSmoothing,
 	extraSubsystems,
 	canExport
 }: UseOfflineVideoExportArgs) {
@@ -189,7 +189,7 @@ export function useOfflineVideoExport({
 				fps,
 				trackTitle,
 				fftSize,
-				audioChannelSmoothing,
+				audioSmoothing,
 				extraSubsystems,
 				abortSignal: controller.signal,
 				onProgress: next => {

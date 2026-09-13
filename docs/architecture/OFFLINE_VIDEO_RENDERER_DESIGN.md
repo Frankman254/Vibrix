@@ -43,6 +43,13 @@ Reglas que el código ya cumple y no se deben romper:
 - **Los yields usan MessageChannel,** no `setTimeout` (throttled a 1 s en
   pestañas ocultas).
 - **Paleta = la del fondo** (`useBackgroundPalette` en vivo), no la del tema del editor.
+- **El análisis offline imita el `AnalyserNode` en vivo** (`offlineAudioAnalysis.ts`):
+  últimas `fftSize` muestras hasta el instante del frame, ventana Blackman,
+  magnitud / N, suavizado `audioSmoothing` escalado a pasos de 60 Hz, dB → byte
+  y `timeDomain` para el oscilloscope; canales sin EMA extra, como el snapshot
+  en vivo. Se decodifica a la frecuencia del `AudioContext` del dispositivo.
+  Verificado contra un `AnalyserNode` real: 0 bytes de diferencia sin
+  suavizado. Si se toca, repetir esa comparación.
 
 Límites conocidos del MVP:
 
