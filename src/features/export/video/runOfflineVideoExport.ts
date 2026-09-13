@@ -51,7 +51,7 @@ export type RunOfflineVideoExportOptions = {
 	fps: number;
 	trackTitle: string;
 	fftSize: number;
-	audioChannelSmoothing: number;
+	audioSmoothing: number;
 	/**
 	 * Subsystems owned by the presentation layer (the background renderer
 	 * lives under `components/`), injected so this domain never imports it.
@@ -157,7 +157,7 @@ export async function runOfflineVideoExport(
 	report('decoding');
 	const analysis = createOfflineAudioAnalysisSourceFromBuffer(audioBuffer, {
 		fftSize: options.fftSize,
-		channelSmoothing: options.audioChannelSmoothing
+		smoothingTimeConstant: options.audioSmoothing
 	});
 	const encoder = await createOfflineVideoEncoder({
 		canvas,

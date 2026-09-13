@@ -62,7 +62,7 @@ export default function ExportTabBody() {
 			activeSceneSlotId: state.activeSceneSlotId,
 			defaultSceneSlotId: state.defaultSceneSlotId,
 			activeSetlistId: state.activeSetlistId,
-			audioChannelSmoothing: state.audioChannelSmoothing,
+			audioSmoothing: state.audioSmoothing,
 			audioFileAssetId: state.audioFileAssetId,
 			audioFileName: state.audioFileName,
 			audioSourceMode: state.audioSourceMode,
@@ -159,7 +159,7 @@ export default function ExportTabBody() {
 	const offlineAnalysis = useOfflineAudioAnalysis({
 		offlineAudioAsset,
 		fftSize: offlineExportState.fftSize,
-		audioChannelSmoothing: offlineExportState.audioChannelSmoothing
+		audioSmoothing: offlineExportState.audioSmoothing
 	});
 
 	const videoExport = useOfflineVideoExport({
@@ -167,7 +167,7 @@ export default function ExportTabBody() {
 		exportNamingState,
 		trackTitle: offlineAudioAsset?.name ?? '',
 		fftSize: offlineExportState.fftSize,
-		audioChannelSmoothing: offlineExportState.audioChannelSmoothing,
+		audioSmoothing: offlineExportState.audioSmoothing,
 		extraSubsystems: OFFLINE_EXPORT_SUBSYSTEMS,
 		canExport: offlineExportPlan.status !== 'blocked'
 	});

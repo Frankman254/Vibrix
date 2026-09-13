@@ -3,210 +3,30 @@ import { useWallpaperStore } from '@/store/wallpaperStore';
 import { useAudioData } from '@/hooks/useAudioData';
 import { useBackgroundPalette } from '@/hooks/useBackgroundPalette';
 import { getEditorThemePalette } from '@/lib/backgroundPalette';
-import {
-	readFxChannel,
-	resolveFxThreshold,
-	shouldTriggerFxPeak,
-	updateFlashDiag,
-	STAGE_FX_CAPS,
-	type FlashLightShape
-} from '@/features/stageFx/stageFxConfig';
+import { updateFlashDiag } from '@/features/stageFx/stageFxConfig';
 import { updateFlashEdgeDrive } from '@/features/stageFx/flashEdgeDrive';
+import {
+	createFlashLightRuntime,
+	drawFlashLight,
+	resolveFlashLightColor,
+	stepFlashLight
+} from '@/features/stageFx/flashLightDraw';
 import {
 	syncOutputCanvasBacking,
 	subscribeOutputRenderQuality
 } from '@/runtime/outputRenderQuality';
 
-function clamp01(value: number): number {
-	return Math.max(0, Math.min(1, value));
-}
-
-function parseHexColor(color: string): [number, number, number] {
-	const normalized = color.trim();
-	const short = /^#([0-9a-f]{3})$/i.exec(normalized);
-	if (short) {
-		return short[1].split('').map(part => parseInt(part + part, 16)) as [
-			number,
-			number,
-			number
-		];
-	}
-	const long = /^#([0-9a-f]{6})$/i.exec(normalized);
-	if (long) {
-		const value = parseInt(long[1], 16);
-		return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
-	}
-	return [255, 255, 255];
-}
-
-function rgba(color: string, alpha: number): string {
-	const [r, g, b] = parseHexColor(color);
-	return `rgba(${r}, ${g}, ${b}, ${clamp01(alpha)})`;
-}
-
-function drawEdgeFlash(
-	ctx: CanvasRenderingContext2D,
-	w: number,
-	h: number,
-	color: string,
-	softness: number
-) {
-	const edgeDepth = Math.max(
-		48,
-		Math.min(
-			Math.max(w, h) * 0.42,
-			Math.min(w, h) * (0.16 + softness * 0.3)
-		)
-	);
-	const hot = rgba(color, 1);
-	const mid = rgba(color, 0.42 + softness * 0.26);
-	const clear = rgba(color, 0);
-
-	const top = ctx.createLinearGradient(0, 0, 0, edgeDepth);
-	top.addColorStop(0, hot);
-	top.addColorStop(0.24, mid);
-	top.addColorStop(1, clear);
-	ctx.fillStyle = top;
-	ctx.fillRect(0, 0, w, edgeDepth);
-
-	const bottom = ctx.createLinearGradient(0, h, 0, h - edgeDepth);
-	bottom.addColorStop(0, hot);
-	bottom.addColorStop(0.24, mid);
-	bottom.addColorStop(1, clear);
-	ctx.fillStyle = bottom;
-	ctx.fillRect(0, h - edgeDepth, w, edgeDepth);
-
-	const left = ctx.createLinearGradient(0, 0, edgeDepth, 0);
-	left.addColorStop(0, hot);
-	left.addColorStop(0.24, mid);
-	left.addColorStop(1, clear);
-	ctx.fillStyle = left;
-	ctx.fillRect(0, 0, edgeDepth, h);
-
-	const right = ctx.createLinearGradient(w, 0, w - edgeDepth, 0);
-	right.addColorStop(0, hot);
-	right.addColorStop(0.24, mid);
-	right.addColorStop(1, clear);
-	ctx.fillStyle = right;
-	ctx.fillRect(w - edgeDepth, 0, edgeDepth, h);
-}
-
-function drawFlashShape(
-	ctx: CanvasRenderingContext2D,
-	shape: FlashLightShape,
-	w: number,
-	h: number,
-	color: string,
-	softness: number
-) {
-	const cx = w / 2;
-	const cy = h / 2;
-	const softEdge = Math.max(0.05, Math.min(0.92, 1 - softness * 0.72));
-	if (shape === 'full-screen') {
-		ctx.fillStyle = color;
-		ctx.fillRect(0, 0, w, h);
-		return;
-	}
-
-	if (shape === 'edge-flash') {
-		drawEdgeFlash(ctx, w, h, color, softness);
-		return;
-	}
-
-	if (shape === 'horizontal-blast' || shape === 'vertical-blast') {
-		const horizontal = shape === 'horizontal-blast';
-		const gradient = horizontal
-			? ctx.createLinearGradient(0, 0, 0, h)
-			: ctx.createLinearGradient(0, 0, w, 0);
-		gradient.addColorStop(0, rgba(color, 0));
-		gradient.addColorStop(
-			Math.max(0.05, 0.5 - softEdge * 0.45),
-			rgba(color, 1)
-		);
-		gradient.addColorStop(
-			Math.min(0.95, 0.5 + softEdge * 0.45),
-			rgba(color, 1)
-		);
-		gradient.addColorStop(1, rgba(color, 0));
-		ctx.fillStyle = gradient;
-		ctx.fillRect(0, 0, w, h);
-		return;
-	}
-
-	const radius =
-		shape === 'circular-burst'
-			? Math.min(w, h) * 0.48
-			: shape === 'vignette-invert'
-				? Math.hypot(w, h) * 0.5
-				: Math.hypot(w, h) * 0.72;
-	const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-	if (shape === 'vignette-invert') {
-		const clearRadius = Math.max(0.18, 0.52 - softness * 0.3);
-		gradient.addColorStop(0, rgba(color, 0));
-		gradient.addColorStop(clearRadius, rgba(color, 0));
-		gradient.addColorStop(
-			Math.min(0.92, clearRadius + 0.22),
-			rgba(color, 0.42)
-		);
-		gradient.addColorStop(1, rgba(color, 1));
-	} else {
-		gradient.addColorStop(0, rgba(color, 1));
-		gradient.addColorStop(softEdge, rgba(color, 1));
-		gradient.addColorStop(1, rgba(color, 0));
-	}
-	ctx.fillStyle = gradient;
-	ctx.fillRect(0, 0, w, h);
-}
-
-type FlashShapeCache = {
-	canvas: HTMLCanvasElement;
-	shape: FlashLightShape;
-	width: number;
-	height: number;
-	color: string;
-	softness: number;
-};
-
-function getFlashShapeCanvas(
-	cache: FlashShapeCache | null,
-	shape: FlashLightShape,
-	width: number,
-	height: number,
-	color: string,
-	softness: number
-): FlashShapeCache {
-	if (
-		cache &&
-		cache.shape === shape &&
-		cache.width === width &&
-		cache.height === height &&
-		cache.color === color &&
-		cache.softness === softness
-	) {
-		return cache;
-	}
-
-	const buffer = cache?.canvas ?? document.createElement('canvas');
-	buffer.width = width;
-	buffer.height = height;
-	const bufferCtx = buffer.getContext('2d');
-	if (bufferCtx) {
-		bufferCtx.clearRect(0, 0, width, height);
-		drawFlashShape(bufferCtx, shape, width, height, color, softness);
-	}
-	return { canvas: buffer, shape, width, height, color, softness };
-}
-
-/** Audio-peak impact overlay, independent from the moving Stage Lights beams. */
+/**
+ * Audio-peak impact overlay, independent from the moving Stage Lights beams.
+ * The peak envelope and the shapes live in `flashLightDraw`, shared with the
+ * video export.
+ */
 export default function FlashLightCanvas({ zIndex = 90 }: { zIndex?: number }) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const rafRef = useRef<number>(0);
 	const lastTimeRef = useRef<number>(0);
-	const flashRef = useRef<number>(0);
+	const runtimeRef = useRef(createFlashLightRuntime());
 	const visibleRef = useRef<boolean>(false);
-	const lastLevelRef = useRef<number>(0);
-	const lastTriggerMsRef = useRef<number>(-Infinity);
-	const shapeCacheRef = useRef<FlashShapeCache | null>(null);
 	const palette = useBackgroundPalette();
 	const paletteRef = useRef(palette);
 	const editorTheme = useWallpaperStore(state => state.editorTheme);
@@ -247,67 +67,24 @@ export default function FlashLightCanvas({ zIndex = 90 }: { zIndex?: number }) {
 			lastTimeRef.current = time;
 			const state = useWallpaperStore.getState();
 
+			const runtime = runtimeRef.current;
 			// Always compute drive even when Flash Light visual is off so Flash
 			// Edge can sync independently.
 			if (!state.sleepModeActive) {
-				const snapshot = getAudioSnapshot();
-				const level = Math.max(
-					0,
-					readFxChannel(snapshot, state.flashLightAudioChannel)
-				);
-				const threshold = resolveFxThreshold(
-					state.flashLightBandThresholds,
-					state.flashLightAudioChannel,
-					state.flashLightThreshold
-				);
-				if (
-					snapshot.bins.length > 0 &&
-					shouldTriggerFxPeak({
-						level,
-						previousLevel: lastLevelRef.current,
-						threshold,
-						nowMs: time,
-						lastTriggerMs: lastTriggerMsRef.current,
-						retriggerMs: Math.max(20, state.flashLightRetriggerMs),
-						minRise: 0.012
-					})
-				) {
-					const peak = clamp01(
-						((level - threshold) / (1 - threshold)) *
-							state.flashLightSensitivity
-					);
-					flashRef.current = Math.min(
-						STAGE_FX_CAPS.maxFlashOpacity,
-						Math.max(
-							flashRef.current,
-							peak * state.flashLightIntensity
-						)
-					);
-					lastTriggerMsRef.current = time;
-				}
-				lastLevelRef.current = level;
-				flashRef.current = Math.max(
-					0,
-					flashRef.current - dt * Math.max(0.1, state.flashLightDecay)
-				);
+				stepFlashLight(runtime, state, getAudioSnapshot(), time, dt);
 			} else {
-				flashRef.current = 0;
-				lastLevelRef.current = 0;
+				runtime.drive = 0;
+				runtime.lastLevel = 0;
 			}
 
-			// Resolver color (mismo que el visual Flash Light)
-			const activePalette =
-				state.flashLightColorSource === 'theme'
-					? themePaletteRef.current
-					: paletteRef.current;
-			const resolvedFlashColor =
-				state.flashLightColorSource === 'manual'
-					? state.flashLightColor
-					: activePalette.dominant;
+			const resolvedFlashColor = resolveFlashLightColor(state, {
+				background: paletteRef.current,
+				theme: themePaletteRef.current
+			});
 
 			// Expose drive + color for Flash Edge consumers in other layers.
-			updateFlashEdgeDrive(flashRef.current, resolvedFlashColor);
-			updateFlashDiag(flashRef.current > 0.001, flashRef.current);
+			updateFlashEdgeDrive(runtime.drive, resolvedFlashColor);
+			updateFlashDiag(runtime.drive > 0.001, runtime.drive);
 
 			// Only draw if Flash Light visual is enabled.
 			if (!state.flashLightEnabled) {
@@ -319,7 +96,7 @@ export default function FlashLightCanvas({ zIndex = 90 }: { zIndex?: number }) {
 				return;
 			}
 
-			const visible = flashRef.current > 0.001;
+			const visible = runtime.drive > 0.001;
 			if (!visible && !visibleRef.current) {
 				rafRef.current = requestAnimationFrame(frame);
 				return;
@@ -328,23 +105,14 @@ export default function FlashLightCanvas({ zIndex = 90 }: { zIndex?: number }) {
 			visibleRef.current = visible;
 
 			if (visible) {
-				ctx.save();
-				ctx.globalCompositeOperation = state.flashLightBlendMode;
-				ctx.globalAlpha = Math.min(
-					STAGE_FX_CAPS.maxFlashOpacity,
-					flashRef.current * Math.max(0, state.flashLightBrightness)
-				);
-				ctx.shadowBlur = 0;
-				shapeCacheRef.current = getFlashShapeCanvas(
-					shapeCacheRef.current,
-					state.flashLightShape,
+				drawFlashLight(
+					ctx,
 					c.width,
 					c.height,
-					resolvedFlashColor,
-					clamp01(state.flashLightSoftness)
+					state,
+					runtime,
+					resolvedFlashColor
 				);
-				ctx.drawImage(shapeCacheRef.current.canvas, 0, 0);
-				ctx.restore();
 			}
 
 			rafRef.current = requestAnimationFrame(frame);

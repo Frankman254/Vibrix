@@ -43,6 +43,13 @@ Reglas que el código ya cumple y no se deben romper:
 - **Los yields usan MessageChannel,** no `setTimeout` (throttled a 1 s en
   pestañas ocultas).
 - **Paleta = la del fondo** (`useBackgroundPalette` en vivo), no la del tema del editor.
+- **El análisis offline imita el `AnalyserNode` en vivo** (`offlineAudioAnalysis.ts`):
+  últimas `fftSize` muestras hasta el instante del frame, ventana Blackman,
+  magnitud / N, suavizado `audioSmoothing` escalado a pasos de 60 Hz, dB → byte
+  y `timeDomain` para el oscilloscope; canales sin EMA extra, como el snapshot
+  en vivo. Se decodifica a la frecuencia del `AudioContext` del dispositivo.
+  Verificado contra un `AnalyserNode` real: 0 bytes de diferencia sin
+  suavizado. Si se toca, repetir esa comparación.
 
 Límites conocidos del MVP:
 
@@ -50,12 +57,14 @@ Límites conocidos del MVP:
   El criterio "1 h sin crecer memoria" sigue abierto.
 - Las capas de audio se agrupan por tipo, así que el entrelazado de `zIndex`
   entre tipos distintos no es exacto.
-- No exportado aún (1C): partículas, lluvia, Stage FX, Camera FX, el
+- No exportado aún (1C): partículas, lluvia, Camera FX, Flash Edge, el
   fundido de escena (las escenas cambian en corte) y Looks. Los overlays sí (desde 1C), sin los
   efectos avanzados del editor sobre el overlay seleccionado. El fondo global
   también (desde 1C); es el primer id de `RENDER_SUBSYSTEM_ORDER`
   (`globalBackground`). El slideshow también (desde 1C): ver la tabla de
-  costuras.
+  costuras. Stage FX también (desde 1C): `stageLights` va tras `background`
+  y `flashLight` tras `overlays`, así que un overlay con `zIndex` > 90 queda
+  bajo el flash (en vivo lo tapa).
 - El slideshow con sync por cambio de pista no avanza: el export es de una
   sola pista, igual que en vivo con una pista.
 - Tamaño de overlays: son píxeles CSS del viewport del editor; con layout
@@ -115,7 +124,7 @@ preview (1E).
 | ------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | fondo global        | in-process (**hecho**)              | En vivo ya era canvas-2D, así que no hubo traducción CSS: se extrajo `drawGlobalBackgroundFrame` a `features/background/render` y la vista y el subsistema son dos adaptadores. Nuevo id `globalBackground`, primero del orden (bajo la imagen). Verificado: 99,2 % de píxeles idénticos contra el canvas en vivo; el resto son scanlines/RGB shift dependientes del tiempo.                                                                                                                                                                                                                                                                        |
 | slideshow           | in-process (**hecho**)              | `resolveSlideshowImageIdAtTime` (pura, en `features/background`) decide la imagen en t. `video/slideshowSegments` recorre los frames antes de renderizar y abre un segmento por cambio con el estado congelado + `buildActiveImageSelectionPatch` (lo mismo que aplica `setActiveImageId`: escena u overrides), encadenado; luego Keep Covered y paleta por segmento. El bucle pasa a cada frame el estado de su segmento y `prepare` recibe todos los estados. El fondo reproduce la carga en vivo (request → commit) al cambiar `imageUrl`, así que la transición es la del preview. Verificado: fade rojo→verde de 1 s con los tiempos del plan. |
-| Stage FX            | in-process tras extracción          | `StageLightsCanvas` es canvas-2D pero lee `useWallpaperStore.getState()` en su rAF — _crea_ sus dependencias. Extraer `drawStageLights(g, config, timeMs, snapshot)`: el componente vivo y el subsistema offline quedan como dos adaptadores sobre ella. Dos adaptadores → costura real.                                                                                                                                                                                                                                                                                                                                                            |
+| Stage FX            | in-process (**hecho**)              | `features/stageFx/render` expone `stepStageLights`/`drawStageLights` y `stepFlashLight`/`drawFlashLight` (sin React ni store). `StageLightsCanvas`/`FlashLightCanvas` y `renderSubsystems/stageFx` son dos adaptadores: el vivo con su rAF y la paleta del hook, el offline con `ctx.timeMs`/`ctx.deltaMs`, el audio analizado y `ctx.palette`. Las constantes en píxeles se escalan por lado corto (salida / viewport). Flash Edge no se exporta: su drive es un singleton del rAF vivo. Verificado: haces con puerta al pico + hold/decay y flash con disparo, decay y retrigger.                                                                 |
 | Camera FX           | decisión de diseño                  | En vivo son transforms CSS por capa sobre wrappers DOM (`CameraFxStage`); offline no hay DOM, un canvas compuesto. (a) transform del frame completo tras componer (simple; inexacto si los targets excluyen capas) vs (b) scratch-canvas por capa-target (exacto, más máquina). Empezar por (a); 1E dirá si se debe (b).                                                                                                                                                                                                                                                                                                                            |
 | partículas / lluvia | simulación in-process + GPU externa | OffscreenCanvas + renderer propio por capa. La función pura de update: `(semilla, timeMs, audioSnapshot) → transforms de instancias`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 

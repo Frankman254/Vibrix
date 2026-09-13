@@ -70,7 +70,9 @@ is the bug. The three panels that still fail that test are listed in
   `src/store/activeImageSelection.ts`, compartido por `setActiveImageId` y el
   slideshow del export (`src/features/export/video/slideshowSegments.ts`).
 - Particles / Rain / Stage FX: `src/features/particles/`, `src/features/rain/`,
-  `src/features/stageFx/`
+  `src/features/stageFx/` — el **dibujo** de Stage Lights y Flash Light se
+  pide por `@/features/stageFx/render` (lo usan los canvas en vivo y el export
+  offline, `src/features/export/renderSubsystems/stageFx.ts`).
 - Capas de audio (Track Title, Now Playing, cover): `src/features/audioLayers/`
   — el **dibujo** se pide por `@/features/audioLayers/render`; el `<canvas>` y
   su loop siguen en `src/components/audio/layers/AudioLayerCanvas.tsx`.
@@ -93,7 +95,7 @@ is the bug. The three panels that still fail that test are listed in
 | Pixel Art                 | `src/features/spectrum/domain/pixelArtHelpers.ts`                                 |
 | Audio / media keys        | `src/context/audioData/` (e.g. `mediaTrackKeys.ts`, `useAudioPlaybackEffects.ts`) |
 | Import/Export             | `src/features/export/`, `src/store/featureProfiles.ts`                            |
-| Stage FX                  | `src/features/stageFx/` (fachada: `@/features/stageFx/ui`)                        |
+| Stage FX                  | `src/features/stageFx/` (fachadas: `@/features/stageFx/ui`, `/render`)            |
 | Particles / Rain          | `src/features/particles/`, `src/features/rain/`                                   |
 | Output / Recording        | `tabs/main/OutputTab.tsx` + `src/runtime/` + `src/features/recording/`            |
 | AI Director               | `src/features/aiDirector/` (fachadas: `@/features/aiDirector`, `.../ui`)          |

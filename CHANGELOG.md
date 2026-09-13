@@ -36,6 +36,25 @@ the version scheme in `src/lib/version.ts`.
   escenas cambian en corte (sin el fundido de escena, que va por reloj).
   Lo que hace `setActiveImageId` vive ahora en `store/activeImageSelection`,
   compartido por el store y el export.
+- **Stage FX** ya sale en el vídeo: los haces de Stage Lights (sobre la
+  imagen, bajo las partículas) y el golpe de Flash Light (sobre los
+  overlays), reaccionando al audio analizado del export. La envolvente y el
+  dibujo viven en `features/stageFx/render` y los usan los canvas en vivo y
+  el export. Los tamaños en píxeles (blur, núcleo, destello, borde mínimo)
+  se escalan a la resolución de salida. Flash Edge (el fondo que reacciona
+  al flash) no se exporta.
+- **Análisis de audio del export = el del preview.** El análisis offline
+  imita ahora el `AnalyserNode` en vivo byte a byte (ventana Blackman,
+  magnitud / N, suavizado temporal con `audioSmoothing`, dB → byte, canales
+  sin EMA extra) y decodifica a la frecuencia de muestreo del dispositivo.
+  Antes el vídeo no traía forma de onda (los spectrums de familia
+  oscilloscope salían como una línea plana), los bins llegaban sin suavizar
+  y +6 dB más altos, y el bass zoom y los spectrums se movían distinto que
+  en vivo.
+- **Flash Light** ya no se pierde el golpe: si un pico cruza el umbral un
+  frame antes de su máximo, el mismo golpe puede seguir subiendo dentro de
+  la ventana de retrigger. A 30 fps el flash disparaba casi a 0 y la ventana
+  se tragaba el pico.
 - El planner avisa ahora de **Camera FX** (movimiento y sacudida de cámara),
   que el export todavía no aplica.
 

@@ -9,13 +9,13 @@ export type OfflineAnalysisStatus = 'idle' | 'running' | 'ready' | 'error';
 type UseOfflineAudioAnalysisArgs = {
 	offlineAudioAsset: OfflineExportAudioAssetRef | null;
 	fftSize: number;
-	audioChannelSmoothing: number;
+	audioSmoothing: number;
 };
 
 export function useOfflineAudioAnalysis({
 	offlineAudioAsset,
 	fftSize,
-	audioChannelSmoothing
+	audioSmoothing
 }: UseOfflineAudioAnalysisArgs) {
 	const [offlineAnalysisStatus, setOfflineAnalysisStatus] =
 		useState<OfflineAnalysisStatus>('idle');
@@ -47,7 +47,7 @@ export function useOfflineAudioAnalysis({
 			});
 			const source = await createOfflineAudioAnalysisSource(file, {
 				fftSize,
-				channelSmoothing: audioChannelSmoothing
+				smoothingTimeConstant: audioSmoothing
 			});
 
 			try {
