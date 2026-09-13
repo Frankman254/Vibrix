@@ -26,7 +26,6 @@ function baseState(
 		cameraMotionEnabled: false,
 		cameraShakeEnabled: false,
 		flashLightEnabled: false,
-		globalBackgroundEnabled: false,
 		logoEnabled: true,
 		overlays: [],
 		particlesEnabled: false,
@@ -73,7 +72,6 @@ describe('createOfflineExportPlan', () => {
 				baseState({
 					particlesEnabled: true,
 					rainEnabled: true,
-					globalBackgroundEnabled: true,
 					stageLightsEnabled: true,
 					cameraShakeEnabled: true
 				})
@@ -81,7 +79,6 @@ describe('createOfflineExportPlan', () => {
 		).toEqual([
 			'export-unsupported-particles',
 			'export-unsupported-rain',
-			'export-unsupported-global-background',
 			'export-unsupported-stage-fx',
 			'export-unsupported-camera-fx'
 		]);

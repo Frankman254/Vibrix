@@ -13,6 +13,7 @@ import {
 	particlesSubsystem,
 	rainSubsystem
 } from './stubs';
+import { createGlobalBackgroundSubsystem } from './globalBackground';
 import { createOverlaysSubsystem } from './overlays';
 
 let installed = false;
@@ -20,6 +21,7 @@ let installed = false;
 export function installDefaultRenderSubsystems(): void {
 	if (installed) return;
 	installed = true;
+	registerRenderSubsystem(createGlobalBackgroundSubsystem());
 	registerRenderSubsystem(backgroundSubsystem);
 	registerRenderSubsystem(looksSubsystem);
 	registerRenderSubsystem(motionSubsystem);
