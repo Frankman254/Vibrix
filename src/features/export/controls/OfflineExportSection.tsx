@@ -52,8 +52,7 @@ function issueLabel(t: Translations, issue: OfflineExportIssue): string {
 		'export-unsupported-particles': t.offline_issue_unsupported_particles,
 		'export-unsupported-rain': t.offline_issue_unsupported_rain,
 		'export-unsupported-stage-fx': t.offline_issue_unsupported_stage_fx,
-		'export-unsupported-camera-fx': t.offline_issue_unsupported_camera_fx,
-		'export-unsupported-slideshow': t.offline_issue_unsupported_slideshow
+		'export-unsupported-camera-fx': t.offline_issue_unsupported_camera_fx
 	};
 	return labels[issue.code] ?? issue.message;
 }

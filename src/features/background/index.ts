@@ -64,9 +64,11 @@ export {
 	PLAYBACK_ZERO_EPSILON,
 	resolveEffectiveImageForPlayback,
 	resolveEffectivePlaybackImageId,
+	resolveSlideshowImageIdAtTime,
 	resolveSlideshowPool
 } from './slideshow/slideshowPlayback';
 export type {
 	EffectiveImageResolution,
-	PlaybackImageResolution
+	PlaybackImageResolution,
+	SlideshowTimelineSettings
 } from './slideshow/slideshowPlayback';

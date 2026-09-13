@@ -7,6 +7,11 @@
  * geometry, filters, bass zoom and mirror fill as the preview, by
  * construction.
  *
+ * A slideshow reaches it as a new `imageUrl` in the frame's state. The image
+ * is already decoded, so the switch replays the live load sequence — request,
+ * then commit — in one frame, and the renderer's slideshow transition runs as
+ * it does in the preview.
+ *
  * Lives next to the live renderer because `features/export` may not import
  * `components/`; the Export tab injects it into the frame loop instead.
  */
@@ -22,6 +27,8 @@ import {
 	type ImageCanvasRuntimeRefs
 } from './imageCanvasRuntime';
 import {
+	beginBackgroundImageRequest,
+	commitBackgroundImageLoad,
 	createInitialBackgroundSnapshot,
 	createInitialBackgroundTransitionSnapshot
 } from './imageCanvasBackgroundTransitionState';
@@ -50,6 +57,22 @@ async function loadImage(url: string): Promise<HTMLImageElement | null> {
 	} catch {
 		return null;
 	}
+}
+
+// The live hook mirrors the loaded image into React state; offline there is
+// no component to re-render.
+const ignoreImageState = () => undefined;
+
+/** The renderer only reads state. A paused or sleeping editor must not blank
+ * the export, and Flash Edge follows the live Stage FX driver, which does not
+ * run offline. */
+function toRenderState(state: Readonly<WallpaperState>): WallpaperStore {
+	return {
+		...state,
+		motionPaused: false,
+		sleepModeActive: false,
+		bgFlashEdgeEnabled: false
+	} as WallpaperStore;
 }
 
 function createRuntimeRefs(layer: ImageLayer): ImageCanvasRuntimeRefs {
@@ -93,9 +116,9 @@ function createRuntimeRefs(layer: ImageLayer): ImageCanvasRuntimeRefs {
 
 export function createOfflineBackgroundSubsystem(): RenderSubsystem {
 	let layer: ImageLayer | null = null;
-	let image: HTMLImageElement | null = null;
+	const images = new Map<string, HTMLImageElement>();
 	let refs: ImageCanvasRuntimeRefs | null = null;
-	let renderState: WallpaperStore | null = null;
+	let renderStates = new WeakMap<object, WallpaperStore>();
 	let surface: Surface | null = null;
 
 	function ensureSurface(width: number, height: number): Surface | null {
@@ -110,30 +133,65 @@ export function createOfflineBackgroundSubsystem(): RenderSubsystem {
 		return surface;
 	}
 
+	function getRenderState(state: Readonly<WallpaperState>): WallpaperStore {
+		let renderState = renderStates.get(state);
+		if (!renderState) {
+			renderState = toRenderState(state);
+			renderStates.set(state, renderState);
+		}
+		return renderState;
+	}
+
+	/** Brings the refs to `url` the way the live hook does once it loads. */
+	function switchToImage(
+		activeLayer: ImageLayer,
+		runtimeRefs: ImageCanvasRuntimeRefs,
+		url: string,
+		image: HTMLImageElement
+	) {
+		const requested = beginBackgroundImageRequest(
+			{ ...activeLayer, imageUrl: url },
+			runtimeRefs,
+			ignoreImageState
+		);
+		if (!requested) return;
+		commitBackgroundImageLoad({
+			layer: activeLayer,
+			requestedUrl: requested,
+			loadedImage: image,
+			refs: runtimeRefs,
+			setImage: ignoreImageState
+		});
+	}
+
 	return {
 		id: 'background',
-		async prepare(state) {
+		async prepare(state, frameStates) {
+			images.clear();
+			renderStates = new WeakMap();
 			layer = findBackgroundLayer(state);
-			image =
-				layer?.enabled && layer.imageUrl
-					? await loadImage(layer.imageUrl)
-					: null;
-			// The renderer only reads state. A paused or sleeping editor must
-			// not blank the export, and Flash Edge follows the live Stage FX
-			// driver, which does not run offline.
-			renderState = {
-				...state,
-				motionPaused: false,
-				sleepModeActive: false,
-				bgFlashEdgeEnabled: false
-			} as WallpaperStore;
+			const urls = new Set<string>();
+			for (const frameState of frameStates) {
+				if (frameState.backgroundImageEnabled && frameState.imageUrl) {
+					urls.add(frameState.imageUrl);
+				}
+			}
+			await Promise.all(
+				[...urls].map(async url => {
+					const image = await loadImage(url);
+					if (image) images.set(url, image);
+				})
+			);
 			refs = layer ? createRuntimeRefs(layer) : null;
 		},
 		render(ctx) {
 			// The export always carries file audio; without it there is no clock
 			// worth drawing against.
 			const audio = ctx.audio;
-			if (!audio || !layer || !image || !refs || !renderState) return;
+			if (!audio || !layer || !refs) return;
+			const url = ctx.state.imageUrl;
+			const image = url ? images.get(url) : undefined;
+			if (!url || !image) return;
 			const target = ctx.canvas.getContext('2d');
 			const scratch = ensureSurface(
 				ctx.resolution.width,
@@ -141,8 +199,9 @@ export function createOfflineBackgroundSubsystem(): RenderSubsystem {
 			);
 			if (!target || !scratch) return;
 
-			refs.imageRef.current = image;
-			refs.loadedImageUrlRef.current = layer.imageUrl;
+			if (refs.loadedImageUrlRef.current !== url) {
+				switchToImage(layer, refs, url, image);
+			}
 
 			renderImageCanvasFrame({
 				// +1 keeps frame 0 off the renderer's "first frame" sentinel,
@@ -154,7 +213,7 @@ export function createOfflineBackgroundSubsystem(): RenderSubsystem {
 				renderBaseImage: true,
 				getAudioSnapshot: () => audio,
 				runtimeRefs: refs,
-				state: renderState
+				state: getRenderState(ctx.state)
 			});
 			target.drawImage(scratch.canvas, 0, 0);
 		},
@@ -167,9 +226,9 @@ export function createOfflineBackgroundSubsystem(): RenderSubsystem {
 				surface.canvas.height = 1;
 			}
 			surface = null;
-			image = null;
+			images.clear();
 			refs = null;
-			renderState = null;
+			renderStates = new WeakMap();
 			layer = null;
 		}
 	};

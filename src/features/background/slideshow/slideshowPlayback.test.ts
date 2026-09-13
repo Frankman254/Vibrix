@@ -2,8 +2,10 @@ import { describe, it, expect } from 'vitest';
 import {
 	resolveEffectivePlaybackImageId,
 	resolveEffectiveImageForPlayback,
+	resolveSlideshowImageIdAtTime,
 	resolveSlideshowPool,
-	PLAYBACK_ZERO_EPSILON
+	PLAYBACK_ZERO_EPSILON,
+	type SlideshowTimelineSettings
 } from './slideshowPlayback';
 import type { BackgroundImageItem, Setlist } from '@/types/wallpaper';
 
@@ -722,5 +724,90 @@ describe('MediaDock canNavigateImages — pool-size semantics', () => {
 		};
 		const p = resolveSlideshowPool(images, [setlist], 'sl1');
 		expect(p.length >= 2).toBe(false);
+	});
+});
+
+// ── resolveSlideshowImageIdAtTime ──────────────────────────────────────────
+
+describe('resolveSlideshowImageIdAtTime', () => {
+	function settings(
+		overrides: Partial<SlideshowTimelineSettings> = {}
+	): SlideshowTimelineSettings {
+		return {
+			backgroundImages: pool(['a', 'b', 'c']),
+			setlists: NO_SETLISTS,
+			activeSetlistId: null,
+			activeImageId: 'b',
+			slideshowEnabled: true,
+			slideshowInterval: 10,
+			slideshowAudioCheckpointsEnabled: false,
+			slideshowManualTimestampsEnabled: false,
+			slideshowTrackChangeSyncEnabled: false,
+			...overrides
+		};
+	}
+
+	it('keeps the active image when the slideshow is off', () => {
+		const off = settings({ slideshowEnabled: false });
+		expect(resolveSlideshowImageIdAtTime(off, 0, 60)).toBe('b');
+		expect(resolveSlideshowImageIdAtTime(off, 45, 60)).toBe('b');
+	});
+
+	it('timer mode starts at image 1/N and advances every interval', () => {
+		const timer = settings();
+		expect(resolveSlideshowImageIdAtTime(timer, 0, 60)).toBe('a');
+		expect(resolveSlideshowImageIdAtTime(timer, 9.99, 60)).toBe('a');
+		expect(resolveSlideshowImageIdAtTime(timer, 10, 60)).toBe('b');
+		expect(resolveSlideshowImageIdAtTime(timer, 25, 60)).toBe('c');
+		expect(resolveSlideshowImageIdAtTime(timer, 30, 60)).toBe('a');
+	});
+
+	it('timer mode clamps the interval to one second', () => {
+		const fast = settings({ slideshowInterval: 0 });
+		expect(resolveSlideshowImageIdAtTime(fast, 1, 60)).toBe('b');
+	});
+
+	it('audio checkpoints split the track evenly', () => {
+		const checkpoints = settings({
+			slideshowAudioCheckpointsEnabled: true
+		});
+		expect(resolveSlideshowImageIdAtTime(checkpoints, 0, 90)).toBe('a');
+		expect(resolveSlideshowImageIdAtTime(checkpoints, 31, 90)).toBe('b');
+		expect(resolveSlideshowImageIdAtTime(checkpoints, 89, 90)).toBe('c');
+	});
+
+	it('manual timestamps win over checkpoints', () => {
+		const manual = settings({
+			backgroundImages: [
+				img('a', { playbackSwitchAt: 0 }),
+				img('b', { playbackSwitchAt: 50 }),
+				img('c', { playbackSwitchAt: 5 })
+			],
+			slideshowAudioCheckpointsEnabled: true,
+			slideshowManualTimestampsEnabled: true
+		});
+		expect(resolveSlideshowImageIdAtTime(manual, 4, 90)).toBe('a');
+		expect(resolveSlideshowImageIdAtTime(manual, 20, 90)).toBe('c');
+		expect(resolveSlideshowImageIdAtTime(manual, 60, 90)).toBe('b');
+	});
+
+	it('track-change sync keeps the active image on a single track', () => {
+		const sync = settings({ slideshowTrackChangeSyncEnabled: true });
+		expect(resolveSlideshowImageIdAtTime(sync, 45, 60)).toBe('b');
+	});
+
+	it('follows the active setlist, in its order', () => {
+		const setlist = {
+			id: 'set',
+			imageAssetIds: ['c', 'a'],
+			trackIds: []
+		} as unknown as Setlist;
+		const filtered = settings({
+			setlists: [setlist],
+			activeSetlistId: 'set'
+		});
+		expect(resolveSlideshowImageIdAtTime(filtered, 0, 60)).toBe('c');
+		expect(resolveSlideshowImageIdAtTime(filtered, 10, 60)).toBe('a');
+		expect(resolveSlideshowImageIdAtTime(filtered, 20, 60)).toBe('c');
 	});
 });

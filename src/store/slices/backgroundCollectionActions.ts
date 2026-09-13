@@ -8,23 +8,20 @@ import {
 	buildSceneSlotActivationPatch,
 	createSceneSlotId,
 	normalizeSceneSlotAgainstState,
-	resolveEffectiveSceneSlotId,
-	findSlotByRef
+	resolveEffectiveSceneSlotId
 } from '@/features/scenes/sceneSlot';
-import {
-	extractLooksProfileSettings,
-	extractParticlesProfileSettings,
-	extractRainProfileSettings
-} from '@/store/featureProfiles';
 import { createVisualTransitionSnapshot } from '@/features/visualTransition/visualTransitionCoordinator';
 import { invalidateSpectrumPresetMorph } from '@/features/spectrum';
 import {
 	applyActiveImageConfigToDefaultImages,
 	buildBackgroundImageCollectionPatch,
 	moveBackgroundImageItem,
-	shuffleBackgroundImages,
-	syncStateWithActiveBackgroundImage
+	shuffleBackgroundImages
 } from '@/store/backgroundStoreUtils';
+import {
+	buildActiveImageSelectionPatch,
+	buildCoveredAutoFitPatch
+} from '@/store/activeImageSelection';
 import type { WallpaperStore } from '@/store/wallpaperStoreTypes';
 import type { StateCreator } from 'zustand';
 
@@ -91,51 +88,21 @@ export function createBackgroundCollectionActions(
 		const image = state.backgroundImages.find(
 			img => img.assetId === activeId
 		);
-		if (!image?.url) return;
-		// A hand-tuned composition is the user's intent: never machine-overwrite
-		// it on image switch / viewport change. Explicit auto-fit still wins.
-		if (image.coverageFramingEdited) return;
+		if (!image?.url || image.coverageFramingEdited) return;
 		try {
-			const { width, height } = await loadImageDimensions(image.url);
-			const viewportWidth =
-				typeof window === 'undefined' ? 1920 : window.innerWidth;
-			const viewportHeight =
-				typeof window === 'undefined' ? 1080 : window.innerHeight;
-			const suggestion = suggestBackgroundAutoFit(
-				viewportWidth,
-				viewportHeight,
-				width,
-				height,
-				image.rotation,
-				image.mirrorFill ? (image.mirrorFillCount ?? 0) : 0
-			);
+			const imageSize = await loadImageDimensions(image.url);
+			const viewport =
+				typeof window === 'undefined'
+					? { width: 1920, height: 1080 }
+					: { width: window.innerWidth, height: window.innerHeight };
 			const current = get();
 			if (current.activeImageId !== activeId) return;
-			if (!current.imageCoverageLockEnabled) return;
-			const currentImage = current.backgroundImages.find(
-				img => img.assetId === activeId
+			const patch = buildCoveredAutoFitPatch(
+				current,
+				imageSize,
+				viewport
 			);
-			if (currentImage?.coverageFramingEdited) return;
-			if (
-				current.imageFitMode === suggestion.fitMode &&
-				current.imageScale === suggestion.scale &&
-				current.imagePositionX === suggestion.positionX &&
-				current.imagePositionY === suggestion.positionY &&
-				current.imageFocusX === 0.5 &&
-				current.imageFocusY === 0.5
-			) {
-				return;
-			}
-			set(s =>
-				syncStateWithActiveBackgroundImage(s, {
-					imageFitMode: suggestion.fitMode,
-					imageScale: suggestion.scale,
-					imagePositionX: suggestion.positionX,
-					imagePositionY: suggestion.positionY,
-					imageFocusX: 0.5,
-					imageFocusY: 0.5
-				})
-			);
+			if (patch) set(patch);
 		} catch {
 			// Dimension load failed: leave the composition as-is. The
 			// renderer-side coverage clamp still guarantees full-bleed.
@@ -168,132 +135,15 @@ export function createBackgroundCollectionActions(
 			})),
 		setActiveImageId: id => {
 			set(state => {
-				const patch = buildBackgroundImageCollectionPatch(
+				const { patch, appliedScene } = buildActiveImageSelectionPatch(
 					state,
-					state.backgroundImages,
 					id
 				);
-				const activeImageId = patch.activeImageId;
-				if (activeImageId) {
-					const match = state.backgroundImages.find(
-						img => img.assetId === activeImageId
-					);
-					if (match) {
-						// Scene-first precedence: the image's explicit scene, else
-						// the global default scene, else legacy per-image overrides.
-						const { sceneSlotId: effectiveSceneSlotId } =
-							resolveEffectiveSceneSlotId(match, state);
-						const sceneSlot = effectiveSceneSlotId
-							? state.sceneSlots.find(
-									s => s.id === effectiveSceneSlotId
-								)
-							: undefined;
-						if (sceneSlot) {
-							invalidateSpectrumPresetMorph();
-							const normalized = normalizeSceneSlotAgainstState(
-								sceneSlot,
-								state
-							);
-							Object.assign(
-								patch,
-								buildSceneSlotActivationPatch(
-									state,
-									normalized
-								),
-								{ activeSceneSlotId: sceneSlot.id }
-							);
-						} else {
-							patch.activeSceneSlotId = null;
-							// Legacy back-compat fallback only — used when the image
-							// has no effective scene. Inline overrides take priority
-							// over slot indices.
-							// Overrides configure appearance, not visibility — preserve
-							// the current enabled state so a saved-when-disabled override
-							// never silently hides the logo or spectrum.
-							const logoSlot = findSlotByRef(
-								state.logoProfileSlots,
-								match.logoProfileSlotId
-							);
-							if (match.logoOverride) {
-								Object.assign(patch, match.logoOverride, {
-									logoEnabled: state.logoEnabled
-								});
-							} else if (logoSlot?.values) {
-								Object.assign(patch, logoSlot.values, {
-									logoEnabled: state.logoEnabled
-								});
-							}
-							const spectrumSlot = findSlotByRef(
-								state.spectrumProfileSlots,
-								match.spectrumProfileSlotId
-							);
-							if (match.spectrumOverride) {
-								Object.assign(patch, match.spectrumOverride, {
-									spectrumEnabled: state.spectrumEnabled
-								});
-							} else if (spectrumSlot?.values) {
-								Object.assign(patch, spectrumSlot.values, {
-									spectrumEnabled: state.spectrumEnabled
-								});
-							}
-							// Particles / Rain / Looks: same precedence as
-							// logo+spectrum — inline override > slot binding >
-							// nothing. Inline overrides keep the corresponding
-							// enabled flag from current state so a
-							// saved-when-disabled snapshot never silently turns
-							// visibility off.
-							const particlesSlot = findSlotByRef(
-								state.particlesProfileSlots,
-								match.particlesProfileSlotId
-							);
-							if (match.particlesOverride) {
-								Object.assign(patch, match.particlesOverride, {
-									particlesEnabled: state.particlesEnabled
-								});
-							} else if (particlesSlot?.values) {
-								Object.assign(
-									patch,
-									extractParticlesProfileSettings(state),
-									particlesSlot.values,
-									{ particlesEnabled: state.particlesEnabled }
-								);
-							}
-							const rainSlot = findSlotByRef(
-								state.rainProfileSlots,
-								match.rainProfileSlotId
-							);
-							if (match.rainOverride) {
-								Object.assign(patch, match.rainOverride, {
-									rainEnabled: state.rainEnabled
-								});
-							} else if (rainSlot?.values) {
-								Object.assign(
-									patch,
-									extractRainProfileSettings(state),
-									rainSlot.values,
-									{ rainEnabled: state.rainEnabled }
-								);
-							}
-							const looksSlot = findSlotByRef(
-								state.looksProfileSlots,
-								match.looksProfileSlotId
-							);
-							if (match.looksOverride) {
-								Object.assign(patch, match.looksOverride);
-							} else if (looksSlot?.values) {
-								Object.assign(
-									patch,
-									extractLooksProfileSettings(state),
-									looksSlot.values
-								);
-							}
-						}
-					}
-				}
+				if (appliedScene) invalidateSpectrumPresetMorph();
 				patch.visualTransition = createVisualTransitionSnapshot({
 					state,
 					patch,
-					toImageId: activeImageId ?? null,
+					toImageId: patch.activeImageId ?? null,
 					prefersReducedMotion: prefersReducedMotion()
 				});
 				return patch;

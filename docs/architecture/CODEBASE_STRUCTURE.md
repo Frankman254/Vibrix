@@ -65,7 +65,10 @@ is the bug. The three panels that still fail that test are listed in
   migrado de referencia (ver [ARCHITECTURE.md](ARCHITECTURE.md) §6.1).
 - Background (encuadre, slideshow, UI): `src/features/background/` — el
   **dibujo** del fondo global se pide por `@/features/background/render` (lo usan
-  `GlobalBackgroundView` y el export offline).
+  `GlobalBackgroundView` y el export offline). Qué cambia al **seleccionar una
+  imagen** (escena u overrides, Keep Covered) está en
+  `src/store/activeImageSelection.ts`, compartido por `setActiveImageId` y el
+  slideshow del export (`src/features/export/video/slideshowSegments.ts`).
 - Particles / Rain / Stage FX: `src/features/particles/`, `src/features/rain/`,
   `src/features/stageFx/`
 - Capas de audio (Track Title, Now Playing, cover): `src/features/audioLayers/`

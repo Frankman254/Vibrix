@@ -928,8 +928,6 @@ export const en = {
 		'Stage FX lights are not included in the exported video yet.',
 	offline_issue_unsupported_camera_fx:
 		'Camera motion and shake are not included in the exported video yet.',
-	offline_issue_unsupported_slideshow:
-		'The slideshow does not advance in the export; the current image is used for the whole video.',
 	// Project package selection
 	project_pkg_selective_caption:
 		'Selective export omits deselected modules and their matching asset blobs from the `.vibrix` package.',
