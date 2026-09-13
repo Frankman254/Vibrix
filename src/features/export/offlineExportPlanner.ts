@@ -17,6 +17,8 @@ export type OfflineExportPlanState = Pick<
 	| 'audioSourceMode'
 	| 'audioTracks'
 	| 'backgroundImages'
+	| 'cameraMotionEnabled'
+	| 'cameraShakeEnabled'
 	| 'flashLightEnabled'
 	| 'globalBackgroundEnabled'
 	| 'logoEnabled'
@@ -205,11 +207,6 @@ function buildUnsupportedLayerIssues(
 			'Rain is not included in the exported video yet.'
 		],
 		[
-			state.overlays.some(overlay => overlay.enabled),
-			'export-unsupported-overlays',
-			'Image overlays are not included in the exported video yet.'
-		],
-		[
 			state.globalBackgroundEnabled,
 			'export-unsupported-global-background',
 			'The global background is not included in the exported video yet.'
@@ -218,6 +215,11 @@ function buildUnsupportedLayerIssues(
 			state.stageLightsEnabled || state.flashLightEnabled,
 			'export-unsupported-stage-fx',
 			'Stage FX lights are not included in the exported video yet.'
+		],
+		[
+			state.cameraMotionEnabled || state.cameraShakeEnabled,
+			'export-unsupported-camera-fx',
+			'Camera motion and shake are not included in the exported video yet.'
 		],
 		[
 			state.slideshowEnabled &&

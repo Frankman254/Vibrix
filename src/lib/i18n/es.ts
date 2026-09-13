@@ -930,12 +930,12 @@ export const es: Record<TranslationKey, string> = {
 		'Las partículas aún no se incluyen en el vídeo exportado.',
 	offline_issue_unsupported_rain:
 		'La lluvia aún no se incluye en el vídeo exportado.',
-	offline_issue_unsupported_overlays:
-		'Los overlays de imagen aún no se incluyen en el vídeo exportado.',
 	offline_issue_unsupported_global_background:
 		'El fondo global aún no se incluye en el vídeo exportado.',
 	offline_issue_unsupported_stage_fx:
 		'Las luces de Stage FX aún no se incluyen en el vídeo exportado.',
+	offline_issue_unsupported_camera_fx:
+		'El movimiento y la sacudida de cámara aún no se incluyen en el vídeo exportado.',
 	offline_issue_unsupported_slideshow:
 		'El slideshow no avanza en el export; se usa la imagen actual durante todo el vídeo.',
 	// Selección del paquete de proyecto
