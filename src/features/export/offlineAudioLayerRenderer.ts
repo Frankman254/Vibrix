@@ -43,7 +43,8 @@ function isRenderableAudioLayer(layer: {
 		layer.enabled &&
 		(layer.type === 'logo' ||
 			layer.type === 'spectrum' ||
-			layer.type === 'track-title')
+			layer.type === 'track-title' ||
+			layer.type === 'lyrics')
 	);
 }
 

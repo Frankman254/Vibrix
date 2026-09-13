@@ -15,6 +15,20 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Export de vídeo offline — Fase 1A/1B (en curso)
+
+- **Exportar vídeo** (tab Export) genera un MP4 (H.264 + AAC) o, si el
+  navegador no puede, WebM (VP9 + Opus), frame a frame a partir del audio del
+  proyecto. No usa `getDisplayMedia`, no depende de que la pestaña esté visible
+  y el resultado no depende de la velocidad de la máquina.
+- Capas exportadas: fondo (imagen activa con bass zoom), spectrum, logo, track
+  title y letras Lyrixa. Partículas, lluvia, overlays, fondo global, Stage FX y
+  slideshow aún no: el planner avisa de cada una.
+- Resolución y fps elegibles, progreso por fase con ETA, cancelación. Con
+  `showSaveFilePicker` escribe en streaming al archivo (y lo descarta al
+  cancelar); sin él, descarga al final.
+- Nueva dependencia: `mediabunny` (MPL-2.0).
+
 ## [0.4.1-alpha] — 2026-09-13
 
 **Fase 0 del [plan maestro de lanzamiento](docs/plans/PLAN_MAESTRO_LANZAMIENTO.md):**

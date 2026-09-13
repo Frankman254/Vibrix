@@ -4,7 +4,7 @@
 
 ## Start here
 
-**Plan activo:** [plans/PLAN_MAESTRO_LANZAMIENTO.md](plans/PLAN_MAESTRO_LANZAMIENTO.md) — hoja de ruta hacia `1.0.0` (export de vídeo → plantillas → rendimiento → pagos → lanzamiento).
+**Plan activo:** [plans/PLAN_MAESTRO_LANZAMIENTO.md](plans/PLAN_MAESTRO_LANZAMIENTO.md) — hoja de ruta hacia `1.0.0` (export de vídeo → plantillas → rendimiento → pagos → lanzamiento). Web de venta: [plans/PLAN_WEB_VENTA.md](plans/PLAN_WEB_VENTA.md). Mapa de la suite y rutas de los proyectos vecinos: [../.agents/SUITE.md](../.agents/SUITE.md).
 
 1. [product/V1_ALPHA_SCOPE.md](product/V1_ALPHA_SCOPE.md) — what's in / out of alpha
 2. [status/CURRENT_SYSTEM_STATUS.md](status/CURRENT_SYSTEM_STATUS.md) — **as-built system status**

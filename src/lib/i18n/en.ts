@@ -862,7 +862,7 @@ export const en = {
 	local_project_phase_done: 'Done',
 	section_virtual_folders: 'Virtual Folders (Beta)',
 	section_project_health: 'Project Health',
-	section_offline_export: 'Offline Export (MVP Foundation)',
+	section_offline_export: 'Video Export',
 	// Virtual folders
 	vfolder_caption:
 		"Select external folders to read Assets directly without duplicating them in the browser's hidden storage. It also enables picking files without exporting them as Base64. Requires HTTPS or Localhost.",
@@ -884,18 +884,54 @@ export const en = {
 		'Checks broken image, audio, setlist, scene, overlay, and slot references before export or sync.',
 	project_health_more_issues: '+{n} more issues',
 	// Offline export
-	offline_readiness_ready: 'Ready for Phase 2 implementation',
-	offline_readiness_warning: 'Usable with encoder limitations',
+	offline_readiness_ready: 'Ready to export',
+	offline_readiness_warning: 'Ready — some layers are not exported yet',
 	offline_readiness_blocked:
-		'Blocked until project/audio requirements are met',
+		'Export blocked until the requirements below are met',
 	offline_caption:
-		'Deterministic export will use project state plus file/playlist audio. Screen recording remains available below as the legacy capture path.',
-	offline_label_profile: 'Profile',
+		'Renders the project frame by frame against the file or playlist audio, so the video does not depend on the tab being visible. Screen recording remains available below.',
 	offline_label_target: 'Target',
 	offline_label_audio: 'Audio',
-	offline_label_layer_cost: 'Layer cost',
 	offline_btn_analyzing: 'Analyzing offline audio...',
 	offline_btn_test_analysis: 'Test Offline Audio Analysis',
+	offline_label_resolution: 'Resolution',
+	offline_label_fps: 'Frame rate',
+	offline_format_checking: 'Checking encoder...',
+	offline_btn_export_video: 'Export video',
+	offline_btn_cancel: 'Cancel export',
+	offline_phase_preparing: 'Preparing project...',
+	offline_phase_decoding: 'Decoding audio...',
+	offline_phase_rendering: 'Rendering frame {done} / {total}',
+	offline_phase_finalizing: 'Finalizing file...',
+	offline_phase_cancelled: 'Export cancelled. No file was kept.',
+	offline_eta: '{time} left',
+	offline_done: 'Saved {name}',
+	offline_error_no_encoder:
+		'This browser cannot encode MP4 or WebM video. Try a recent Chrome, Edge or Safari.',
+	offline_error_audio_not_found:
+		'The audio file for this track is missing from the library.',
+	offline_error_failed:
+		'The export failed. Check the console for details and try again.',
+	offline_issue_missing_file_audio:
+		'Video export needs an imported audio file or playlist track.',
+	offline_issue_live_audio:
+		'Desktop and microphone capture are live sources and cannot be exported offline.',
+	offline_issue_web_audio:
+		'Web Audio is required to analyse the audio for export.',
+	offline_issue_webcodecs:
+		'This browser cannot encode video (WebCodecs). Use a recent Chrome, Edge or Safari, or the screen recorder below.',
+	offline_issue_unsupported_particles:
+		'Particles are not included in the exported video yet.',
+	offline_issue_unsupported_rain:
+		'Rain is not included in the exported video yet.',
+	offline_issue_unsupported_overlays:
+		'Image overlays are not included in the exported video yet.',
+	offline_issue_unsupported_global_background:
+		'The global background is not included in the exported video yet.',
+	offline_issue_unsupported_stage_fx:
+		'Stage FX lights are not included in the exported video yet.',
+	offline_issue_unsupported_slideshow:
+		'The slideshow does not advance in the export; the current image is used for the whole video.',
 	// Project package selection
 	project_pkg_selective_caption:
 		'Selective export omits deselected modules and their matching asset blobs from the `.vibrix` package.',

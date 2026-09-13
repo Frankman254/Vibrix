@@ -33,3 +33,5 @@ export { useSettingsExport } from './controls/useSettingsExport';
 export type { SettingsStatus } from './controls/useSettingsExport';
 export { useOfflineAudioAnalysis } from './controls/useOfflineAudioAnalysis';
 export type { OfflineAnalysisStatus } from './controls/useOfflineAudioAnalysis';
+export { useOfflineVideoExport } from './controls/useOfflineVideoExport';
+export type { OfflineVideoExportError } from './controls/useOfflineVideoExport';

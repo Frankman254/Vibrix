@@ -31,6 +31,7 @@ export type RenderSubsystemId =
 	| 'spectrum'
 	| 'logo'
 	| 'trackTitle'
+	| 'lyrics'
 	| 'overlays'
 	| 'hud';
 
@@ -43,6 +44,7 @@ export const RENDER_SUBSYSTEM_ORDER: readonly RenderSubsystemId[] = [
 	'spectrum',
 	'logo',
 	'trackTitle',
+	'lyrics',
 	'overlays',
 	'hud'
 ] as const;

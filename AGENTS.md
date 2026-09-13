@@ -6,6 +6,24 @@ Vite + React 19 + TypeScript + Zustand + Three.js/R3F. **The package manager is
 There is no Next.js here. If you were told otherwise, that was a stale note; it
 has been removed.
 
+## La suite / qué hacer ahora
+
+Este repo es parte de una suite de 4 proyectos. Antes de empezar:
+
+- [.agents/SUITE.md](.agents/SUITE.md) — qué es cada proyecto, rutas en esta
+  máquina, reglas comunes y estado de fases.
+- [.agents/TAREAS.md](.agents/TAREAS.md) — **la tarea actual de este repo** y el
+  siguiente paso concreto.
+- [docs/plans/PLAN_MAESTRO_LANZAMIENTO.md](docs/plans/PLAN_MAESTRO_LANZAMIENTO.md)
+  — plan completo; [docs/plans/PLAN_WEB_VENTA.md](docs/plans/PLAN_WEB_VENTA.md)
+  — web de venta (se construye en `vibrix-web`).
+
+Proyectos vecinos (solo docs; no modificar su código desde aquí):
+
+- Lyrixa: `/Users/frankman254/Desktop/Personal-Projects/Lyrixa`
+- Transcriptor: `/Users/frankman254/Desktop/Personal-Projects/transcriptor`
+- Web de venta: `/Users/frankman254/Desktop/Personal-Projects/vibrix-web`
+
 ## Read before writing code
 
 1. [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md) — **the
@@ -38,6 +56,7 @@ pnpm architecture:check
 pnpm structure:check
 pnpm docs:check
 pnpm i18n:check
+pnpm test:types
 pnpm test:run
 pnpm build
 ```

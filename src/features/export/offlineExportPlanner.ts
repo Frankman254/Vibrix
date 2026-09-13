@@ -17,12 +17,16 @@ export type OfflineExportPlanState = Pick<
 	| 'audioSourceMode'
 	| 'audioTracks'
 	| 'backgroundImages'
+	| 'flashLightEnabled'
+	| 'globalBackgroundEnabled'
 	| 'logoEnabled'
 	| 'overlays'
 	| 'particlesEnabled'
 	| 'performanceMode'
 	| 'rainEnabled'
+	| 'slideshowEnabled'
 	| 'spectrumEnabled'
+	| 'stageLightsEnabled'
 >;
 
 export type OfflineExportAudioAssetRef = {
@@ -160,7 +164,7 @@ function buildCapabilities(
 			label: 'Native MP4 muxing',
 			available: capabilities.hasNativeMp4Recorder,
 			requiredForMvp: false,
-			note: 'Browser support is inconsistent; keep a desktop/wasm adapter boundary.'
+			note: 'MP4/WebM muxing runs in JavaScript (mediabunny); this flag only reports native MediaRecorder MP4.'
 		}
 	];
 }
@@ -182,7 +186,54 @@ function estimateLayerCost(
 	return 'low';
 }
 
+/**
+ * Layers the live preview draws but the offline export does not yet. Listed
+ * so the plan is honest about what the file will contain (Fase 1C adds them).
+ */
+function buildUnsupportedLayerIssues(
+	state: OfflineExportPlanState
+): OfflineExportIssue[] {
+	const unsupported: Array<[boolean, string, string]> = [
+		[
+			state.particlesEnabled,
+			'export-unsupported-particles',
+			'Particles are not included in the exported video yet.'
+		],
+		[
+			state.rainEnabled,
+			'export-unsupported-rain',
+			'Rain is not included in the exported video yet.'
+		],
+		[
+			state.overlays.some(overlay => overlay.enabled),
+			'export-unsupported-overlays',
+			'Image overlays are not included in the exported video yet.'
+		],
+		[
+			state.globalBackgroundEnabled,
+			'export-unsupported-global-background',
+			'The global background is not included in the exported video yet.'
+		],
+		[
+			state.stageLightsEnabled || state.flashLightEnabled,
+			'export-unsupported-stage-fx',
+			'Stage FX lights are not included in the exported video yet.'
+		],
+		[
+			state.slideshowEnabled &&
+				state.backgroundImages.filter(image => image.enabled).length >
+					1,
+			'export-unsupported-slideshow',
+			'The slideshow does not advance in the export; the current image is used for the whole video.'
+		]
+	];
+	return unsupported
+		.filter(([active]) => active)
+		.map(([, code, message]) => ({ code, severity: 'warning', message }));
+}
+
 function buildIssues(
+	state: OfflineExportPlanState,
 	audio: OfflineExportAudioPlan,
 	capabilities: BrowserOfflineExportCapabilities
 ): OfflineExportIssue[] {
@@ -192,8 +243,7 @@ function buildIssues(
 		issues.push({
 			code: 'missing-file-audio',
 			severity: 'blocker',
-			message:
-				'Offline export MVP requires imported file or playlist audio.'
+			message: 'Video export requires imported file or playlist audio.'
 		});
 	}
 
@@ -217,21 +267,13 @@ function buildIssues(
 	if (!capabilities.hasWebCodecs) {
 		issues.push({
 			code: 'webcodecs-unavailable',
-			severity: 'warning',
+			severity: 'blocker',
 			message:
-				'WebCodecs is unavailable; browser export will need a slower fallback or desktop encoder.'
+				'This browser cannot encode video (WebCodecs). Use a recent Chrome, Edge or Safari, or the screen recorder below.'
 		});
 	}
 
-	if (!capabilities.hasNativeMp4Recorder) {
-		issues.push({
-			code: 'mp4-muxing-limited',
-			severity: 'info',
-			message:
-				'MP4 output needs a muxer adapter; do not rely on native MediaRecorder MP4 support.'
-		});
-	}
-
+	issues.push(...buildUnsupportedLayerIssues(state));
 	return issues;
 }
 
@@ -240,7 +282,7 @@ export function createOfflineExportPlan(
 	capabilities = detectBrowserOfflineExportCapabilities()
 ): OfflineExportPlan {
 	const audio = resolveAudioPlan(state);
-	const issues = buildIssues(audio, capabilities);
+	const issues = buildIssues(state, audio, capabilities);
 	const hasBlocker = issues.some(issue => issue.severity === 'blocker');
 	const hasWarning = issues.some(issue => issue.severity === 'warning');
 
@@ -248,7 +290,7 @@ export function createOfflineExportPlan(
 		version: OFFLINE_EXPORT_ARCHITECTURE_VERSION,
 		status: hasBlocker ? 'blocked' : hasWarning ? 'warning' : 'ready',
 		profile: {
-			fps: 60,
+			fps: 30,
 			resolution: OFFLINE_EXPORT_RESOLUTION_PRESETS[0],
 			qualityMode: 'balanced',
 			containerTarget: 'mp4-friendly'
@@ -257,6 +299,6 @@ export function createOfflineExportPlan(
 		capabilities: buildCapabilities(capabilities),
 		issues,
 		estimatedLayerCost: estimateLayerCost(state),
-		implementationStage: 'foundation-only'
+		implementationStage: 'mvp'
 	};
 }

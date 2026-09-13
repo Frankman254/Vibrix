@@ -1,9 +1,55 @@
-# Offline Video Renderer — Design (NOT IMPLEMENTED)
+# Offline Video Renderer — Design + as-built
 
-> Status: **Design only.** Nothing in this document is built. It captures what a
-> Blender-style, non-realtime exporter would require so we do not accidentally
-> promise it from the current realtime recorder. Reviewed baseline: HEAD at the
-> time of the media-key/output-sync sprint.
+> Status: **MVP implementado (Fase 1A/1B del plan maestro).** La sección
+> "Como está construido" describe el código real; el resto del documento es el
+> diseño original y sigue siendo la referencia para lo que falta (1C–1E).
+
+## Como está construido (2026-09)
+
+```
+ExportTabBody (components/)            inyecta createOfflineBackgroundSubsystem()
+  └─ useOfflineVideoExport (features/export/controls)
+       1. codecs sondeados antes del clic (resolveOfflineVideoFormat)
+       2. showSaveFilePicker en el clic → StreamTarget; si no hay, BufferTarget
+       3. loadImageBlob → decodeOfflineAudioFile (AudioBuffer entero)
+       └─ runOfflineVideoExport (features/export/video)
+            snapshot congelado + paleta real del fondo (getBackgroundPalette)
+            prepareAllRenderSubsystems (carga la imagen de fondo)
+            for i in 0..N:  t = i / fps
+              fondo negro → renderFrameAt(ctx(t)) → encoder.addFrame(t)
+              audio en rodajas de 1 s detrás del vídeo (el muxer intercala)
+            finish() → archivo / Blob
+```
+
+| Pieza                                                      | Archivo                                                          |
+| ---------------------------------------------------------- | ---------------------------------------------------------------- |
+| Negociación de formato + progreso (puro, testeado)         | `src/features/export/video/offlineVideoFormat.ts`                |
+| mediabunny: encoder, sink, writable cancelable             | `src/features/export/video/offlineVideoEncoder.ts`               |
+| Bucle de frames                                            | `src/features/export/video/runOfflineVideoExport.ts`             |
+| Fondo (vive en `components/`, se inyecta)                  | `src/components/wallpaper/layers/imageCanvasOfflineSubsystem.ts` |
+| Subsistemas de audio (spectrum, logo, track title, lyrics) | `src/features/export/renderSubsystems/audioLayers.ts`            |
+| Avisos de capas no exportadas                              | `src/features/export/offlineExportPlanner.ts`                    |
+
+Reglas que el código ya cumple y no se deben romper:
+
+- **`features/export` no importa `components/`.** Las capas que viven en
+  presentación entran como `extraSubsystems`.
+- **El picker se abre en el clic.** Nada asíncrono largo antes de
+  `showSaveFilePicker`, o el navegador pierde la activación de usuario.
+- **Cancelar no deja archivo a medias:** `createCancellableFileWritable`
+  convierte el `close()` en `abort()` salvo durante `finalizing`.
+- **Los yields usan MessageChannel,** no `setTimeout` (throttled a 1 s en
+  pestañas ocultas).
+- **Paleta = la del fondo** (`useBackgroundPalette` en vivo), no la del tema del editor.
+
+Límites conocidos del MVP:
+
+- El audio se decodifica entero en memoria: 1 h de audio ≈ 1,2 GB de PCM.
+  El criterio "1 h sin crecer memoria" sigue abierto.
+- Las capas de audio se agrupan por tipo, así que el entrelazado de `zIndex`
+  entre tipos distintos no es exacto.
+- No exportado aún (1C): partículas, lluvia, overlays, fondo global, Stage FX,
+  transiciones de slideshow/escena, Looks.
 
 ## Why the current recorder is not an offline renderer
 

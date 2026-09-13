@@ -220,6 +220,7 @@ Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 | Internal `getDisplayMedia` recorder   | Experimental       |
 | Virtual folders (local FS API)        | Experimental       |
 | Offline export planner                | Experimental (MVP) |
+| Offline video export (MP4/WebM)       | Experimental (MVP) |
 | Spectrum FX Lab (`#/dev/spectrum-fx`) | DEV only           |
 | Cloud / Supabase                      | Not implemented    |
 

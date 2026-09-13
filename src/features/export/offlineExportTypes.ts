@@ -97,7 +97,7 @@ export type OfflineExportPlan = {
 	capabilities: OfflineExportCapability[];
 	issues: OfflineExportIssue[];
 	estimatedLayerCost: 'low' | 'medium' | 'high';
-	implementationStage: 'foundation-only';
+	implementationStage: 'mvp';
 };
 
 export type BrowserOfflineExportCapabilities = {

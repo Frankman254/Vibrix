@@ -237,18 +237,27 @@ class PcmOfflineAudioAnalysisSource implements OfflineAudioAnalysisSource {
 	}
 }
 
-export async function createOfflineAudioAnalysisSource(
-	file: File | Blob,
-	options: OfflineAudioAnalysisOptions = {}
-): Promise<OfflineAudioAnalysisSource> {
+/**
+ * Decodes an audio file once. The export keeps this buffer for the encoder
+ * (original channels) and hands it to the analysis source, which mixes it to
+ * mono — so the file is never decoded twice.
+ */
+export async function decodeOfflineAudioFile(
+	file: File | Blob
+): Promise<AudioBuffer> {
 	if (typeof OfflineAudioContext === 'undefined') {
 		throw new Error('offline-audio-context-unavailable');
 	}
-
-	const fftSize = normalizeFftSize(options.fftSize);
 	const arrayBuffer = await file.arrayBuffer();
 	const decodeContext = new OfflineAudioContext(1, 1, 44100);
-	const decoded = await decodeContext.decodeAudioData(arrayBuffer);
+	return decodeContext.decodeAudioData(arrayBuffer);
+}
+
+export function createOfflineAudioAnalysisSourceFromBuffer(
+	decoded: AudioBuffer,
+	options: OfflineAudioAnalysisOptions = {}
+): OfflineAudioAnalysisSource {
+	const fftSize = normalizeFftSize(options.fftSize);
 	const estimatedDecodedBytes =
 		decoded.length *
 		decoded.numberOfChannels *
@@ -269,4 +278,12 @@ export async function createOfflineAudioAnalysisSource(
 		minDecibels: options.minDecibels ?? DEFAULT_MIN_DECIBELS,
 		maxDecibels: options.maxDecibels ?? DEFAULT_MAX_DECIBELS
 	});
+}
+
+export async function createOfflineAudioAnalysisSource(
+	file: File | Blob,
+	options: OfflineAudioAnalysisOptions = {}
+): Promise<OfflineAudioAnalysisSource> {
+	const decoded = await decodeOfflineAudioFile(file);
+	return createOfflineAudioAnalysisSourceFromBuffer(decoded, options);
 }

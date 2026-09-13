@@ -25,11 +25,17 @@ import {
 	useRecordingExport,
 	useProjectPackageExport,
 	useSettingsExport,
-	useOfflineAudioAnalysis
+	useOfflineAudioAnalysis,
+	useOfflineVideoExport
 } from '@/features/export/ui';
+import { createOfflineBackgroundSubsystem } from '@/components/wallpaper/layers/imageCanvasOfflineSubsystem';
 import { createProjectHealthReport } from '@/lib/projectHealth';
 import SectionDivider from '@/ui/SectionDivider';
 import { useLocalFolders } from '@/hooks/useLocalFolders';
+
+// Presentation-owned render subsystems the export's frame loop cannot import
+// on its own (see `imageCanvasOfflineSubsystem`). One instance for the app.
+const OFFLINE_EXPORT_SUBSYSTEMS = [createOfflineBackgroundSubsystem()];
 
 export default function ExportTabBody() {
 	const t = useT();
@@ -81,11 +87,14 @@ export default function ExportTabBody() {
 			particlesProfileSlots: state.particlesProfileSlots,
 			performanceMode: state.performanceMode,
 			fftSize: state.fftSize,
+			flashLightEnabled: state.flashLightEnabled,
 			rainEnabled: state.rainEnabled,
 			rainProfileSlots: state.rainProfileSlots,
 			sceneSlots: state.sceneSlots,
 			selectedOverlayId: state.selectedOverlayId,
 			setlists: state.setlists,
+			slideshowEnabled: state.slideshowEnabled,
+			stageLightsEnabled: state.stageLightsEnabled,
 			spectrumEnabled: state.spectrumEnabled,
 			spectrumProfileSlots: state.spectrumProfileSlots,
 			spectrumSecondProfileSlots: state.spectrumSecondProfileSlots,
@@ -151,6 +160,16 @@ export default function ExportTabBody() {
 		audioChannelSmoothing: offlineExportState.audioChannelSmoothing
 	});
 
+	const videoExport = useOfflineVideoExport({
+		offlineAudioAsset,
+		exportNamingState,
+		trackTitle: offlineAudioAsset?.name ?? '',
+		fftSize: offlineExportState.fftSize,
+		audioChannelSmoothing: offlineExportState.audioChannelSmoothing,
+		extraSubsystems: OFFLINE_EXPORT_SUBSYSTEMS,
+		canExport: offlineExportPlan.status !== 'blocked'
+	});
+
 	const statusLabel = {
 		idle: t.status_record_idle,
 		recording: `${t.status_recording} ${formatDuration(recording.elapsedSeconds)}`,
@@ -192,7 +211,7 @@ export default function ExportTabBody() {
 			: offlineExportPlan.status === 'warning'
 				? 'text-yellow-400'
 				: 'text-red-400';
-	const offlineExportVisibleIssues = offlineExportPlan.issues.slice(0, 3);
+	const offlineExportVisibleIssues = offlineExportPlan.issues.slice(0, 6);
 	const enabledProjectExportSectionCount =
 		getEnabledProjectExportSectionCount(
 			projectPackage.projectExportSelection
@@ -269,6 +288,19 @@ export default function ExportTabBody() {
 				onAnalyzeOfflineAudio={() =>
 					void offlineAnalysis.analyzeOfflineExportAudio()
 				}
+				resolutionId={videoExport.resolutionId}
+				onResolutionChange={videoExport.setResolutionId}
+				fps={videoExport.fps}
+				onFpsChange={videoExport.setFps}
+				format={videoExport.format}
+				formatChecked={videoExport.formatChecked}
+				progress={videoExport.progress}
+				error={videoExport.error}
+				savedFileName={videoExport.savedFileName}
+				busy={videoExport.busy}
+				canStart={videoExport.canStart}
+				onStartExport={() => void videoExport.startExport()}
+				onCancelExport={videoExport.cancelExport}
 			/>
 
 			<RecordingToolsSection

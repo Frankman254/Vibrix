@@ -64,6 +64,9 @@ export type {
 	OfflineAudioMemoryRisk
 } from './offlineAudioAnalysis';
 
+export type { RenderSubsystem } from './renderSubsystem';
+export type { RenderFrameContext } from './renderFrameContext';
+
 // --- Naming and saving files --------------------------------------------
 export {
 	formatDuration,

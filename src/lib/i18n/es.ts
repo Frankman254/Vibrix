@@ -867,7 +867,7 @@ export const es: Record<TranslationKey, string> = {
 	local_project_phase_done: 'Listo',
 	section_virtual_folders: 'Carpetas virtuales (Beta)',
 	section_project_health: 'Salud del proyecto',
-	section_offline_export: 'Exportación offline (Base MVP)',
+	section_offline_export: 'Exportar vídeo',
 	// Carpetas virtuales
 	vfolder_caption:
 		'Selecciona carpetas externas para leer los Assets directamente sin duplicarlos en el almacenamiento oculto del navegador. También permite elegir archivos sin exportarlos como Base64. Requiere HTTPS o Localhost.',
@@ -889,18 +889,55 @@ export const es: Record<TranslationKey, string> = {
 		'Comprueba referencias rotas de imágenes, audio, setlists, escenas, overlays y slots antes de exportar o sincronizar.',
 	project_health_more_issues: '+{n} incidencias más',
 	// Exportación offline
-	offline_readiness_ready: 'Listo para la implementación de la Fase 2',
-	offline_readiness_warning: 'Usable con limitaciones del codificador',
+	offline_readiness_ready: 'Listo para exportar',
+	offline_readiness_warning: 'Listo — algunas capas aún no se exportan',
 	offline_readiness_blocked:
-		'Bloqueado hasta cumplir los requisitos de proyecto/audio',
+		'Exportación bloqueada hasta cumplir los requisitos de abajo',
 	offline_caption:
-		'La exportación determinista usará el estado del proyecto más el audio de archivo/playlist. La grabación de pantalla sigue disponible abajo como vía de captura heredada.',
-	offline_label_profile: 'Perfil',
+		'Renderiza el proyecto fotograma a fotograma contra el audio del archivo o la playlist, así el vídeo no depende de que la pestaña esté visible. La grabación de pantalla sigue disponible abajo.',
 	offline_label_target: 'Destino',
 	offline_label_audio: 'Audio',
-	offline_label_layer_cost: 'Coste de capas',
 	offline_btn_analyzing: 'Analizando audio offline...',
 	offline_btn_test_analysis: 'Probar análisis de audio offline',
+	offline_label_resolution: 'Resolución',
+	offline_label_fps: 'Fotogramas por segundo',
+	offline_format_checking: 'Comprobando codificador...',
+	offline_btn_export_video: 'Exportar vídeo',
+	offline_btn_cancel: 'Cancelar exportación',
+	offline_phase_preparing: 'Preparando proyecto...',
+	offline_phase_decoding: 'Decodificando audio...',
+	offline_phase_rendering: 'Renderizando fotograma {done} / {total}',
+	offline_phase_finalizing: 'Cerrando archivo...',
+	offline_phase_cancelled:
+		'Exportación cancelada. No se guardó ningún archivo.',
+	offline_eta: 'quedan {time}',
+	offline_done: 'Guardado {name}',
+	offline_error_no_encoder:
+		'Este navegador no puede codificar vídeo MP4 ni WebM. Prueba con Chrome, Edge o Safari recientes.',
+	offline_error_audio_not_found:
+		'Falta el archivo de audio de esta pista en la biblioteca.',
+	offline_error_failed:
+		'La exportación falló. Revisa la consola y vuelve a intentarlo.',
+	offline_issue_missing_file_audio:
+		'Exportar vídeo necesita un archivo de audio importado o una pista de playlist.',
+	offline_issue_live_audio:
+		'La captura de escritorio y micrófono son fuentes en vivo y no se pueden exportar offline.',
+	offline_issue_web_audio:
+		'Hace falta Web Audio para analizar el audio del export.',
+	offline_issue_webcodecs:
+		'Este navegador no puede codificar vídeo (WebCodecs). Usa Chrome, Edge o Safari recientes, o la grabación de pantalla de abajo.',
+	offline_issue_unsupported_particles:
+		'Las partículas aún no se incluyen en el vídeo exportado.',
+	offline_issue_unsupported_rain:
+		'La lluvia aún no se incluye en el vídeo exportado.',
+	offline_issue_unsupported_overlays:
+		'Los overlays de imagen aún no se incluyen en el vídeo exportado.',
+	offline_issue_unsupported_global_background:
+		'El fondo global aún no se incluye en el vídeo exportado.',
+	offline_issue_unsupported_stage_fx:
+		'Las luces de Stage FX aún no se incluyen en el vídeo exportado.',
+	offline_issue_unsupported_slideshow:
+		'El slideshow no avanza en el export; se usa la imagen actual durante todo el vídeo.',
 	// Selección del paquete de proyecto
 	project_pkg_selective_caption:
 		'La exportación selectiva omite los módulos deseleccionados y sus blobs de assets correspondientes del paquete `.vibrix`.',

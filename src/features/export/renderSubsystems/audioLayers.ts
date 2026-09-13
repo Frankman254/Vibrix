@@ -51,12 +51,13 @@ function isRenderableAudioLayer(layer: {
 		layer.enabled &&
 		(layer.type === 'logo' ||
 			layer.type === 'spectrum' ||
-			layer.type === 'track-title')
+			layer.type === 'track-title' ||
+			layer.type === 'lyrics')
 	);
 }
 
 function makeAudioLayerSubsystem(
-	id: 'logo' | 'spectrum' | 'trackTitle',
+	id: 'logo' | 'spectrum' | 'trackTitle' | 'lyrics',
 	matches: (type: string) => boolean
 ): RenderSubsystem {
 	return {
@@ -134,4 +135,8 @@ export const spectrumSubsystem = makeAudioLayerSubsystem(
 export const trackTitleSubsystem = makeAudioLayerSubsystem(
 	'trackTitle',
 	type => type === 'track-title'
+);
+export const lyricsSubsystem = makeAudioLayerSubsystem(
+	'lyrics',
+	type => type === 'lyrics'
 );

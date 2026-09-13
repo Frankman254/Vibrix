@@ -9,6 +9,8 @@ _Creado: 2026-09-13 · Actualizado: 2026-09-13 (suite Lyrixa/Transcriptor) · Ve
 
 Documentos relacionados (no se repiten aquí, se referencian):
 
+- [PLAN_WEB_VENTA.md](PLAN_WEB_VENTA.md) — plan de la web de venta
+  (`vibrix-web`, Next.js + Tailwind): secciones, animación, fases W0–W5.
 - [MVP_PRODUCT_ARCHITECTURE.md](MVP_PRODUCT_ARCHITECTURE.md) — contratos del
   exportador offline (Fases 1, 2A y 2B ya implementadas).
 - [DESKTOP_SUITE_READINESS.md](DESKTOP_SUITE_READINESS.md) — por qué escritorio
@@ -239,7 +241,8 @@ VideoEncoder (H.264)  +  AudioEncoder (AAC)  ──►  muxer MP4  ──►  ar
 ```
 
 - **Muxer:** `mediabunny` (sucesor mantenido de `mp4-muxer`/`webm-muxer`,
-  MIT). Una sola dependencia para MP4 y WebM.
+  **MPL-2.0**: se puede usar en un producto cerrado sin modificar sus archivos;
+  si se parchea, esos archivos se publican). Una sola dependencia para MP4 y WebM.
 - **Capas R3F (partículas, lluvia):** no se reescriben. Se renderizan con un
   `WebGLRenderer` propio fuera de React sobre el mismo grafo de escena,
   avanzando el reloj manualmente, y se copian al canvas de export con
@@ -343,17 +346,17 @@ es publicidad).
 
 ### Tareas
 
-| #   | Tarea                                                                                                                                                                                                                                                                                                    |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 4.1 | **Marca de agua** aplicada solo en el compositor de export (Fase 1), nunca en preview/OBS. Módulo en `src/features/export`                                                                                                                                                                               |
-| 4.2 | **Licencias:** Lemon Squeezy o Paddle (Merchant of Record: gestionan IVA/impuestos globales). Clave de licencia validada por un endpoint mínimo en `backend/server/` con caché offline de 7 días                                                                                                         |
-| 4.3 | Cuentas: **no** construir auth propia. Email + license key basta para 1.0. (El stub de auth del AI Director sigue congelado)                                                                                                                                                                             |
-| 4.4 | **Web de venta de la suite** (repo propio, p. ej. Next.js como `Landing-page-frankmandev`): hero con vídeo hecho con Vibrix, flujo "letra → sincronía → visual", galería de plantillas, precios, FAQ, lista de espera del Transcriptor. Separada de la app para que SEO y deploys no dependan del editor |
-| 4.5 | Legal: Términos, Privacidad (qué se guarda local vs servidor), aviso de que el usuario es responsable de los derechos del audio/imagen que sube, licencias de terceros (fuentes OFL, three.js MIT, mediabunny)                                                                                           |
-| 4.6 | Telemetría respetuosa: Plausible/Umami (sin cookies) para embudo _visita → editor → export → pago_; Sentry (o similar) para errores de export                                                                                                                                                            |
-| 4.7 | Hosting: build estático en Cloudflare Pages/Vercel + dominio; headers COOP/COEP si el exportador los necesita                                                                                                                                                                                            |
-| 4.8 | Auditoría de marca: confirmar que "Vibrix", "Lyrixa" y el nombre paraguas están libres (dominio, redes, marca registrada en clases 9/42) antes de gastar en marketing                                                                                                                                    |
-| 4.9 | Transcriptor: quitar/aislar el modo descarga de YouTube de cualquier build distribuible; inventario de licencias de modelos (Whisper MIT, Demucs MIT, pesos de BS-RoFormer por verificar)                                                                                                                |
+| #   | Tarea                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 4.1 | **Marca de agua** aplicada solo en el compositor de export (Fase 1), nunca en preview/OBS. Módulo en `src/features/export`                                                                                                                                                                                                                                                                                                        |
+| 4.2 | **Licencias:** Lemon Squeezy o Paddle (Merchant of Record: gestionan IVA/impuestos globales). Clave de licencia validada por un endpoint mínimo en `backend/server/` con caché offline de 7 días                                                                                                                                                                                                                                  |
+| 4.3 | Cuentas: **no** construir auth propia. Email + license key basta para 1.0. (El stub de auth del AI Director sigue congelado)                                                                                                                                                                                                                                                                                                      |
+| 4.4 | **Web de venta de la suite** (repo propio, p. ej. Next.js como `Landing-page-frankmandev`): hero con vídeo hecho con Vibrix, flujo "letra → sincronía → visual", galería de plantillas, precios, FAQ, lista de espera del Transcriptor. Separada de la app para que SEO y deploys no dependan del editor. **Plan completo: [PLAN_WEB_VENTA.md](PLAN_WEB_VENTA.md)**; sus fases W0–W1 pueden empezar antes (otro repo, no bloquea) |
+| 4.5 | Legal: Términos, Privacidad (qué se guarda local vs servidor), aviso de que el usuario es responsable de los derechos del audio/imagen que sube, licencias de terceros (fuentes OFL, three.js MIT, mediabunny MPL-2.0)                                                                                                                                                                                                            |
+| 4.6 | Telemetría respetuosa: Plausible/Umami (sin cookies) para embudo _visita → editor → export → pago_; Sentry (o similar) para errores de export                                                                                                                                                                                                                                                                                     |
+| 4.7 | Hosting: build estático en Cloudflare Pages/Vercel + dominio; headers COOP/COEP si el exportador los necesita                                                                                                                                                                                                                                                                                                                     |
+| 4.8 | Auditoría de marca: confirmar que "Vibrix", "Lyrixa" y el nombre paraguas están libres (dominio, redes, marca registrada en clases 9/42) antes de gastar en marketing                                                                                                                                                                                                                                                             |
+| 4.9 | Transcriptor: quitar/aislar el modo descarga de YouTube de cualquier build distribuible; inventario de licencias de modelos (Whisper MIT, Demucs MIT, pesos de BS-RoFormer por verificar)                                                                                                                                                                                                                                         |
 
 ### Criterios de salida
 
@@ -440,11 +443,12 @@ Orden sugerido **solo si** los datos lo justifican:
 | Fase | Estado    | Inicio     | Cierre     | Release       |
 | ---- | --------- | ---------- | ---------- | ------------- |
 | 0    | Hecha     | 2026-09-13 | 2026-09-13 | `0.4.1-alpha` |
-| 1    | Pendiente | —          | —          | —             |
+| 1    | En curso  | 2026-09-13 | —          | —             |
 | 2    | Pendiente | —          | —          | —             |
 | 3    | Pendiente | —          | —          | —             |
 | 4    | Pendiente | —          | —          | —             |
 | 5    | Pendiente | —          | —          | —             |
 
-Actualizar esta tabla al abrir y cerrar cada fase. El estado _as-built_ sigue
+Actualizar esta tabla al abrir y cerrar cada fase (y la copia resumida en
+`.agents/SUITE.md` de los cuatro proyectos). El estado _as-built_ sigue
 viviendo en [../status/CURRENT_SYSTEM_STATUS.md](../status/CURRENT_SYSTEM_STATUS.md).

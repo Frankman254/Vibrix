@@ -1,3 +1,4 @@
+import type { WallpaperState } from '@/types/wallpaper';
 import type {
 	RenderFrameContext,
 	RenderSubsystemId
@@ -6,6 +7,11 @@ import { RENDER_SUBSYSTEM_ORDER } from './renderFrameContext';
 
 export type RenderSubsystem = {
 	id: RenderSubsystemId;
+	/**
+	 * Async work a frame loop cannot do inline (loading images, fonts).
+	 * Called once per export with the frozen state, before frame 0.
+	 */
+	prepare?(state: Readonly<WallpaperState>): Promise<void>;
 	render(ctx: RenderFrameContext): void;
 	reset?(): void;
 	dispose?(): void;
@@ -49,4 +55,12 @@ export function disposeAllRenderSubsystems(): void {
 		subsystem.dispose?.();
 	}
 	registry.clear();
+}
+
+export async function prepareAllRenderSubsystems(
+	state: Readonly<WallpaperState>
+): Promise<void> {
+	for (const subsystem of listRegisteredSubsystems()) {
+		await subsystem.prepare?.(state);
+	}
 }

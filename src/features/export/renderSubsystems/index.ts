@@ -1,6 +1,7 @@
 import { registerRenderSubsystem } from '../renderSubsystem';
 import {
 	logoSubsystem,
+	lyricsSubsystem,
 	spectrumSubsystem,
 	trackTitleSubsystem
 } from './audioLayers';
@@ -27,6 +28,7 @@ export function installDefaultRenderSubsystems(): void {
 	registerRenderSubsystem(spectrumSubsystem);
 	registerRenderSubsystem(logoSubsystem);
 	registerRenderSubsystem(trackTitleSubsystem);
+	registerRenderSubsystem(lyricsSubsystem);
 	registerRenderSubsystem(overlaysSubsystem);
 	registerRenderSubsystem(hudSubsystem);
 }
