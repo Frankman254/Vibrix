@@ -924,8 +924,6 @@ export const en = {
 		'Particles are not included in the exported video yet.',
 	offline_issue_unsupported_rain:
 		'Rain is not included in the exported video yet.',
-	offline_issue_unsupported_global_background:
-		'The global background is not included in the exported video yet.',
 	offline_issue_unsupported_stage_fx:
 		'Stage FX lights are not included in the exported video yet.',
 	offline_issue_unsupported_camera_fx:

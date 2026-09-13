@@ -21,15 +21,16 @@ ExportTabBody (components/)            inyecta createOfflineBackgroundSubsystem(
             finish() → archivo / Blob
 ```
 
-| Pieza                                                      | Archivo                                                                    |
-| ---------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Negociación de formato + progreso (puro, testeado)         | `src/features/export/video/offlineVideoFormat.ts`                          |
-| mediabunny: encoder, sink, writable cancelable             | `src/features/export/video/offlineVideoEncoder.ts`                         |
-| Bucle de frames                                            | `src/features/export/video/runOfflineVideoExport.ts`                       |
-| Fondo (vive en `components/`, se inyecta)                  | `src/components/wallpaper/layers/imageCanvasOfflineSubsystem.ts`           |
-| Subsistemas de audio (spectrum, logo, track title, lyrics) | `src/features/export/renderSubsystems/audioLayers.ts`                      |
-| Overlays de imagen (CSS → canvas, matemática testeada)     | `src/features/export/renderSubsystems/overlays.ts` + `overlayImageDraw.ts` |
-| Avisos de capas no exportadas                              | `src/features/export/offlineExportPlanner.ts`                              |
+| Pieza                                                      | Archivo                                                                                                        |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Negociación de formato + progreso (puro, testeado)         | `src/features/export/video/offlineVideoFormat.ts`                                                              |
+| mediabunny: encoder, sink, writable cancelable             | `src/features/export/video/offlineVideoEncoder.ts`                                                             |
+| Bucle de frames                                            | `src/features/export/video/runOfflineVideoExport.ts`                                                           |
+| Fondo (vive en `components/`, se inyecta)                  | `src/components/wallpaper/layers/imageCanvasOfflineSubsystem.ts`                                               |
+| Subsistemas de audio (spectrum, logo, track title, lyrics) | `src/features/export/renderSubsystems/audioLayers.ts`                                                          |
+| Overlays de imagen (CSS → canvas, matemática testeada)     | `src/features/export/renderSubsystems/overlays.ts` + `overlayImageDraw.ts`                                     |
+| Fondo global (mismo dibujo que la vista en vivo)           | `src/features/export/renderSubsystems/globalBackground.ts` → `src/features/background/globalBackgroundDraw.ts` |
+| Avisos de capas no exportadas                              | `src/features/export/offlineExportPlanner.ts`                                                                  |
 
 Reglas que el código ya cumple y no se deben romper:
 
@@ -49,12 +50,74 @@ Límites conocidos del MVP:
   El criterio "1 h sin crecer memoria" sigue abierto.
 - Las capas de audio se agrupan por tipo, así que el entrelazado de `zIndex`
   entre tipos distintos no es exacto.
-- No exportado aún (1C): partículas, lluvia, fondo global, Stage FX, Camera FX,
+- No exportado aún (1C): partículas, lluvia, Stage FX, Camera FX,
   transiciones de slideshow/escena, Looks. Los overlays sí (desde 1C), sin los
-  efectos avanzados del editor sobre el overlay seleccionado.
+  efectos avanzados del editor sobre el overlay seleccionado. El fondo global
+  también (desde 1C); es el primer id de `RENDER_SUBSYSTEM_ORDER`
+  (`globalBackground`).
 - Tamaño de overlays: son píxeles CSS del viewport del editor; con layout
   responsive se escalan por el lado corto (export / viewport en vivo) para
   conservar la proporción con logo y spectrum.
+
+## Diseño de la costura de subsistemas (análisis 2026-09-13)
+
+Análisis con el vocabulario de _codebase-design_ (módulo / interfaz / costura /
+adaptador) de cómo está y cómo sigue 1C.
+
+**La costura es real.** `RenderSubsystem` (`renderSubsystem.ts`) es una
+interfaz profunda — `{ id, prepare?, render(ctx), reset?, dispose? }` — con dos
+familias de adaptadores cruzándola hoy: los subsistemas canvas que viven en
+`features/export/renderSubsystems/` y los que se inyectan desde presentación
+(`extraSubsystems`, ej. el fondo). `features/export` no importa `components/`;
+esa inyección es lo que mantiene la dirección de dependencias.
+`RenderFrameContext` es la superficie de test: todo llega por `ctx` (estado
+congelado, snapshot de audio, paleta, canvas) y se comprueba por lo que
+termina en el canvas. `overlayImageDraw.test.ts` ya prueba por ahí.
+
+**Defecto 1 · `renderSubsystems/stubs.ts` no pasa la prueba de borrado.**
+Son no-ops; `renderFrameAt` ya salta los ids no registrados
+(`if (!subsystem) continue`) y `registerRenderSubsystem` pisa por id. Borrarlos
+hace desaparecer la complejidad: son paso-through puro. Lo que _fingen_ guardar
+es el conocimiento "esta capa todavía no se exporta" — hoy duplicado en tres
+lados: el stub, `buildUnsupportedLayerIssues` (planner) y TAREAS.md, que además
+lo mantiene a mano. Falla de localidad.
+
+**Deepening propuesto.** El planner es puro y vive bajo `./index` (sin canvas,
+sin registro — el split por consumidor sobrevive). En vez de importar el
+registro, _recibir la dependencia_:
+
+```ts
+createOfflineExportPlan(state, capabilities, implementedLayerIds: readonly RenderSubsystemId[])
+```
+
+El planner avisa sólo de capas activas en `state` y ausentes de
+`implementedLayerIds`; `useOfflineVideoExport` pasa
+`listRegisteredSubsystems().map(s => s.id)` después de inyectar (único punto
+que sabe qué adaptadores cayeron — el fondo sólo está implementado si
+`ExportTabBody` lo inyecta). Los tests pasan un literal; sigue puro. Aterrizar
+un subsistema borra su stub y su aviso desaparece solo.
+
+**Riesgo 2 · un canvas 2D por frame.** `RenderFrameContext.canvas` es una
+superficie; un canvas tiene un solo tipo de contexto. Cada capa con WebGL
+(partículas, lluvia) debe dueñar su `OffscreenCanvas` + `WebGLRenderer` propio
+fuera de React y `drawImage` su resultado a `ctx.canvas` dentro de
+`render(ctx)`. La interfaz sigue siendo un método; lo WebGL es implementación,
+no interfaz. La simulación determinista en T (semilla + `ctx.timeMs` + audio)
+es in-process y testeable; el pase GPU no se mocka — se fumea contra el
+preview (1E).
+
+**Colocación de las costuras de 1C** (orden de TAREAS):
+
+| Capa                | Categoría                           | Decisión                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| fondo global        | in-process (**hecho**)              | En vivo ya era canvas-2D, así que no hubo traducción CSS: se extrajo `drawGlobalBackgroundFrame` a `features/background/render` y la vista y el subsistema son dos adaptadores. Nuevo id `globalBackground`, primero del orden (bajo la imagen). Verificado: 99,2 % de píxeles idénticos contra el canvas en vivo; el resto son scanlines/RGB shift dependientes del tiempo. |
+| slideshow           | in-process                          | Función pura `resolveSlideshowImageAt(t, imágenes, schedule)` junto al subsistema de fondo, que ya tiene `prepare`/`render`. Testear la resolutora.                                                                                                                                                                                                                          |
+| Stage FX            | in-process tras extracción          | `StageLightsCanvas` es canvas-2D pero lee `useWallpaperStore.getState()` en su rAF — _crea_ sus dependencias. Extraer `drawStageLights(g, config, timeMs, snapshot)`: el componente vivo y el subsistema offline quedan como dos adaptadores sobre ella. Dos adaptadores → costura real.                                                                                     |
+| Camera FX           | decisión de diseño                  | En vivo son transforms CSS por capa sobre wrappers DOM (`CameraFxStage`); offline no hay DOM, un canvas compuesto. (a) transform del frame completo tras componer (simple; inexacto si los targets excluyen capas) vs (b) scratch-canvas por capa-target (exacto, más máquina). Empezar por (a); 1E dirá si se debe (b).                                                     |
+| partículas / lluvia | simulación in-process + GPU externa | OffscreenCanvas + renderer propio por capa. La función pura de update: `(semilla, timeMs, audioSnapshot) → transforms de instancias`.                                                                                                                                                                                                                                        |
+
+**Paso bloqueado:** la prueba de 3 min en VLC/QuickTime (TAREAS paso 1) y la
+medición de "≤ 1,5× duración" (paso 2) dependen del usuario.
 
 ## Why the current recorder is not an offline renderer
 

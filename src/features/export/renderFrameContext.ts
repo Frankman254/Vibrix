@@ -23,6 +23,7 @@ export type RenderFrameContext = {
 };
 
 export type RenderSubsystemId =
+	| 'globalBackground'
 	| 'background'
 	| 'looks'
 	| 'motion'
@@ -36,6 +37,7 @@ export type RenderSubsystemId =
 	| 'hud';
 
 export const RENDER_SUBSYSTEM_ORDER: readonly RenderSubsystemId[] = [
+	'globalBackground',
 	'background',
 	'looks',
 	'motion',

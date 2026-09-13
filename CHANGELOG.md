@@ -22,6 +22,11 @@ the version scheme in `src/lib/version.ts`.
   recorte (redondeado, círculo, rombo), fundido de borde, blur y glow. Los
   efectos avanzados del editor sobre el overlay seleccionado (RGB shift,
   scanlines, ruido) no se reproducen.
+- El **fondo global** ya sale en el vídeo, debajo de la imagen activa: encuadre
+  (fit, escala, posición, reencuadre responsive), filtros propios y los del
+  editor cuando lo tienen como destino (incluidos RGB shift, ruido, scanlines,
+  bloom y viñeta). El dibujo vive en `features/background/render` y lo usan
+  la vista en vivo y el export, así que salen iguales por construcción.
 - El planner avisa ahora de **Camera FX** (movimiento y sacudida de cámara),
   que el export todavía no aplica.
 

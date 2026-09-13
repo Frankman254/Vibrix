@@ -51,8 +51,6 @@ function issueLabel(t: Translations, issue: OfflineExportIssue): string {
 		'webcodecs-unavailable': t.offline_issue_webcodecs,
 		'export-unsupported-particles': t.offline_issue_unsupported_particles,
 		'export-unsupported-rain': t.offline_issue_unsupported_rain,
-		'export-unsupported-global-background':
-			t.offline_issue_unsupported_global_background,
 		'export-unsupported-stage-fx': t.offline_issue_unsupported_stage_fx,
 		'export-unsupported-camera-fx': t.offline_issue_unsupported_camera_fx,
 		'export-unsupported-slideshow': t.offline_issue_unsupported_slideshow

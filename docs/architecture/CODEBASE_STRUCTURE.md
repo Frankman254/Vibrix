@@ -63,7 +63,9 @@ is the bug. The three panels that still fail that test are listed in
 - Logo (motor, presets, diagnostics, grid): `src/features/logo/` — **importar
   siempre por `@/features/logo`**, nunca por un archivo interno. Es el dominio
   migrado de referencia (ver [ARCHITECTURE.md](ARCHITECTURE.md) §6.1).
-- Background (encuadre, slideshow, UI): `src/features/background/`
+- Background (encuadre, slideshow, UI): `src/features/background/` — el
+  **dibujo** del fondo global se pide por `@/features/background/render` (lo usan
+  `GlobalBackgroundView` y el export offline).
 - Particles / Rain / Stage FX: `src/features/particles/`, `src/features/rain/`,
   `src/features/stageFx/`
 - Capas de audio (Track Title, Now Playing, cover): `src/features/audioLayers/`

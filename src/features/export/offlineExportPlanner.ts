@@ -20,7 +20,6 @@ export type OfflineExportPlanState = Pick<
 	| 'cameraMotionEnabled'
 	| 'cameraShakeEnabled'
 	| 'flashLightEnabled'
-	| 'globalBackgroundEnabled'
 	| 'logoEnabled'
 	| 'overlays'
 	| 'particlesEnabled'
@@ -205,11 +204,6 @@ function buildUnsupportedLayerIssues(
 			state.rainEnabled,
 			'export-unsupported-rain',
 			'Rain is not included in the exported video yet.'
-		],
-		[
-			state.globalBackgroundEnabled,
-			'export-unsupported-global-background',
-			'The global background is not included in the exported video yet.'
 		],
 		[
 			state.stageLightsEnabled || state.flashLightEnabled,
