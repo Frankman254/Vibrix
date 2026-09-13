@@ -51,6 +51,11 @@ the version scheme in `src/lib/version.ts`.
   oscilloscope salían como una línea plana), los bins llegaban sin suavizar
   y +6 dB más altos, y el bass zoom y los spectrums se movían distinto que
   en vivo.
+- **El vídeo sale siempre a calidad máxima.** El export ignora el modo de
+  rendimiento del editor (blur, glow, ondas, lyrics, post-proceso de imagen
+  y lluvia ya no se recortan si el preview está en `low`), la pausa de
+  movimiento, el sleep mode y el pulso de calibración. La rotación de color
+  RGB sigue el tiempo del vídeo, no el reloj de pared.
 - **Flash Light** ya no se pierde el golpe: si un pico cruza el umbral un
   frame antes de su máximo, el mismo golpe puede seguir subiendo dentro de
   la ventana de retrigger. A 30 fps el flash disparaba casi a 0 y la ventana

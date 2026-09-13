@@ -24,11 +24,28 @@ function pickStateFields(
 	return snapshot as unknown as WallpaperState;
 }
 
+/**
+ * The export owns its clock, so the real-time budget does not apply: every
+ * layer renders at full quality (no `low`/`medium` blur, wave or effect caps)
+ * however the editor is tuned to keep the live preview smooth. A paused or
+ * sleeping editor must not freeze the video either, and calibration's
+ * synthetic pulse must not stand in for the track.
+ */
+function withExportQuality(state: WallpaperState): WallpaperState {
+	return {
+		...state,
+		performanceMode: 'high',
+		motionPaused: false,
+		sleepModeActive: false,
+		calibrationSyntheticGroups: {}
+	};
+}
+
 export function getRenderStateSnapshot(
 	overrides?: Partial<RenderStateSnapshot>
 ): RenderStateSnapshot {
 	const store = useWallpaperStore.getState();
-	const state = pickStateFields(store);
+	const state = withExportQuality(pickStateFields(store));
 	const palette =
 		overrides?.palette ?? getEditorThemePalette(state.editorTheme);
 	const snapshot: RenderStateSnapshot = {

@@ -1,3 +1,4 @@
+import { getRenderNowMs } from '@/lib/visual/renderClock';
 import {
 	completeRotatePalette,
 	samplePaletteColor
@@ -73,8 +74,7 @@ export function visibleSpectrumColor(t: number): string {
 }
 
 export function getRotateRgbPhase(): number {
-	if (typeof performance === 'undefined') return 0;
-	return (performance.now() / 4800) % 1;
+	return (getRenderNowMs() / 4800) % 1;
 }
 
 export function normalizeSpectrumPhase(value: number): number {
