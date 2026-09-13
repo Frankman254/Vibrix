@@ -25,7 +25,6 @@ export type OfflineExportPlanState = Pick<
 	| 'particlesEnabled'
 	| 'performanceMode'
 	| 'rainEnabled'
-	| 'slideshowEnabled'
 	| 'spectrumEnabled'
 	| 'stageLightsEnabled'
 >;
@@ -214,13 +213,6 @@ function buildUnsupportedLayerIssues(
 			state.cameraMotionEnabled || state.cameraShakeEnabled,
 			'export-unsupported-camera-fx',
 			'Camera motion and shake are not included in the exported video yet.'
-		],
-		[
-			state.slideshowEnabled &&
-				state.backgroundImages.filter(image => image.enabled).length >
-					1,
-			'export-unsupported-slideshow',
-			'The slideshow does not advance in the export; the current image is used for the whole video.'
 		]
 	];
 	return unsupported

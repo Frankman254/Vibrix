@@ -9,9 +9,14 @@ export type RenderSubsystem = {
 	id: RenderSubsystemId;
 	/**
 	 * Async work a frame loop cannot do inline (loading images, fonts).
-	 * Called once per export with the frozen state, before frame 0.
+	 * Called once per export, before frame 0, with the state of frame 0 and
+	 * every state a frame will carry (more than one when the slideshow
+	 * switches images mid-track).
 	 */
-	prepare?(state: Readonly<WallpaperState>): Promise<void>;
+	prepare?(
+		state: Readonly<WallpaperState>,
+		frameStates: readonly Readonly<WallpaperState>[]
+	): Promise<void>;
 	render(ctx: RenderFrameContext): void;
 	reset?(): void;
 	dispose?(): void;
@@ -58,9 +63,10 @@ export function disposeAllRenderSubsystems(): void {
 }
 
 export async function prepareAllRenderSubsystems(
-	state: Readonly<WallpaperState>
+	state: Readonly<WallpaperState>,
+	frameStates: readonly Readonly<WallpaperState>[] = [state]
 ): Promise<void> {
 	for (const subsystem of listRegisteredSubsystems()) {
-		await subsystem.prepare?.(state);
+		await subsystem.prepare?.(state, frameStates);
 	}
 }

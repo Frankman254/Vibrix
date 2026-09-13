@@ -2,7 +2,11 @@
  * Pure helpers for resolving which image should be active given the current
  * playback state and slideshow configuration.  No store imports, no DOM.
  */
-import type { BackgroundImageItem, Setlist } from '@/types/wallpaper';
+import type {
+	BackgroundImageItem,
+	Setlist,
+	WallpaperState
+} from '@/types/wallpaper';
 import { filterImageIdsBySetlist } from '@/store/slices/setlistsSlice';
 
 /** currentTime values ≤ this are treated as "position 0" → show image 1/N. */
@@ -230,4 +234,64 @@ export function resolveEffectiveImageForPlayback(params: {
 		forceApply,
 		reason
 	};
+}
+
+export type SlideshowTimelineSettings = Pick<
+	WallpaperState,
+	| 'backgroundImages'
+	| 'setlists'
+	| 'activeSetlistId'
+	| 'activeImageId'
+	| 'slideshowEnabled'
+	| 'slideshowInterval'
+	| 'slideshowAudioCheckpointsEnabled'
+	| 'slideshowManualTimestampsEnabled'
+	| 'slideshowTrackChangeSyncEnabled'
+>;
+
+/**
+ * The image the slideshow shows at `timeSec` of a file track played from the
+ * start, for renders that own the clock (the offline video export). Mirrors
+ * `SlideshowManager` in file mode:
+ *   • manual timestamps → the last image whose switch time has passed;
+ *   • audio checkpoints (2+ images) → proportional to the track;
+ *   • timer → one image every `slideshowInterval` seconds, from image 1/N;
+ *   • track-change sync, slideshow off or fewer than 2 images → the active
+ *     image for the whole track (one track never changes).
+ */
+export function resolveSlideshowImageIdAtTime(
+	settings: SlideshowTimelineSettings,
+	timeSec: number,
+	durationSec: number
+): string | null {
+	const pool = resolveSlideshowPool(
+		settings.backgroundImages,
+		settings.setlists,
+		settings.activeSetlistId
+	);
+	if (!settings.slideshowEnabled || pool.length === 0) {
+		return settings.activeImageId;
+	}
+
+	const currentTime = Math.max(0, timeSec);
+	if (
+		settings.slideshowManualTimestampsEnabled ||
+		(settings.slideshowAudioCheckpointsEnabled && pool.length >= 2)
+	) {
+		return resolveEffectivePlaybackImageId({
+			pool,
+			currentTime,
+			duration: durationSec,
+			slideshowEnabled: true,
+			manualTimestampsEnabled: settings.slideshowManualTimestampsEnabled,
+			currentActiveImageId: settings.activeImageId
+		}).resolvedId;
+	}
+
+	if (settings.slideshowTrackChangeSyncEnabled || pool.length < 2) {
+		return settings.activeImageId;
+	}
+
+	const intervalSec = Math.max(1, settings.slideshowInterval);
+	return pool[Math.floor(currentTime / intervalSec) % pool.length].assetId;
 }

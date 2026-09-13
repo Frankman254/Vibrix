@@ -1,7 +1,8 @@
 /**
  * Offline video export — the frame loop.
  *
- * Freezes the project, decodes the audio once, then for every frame
+ * Freezes the project, plans the slideshow into per-image segments
+ * (`slideshowSegments`), decodes the audio once, then for every frame
  * `t = i / fps`: analyse the audio at `t`, draw every registered render
  * subsystem into one canvas, hand the canvas to the encoder. Nothing here
  * reads the wall clock for rendering, so the result does not depend on the
@@ -12,10 +13,6 @@
  * song of encoded audio waiting for video.
  */
 import { formatTrackTitle } from '@/lib/audio/trackTitle';
-import {
-	getBackgroundPalette,
-	resolvePaletteSourceUrl
-} from '@/lib/backgroundPalette';
 import { buildOfflineContext } from '../buildRenderContext';
 import { getRenderStateSnapshot } from '../getRenderStateSnapshot';
 import { createOfflineAudioAnalysisSourceFromBuffer } from '../offlineAudioAnalysis';
@@ -39,6 +36,11 @@ import {
 	type OfflineVideoExportProgress,
 	type OfflineVideoFormat
 } from './offlineVideoFormat';
+import {
+	buildSlideshowSegments,
+	findSlideshowSegmentAt,
+	prepareSlideshowSegments
+} from './slideshowSegments';
 
 export type RunOfflineVideoExportOptions = {
 	audioBuffer: AudioBuffer;
@@ -136,14 +138,14 @@ export async function runOfflineVideoExport(
 	}
 
 	const frozen = getRenderStateSnapshot();
-	// The live layers colour themselves from the palette extracted from the
-	// background image (`useBackgroundPalette`), not the editor theme.
-	const snapshot = getRenderStateSnapshot({
-		palette: await getBackgroundPalette(
-			resolvePaletteSourceUrl(frozen.state)
-		)
-	});
-	await prepareAllRenderSubsystems(snapshot.state);
+	const segments = await prepareSlideshowSegments(
+		buildSlideshowSegments(frozen.state, durationMs, fps),
+		frozen.state
+	);
+	await prepareAllRenderSubsystems(
+		segments[0].state,
+		segments.map(segment => segment.state)
+	);
 	abortSignal.throwIfAborted();
 
 	const canvas = document.createElement('canvas');
@@ -191,11 +193,12 @@ export async function runOfflineVideoExport(
 			target.fillStyle = '#000';
 			target.fillRect(0, 0, width, height);
 
+			const segment = findSlideshowSegmentAt(segments, timeMs);
 			renderFrameAt(
 				buildOfflineContext({
 					canvas,
-					state: snapshot.state,
-					palette: snapshot.palette,
+					state: segment.state,
+					palette: segment.palette,
 					audio: analysis.getSnapshotAt(timeMs),
 					resolution: { width, height },
 					timeMs,

@@ -27,6 +27,15 @@ the version scheme in `src/lib/version.ts`.
   editor cuando lo tienen como destino (incluidos RGB shift, ruido, scanlines,
   bloom y viñeta). El dibujo vive en `features/background/render` y lo usan
   la vista en vivo y el export, así que salen iguales por construcción.
+- El **slideshow** ya avanza en el vídeo, con el mismo reparto que en vivo
+  con audio de archivo: timer (cada `N` s desde la imagen 1), checkpoints
+  proporcionales a la pista y timestamps manuales. Cada cambio aplica la
+  escena de la imagen (o sus overrides legacy), el reencuadre de Keep Covered
+  y la paleta del fondo, y la transición de imagen es la del preview. El
+  sync por cambio de pista no aplica: el export es de una sola pista. Las
+  escenas cambian en corte (sin el fundido de escena, que va por reloj).
+  Lo que hace `setActiveImageId` vive ahora en `store/activeImageSelection`,
+  compartido por el store y el export.
 - El planner avisa ahora de **Camera FX** (movimiento y sacudida de cámara),
   que el export todavía no aplica.
 

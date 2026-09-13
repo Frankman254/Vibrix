@@ -31,7 +31,6 @@ function baseState(
 		particlesEnabled: false,
 		performanceMode: 'medium',
 		rainEnabled: false,
-		slideshowEnabled: false,
 		spectrumEnabled: true,
 		stageLightsEnabled: false,
 		...overrides
@@ -92,25 +91,5 @@ describe('createOfflineExportPlan', () => {
 				} as Partial<OfflineExportPlanState>)
 			)
 		).toEqual([]);
-	});
-
-	it('only flags the slideshow when it has more than one image to show', () => {
-		const images = [{ enabled: true }, { enabled: true }];
-		expect(
-			codes(
-				baseState({
-					slideshowEnabled: true,
-					backgroundImages: images.slice(0, 1)
-				} as Partial<OfflineExportPlanState>)
-			)
-		).toEqual([]);
-		expect(
-			codes(
-				baseState({
-					slideshowEnabled: true,
-					backgroundImages: images
-				} as Partial<OfflineExportPlanState>)
-			)
-		).toEqual(['export-unsupported-slideshow']);
 	});
 });

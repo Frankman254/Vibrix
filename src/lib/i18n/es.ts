@@ -934,8 +934,6 @@ export const es: Record<TranslationKey, string> = {
 		'Las luces de Stage FX aún no se incluyen en el vídeo exportado.',
 	offline_issue_unsupported_camera_fx:
 		'El movimiento y la sacudida de cámara aún no se incluyen en el vídeo exportado.',
-	offline_issue_unsupported_slideshow:
-		'El slideshow no avanza en el export; se usa la imagen actual durante todo el vídeo.',
 	// Selección del paquete de proyecto
 	project_pkg_selective_caption:
 		'La exportación selectiva omite los módulos deseleccionados y sus blobs de assets correspondientes del paquete `.vibrix`.',
