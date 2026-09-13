@@ -19,14 +19,12 @@ export type OfflineExportPlanState = Pick<
 	| 'backgroundImages'
 	| 'cameraMotionEnabled'
 	| 'cameraShakeEnabled'
-	| 'flashLightEnabled'
 	| 'logoEnabled'
 	| 'overlays'
 	| 'particlesEnabled'
 	| 'performanceMode'
 	| 'rainEnabled'
 	| 'spectrumEnabled'
-	| 'stageLightsEnabled'
 >;
 
 export type OfflineExportAudioAssetRef = {
@@ -203,11 +201,6 @@ function buildUnsupportedLayerIssues(
 			state.rainEnabled,
 			'export-unsupported-rain',
 			'Rain is not included in the exported video yet.'
-		],
-		[
-			state.stageLightsEnabled || state.flashLightEnabled,
-			'export-unsupported-stage-fx',
-			'Stage FX lights are not included in the exported video yet.'
 		],
 		[
 			state.cameraMotionEnabled || state.cameraShakeEnabled,

@@ -36,6 +36,13 @@ the version scheme in `src/lib/version.ts`.
   escenas cambian en corte (sin el fundido de escena, que va por reloj).
   Lo que hace `setActiveImageId` vive ahora en `store/activeImageSelection`,
   compartido por el store y el export.
+- **Stage FX** ya sale en el vídeo: los haces de Stage Lights (sobre la
+  imagen, bajo las partículas) y el golpe de Flash Light (sobre los
+  overlays), reaccionando al audio analizado del export. La envolvente y el
+  dibujo viven en `features/stageFx/render` y los usan los canvas en vivo y
+  el export. Los tamaños en píxeles (blur, núcleo, destello, borde mínimo)
+  se escalan a la resolución de salida. Flash Edge (el fondo que reacciona
+  al flash) no se exporta.
 - El planner avisa ahora de **Camera FX** (movimiento y sacudida de cámara),
   que el export todavía no aplica.
 

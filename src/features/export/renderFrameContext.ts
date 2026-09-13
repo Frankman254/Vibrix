@@ -25,6 +25,7 @@ export type RenderFrameContext = {
 export type RenderSubsystemId =
 	| 'globalBackground'
 	| 'background'
+	| 'stageLights'
 	| 'looks'
 	| 'motion'
 	| 'particles'
@@ -34,11 +35,13 @@ export type RenderSubsystemId =
 	| 'trackTitle'
 	| 'lyrics'
 	| 'overlays'
+	| 'flashLight'
 	| 'hud';
 
 export const RENDER_SUBSYSTEM_ORDER: readonly RenderSubsystemId[] = [
 	'globalBackground',
 	'background',
+	'stageLights',
 	'looks',
 	'motion',
 	'particles',
@@ -48,5 +51,6 @@ export const RENDER_SUBSYSTEM_ORDER: readonly RenderSubsystemId[] = [
 	'trackTitle',
 	'lyrics',
 	'overlays',
+	'flashLight',
 	'hud'
 ] as const;

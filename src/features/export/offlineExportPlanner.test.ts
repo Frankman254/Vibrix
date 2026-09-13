@@ -25,14 +25,12 @@ function baseState(
 		backgroundImages: [],
 		cameraMotionEnabled: false,
 		cameraShakeEnabled: false,
-		flashLightEnabled: false,
 		logoEnabled: true,
 		overlays: [],
 		particlesEnabled: false,
 		performanceMode: 'medium',
 		rainEnabled: false,
 		spectrumEnabled: true,
-		stageLightsEnabled: false,
 		...overrides
 	} as OfflineExportPlanState;
 }
@@ -71,14 +69,12 @@ describe('createOfflineExportPlan', () => {
 				baseState({
 					particlesEnabled: true,
 					rainEnabled: true,
-					stageLightsEnabled: true,
 					cameraShakeEnabled: true
 				})
 			)
 		).toEqual([
 			'export-unsupported-particles',
 			'export-unsupported-rain',
-			'export-unsupported-stage-fx',
 			'export-unsupported-camera-fx'
 		]);
 	});

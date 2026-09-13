@@ -15,6 +15,10 @@ import {
 } from './stubs';
 import { createGlobalBackgroundSubsystem } from './globalBackground';
 import { createOverlaysSubsystem } from './overlays';
+import {
+	createFlashLightSubsystem,
+	createStageLightsSubsystem
+} from './stageFx';
 
 let installed = false;
 
@@ -23,6 +27,7 @@ export function installDefaultRenderSubsystems(): void {
 	installed = true;
 	registerRenderSubsystem(createGlobalBackgroundSubsystem());
 	registerRenderSubsystem(backgroundSubsystem);
+	registerRenderSubsystem(createStageLightsSubsystem());
 	registerRenderSubsystem(looksSubsystem);
 	registerRenderSubsystem(motionSubsystem);
 	registerRenderSubsystem(particlesSubsystem);
@@ -32,5 +37,6 @@ export function installDefaultRenderSubsystems(): void {
 	registerRenderSubsystem(trackTitleSubsystem);
 	registerRenderSubsystem(lyricsSubsystem);
 	registerRenderSubsystem(createOverlaysSubsystem());
+	registerRenderSubsystem(createFlashLightSubsystem());
 	registerRenderSubsystem(hudSubsystem);
 }
