@@ -10,10 +10,10 @@ import {
 	hudSubsystem,
 	looksSubsystem,
 	motionSubsystem,
-	overlaysSubsystem,
 	particlesSubsystem,
 	rainSubsystem
 } from './stubs';
+import { createOverlaysSubsystem } from './overlays';
 
 let installed = false;
 
@@ -29,6 +29,6 @@ export function installDefaultRenderSubsystems(): void {
 	registerRenderSubsystem(logoSubsystem);
 	registerRenderSubsystem(trackTitleSubsystem);
 	registerRenderSubsystem(lyricsSubsystem);
-	registerRenderSubsystem(overlaysSubsystem);
+	registerRenderSubsystem(createOverlaysSubsystem());
 	registerRenderSubsystem(hudSubsystem);
 }

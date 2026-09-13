@@ -23,6 +23,8 @@ function baseState(
 		audioSourceMode: 'file',
 		audioTracks: [],
 		backgroundImages: [],
+		cameraMotionEnabled: false,
+		cameraShakeEnabled: false,
 		flashLightEnabled: false,
 		globalBackgroundEnabled: false,
 		logoEnabled: true,
@@ -72,15 +74,27 @@ describe('createOfflineExportPlan', () => {
 					particlesEnabled: true,
 					rainEnabled: true,
 					globalBackgroundEnabled: true,
-					stageLightsEnabled: true
+					stageLightsEnabled: true,
+					cameraShakeEnabled: true
 				})
 			)
 		).toEqual([
 			'export-unsupported-particles',
 			'export-unsupported-rain',
 			'export-unsupported-global-background',
-			'export-unsupported-stage-fx'
+			'export-unsupported-stage-fx',
+			'export-unsupported-camera-fx'
 		]);
+	});
+
+	it('does not warn about image overlays, which the export draws', () => {
+		expect(
+			codes(
+				baseState({
+					overlays: [{ enabled: true }]
+				} as Partial<OfflineExportPlanState>)
+			)
+		).toEqual([]);
 	});
 
 	it('only flags the slideshow when it has more than one image to show', () => {

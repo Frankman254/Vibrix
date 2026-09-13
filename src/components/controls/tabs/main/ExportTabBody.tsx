@@ -82,6 +82,8 @@ export default function ExportTabBody() {
 			looksProfileSlots: state.looksProfileSlots,
 			lightsProfileSlots: state.lightsProfileSlots,
 			cameraFxProfileSlots: state.cameraFxProfileSlots,
+			cameraMotionEnabled: state.cameraMotionEnabled,
+			cameraShakeEnabled: state.cameraShakeEnabled,
 			overlays: state.overlays,
 			particlesEnabled: state.particlesEnabled,
 			particlesProfileSlots: state.particlesProfileSlots,
@@ -211,7 +213,7 @@ export default function ExportTabBody() {
 			: offlineExportPlan.status === 'warning'
 				? 'text-yellow-400'
 				: 'text-red-400';
-	const offlineExportVisibleIssues = offlineExportPlan.issues.slice(0, 6);
+	const offlineExportVisibleIssues = offlineExportPlan.issues.slice(0, 8);
 	const enabledProjectExportSectionCount =
 		getEnabledProjectExportSectionCount(
 			projectPackage.projectExportSelection

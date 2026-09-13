@@ -21,14 +21,15 @@ ExportTabBody (components/)            inyecta createOfflineBackgroundSubsystem(
             finish() → archivo / Blob
 ```
 
-| Pieza                                                      | Archivo                                                          |
-| ---------------------------------------------------------- | ---------------------------------------------------------------- |
-| Negociación de formato + progreso (puro, testeado)         | `src/features/export/video/offlineVideoFormat.ts`                |
-| mediabunny: encoder, sink, writable cancelable             | `src/features/export/video/offlineVideoEncoder.ts`               |
-| Bucle de frames                                            | `src/features/export/video/runOfflineVideoExport.ts`             |
-| Fondo (vive en `components/`, se inyecta)                  | `src/components/wallpaper/layers/imageCanvasOfflineSubsystem.ts` |
-| Subsistemas de audio (spectrum, logo, track title, lyrics) | `src/features/export/renderSubsystems/audioLayers.ts`            |
-| Avisos de capas no exportadas                              | `src/features/export/offlineExportPlanner.ts`                    |
+| Pieza                                                      | Archivo                                                                    |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Negociación de formato + progreso (puro, testeado)         | `src/features/export/video/offlineVideoFormat.ts`                          |
+| mediabunny: encoder, sink, writable cancelable             | `src/features/export/video/offlineVideoEncoder.ts`                         |
+| Bucle de frames                                            | `src/features/export/video/runOfflineVideoExport.ts`                       |
+| Fondo (vive en `components/`, se inyecta)                  | `src/components/wallpaper/layers/imageCanvasOfflineSubsystem.ts`           |
+| Subsistemas de audio (spectrum, logo, track title, lyrics) | `src/features/export/renderSubsystems/audioLayers.ts`                      |
+| Overlays de imagen (CSS → canvas, matemática testeada)     | `src/features/export/renderSubsystems/overlays.ts` + `overlayImageDraw.ts` |
+| Avisos de capas no exportadas                              | `src/features/export/offlineExportPlanner.ts`                              |
 
 Reglas que el código ya cumple y no se deben romper:
 
@@ -48,8 +49,12 @@ Límites conocidos del MVP:
   El criterio "1 h sin crecer memoria" sigue abierto.
 - Las capas de audio se agrupan por tipo, así que el entrelazado de `zIndex`
   entre tipos distintos no es exacto.
-- No exportado aún (1C): partículas, lluvia, overlays, fondo global, Stage FX,
-  transiciones de slideshow/escena, Looks.
+- No exportado aún (1C): partículas, lluvia, fondo global, Stage FX, Camera FX,
+  transiciones de slideshow/escena, Looks. Los overlays sí (desde 1C), sin los
+  efectos avanzados del editor sobre el overlay seleccionado.
+- Tamaño de overlays: son píxeles CSS del viewport del editor; con layout
+  responsive se escalan por el lado corto (export / viewport en vivo) para
+  conservar la proporción con logo y spectrum.
 
 ## Why the current recorder is not an offline renderer
 

@@ -15,6 +15,16 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Export de vídeo offline — Fase 1C (en curso)
+
+- Los **overlays de imagen** ya salen en el vídeo exportado: posición,
+  rotación, escala, opacidad (también la reactiva al audio), modo de fusión,
+  recorte (redondeado, círculo, rombo), fundido de borde, blur y glow. Los
+  efectos avanzados del editor sobre el overlay seleccionado (RGB shift,
+  scanlines, ruido) no se reproducen.
+- El planner avisa ahora de **Camera FX** (movimiento y sacudida de cámara),
+  que el export todavía no aplica.
+
 ### Export de vídeo offline — Fase 1A/1B (en curso)
 
 - **Exportar vídeo** (tab Export) genera un MP4 (H.264 + AAC) o, si el
