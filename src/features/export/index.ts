@@ -57,7 +57,6 @@ export type {
 	BrowserOfflineExportCapabilities,
 	OfflineRenderFrameContext
 } from './offlineExportTypes';
-export { createOfflineAudioAnalysisSource } from './offlineAudioAnalysis';
 export type {
 	OfflineAudioAnalysisSource,
 	OfflineAudioAnalysisSummary,

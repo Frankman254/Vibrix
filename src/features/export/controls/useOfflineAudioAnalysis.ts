@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { createOfflineAudioAnalysisSource } from '@/features/export/offlineAudioAnalysis';
+import { createOfflineAudioAnalysisSourceFromReader } from '@/features/export/offlineAudioAnalysis';
+import { openOfflineAudioTrack } from '@/features/export/video/offlineAudioTrack';
 import type { OfflineExportAudioAssetRef } from '@/features/export/offlineExportPlanner';
 import { loadImageBlob } from '@/lib/db/imageDb';
 import { formatBytes, formatDuration } from '@/features/export/exportFileUtils';
@@ -41,11 +42,10 @@ export function useOfflineAudioAnalysis({
 			if (!blob) {
 				throw new Error('audio-asset-not-found');
 			}
-
-			const file = new File([blob], offlineAudioAsset.name, {
-				type: blob.type || offlineAudioAsset.mimeType
-			});
-			const source = await createOfflineAudioAnalysisSource(file, {
+			// Streamed path: metadata + one pumped window, never the whole
+			// decoded song in RAM.
+			const track = await openOfflineAudioTrack(blob, { fftSize });
+			const source = createOfflineAudioAnalysisSourceFromReader(track, {
 				fftSize,
 				smoothingTimeConstant: audioSmoothing
 			});
@@ -55,6 +55,9 @@ export function useOfflineAudioAnalysis({
 					source.summary.durationMs,
 					Math.max(1000, source.summary.durationMs * 0.25)
 				);
+				await track.ensureWindow(
+					Math.round((sampleTimeMs / 1000) * track.sampleRate)
+				);
 				const snapshot = source.getSnapshotAt(sampleTimeMs);
 				setOfflineAnalysisStatus('ready');
 				setOfflineAnalysisMessage(
@@ -62,6 +65,7 @@ export function useOfflineAudioAnalysis({
 				);
 			} finally {
 				source.dispose();
+				track.dispose();
 			}
 		} catch (error) {
 			setOfflineAnalysisStatus('error');

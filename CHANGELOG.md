@@ -15,6 +15,35 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Export de vídeo offline — Fase C (audio por ventanas)
+
+- **El audio del export ya no se decodifica entero.** `decodeOfflineAudioFile`
+  (que convertía la canción completa en un `AudioBuffer` en RAM: 1 h estéreo
+  ≈ 1,2 GB, 3 h ≈ 4 GB, y reventaba la pestaña) se borró. En su lugar,
+  `video/offlineAudioTrack.ts` abre la pista con mediabunny (solo metadatos +
+  decodificador) y entrega muestras de a poco: un anillo con dos cursores
+  monótonos —análisis y encoder— que suelta bloques cuando ambos pasaron, un
+  resampler lineal a la frecuencia del dispositivo y rodajas de audio
+  acotadas por el reloj de vídeo. El análisis lee por
+  `OfflineMonoWindowReader` (`ensureWindow`/`fillWindow`, forward-only). El
+  preview del análisis en la tab Export usa la misma pista: analizar una
+  mezcla de 3 h ya no carga el archivo completo. Verificado: los mismos 40
+  snapshots byte a byte entre el camino de buffer completo (que queda como
+  adaptador de referencia en tests) y el streaming.
+
+### Export de vídeo offline — sink OPFS (sin `showSaveFilePicker`)
+
+- **Sin picker ya no se genera el vídeo en RAM.** En Brave/Firefox, donde
+  `showSaveFilePicker` está desactivado, un 1440p60 de 4,5 min reventaba al
+  finalizar (`RangeError: Array buffer allocation failed`): mediabunny guardaba
+  todo el MP4 en memoria. Ahora `video/offlineOpfsSink.ts` escribe el vídeo
+  directo a un archivo de OPFS con `fastStart: false`; al terminar, la
+  descarga sale de ese archivo respaldado por disco y se borra con retardo.
+  Antes de empezar se comprueba el espacio con `navigator.storage.estimate()`
+  (bitrate × duración + margen) y si no cabe, error claro `insufficient-storage`
+  en la UI. `BufferTarget` queda solo para vídeos pequeños (< 500 MB) cuando no
+  hay OPFS.
+
 ### Export de vídeo offline — Fase 1C (en curso)
 
 - Los **overlays de imagen** ya salen en el vídeo exportado: posición,

@@ -6,7 +6,10 @@ import {
 	type OfflineExportFps,
 	type OfflineExportResolutionPresetId
 } from '@/features/export/offlineExportTypes';
-import { decodeOfflineAudioFile } from '@/features/export/offlineAudioAnalysis';
+import {
+	openOfflineAudioTrack,
+	type OfflineAudioTrack
+} from '@/features/export/video/offlineAudioTrack';
 import {
 	buildDescriptiveExportFileName,
 	downloadBlobFallback,
@@ -154,6 +157,7 @@ export function useOfflineVideoExport({
 		let finalizing = false;
 		let sink = { kind: 'buffer' } as OfflineVideoSink;
 		let opfs: OpfsVideoSink | null = null;
+		let audioTrack: OfflineAudioTrack | null = null;
 		// Collect files left by exports that crashed before cleanup.
 		void sweepStaleOpfsExports();
 
@@ -193,7 +197,9 @@ export function useOfflineVideoExport({
 			if (!blob) throw new Error('audio-asset-not-found');
 			controller.signal.throwIfAborted();
 			setProgress({ ...IDLE_PROGRESS, phase: 'decoding' });
-			const audioBuffer = await decodeOfflineAudioFile(blob);
+			// Opens metadata + decoder only: no samples are held before the
+			// frame loop pumps them, so a 3-hour mix never hits RAM at once.
+			audioTrack = await openOfflineAudioTrack(blob, { fftSize });
 			controller.signal.throwIfAborted();
 
 			if (sink.kind === 'buffer') {
@@ -201,7 +207,7 @@ export function useOfflineVideoExport({
 					width: resolution.width,
 					height: resolution.height,
 					fps,
-					durationSec: audioBuffer.duration
+					durationSec: audioTrack.durationSec
 				});
 				// No picker (Brave, Firefox): stream to disk instead of RAM;
 				// BufferTarget stays the last resort for small files only.
@@ -217,7 +223,7 @@ export function useOfflineVideoExport({
 				}
 			}
 			const result = await runOfflineVideoExport({
-				audioBuffer,
+				audioTrack,
 				format,
 				sink,
 				width: resolution.width,
@@ -259,6 +265,7 @@ export function useOfflineVideoExport({
 				await sink.writable.abort().catch(() => undefined);
 			}
 		} finally {
+			audioTrack?.dispose();
 			abortRef.current = null;
 		}
 	}

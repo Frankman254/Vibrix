@@ -34,6 +34,20 @@ export interface OfflineAudioAnalysisSource {
 	dispose(): void;
 }
 
+/**
+ * What the analysis reads: mono samples at a fixed rate, window by window.
+ * `OfflineAudioTrack` satisfies this structurally, so the export analyses a
+ * streamed file without ever holding it whole. Readers are forward-only:
+ * rewinding past what was already dropped reads zeros.
+ */
+export interface OfflineMonoWindowReader {
+	readonly sampleRate: number;
+	readonly channelCount: number;
+	readonly durationSec: number;
+	/** Copies `[endSample - out.length, endSample)` into `out`, zero-padding. */
+	fillWindow(endSample: number, out: Float32Array): void;
+}
+
 const DEFAULT_FFT_SIZE = 2048;
 const DEFAULT_MIN_DECIBELS = -90;
 const DEFAULT_MAX_DECIBELS = -10;
@@ -145,7 +159,8 @@ const LIVE_ANALYSIS_FRAME_MS = 1000 / 60;
  */
 class PcmOfflineAudioAnalysisSource implements OfflineAudioAnalysisSource {
 	readonly summary: OfflineAudioAnalysisSummary;
-	private readonly mono: Float32Array;
+	private readonly reader: OfflineMonoWindowReader;
+	private readonly scratch: Float32Array;
 	private readonly window: Float32Array;
 	private readonly real: Float32Array;
 	private readonly imag: Float32Array;
@@ -162,12 +177,13 @@ class PcmOfflineAudioAnalysisSource implements OfflineAudioAnalysisSource {
 	private disposed = false;
 
 	constructor(
-		mono: Float32Array,
+		reader: OfflineMonoWindowReader,
 		summary: OfflineAudioAnalysisSummary,
 		options: Required<OfflineAudioAnalysisOptions>
 	) {
-		this.mono = mono;
 		this.summary = summary;
+		this.reader = reader;
+		this.scratch = new Float32Array(summary.fftSize);
 		this.window = createBlackmanWindow(summary.fftSize);
 		this.real = new Float32Array(summary.fftSize);
 		this.imag = new Float32Array(summary.fftSize);
@@ -193,7 +209,7 @@ class PcmOfflineAudioAnalysisSource implements OfflineAudioAnalysisSource {
 
 	dispose(): void {
 		this.disposed = true;
-		this.mono.fill(0);
+		this.scratch.fill(0);
 		this.real.fill(0);
 		this.imag.fill(0);
 		this.magnitudes.fill(0);
@@ -220,14 +236,10 @@ class PcmOfflineAudioAnalysisSource implements OfflineAudioAnalysisSource {
 		const endSample = Math.round(
 			(clampedTimeMs / 1000) * this.summary.sampleRate
 		);
-		const startSample = endSample - fftSize;
+		this.reader.fillWindow(endSample, this.scratch);
 
 		for (let index = 0; index < fftSize; index += 1) {
-			const sampleIndex = startSample + index;
-			const sample =
-				sampleIndex >= 0 && sampleIndex < this.mono.length
-					? this.mono[sampleIndex]
-					: 0;
+			const sample = this.scratch[index];
 			this.timeDomain[index] = clamp(
 				Math.floor(128 * (sample + 1)),
 				0,
@@ -287,41 +299,58 @@ class PcmOfflineAudioAnalysisSource implements OfflineAudioAnalysisSource {
 	}
 }
 
-const FALLBACK_SAMPLE_RATE = 44100;
-
-/**
- * The rate a default `AudioContext` runs at on this device — the rate the
- * live analyser sees the track at. Bin N covers N × rate / fftSize Hz, so
- * analysing at another rate would shift every spectrum bar.
- */
-async function resolveLiveSampleRate(): Promise<number> {
-	if (typeof AudioContext === 'undefined') return FALLBACK_SAMPLE_RATE;
-	try {
-		const context = new AudioContext();
-		const rate = context.sampleRate;
-		await context.close();
-		return rate > 0 ? rate : FALLBACK_SAMPLE_RATE;
-	} catch {
-		return FALLBACK_SAMPLE_RATE;
-	}
+/** An array-backed reader: the whole-buffer path stays a thin adapter. */
+function createMonoArrayReader(
+	mono: Float32Array,
+	sampleRate: number,
+	channelCount: number
+): OfflineMonoWindowReader {
+	return {
+		sampleRate,
+		channelCount,
+		durationSec: mono.length / sampleRate,
+		fillWindow(endSample, out) {
+			const start = endSample - out.length;
+			for (let index = 0; index < out.length; index += 1) {
+				const sampleIndex = start + index;
+				out[index] =
+					sampleIndex >= 0 && sampleIndex < mono.length
+						? mono[sampleIndex]
+						: 0;
+			}
+		}
+	};
 }
 
-/**
- * Decodes an audio file once, at the live analyser's sample rate. The export
- * keeps this buffer for the encoder (original channels) and hands it to the
- * analysis source, which mixes it to mono — so the file is never decoded
- * twice.
- */
-export async function decodeOfflineAudioFile(
-	file: File | Blob
-): Promise<AudioBuffer> {
-	if (typeof OfflineAudioContext === 'undefined') {
-		throw new Error('offline-audio-context-unavailable');
-	}
-	const arrayBuffer = await file.arrayBuffer();
-	const sampleRate = await resolveLiveSampleRate();
-	const decodeContext = new OfflineAudioContext(1, 1, sampleRate);
-	return decodeContext.decodeAudioData(arrayBuffer);
+export function createOfflineAudioAnalysisSourceFromReader(
+	reader: OfflineMonoWindowReader,
+	options: OfflineAudioAnalysisOptions = {}
+): OfflineAudioAnalysisSource {
+	const fftSize = normalizeFftSize(options.fftSize);
+	// What a whole-buffer decode of the same track would have cost.
+	const estimatedDecodedBytes = Math.round(
+		reader.durationSec *
+			reader.sampleRate *
+			reader.channelCount *
+			Float32Array.BYTES_PER_ELEMENT
+	);
+	const summary: OfflineAudioAnalysisSummary = {
+		durationMs: Math.round(reader.durationSec * 1000),
+		sampleRate: reader.sampleRate,
+		channelCount: reader.channelCount,
+		fftSize,
+		frequencyBinCount: fftSize / 2,
+		estimatedDecodedBytes,
+		memoryRisk: estimateMemoryRisk(estimatedDecodedBytes)
+	};
+
+	return new PcmOfflineAudioAnalysisSource(reader, summary, {
+		fftSize,
+		smoothingTimeConstant: options.smoothingTimeConstant ?? 0.8,
+		channelSmoothing: options.channelSmoothing ?? 0,
+		minDecibels: options.minDecibels ?? DEFAULT_MIN_DECIBELS,
+		maxDecibels: options.maxDecibels ?? DEFAULT_MAX_DECIBELS
+	});
 }
 
 export function createOfflineAudioAnalysisSourceFromBuffer(
@@ -343,19 +372,19 @@ export function createOfflineAudioAnalysisSourceFromBuffer(
 		memoryRisk: estimateMemoryRisk(estimatedDecodedBytes)
 	};
 
-	return new PcmOfflineAudioAnalysisSource(mixToMono(decoded), summary, {
-		fftSize,
-		smoothingTimeConstant: options.smoothingTimeConstant ?? 0.8,
-		channelSmoothing: options.channelSmoothing ?? 0,
-		minDecibels: options.minDecibels ?? DEFAULT_MIN_DECIBELS,
-		maxDecibels: options.maxDecibels ?? DEFAULT_MAX_DECIBELS
-	});
-}
-
-export async function createOfflineAudioAnalysisSource(
-	file: File | Blob,
-	options: OfflineAudioAnalysisOptions = {}
-): Promise<OfflineAudioAnalysisSource> {
-	const decoded = await decodeOfflineAudioFile(file);
-	return createOfflineAudioAnalysisSourceFromBuffer(decoded, options);
+	return new PcmOfflineAudioAnalysisSource(
+		createMonoArrayReader(
+			mixToMono(decoded),
+			decoded.sampleRate,
+			decoded.numberOfChannels
+		),
+		summary,
+		{
+			fftSize,
+			smoothingTimeConstant: options.smoothingTimeConstant ?? 0.8,
+			channelSmoothing: options.channelSmoothing ?? 0,
+			minDecibels: options.minDecibels ?? DEFAULT_MIN_DECIBELS,
+			maxDecibels: options.maxDecibels ?? DEFAULT_MAX_DECIBELS
+		}
+	);
 }

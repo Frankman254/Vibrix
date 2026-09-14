@@ -19,15 +19,17 @@
 
 0. **[TAREA_EXPORT_RAPIDO_AISLADO.md](TAREA_EXPORT_RAPIDO_AISLADO.md)**
    (fases A→F, un commit por fase, auditoría de Claude entre fases).
-   **Fase A terminada y commiteada (2026-09-14)** — espera la auditoría de
-   Claude; sigue Fase A.bis (export sin RAM, §1.6).
+   **Fase A commiteada (`76e9d981`), Fase A.bis commiteada (`d9809cc6`) y
+   Fase C (audio por ventanas, §1.4) commiteada en esta sesión** — todas
+   esperan la auditoría de Claude. Siguen Fase B (medición/calidad/GPU) y
+   Fase D (tramos con pausa/reanudación, que reusa el sink OPFS).
 
 1. Pedir al usuario el resultado de la prueba de 3 min (tiempo, peso, si
    reproduce, si el audio va sincronizado). Si falla, arreglar antes de 1C.
 2. Medir el criterio "≤ 1,5× la duración" y apuntarlo aquí.
 3. Verificar letras con un bundle Lyrixa real (sincronía ±1 frame y estilos).
-4. Memoria de 1 h: decodificar/analizar el audio por ventanas en vez del
-   `AudioBuffer` entero.
+4. ~~Memoria de 1 h: decodificar/analizar el audio por ventanas~~ — **hecho
+   (Fase C)**: `video/offlineAudioTrack.ts`; el `AudioBuffer` entero se borró.
 
 ### Propuesta pendiente de aprobar · looks "Showcase" de fábrica
 

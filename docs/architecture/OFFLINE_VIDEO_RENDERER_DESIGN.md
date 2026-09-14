@@ -11,13 +11,15 @@ ExportTabBody (components/)            inyecta createOfflineBackgroundSubsystem(
   └─ useOfflineVideoExport (features/export/controls)
        1. codecs sondeados antes del clic (resolveOfflineVideoFormat)
        2. showSaveFilePicker en el clic → StreamTarget; si no hay, BufferTarget
-       3. loadImageBlob → decodeOfflineAudioFile (AudioBuffer entero)
+       3. loadImageBlob → openOfflineAudioTrack (mediabunny: metadatos +
+          decodificador, sin muestras en RAM)
        └─ runOfflineVideoExport (features/export/video)
             snapshot congelado + paleta real del fondo (getBackgroundPalette)
             prepareAllRenderSubsystems (carga la imagen de fondo)
             for i in 0..N:  t = i / fps
               fondo negro → renderFrameAt(ctx(t)) → encoder.addFrame(t)
-              audio en rodajas de 1 s detrás del vídeo (el muxer intercala)
+              análisis lee la ventana fft vía track.ensureWindow/fillWindow;
+              audio en rodajas ≤ reloj de vídeo vía track.nextSlice (el muxer intercala)
             finish() → archivo / Blob
 ```
 
@@ -31,6 +33,7 @@ ExportTabBody (components/)            inyecta createOfflineBackgroundSubsystem(
 | Overlays de imagen (CSS → canvas, matemática testeada)     | `src/features/export/renderSubsystems/overlays.ts` + `overlayImageDraw.ts`                                     |
 | Fondo global (mismo dibujo que la vista en vivo)           | `src/features/export/renderSubsystems/globalBackground.ts` → `src/features/background/globalBackgroundDraw.ts` |
 | Avisos de capas no exportadas                              | `src/features/export/offlineExportPlanner.ts`                                                                  |
+| Audio streaming (ventana + dos cursores, testeado)         | `src/features/export/video/offlineAudioTrack.ts`                                                               |
 
 Reglas que el código ya cumple y no se deben romper:
 
@@ -50,6 +53,15 @@ Reglas que el código ya cumple y no se deben romper:
   en vivo. Se decodifica a la frecuencia del `AudioContext` del dispositivo.
   Verificado contra un `AnalyserNode` real: 0 bytes de diferencia sin
   suavizado. Si se toca, repetir esa comparación.
+- **El audio nunca se decodifica entero.** `offlineAudioTrack.ts` es la única
+  fuente de muestras del export: mediabunny decodifica de a chunks, un
+  resampler lineal los mueve a la frecuencia del `AudioContext` del
+  dispositivo (si no, cada barra del espectro se desplaza), y un anillo con
+  dos cursores monótonos (análisis + encoder) suelta bloques solo cuando
+  ambos pasaron. El análisis lee por `OfflineMonoWindowReader`
+  (`ensureWindow` → `fillWindow`, forward-only); el encoder pide rodajas
+  acotadas por el reloj de vídeo (`nextSlice(limitSample)`). Verificado: 40
+  snapshots idénticos entre el camino de buffer completo y el streaming.
 - **El export no tiene presupuesto de tiempo real** (`getRenderStateSnapshot`):
   el snapshot fuerza `performanceMode: 'high'`, quita pausa de movimiento y
   sleep mode y descarta el pulso sintético de calibración. Da igual cuánto

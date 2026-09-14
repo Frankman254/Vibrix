@@ -21,7 +21,8 @@ import {
 import { pinRenderClock } from '@/lib/visual/renderClock';
 import { buildOfflineContext } from '../buildRenderContext';
 import { getRenderStateSnapshot } from '../getRenderStateSnapshot';
-import { createOfflineAudioAnalysisSourceFromBuffer } from '../offlineAudioAnalysis';
+import { createOfflineAudioAnalysisSourceFromReader } from '../offlineAudioAnalysis';
+import type { OfflineAudioTrack } from './offlineAudioTrack';
 import { renderFrameAt } from '../renderFrame';
 import {
 	prepareAllRenderSubsystems,
@@ -52,7 +53,7 @@ import {
 } from './slideshowSegments';
 
 export type RunOfflineVideoExportOptions = {
-	audioBuffer: AudioBuffer;
+	audioTrack: OfflineAudioTrack;
 	format: OfflineVideoFormat;
 	sink: OfflineVideoSink;
 	width: number;
@@ -77,27 +78,8 @@ export type OfflineVideoExportResult = {
 	elapsedMs: number;
 };
 
-const AUDIO_SLICE_SECONDS = 1;
-
-function sliceAudioBuffer(
-	source: AudioBuffer,
-	startSample: number,
-	endSample: number
-): AudioBuffer {
-	const length = Math.max(1, endSample - startSample);
-	const slice = new AudioBuffer({
-		length,
-		numberOfChannels: source.numberOfChannels,
-		sampleRate: source.sampleRate
-	});
-	for (let channel = 0; channel < source.numberOfChannels; channel += 1) {
-		slice.copyToChannel(
-			source.getChannelData(channel).subarray(startSample, endSample),
-			channel
-		);
-	}
-	return slice;
-}
+// The streaming track hands the encoder whole-channel slices itself; the
+// runner only paces them by the video clock.
 
 // A MessageChannel hop lets React paint the progress bar without going
 // through `setTimeout`, which background tabs throttle to once a second.
@@ -115,10 +97,10 @@ function yieldToBrowser(): Promise<void> {
 export async function runOfflineVideoExport(
 	options: RunOfflineVideoExportOptions
 ): Promise<OfflineVideoExportResult> {
-	const { audioBuffer, width, height, fps, abortSignal } = options;
+	const { audioTrack, width, height, fps, abortSignal } = options;
 	const startedAt = performance.now();
 	let renderStartedAt = startedAt;
-	const durationMs = Math.round(audioBuffer.duration * 1000);
+	const durationMs = Math.round(audioTrack.durationSec * 1000);
 	const frameCount = computeOfflineFrameCount(durationMs, fps);
 	const renderScope = createRenderScope();
 
@@ -175,7 +157,7 @@ export async function runOfflineVideoExport(
 	if (!target) throw new Error('offline-export-canvas-unavailable');
 
 	report('decoding');
-	const analysis = createOfflineAudioAnalysisSourceFromBuffer(audioBuffer, {
+	const analysis = createOfflineAudioAnalysisSourceFromReader(audioTrack, {
 		fftSize: options.fftSize,
 		smoothingTimeConstant: options.audioSmoothing
 	});
@@ -201,13 +183,10 @@ export async function runOfflineVideoExport(
 		analysis.reset();
 
 		const trackTitle = formatTrackTitle(options.trackTitle);
-		const trackDuration = audioBuffer.duration;
+		const trackDuration = audioTrack.durationSec;
 		const frameStepMs = 1000 / fps;
 		const frameDurationSec = 1 / fps;
-		const samplesPerSlice = Math.round(
-			audioBuffer.sampleRate * AUDIO_SLICE_SECONDS
-		);
-		let audioSampleCursor = 0;
+		const sampleRate = audioTrack.sampleRate;
 
 		renderStartedAt = performance.now();
 		report('rendering');
@@ -224,6 +203,10 @@ export async function runOfflineVideoExport(
 			target.fillRect(0, 0, width, height);
 
 			const segment = findSlideshowSegmentAt(segments, timeMs);
+			// The analysis reads forward-only windows; pump the decode first.
+			await audioTrack.ensureWindow(
+				Math.round((timeMs / 1000) * sampleRate)
+			);
 			const audio = analysis.getSnapshotAt(timeMs);
 			const resolveLayerTransform = cameraFx.step({
 				state: segment.state,
@@ -259,21 +242,15 @@ export async function runOfflineVideoExport(
 
 			await encoder.addFrame(timeMs / 1000, frameDurationSec);
 
+			// Encode audio up to the frame's end: the track stops at whatever
+			// fits under the video clock, so audio never runs ahead of video.
 			const videoSample = Math.round(
-				((timeMs + frameStepMs) / 1000) * audioBuffer.sampleRate
+				((timeMs + frameStepMs) / 1000) * sampleRate
 			);
-			while (
-				audioSampleCursor < audioBuffer.length &&
-				audioSampleCursor < videoSample
-			) {
-				const end = Math.min(
-					audioBuffer.length,
-					audioSampleCursor + samplesPerSlice
-				);
-				await encoder.addAudio(
-					sliceAudioBuffer(audioBuffer, audioSampleCursor, end)
-				);
-				audioSampleCursor = end;
+			for (;;) {
+				const slice = await audioTrack.nextSlice(videoSample);
+				if (!slice) break;
+				await encoder.addAudio(slice);
 			}
 
 			if (frameIndex % 15 === 0) {
@@ -282,16 +259,11 @@ export async function runOfflineVideoExport(
 			}
 		}
 
-		while (audioSampleCursor < audioBuffer.length) {
+		for (;;) {
 			abortSignal.throwIfAborted();
-			const end = Math.min(
-				audioBuffer.length,
-				audioSampleCursor + samplesPerSlice
-			);
-			await encoder.addAudio(
-				sliceAudioBuffer(audioBuffer, audioSampleCursor, end)
-			);
-			audioSampleCursor = end;
+			const slice = await audioTrack.nextSlice(Number.POSITIVE_INFINITY);
+			if (!slice) break;
+			await encoder.addAudio(slice);
 		}
 
 		report('finalizing', frameCount);
