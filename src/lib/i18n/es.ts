@@ -918,6 +918,8 @@ export const es: Record<TranslationKey, string> = {
 		'Falta el archivo de audio de esta pista en la biblioteca.',
 	offline_error_failed:
 		'La exportación falló. Revisa la consola y vuelve a intentarlo.',
+	offline_error_insufficient_storage:
+		'No hay suficiente almacenamiento para esta exportación. Libera espacio o acorta el vídeo.',
 	offline_issue_missing_file_audio:
 		'Exportar vídeo necesita un archivo de audio importado o una pista de playlist.',
 	offline_issue_live_audio:

@@ -912,6 +912,8 @@ export const en = {
 		'The audio file for this track is missing from the library.',
 	offline_error_failed:
 		'The export failed. Check the console for details and try again.',
+	offline_error_insufficient_storage:
+		'Not enough storage for this export. Free up space or shorten the video.',
 	offline_issue_missing_file_audio:
 		'Video export needs an imported audio file or playlist track.',
 	offline_issue_live_audio:

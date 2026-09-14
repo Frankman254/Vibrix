@@ -160,3 +160,25 @@ export function estimateOfflineExportEtaMs(
 	const perFrame = renderElapsedMs / framesDone;
 	return Math.max(0, Math.round(perFrame * (frameCount - framesDone)));
 }
+
+/**
+ * Rough size of the finished file, for the "does it fit?" check before an
+ * export starts. Calibrated against the encoder's own behaviour: QUALITY_HIGH
+ * lands near 16 Mbps at 1080p30, which scales with pixel count and frame
+ * rate; audio is small but kept generous (256 kbps). Over-estimating only
+ * costs a pre-flight warning — under-estimating means a crash at finalize.
+ */
+export function estimateOfflineVideoBytes(options: {
+	width: number;
+	height: number;
+	fps: number;
+	durationSec: number;
+}): number {
+	const pixels = options.width * options.height;
+	const videoBitsPerSecond =
+		16_000_000 * (pixels / (1920 * 1080)) * (options.fps / 30);
+	const audioBitsPerSecond = 256_000;
+	return Math.ceil(
+		((videoBitsPerSecond + audioBitsPerSecond) / 8) * options.durationSec
+	);
+}

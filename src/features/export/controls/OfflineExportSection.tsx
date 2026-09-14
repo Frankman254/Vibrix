@@ -90,6 +90,8 @@ function errorLabel(t: Translations, error: OfflineVideoExportError): string {
 			return t.offline_error_no_encoder;
 		case 'audio-not-found':
 			return t.offline_error_audio_not_found;
+		case 'insufficient-storage':
+			return t.offline_error_insufficient_storage;
 		default:
 			return t.offline_error_failed;
 	}

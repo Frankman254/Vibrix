@@ -3,6 +3,7 @@ import {
 	computeOfflineExportRatio,
 	computeOfflineFrameCount,
 	estimateOfflineExportEtaMs,
+	estimateOfflineVideoBytes,
 	resolveOfflineVideoFormat,
 	type OfflineAudioCodecId,
 	type OfflineCodecProbe,
@@ -102,5 +103,49 @@ describe('offline export progress math', () => {
 	it('only estimates the remaining time once the pace is known', () => {
 		expect(estimateOfflineExportEtaMs(500, 5, 100)).toBeNull();
 		expect(estimateOfflineExportEtaMs(1_000, 10, 100)).toBe(9_000);
+	});
+});
+
+describe('estimateOfflineVideoBytes', () => {
+	it('tracks QUALITY_HIGH output: 1080p30 ≈ 16 Mbps video + 256 kbps audio', () => {
+		const bytes = estimateOfflineVideoBytes({
+			width: 1920,
+			height: 1080,
+			fps: 30,
+			durationSec: 60
+		});
+		// (16e6 + 256e3) / 8 * 60 = 121_920_000 — a bits/bytes slip here
+		// silently under-reserves the disk by 8x.
+		expect(bytes).toBe(121_920_000);
+	});
+
+	it('scales with duration, pixels and frame rate', () => {
+		const base = estimateOfflineVideoBytes({
+			width: 1920,
+			height: 1080,
+			fps: 30,
+			durationSec: 60
+		});
+		const doubleDuration = estimateOfflineVideoBytes({
+			width: 1920,
+			height: 1080,
+			fps: 30,
+			durationSec: 120
+		});
+		const halfPixels = estimateOfflineVideoBytes({
+			width: 1280,
+			height: 720,
+			fps: 30,
+			durationSec: 60
+		});
+		const doubleFps = estimateOfflineVideoBytes({
+			width: 1920,
+			height: 1080,
+			fps: 60,
+			durationSec: 60
+		});
+		expect(doubleDuration).toBeGreaterThan(base);
+		expect(halfPixels).toBeLessThan(base);
+		expect(doubleFps).toBeGreaterThan(base);
 	});
 });

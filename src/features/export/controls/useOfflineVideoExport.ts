@@ -19,16 +19,28 @@ import {
 	type OfflineVideoSink
 } from '@/features/export/video/offlineVideoEncoder';
 import {
+	estimateOfflineVideoBytes,
 	resolveOfflineVideoFormat,
 	type OfflineVideoExportProgress,
 	type OfflineVideoFormat
 } from '@/features/export/video/offlineVideoFormat';
+import {
+	createOpfsVideoSink,
+	sweepStaleOpfsExports,
+	type OpfsVideoSink
+} from '@/features/export/video/offlineOpfsSink';
 import { runOfflineVideoExport } from '@/features/export/video/runOfflineVideoExport';
 
 type SavePicker = (options: {
 	suggestedName: string;
 	types: { description: string; accept: Record<string, string[]> }[];
 }) => Promise<FileSystemFileHandle>;
+
+/**
+ * Largest file the no-picker/no-OPFS path may keep in RAM. Beyond this the
+ * browser throws while finalizing; the encoder was never asked to try.
+ */
+const BUFFER_FALLBACK_MAX_BYTES = 500 * 1024 * 1024;
 
 type UseOfflineVideoExportArgs = {
 	offlineAudioAsset: OfflineExportAudioAssetRef | null;
@@ -44,6 +56,7 @@ export type OfflineVideoExportError =
 	| 'no-audio'
 	| 'no-encoder'
 	| 'audio-not-found'
+	| 'insufficient-storage'
 	| 'failed';
 
 const IDLE_PROGRESS: OfflineVideoExportProgress = {
@@ -140,6 +153,9 @@ export function useOfflineVideoExport({
 		const controller = new AbortController();
 		let finalizing = false;
 		let sink = { kind: 'buffer' } as OfflineVideoSink;
+		let opfs: OpfsVideoSink | null = null;
+		// Collect files left by exports that crashed before cleanup.
+		void sweepStaleOpfsExports();
 
 		const picker = getSavePicker();
 		if (picker) {
@@ -165,7 +181,7 @@ export function useOfflineVideoExport({
 				};
 			} catch (pickerError) {
 				if (isAbortError(pickerError)) return;
-				// No usable picker (permissions, iframe): keep it in memory.
+				// No usable picker (permissions, iframe): disk via OPFS below.
 			}
 		}
 
@@ -180,6 +196,26 @@ export function useOfflineVideoExport({
 			const audioBuffer = await decodeOfflineAudioFile(blob);
 			controller.signal.throwIfAborted();
 
+			if (sink.kind === 'buffer') {
+				const estimatedBytes = estimateOfflineVideoBytes({
+					width: resolution.width,
+					height: resolution.height,
+					fps,
+					durationSec: audioBuffer.duration
+				});
+				// No picker (Brave, Firefox): stream to disk instead of RAM;
+				// BufferTarget stays the last resort for small files only.
+				opfs = await createOpfsVideoSink({
+					fileName,
+					estimatedBytes,
+					isCancelled: () => !finalizing
+				});
+				if (opfs) {
+					sink = { kind: 'stream', writable: opfs.writable };
+				} else if (estimatedBytes > BUFFER_FALLBACK_MAX_BYTES) {
+					throw new Error('insufficient-storage');
+				}
+			}
 			const result = await runOfflineVideoExport({
 				audioBuffer,
 				format,
@@ -198,22 +234,28 @@ export function useOfflineVideoExport({
 				}
 			});
 
-			if (result.blob) downloadBlobFallback(result.blob, fileName);
+			if (opfs) await opfs.download(fileName);
+			else if (result.blob) downloadBlobFallback(result.blob, fileName);
 			setSavedFileName(fileName);
 		} catch (exportError) {
 			if (controller.signal.aborted || isAbortError(exportError)) {
 				setProgress({ ...IDLE_PROGRESS, phase: 'cancelled' });
 			} else {
 				setProgress({ ...IDLE_PROGRESS, phase: 'error' });
+				const message =
+					exportError instanceof Error ? exportError.message : '';
 				setError(
-					exportError instanceof Error &&
-						exportError.message === 'audio-asset-not-found'
+					message === 'audio-asset-not-found'
 						? 'audio-not-found'
-						: 'failed'
+						: message === 'insufficient-storage'
+							? 'insufficient-storage'
+							: 'failed'
 				);
 				console.error('[offline-export]', exportError);
 			}
-			if (sink.kind === 'stream') {
+			if (opfs) {
+				await opfs.discard();
+			} else if (sink.kind === 'stream') {
 				await sink.writable.abort().catch(() => undefined);
 			}
 		} finally {
