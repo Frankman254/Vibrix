@@ -53,7 +53,10 @@
 ## 3. Dónde quedó el trabajo
 
 Fase actual: **Fase 1 · Export de vídeo offline** (tab Export → MP4/WebM
-frame a frame, sin tiempo real). Último commit relevante: `12b9addd`.
+frame a frame, sin tiempo real). Últimos commits: `373559cd` (gate de
+almacenamiento honesto con números needed/free), `88d4123f` (bitrate VBR en
+tabla: encoder + estimador comparten `recommendedVideoBitrateFor`; 4K con
+persist() ya no se corta a mitad por el cupo de Chrome).
 
 Principio del usuario: **el vídeo sale a calidad máxima**; el tiempo de render
 no importa. El export ignora el modo de rendimiento, la pausa de movimiento y
