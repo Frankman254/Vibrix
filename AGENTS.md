@@ -10,6 +10,8 @@ has been removed.
 
 Este repo es parte de una suite de 4 proyectos. Antes de empezar:
 
+- [.agents/RELEVO.md](.agents/RELEVO.md) — **empieza aquí si eres un agente
+  nuevo**: cómo trabaja el usuario, dónde quedó el trabajo y qué sigue.
 - [.agents/SUITE.md](.agents/SUITE.md) — qué es cada proyecto, rutas en esta
   máquina, reglas comunes y estado de fases.
 - [.agents/TAREAS.md](.agents/TAREAS.md) — **la tarea actual de este repo** y el
