@@ -86,9 +86,15 @@ export type { SpectrumVisualAccentsCompat } from './domain/spectrumVisualAccents
 export { DEFAULT_SHOCKWAVE_BAND_THRESHOLDS } from './domain/shockwaveCalibration';
 
 // ── runtime (model-side only; the draw path lives in ./render) ──────────────
-export { createSpectrumRuntimeState } from './runtime/spectrumRuntime';
+export {
+	createSpectrumRuntimeState,
+	createSpectrumScope,
+	resetSpectrumScope,
+	LIVE_SPECTRUM_SCOPE
+} from './runtime/spectrumRuntime';
 export type {
 	SpectrumRuntimeState,
+	SpectrumScope,
 	SpectrumSettings
 } from './runtime/spectrumRuntime';
 export {

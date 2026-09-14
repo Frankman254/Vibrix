@@ -30,11 +30,16 @@ import {
 	resolveNeonCoreStrokeStyle
 } from '../../effects/neonCorePass';
 import { resolveGradientFlowPhase } from '../../effects/gradientFlow';
-import type { SpectrumSettings } from '../../runtime/spectrumRuntime';
+import type {
+	SpectrumScope,
+	SpectrumSettings
+} from '../../runtime/spectrumRuntime';
 
 export type RadialWaveFrameContext = {
 	audioEnergy?: number;
 	dt?: number;
+	/** Scope whose gradient-flow phase this draw advances. Defaults to live. */
+	scope?: SpectrumScope;
 };
 
 export function drawPeakMarker(
@@ -568,8 +573,13 @@ export function drawRadialWave(
 	radialAngle: number,
 	frame: RadialWaveFrameContext = {}
 ) {
-	const { audioEnergy = 0, dt = 1 / 60 } = frame;
-	const gradientPhase = resolveGradientFlowPhase(settings, audioEnergy, dt);
+	const { audioEnergy = 0, dt = 1 / 60, scope } = frame;
+	const gradientPhase = resolveGradientFlowPhase(
+		settings,
+		audioEnergy,
+		dt,
+		scope
+	);
 	const gradient = createWaveGradient(
 		ctx,
 		canvas,

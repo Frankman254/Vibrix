@@ -9,6 +9,7 @@ import {
 	listRegisteredSubsystems
 } from './renderSubsystem';
 import { installDefaultRenderSubsystems } from './renderSubsystems';
+import { createRenderScope, resetRenderScope } from './renderScope';
 
 export type RunOfflineRenderTestOptions = {
 	canvas: HTMLCanvasElement;
@@ -49,6 +50,8 @@ export async function runOfflineRenderTest(
 		: durationMs / 1000;
 
 	resetAllRenderSubsystems();
+	const scope = createRenderScope();
+	resetRenderScope(scope);
 	options.audioSource?.reset();
 
 	const frameCount = Math.max(1, Math.round((durationMs / 1000) * fps));
@@ -66,7 +69,6 @@ export async function runOfflineRenderTest(
 		const audio = options.audioSource
 			? options.audioSource.getSnapshotAt(timeMs)
 			: null;
-
 		const ctx = buildOfflineContext({
 			canvas,
 			state: snapshot.state,
@@ -78,7 +80,8 @@ export async function runOfflineRenderTest(
 			trackTitle: renderedTrackTitle,
 			trackCurrentTime: timeMs / 1000,
 			trackDuration: trackDurationSeconds,
-			abortSignal: options.abortSignal
+			abortSignal: options.abortSignal,
+			scope
 		});
 
 		renderFrameAt(ctx, options.renderOptions);

@@ -26,6 +26,7 @@ import type {
 } from '@/types/wallpaper';
 import type {
 	SpectrumRuntimeState,
+	SpectrumScope,
 	SpectrumSettings
 } from '../../runtime/spectrumRuntime';
 import type { ResolvedManualGlow } from '../../effects/manualGlow';
@@ -39,6 +40,8 @@ export type LinearWaveFrameContext = {
 	runtime?: SpectrumRuntimeState;
 	audioEnergy?: number;
 	dt?: number;
+	/** Scope whose gradient-flow phase this draw advances. Defaults to live. */
+	scope?: SpectrumScope;
 };
 
 /**
@@ -555,8 +558,13 @@ export function drawLinearBars(
 	settings: SpectrumSettings,
 	frame: LinearWaveFrameContext = {}
 ) {
-	const { audioEnergy = 0, dt = 1 / 60 } = frame;
-	const gradientPhase = resolveGradientFlowPhase(settings, audioEnergy, dt);
+	const { audioEnergy = 0, dt = 1 / 60, scope } = frame;
+	const gradientPhase = resolveGradientFlowPhase(
+		settings,
+		audioEnergy,
+		dt,
+		scope
+	);
 	const { baseX, baseY, direction } = getLinearBase(canvas, settings);
 	const { stride, totalLength } = getLinearMetrics(
 		canvas,
@@ -1641,7 +1649,7 @@ export function drawLinearWave(
 	settings: SpectrumSettings,
 	frame: LinearWaveFrameContext = {}
 ) {
-	const { runtime, audioEnergy = 0, dt = 1 / 60 } = frame;
+	const { runtime, audioEnergy = 0, dt = 1 / 60, scope } = frame;
 	const { baseX, baseY, direction } = getLinearBase(canvas, settings);
 	const orientation = settings.spectrumLinearOrientation;
 	const totalSpan =
@@ -1653,7 +1661,12 @@ export function drawLinearWave(
 			: (canvas.width - totalSpan) / 2;
 	const step = totalSpan / Math.max(barCount - 1, 1);
 	const referencePx = Math.min(canvas.width, canvas.height);
-	const gradientPhase = resolveGradientFlowPhase(settings, audioEnergy, dt);
+	const gradientPhase = resolveGradientFlowPhase(
+		settings,
+		audioEnergy,
+		dt,
+		scope
+	);
 	const gradient = createWaveGradient(
 		ctx,
 		canvas,

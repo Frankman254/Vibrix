@@ -80,6 +80,30 @@ the version scheme in `src/lib/version.ts`.
   las del estilo) se cargan antes del primer frame.
 - El planner ya no avisa de partículas, lluvia ni Camera FX.
 
+### Export de vídeo offline — Fase A (aislamiento del render)
+
+- **El export y el preview ya no comparten estado mutable.** El espectro, el
+  logo y Flash Edge guardaban su animación en variables globales del módulo:
+  exportar animaba el canvas en vivo (y al revés), y eso era la "cámara
+  rápida" del spectrum en Windows y el arranque acelerado en Mac. Ahora cada
+  dominio tiene un **ámbito de render** (`SpectrumScope`, `LogoScope`,
+  `FlashEdgeScope`) y `RenderScope` (`features/export/renderScope.ts`) los
+  agrupa: el export crea el suyo por corrida y lo pasa por
+  `RenderFrameContext.scope` hasta `drawSpectrum` / `drawLogo`; el preview usa
+  el ámbito `LIVE` por defecto, con comportamiento idéntico al anterior. Los
+  canvas de memoria por instancia (frame anterior, historial, snapshot de
+  transición) viven dentro del runtime del ámbito, así que desaparece el
+  "segundo radial fantasma". El export no llama a `resetSpectrum()` /
+  `resetLogo()` globales: solo resetea su ámbito. Se borró
+  `offlineAudioLayerRenderer.ts` (sesión legacy sin llamadores que todavía
+  reseteaba los globales).
+- **Arreglado el doble escalado del RGB shift de overlays en el export.**
+  `resolveOverlayAdvancedEffects` medía el desplazamiento contra el lado corto
+  de la _salida_ y lo multiplicaba otra vez por `sizeFactor`; ahora mide
+  contra el viewport en vivo (`output / sizeFactor`) antes de escalar, como en
+  el preview. La decisión sobre el gate `!isTransitioning` del vivo está
+  documentada en el código: no aplica offline (no hay fundido por imagen).
+
 ### Export de vídeo offline — Fase 1A/1B (en curso)
 
 - **Exportar vídeo** (tab Export) genera un MP4 (H.264 + AAC) o, si el

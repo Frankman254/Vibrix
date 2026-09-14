@@ -1,14 +1,11 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
 	curveRgbSplitAmount,
 	resolvePeakSparkCount,
 	resolveRgbSplitAlpha,
 	resolveRgbSplitOffsetPx
 } from './spectrumFxBudget';
-import {
-	resetGradientFlowPhaseForTests,
-	resolveGradientFlowPhase
-} from './gradientFlow';
+import { resolveGradientFlowPhase } from './gradientFlow';
 import {
 	resolveNeonCoreLineWidth,
 	resolveNeonCoreStrokeStyle
@@ -16,7 +13,10 @@ import {
 import { countPeakSparkCandidates } from './peakSparksPass';
 import { DEFAULT_STATE } from '@/store/defaultState';
 import type { SpectrumSettings } from '../runtime/spectrumRuntime';
-import { createSpectrumRuntimeState } from '../runtime/spectrumRuntime';
+import {
+	createSpectrumRuntimeState,
+	createSpectrumScope
+} from '../runtime/spectrumRuntime';
 import { drawEchoTracePasses, updateEchoTraceHistory } from './echoTrace';
 
 function fxSettings(
@@ -84,14 +84,13 @@ describe('neon core', () => {
 });
 
 describe('gradient flow', () => {
-	beforeEach(() => resetGradientFlowPhaseForTests());
-
 	it('returns 0 when disabled', () => {
 		expect(
 			resolveGradientFlowPhase(
 				fxSettings({ spectrumGradientFlow: false }),
 				0.5,
-				1 / 60
+				1 / 60,
+				createSpectrumScope()
 			)
 		).toBe(0);
 	});
@@ -101,13 +100,13 @@ describe('gradient flow', () => {
 			spectrumGradientFlow: true,
 			spectrumGradientFlowSpeed: 0.8
 		});
-		const a = resolveGradientFlowPhase(settings, 0, 1 / 60);
-		const b = resolveGradientFlowPhase(settings, 0, 1 / 60);
+		const scope = createSpectrumScope();
+		const a = resolveGradientFlowPhase(settings, 0, 1 / 60, scope);
+		const b = resolveGradientFlowPhase(settings, 0, 1 / 60, scope);
 		expect(b).not.toBe(a);
 	});
 
 	it('reverse direction moves opposite sign', () => {
-		resetGradientFlowPhaseForTests();
 		const fwd = fxSettings({
 			spectrumGradientFlow: true,
 			spectrumGradientFlowDirection: 'forward',
@@ -118,11 +117,12 @@ describe('gradient flow', () => {
 			spectrumGradientFlowDirection: 'reverse',
 			spectrumGradientFlowSpeed: 1
 		});
-		const f0 = resolveGradientFlowPhase(fwd, 0, 1 / 60);
-		const f1 = resolveGradientFlowPhase(fwd, 0, 1 / 60);
-		resetGradientFlowPhaseForTests();
-		const r0 = resolveGradientFlowPhase(rev, 0, 1 / 60);
-		const r1 = resolveGradientFlowPhase(rev, 0, 1 / 60);
+		const fwdScope = createSpectrumScope();
+		const f0 = resolveGradientFlowPhase(fwd, 0, 1 / 60, fwdScope);
+		const f1 = resolveGradientFlowPhase(fwd, 0, 1 / 60, fwdScope);
+		const revScope = createSpectrumScope();
+		const r0 = resolveGradientFlowPhase(rev, 0, 1 / 60, revScope);
+		const r1 = resolveGradientFlowPhase(rev, 0, 1 / 60, revScope);
 		expect(f1 - f0).toBeGreaterThan(0);
 		expect(r1 - r0).toBeLessThan(0);
 	});
@@ -132,8 +132,9 @@ describe('gradient flow', () => {
 			spectrumGradientFlow: true,
 			spectrumGradientFlowSpeed: 0
 		});
-		const a = resolveGradientFlowPhase(settings, 0, 1 / 60);
-		const b = resolveGradientFlowPhase(settings, 0, 1 / 60);
+		const scope = createSpectrumScope();
+		const a = resolveGradientFlowPhase(settings, 0, 1 / 60, scope);
+		const b = resolveGradientFlowPhase(settings, 0, 1 / 60, scope);
 		expect(b).not.toBe(a);
 	});
 });

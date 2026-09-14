@@ -275,7 +275,24 @@ export { type AudioSnapshot };
 
 export const MODE_TRANSITION_DURATION = 0.32;
 
-const spectrumRuntimeMap = new Map<string, SpectrumRuntimeState>();
+/**
+ * Per-scope spectrum state. Module globals made this a singleton: the offline
+ * export and the live viewport shared one runtime map, so exporting changed
+ * the live animation and vice versa. A scope owns the per-instance runtimes
+ * plus the gradient-flow phase; live keeps the default scope, each export
+ * creates its own.
+ */
+export type SpectrumScope = {
+	runtimes: Map<string, SpectrumRuntimeState>;
+	gradientPhase: number;
+};
+
+export function createSpectrumScope(): SpectrumScope {
+	return { runtimes: new Map(), gradientPhase: 0 };
+}
+
+/** The scope live components use when no scope is threaded to them. */
+export const LIVE_SPECTRUM_SCOPE: SpectrumScope = createSpectrumScope();
 
 export function createSpectrumRuntimeState(): SpectrumRuntimeState {
 	return {
@@ -310,12 +327,13 @@ export function createSpectrumRuntimeState(): SpectrumRuntimeState {
 }
 
 export function getSpectrumRuntimeState(
-	instanceKey: string
+	instanceKey: string,
+	scope: SpectrumScope = LIVE_SPECTRUM_SCOPE
 ): SpectrumRuntimeState {
-	const existing = spectrumRuntimeMap.get(instanceKey);
+	const existing = scope.runtimes.get(instanceKey);
 	if (existing) return existing;
 	const created = createSpectrumRuntimeState();
-	spectrumRuntimeMap.set(instanceKey, created);
+	scope.runtimes.set(instanceKey, created);
 	return created;
 }
 
@@ -425,6 +443,13 @@ export function copyCanvas(
 	context.drawImage(source, 0, 0, target.width, target.height);
 }
 
-export function resetSpectrumRuntime(): void {
-	spectrumRuntimeMap.clear();
+export function resetSpectrumScope(scope: SpectrumScope): void {
+	scope.runtimes.clear();
+	scope.gradientPhase = 0;
+}
+
+export function resetSpectrumRuntime(
+	scope: SpectrumScope = LIVE_SPECTRUM_SCOPE
+): void {
+	resetSpectrumScope(scope);
 }

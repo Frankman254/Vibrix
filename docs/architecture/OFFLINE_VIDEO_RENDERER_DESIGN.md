@@ -60,6 +60,33 @@ Reglas que el código ya cumple y no se deben romper:
   lo que antes leía `performance.now()` al dibujar (rotación de color RGB de
   spectrum y lyrics) usa `getRenderNowMs()`; el export lo fija con
   `pinRenderClock(timeMs)` solo mientras dibuja cada frame.
+- **El export y el preview no comparten estado de animación (Fase A).** El
+  estado mutable que avanza con el tiempo vive en **ámbitos de render**
+  (`RenderScope` en `features/export/renderScope.ts`, que agrupa
+  `SpectrumScope`, `LogoScope` y `FlashEdgeScope`). El export crea un ámbito
+  por corrida, lo resetea al empezar y lo pasa por
+  `RenderFrameContext.scope` hasta `drawSpectrum` / `drawLogo`. El preview usa
+  los ámbitos `LIVE_*` por defecto (comportamiento idéntico al anterior). El
+  export no llama a `resetSpectrum()` / `resetLogo()` globales.
+
+### Inventario de estado global del camino de render (Fase A, 2026-09-14)
+
+Clasificación de todo el estado mutable a nivel de módulo que toca el render
+del export (`grep -rnE "^(let |const [A-Za-z_]+ = (new (Map|WeakMap|Set)|create[A-Z]))" src/features src/lib src/utils`):
+
+| Estado                                                                                                                                                                               | Dónde                                                       | Clasificación                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| runtimes de spectrum por instancia + fase del flujo de gradiente                                                                                                                     | `spectrumRuntime.ts` / `gradientFlow.ts`                    | **Aislado** → `SpectrumScope`                                                                     |
+| envolvente, rotación y channel selection del logo                                                                                                                                    | `ReactiveLogo.ts` / `logoScope.ts`                          | **Aislado** → `LogoScope`                                                                         |
+| `_drive` / `_color` de Flash Edge                                                                                                                                                    | `flashEdgeDrive.ts`                                         | **Aislado** → `FlashEdgeScope`                                                                    |
+| canvases de memoria del spectrum (frame anterior, historial, snapshot de transición)                                                                                                 | dentro de `SpectrumRuntimeState`                            | **Aislado** (viven en `scope.runtimes`)                                                           |
+| registros/superficies del export (`installed`, registry, scratch de overlays)                                                                                                        | `renderSubsystems/*`                                        | propiedad del export, por corrida                                                                 |
+| `pinnedNowMs`                                                                                                                                                                        | `renderClock.ts`                                            | transitorio: se fija solo durante el draw de cada frame                                           |
+| `activeTransitionToken`                                                                                                                                                              | `spectrumPresetTransition.ts`                               | lo escriben acciones de store; el bucle offline no lo lee                                         |
+| contornos y mirror-fold scratch (`outerContour`, `mirrorFoldScratch`, `haloScratch`, …)                                                                                              | `spectrumRuntime.ts`, `spectrumFxBudget.ts`, `imageEffects` | scratch de un solo frame: se sobrescribe en cada draw; seguro con renders secuenciales en un hilo |
+| cachés de imágenes / fuentes / paletas / cubiertas / letras (`imageCache`, `logoImages`, `paletteCache`, `coverImageCache`, `lyricsCache`, `wrapCache`, `lineRenderCache`, `warmed`) | background, overlays, logo, lyrics, lib                     | caché pura, inofensiva                                                                            |
+| telemetría de diagnóstico (`logoDiagnosticsTelemetry`, `spectrumDiagnosticsTelemetry`, `backgroundScaleTelemetry`, `frameAudioDebugSnapshot`)                                        | `*/diagnostics`, `lib/debug`                                | no toca píxeles; solo UI de diagnóstico                                                           |
+| `PRESET_EXCLUDED_KEYS`, `providers` de lyrics                                                                                                                                        | varias                                                      | constantes / registros de texto                                                                   |
 
 Límites conocidos del MVP:
 

@@ -24,6 +24,7 @@ import type { SpectrumFamilyCapabilities } from './spectrumFamilyCapabilities';
 import { getSpectrumFamilyCapabilities } from './spectrumFamilyCapabilities';
 import type {
 	SpectrumRuntimeState,
+	SpectrumScope,
 	SpectrumSettings
 } from '../runtime/spectrumRuntime';
 
@@ -82,6 +83,8 @@ export interface SpectrumRenderContext {
 	resolvedShape: SpectrumShape;
 	barCount: number;
 	radialAngle: number;
+	/** Scope whose gradient-flow phase this draw advances. Defaults to live. */
+	scope?: SpectrumScope;
 }
 
 /**
@@ -374,7 +377,11 @@ function renderClassic(
 					settings,
 					runtime.rotation,
 					radialAngle,
-					{ audioEnergy: input.audioEnergy, dt: input.dt }
+					{
+						audioEnergy: input.audioEnergy,
+						dt: input.dt,
+						scope: input.scope
+					}
 				);
 				return;
 			case 'dots':
@@ -396,7 +403,8 @@ function renderClassic(
 		drawLinearWave(ctx, canvas, runtime.pixelHeights, barCount, settings, {
 			runtime,
 			audioEnergy: input.audioEnergy,
-			dt: input.dt
+			dt: input.dt,
+			scope: input.scope
 		});
 		return;
 	}
@@ -419,6 +427,6 @@ function renderClassic(
 		runtime.pixelPeaks,
 		barCount,
 		settings,
-		{ audioEnergy: input.audioEnergy, dt: input.dt }
+		{ audioEnergy: input.audioEnergy, dt: input.dt, scope: input.scope }
 	);
 }

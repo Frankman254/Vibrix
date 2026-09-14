@@ -272,12 +272,23 @@ describe('resolveOverlayAdvancedEffects', () => {
 		expect(low?.rgbShiftPixels).toBe(36);
 	});
 
-	it('scales the rgb-shift clamp with the output size factor', () => {
+	it('scales one clamped shift per output size factor', () => {
 		const half = advanced({
 			state: { ...LOOKS, rgbShift: 2 },
 			sizeFactor: 2
 		});
 		expect(half?.rgbShiftPixels).toBe(72);
+	});
+
+	it('keeps an unclamped shift proportional, not double-scaled', () => {
+		// Same live canvas (output and sizeFactor double together): the shift
+		// must double once, never four times via the offline short edge.
+		const one = advanced()!.rgbShiftPixels;
+		const two = advanced({
+			output: { width: 3840, height: 2160 },
+			sizeFactor: 2
+		})!.rgbShiftPixels;
+		expect(two).toBeCloseTo(one * 2, 5);
 	});
 
 	it('lets the audio envelope push the shift past the base state', () => {

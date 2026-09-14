@@ -49,6 +49,12 @@ export {
 	resetLogo,
 	resetLogoRotation
 } from './runtime/ReactiveLogo';
+export {
+	createLogoScope,
+	resetLogoScope,
+	LIVE_LOGO_SCOPE
+} from './runtime/logoScope';
+export type { LogoScope } from './runtime/logoScope';
 
 // ── presets ─────────────────────────────────────────────────────────────────
 export { LOGO_QUICK_PROFILES } from './presets/logoProfiles';

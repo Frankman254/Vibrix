@@ -1,6 +1,7 @@
 import type { AudioSnapshot } from '@/lib/audio/audioChannels';
 import type { WallpaperState } from '@/types/wallpaper';
 import type { BackgroundPalette } from '@/lib/backgroundPalette';
+import type { RenderScope } from './renderScope';
 
 export type RenderResolution = {
 	width: number;
@@ -20,6 +21,11 @@ export type RenderFrameContext = {
 	trackCurrentTime: number;
 	trackDuration: number;
 	abortSignal?: AbortSignal;
+	/**
+	 * Scoped draw state for this run (offline export). Absent for live frames:
+	 * every domain falls back to its LIVE scope.
+	 */
+	scope?: RenderScope;
 };
 
 export type RenderSubsystemId =

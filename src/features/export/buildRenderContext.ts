@@ -5,6 +5,7 @@ import type {
 	RenderFrameContext,
 	RenderResolution
 } from './renderFrameContext';
+import type { RenderScope } from './renderScope';
 
 export type LiveContextInput = {
 	canvas: HTMLCanvasElement;
@@ -21,6 +22,8 @@ export type LiveContextInput = {
 
 export type OfflineContextInput = LiveContextInput & {
 	abortSignal?: AbortSignal;
+	/** The export run's scoped draw state; every offline frame carries it. */
+	scope: RenderScope;
 };
 
 export function buildLiveContext(input: LiveContextInput): RenderFrameContext {
@@ -54,6 +57,7 @@ export function buildOfflineContext(
 		trackTitle: input.trackTitle ?? '',
 		trackCurrentTime: input.trackCurrentTime ?? 0,
 		trackDuration: input.trackDuration ?? 0,
-		abortSignal: input.abortSignal
+		abortSignal: input.abortSignal,
+		scope: input.scope
 	};
 }

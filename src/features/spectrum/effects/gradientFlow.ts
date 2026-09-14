@@ -1,16 +1,16 @@
 import type { SpectrumGradientFlowDirection } from '@/types/wallpaper';
-import type { SpectrumSettings } from '../runtime/spectrumRuntime';
+import type {
+	SpectrumScope,
+	SpectrumSettings
+} from '../runtime/spectrumRuntime';
+import { LIVE_SPECTRUM_SCOPE } from '../runtime/spectrumRuntime';
 
 function clamp01(value: number): number {
 	return Math.max(0, Math.min(1, value));
 }
 
-let gradientFlowPhase = 0;
-
-/** Test hook — resets animated phase between unit tests. */
-export function resetGradientFlowPhaseForTests(): void {
-	gradientFlowPhase = 0;
-}
+// No phase global: the phase lives on the caller's SpectrumScope, so the
+// offline export and the live viewport each advance their own.
 
 /**
  * Animated phase offset (0..1) for gradient-driven spectrum fills/strokes.
@@ -19,7 +19,8 @@ export function resetGradientFlowPhaseForTests(): void {
 export function resolveGradientFlowPhase(
 	settings: SpectrumSettings,
 	audioEnergy: number,
-	dt: number
+	dt: number,
+	scope: SpectrumScope = LIVE_SPECTRUM_SCOPE
 ): number {
 	if (!settings.spectrumGradientFlow) return 0;
 	const speed = clamp01(settings.spectrumGradientFlowSpeed ?? 0.5);
@@ -30,8 +31,8 @@ export function resolveGradientFlowPhase(
 	if (settings.spectrumGradientFlowAudio) {
 		delta += clamp01(audioEnergy) * speed * 0.35 * dt * direction;
 	}
-	gradientFlowPhase = (gradientFlowPhase + delta + 1) % 1;
-	return gradientFlowPhase;
+	scope.gradientPhase = (scope.gradientPhase + delta + 1) % 1;
+	return scope.gradientPhase;
 }
 
 export function wrapGradientPhase(phase: number): number {

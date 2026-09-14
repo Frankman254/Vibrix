@@ -1,5 +1,5 @@
 import type { WallpaperState } from '@/types/wallpaper';
-import { createAudioEnvelope } from '@/utils/audioEnvelope';
+import { LIVE_LOGO_SCOPE, type LogoScope } from './logoScope';
 
 type LogoSettings = Pick<
 	WallpaperState,
@@ -46,12 +46,9 @@ type LogoSettings = Pick<
 const LOGO_IMAGE_CACHE_MAX = 4;
 const logoImages = new Map<string, HTMLImageElement>();
 
-// Single envelope instance — encapsulates all per-frame smoothing state
-const logoEnvelope = createAudioEnvelope();
-
-// Accumulated rotation angle (radians). Driven by `logoRotationSpeed * dt`
-// so the spin is frame-rate independent.
-let logoRotation = 0;
+// Per-frame state lives on a LogoScope (see logoScope.ts). The default is the
+// live scope, so the viewport keeps working unchanged; the offline export
+// threads its own scope so the two never share envelope/rotation state.
 
 /**
  * Cap the per-frame blur radius so the upper end of the slider doesn't
@@ -92,7 +89,8 @@ export function drawLogo(
 	canvas: HTMLCanvasElement,
 	amplitude: number,
 	dt: number,
-	settings: LogoSettings
+	settings: LogoSettings,
+	scope: LogoScope = LIVE_LOGO_SCOPE
 ): void {
 	const {
 		logoUrl,
@@ -116,9 +114,9 @@ export function drawLogo(
 		logoRotationSpeed
 	} = settings;
 
-	logoRotation += logoRotationSpeed * dt;
+	scope.rotation += logoRotationSpeed * dt;
 
-	const envelopeState = logoEnvelope.tick(amplitude, dt, {
+	const envelopeState = scope.envelope.tick(amplitude, dt, {
 		attack: settings.logoAttack,
 		release: settings.logoRelease,
 		responseSpeed: settings.logoReactivitySpeed * 2.4,
@@ -197,8 +195,8 @@ export function drawLogo(
 	// The backdrop + glow ring are radially symmetric so they don't need
 	// the same transform — only the image silhouette has visible rotation.
 	ctx.translate(cx, cy);
-	if (logoRotation !== 0) {
-		ctx.rotate(logoRotation);
+	if (scope.rotation !== 0) {
+		ctx.rotate(scope.rotation);
 	}
 	if (logoCircularCrop) {
 		const radius = (size / 2) * Math.max(0.1, Math.min(1, logoCropRadius));
@@ -210,8 +208,10 @@ export function drawLogo(
 	ctx.restore();
 }
 
-export function getSmoothedAmplitude(): number {
-	return logoEnvelope.getState().smoothedAmplitude;
+export function getSmoothedAmplitude(
+	scope: LogoScope = LIVE_LOGO_SCOPE
+): number {
+	return scope.envelope.getState().smoothedAmplitude;
 }
 
 /** Devuelve la imagen del logo ya cacheada, o null si aún no cargó. */
@@ -222,12 +222,14 @@ export function getCachedLogoImage(url: string): HTMLImageElement | null {
 }
 
 /** Rotación actual acumulada del logo (rad). Actualizada por drawLogo(). */
-export function getLogoRotation(): number {
-	return logoRotation;
+export function getLogoRotation(scope: LogoScope = LIVE_LOGO_SCOPE): number {
+	return scope.rotation;
 }
 
-export function getLogoRenderState(): LogoRenderState {
-	const s = logoEnvelope.getState();
+export function getLogoRenderState(
+	scope: LogoScope = LIVE_LOGO_SCOPE
+): LogoRenderState {
+	const s = scope.envelope.getState();
 	return {
 		scale: s.value,
 		normalizedAmplitude: s.normalizedAmplitude,
@@ -237,11 +239,11 @@ export function getLogoRenderState(): LogoRenderState {
 	};
 }
 
-export function resetLogo(): void {
-	logoEnvelope.reset();
-	resetLogoRotation();
+export function resetLogo(scope: LogoScope = LIVE_LOGO_SCOPE): void {
+	scope.envelope.reset();
+	scope.rotation = 0;
 }
 
-export function resetLogoRotation(): void {
-	logoRotation = 0;
+export function resetLogoRotation(scope: LogoScope = LIVE_LOGO_SCOPE): void {
+	scope.rotation = 0;
 }

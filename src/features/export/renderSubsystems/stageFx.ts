@@ -133,7 +133,7 @@ export function createFlashLightSubsystem(): RenderSubsystem {
 			// mounted, i.e. while Flash Light is on.
 			if (!ctx.audio || !ctx.state.flashLightEnabled) {
 				runtime.drive = 0;
-				updateFlashEdgeDrive(0, color);
+				updateFlashEdgeDrive(0, color, ctx.scope?.flashEdge);
 				return;
 			}
 			stepFlashLight(
@@ -147,7 +147,7 @@ export function createFlashLightSubsystem(): RenderSubsystem {
 				background: ctx.palette,
 				theme: getEditorThemePalette(ctx.state.editorTheme)
 			});
-			updateFlashEdgeDrive(runtime.drive, color);
+			updateFlashEdgeDrive(runtime.drive, color, ctx.scope?.flashEdge);
 		},
 		render(ctx: RenderFrameContext) {
 			if (!ctx.audio || !ctx.state.flashLightEnabled) return;

@@ -12,6 +12,7 @@ import {
 import { normalizeSpectrumShape } from '@/features/spectrum/domain/spectrumControlConfig';
 import { rotationDirectionSign } from '@/features/stageFx/stageFxConfig';
 import {
+	type SpectrumScope,
 	type SpectrumSettings,
 	MODE_TRANSITION_DURATION,
 	getSpectrumRuntimeState,
@@ -124,11 +125,12 @@ export function drawSpectrum(
 	settingsInput: SpectrumSettings,
 	dt: number,
 	policy: SpectrumRenderPolicy,
-	instanceKey = 'primary'
+	instanceKey = 'primary',
+	scope?: SpectrumScope
 ): void {
 	if (canvas.width <= 0 || canvas.height <= 0) return;
 	const settings = resolveScaledSpectrumSettings(settingsInput);
-	const runtime = getSpectrumRuntimeState(instanceKey);
+	const runtime = getSpectrumRuntimeState(instanceKey, scope);
 
 	// ── Global retro pixelate ─────────────────────────────────────────────────
 	// Draw into an offscreen "scene" canvas, blit back nearest-neighbor so the
@@ -603,7 +605,8 @@ export function drawSpectrum(
 				cy,
 				resolvedShape,
 				barCount,
-				radialAngle
+				radialAngle,
+				scope
 			}
 		);
 	}

@@ -12,6 +12,9 @@ import { getOverlayLayerById } from '@/lib/layers';
 import { resolveTrackDisplay } from '@/lib/audio/trackMetadata';
 import { getCoverImage } from '@/features/audioLayers/render/coverImageCache';
 import { drawOverlayLayer } from '@/features/audioLayers/render/overlayLayerRegistry';
+import type { LogoScope } from '@/features/logo';
+import type { SpectrumScope } from '@/features/spectrum';
+import type { FlashEdgeScope } from '@/features/stageFx/flashEdgeDrive';
 import {
 	drawFilmNoise,
 	drawRgbShift,
@@ -42,6 +45,10 @@ export type AudioLayerFrameRenderInput = {
 	trackCurrentTime: number;
 	trackDuration: number;
 	frameState: AudioLayerFrameRenderState;
+	/** Scoped draw state (offline export); absent = the LIVE scopes. */
+	logoScope?: LogoScope;
+	spectrumScope?: SpectrumScope;
+	flashEdge?: FlashEdgeScope;
 };
 
 function isRenderableAudioLayer(
@@ -141,7 +148,10 @@ export function renderAudioLayerFrame(
 			coverImage
 		},
 		trackCurrentTime: input.trackCurrentTime,
-		trackDuration: input.trackDuration
+		trackDuration: input.trackDuration,
+		logoScope: input.logoScope,
+		spectrumScope: input.spectrumScope,
+		flashEdge: input.flashEdge
 	};
 	const filterActive = isFilterTargetActive(
 		nextLayer,

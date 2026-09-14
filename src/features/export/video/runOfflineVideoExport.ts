@@ -31,6 +31,7 @@ import {
 	type RenderSubsystem
 } from '../renderSubsystem';
 import { installDefaultRenderSubsystems } from '../renderSubsystems';
+import { createRenderScope, resetRenderScope } from '../renderScope';
 import {
 	createOfflineVideoEncoder,
 	type OfflineVideoSink
@@ -119,6 +120,7 @@ export async function runOfflineVideoExport(
 	let renderStartedAt = startedAt;
 	const durationMs = Math.round(audioBuffer.duration * 1000);
 	const frameCount = computeOfflineFrameCount(durationMs, fps);
+	const renderScope = createRenderScope();
 
 	const report = (phase: OfflineVideoExportPhase, frameIndex = 0) => {
 		const now = performance.now();
@@ -193,6 +195,9 @@ export async function runOfflineVideoExport(
 
 	try {
 		resetAllRenderSubsystems();
+		// Own per-domain draw state for this run: the export must not advance
+		// the live viewport's spectrum/logo/flash animation, and vice versa.
+		resetRenderScope(renderScope);
 		analysis.reset();
 
 		const trackTitle = formatTrackTitle(options.trackTitle);
@@ -243,7 +248,8 @@ export async function runOfflineVideoExport(
 						trackTitle,
 						trackCurrentTime: timeMs / 1000,
 						trackDuration,
-						abortSignal
+						abortSignal,
+						scope: renderScope
 					}),
 					{ resolveLayerTransform }
 				);

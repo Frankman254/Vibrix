@@ -5,8 +5,6 @@ import {
 	type AudioLayerFrameRenderState,
 	type RenderableAudioLayer
 } from '@/features/audioLayers/render';
-import { resetLogo } from '@/features/logo';
-import { resetSpectrum } from '@/features/spectrum/render';
 import type { RenderFrameContext } from '../renderFrameContext';
 import type { RenderSubsystem } from '../renderSubsystem';
 
@@ -98,14 +96,18 @@ function makeAudioLayerSubsystem(
 					trackTitle: ctx.trackTitle,
 					trackCurrentTime: ctx.trackCurrentTime,
 					trackDuration: ctx.trackDuration,
-					frameState: surface.frameState
+					frameState: surface.frameState,
+					logoScope: ctx.scope?.logo,
+					spectrumScope: ctx.scope?.spectrum,
+					flashEdge: ctx.scope?.flashEdge
 				});
 				target.drawImage(surface.canvas, 0, 0);
 			}
 		},
 		reset() {
-			if (id === 'logo') resetLogo();
-			if (id === 'spectrum') resetSpectrum();
+			// Per-domain draw state resets with the run's RenderScope
+			// (resetRenderScope in the runner); resetting the module globals
+			// here used to wipe the *live* viewport's state at export start.
 			for (const [key, surface] of surfaces) {
 				if (key.startsWith(`${id}:`)) {
 					surface.frameState = createAudioLayerFrameRenderState();

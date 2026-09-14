@@ -203,7 +203,12 @@ export function resolveOverlayAdvancedEffects(params: {
 	sizeFactor: number;
 }): OverlayAdvancedEffects | null {
 	const { state } = params;
-	// Same gate as OverlayImageLayerView.advancedEffectsActive.
+	// Same gate as OverlayImageLayerView.advancedEffectsActive. The live path
+	// also gates on `!isTransitioning`, but that is the *per-image* crossfade
+	// inside ImageLayerCanvas (one image replacing another). Offline exports
+	// draw a single frozen image per overlay, so that transition never runs
+	// here; scene fades are composited as subsystem alpha in frameComposition.
+	// Deliberate: no isTransitioning gate offline.
 	if (
 		!params.targeted ||
 		!(
@@ -241,17 +246,17 @@ export function resolveOverlayAdvancedEffects(params: {
 	const rgbShiftBoost = state.rgbShiftAudioReactive
 		? envValue * state.rgbShiftAudioSensitivity
 		: 0;
-	// Live clamps at 36 CSS px on the live canvas; offline the whole frame is
-	// `sizeFactor` larger, so the clamp scales with it.
+	// Live clamps at 36 CSS px on the live canvas. The offline `output` is
+	// already `sizeFactor` times the live canvas, so the raw shift must come
+	// from the live-equivalent short edge: clamp there first, then scale the
+	// clamped result up once. (Using the offline short edge *and* the factor
+	// scaled every shift twice.)
+	const liveShortEdge =
+		Math.min(params.output.width, params.output.height) / params.sizeFactor;
 	const rgbShiftPixels =
 		Math.min(
 			36,
-			Math.max(
-				0,
-				(state.rgbShift + rgbShiftBoost) *
-					Math.min(params.output.width, params.output.height) *
-					0.65
-			)
+			Math.max(0, (state.rgbShift + rgbShiftBoost) * liveShortEdge * 0.65)
 		) * params.sizeFactor;
 	return {
 		rgbShiftPixels,

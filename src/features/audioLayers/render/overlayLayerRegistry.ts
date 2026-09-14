@@ -1,5 +1,4 @@
 import {
-	createAudioChannelSelectionState,
 	resolveAudioChannelValue,
 	type AudioSnapshot
 } from '@/lib/audio/audioChannels';
@@ -7,7 +6,12 @@ import {
 	clearSpectrumDiagnosticsClone,
 	clearSpectrumDiagnosticsPrimary
 } from '@/features/spectrum';
-import { publishLogoDiagnosticsTelemetry } from '@/features/logo';
+import type { SpectrumScope } from '@/features/spectrum';
+import {
+	publishLogoDiagnosticsTelemetry,
+	LIVE_LOGO_SCOPE,
+	type LogoScope
+} from '@/features/logo';
 import { applySpectrumPlacementToState } from '@/features/spectrum';
 import {
 	createDefaultSpectrumInstanceSettings,
@@ -45,7 +49,8 @@ import {
 import { drawLogoFlashEdge } from '@/features/flashEdge/flashEdgeRenderer';
 import {
 	getFlashEdgeDrive,
-	getFlashEdgeColor
+	getFlashEdgeColor,
+	type FlashEdgeScope
 } from '@/features/stageFx/flashEdgeDrive';
 import { syntheticKickValue } from '@/features/calibration';
 import { drawSpectrum } from '@/features/spectrum/render';
@@ -64,11 +69,17 @@ export interface OverlayRenderContext {
 	trackCurrentTime: number;
 	trackDuration: number;
 	palette: BackgroundPalette;
+	/**
+	 * Scoped draw state (offline export). Absent = the domain's LIVE scope,
+	 * which is what the live canvas uses.
+	 */
+	logoScope?: LogoScope;
+	spectrumScope?: SpectrumScope;
+	flashEdge?: FlashEdgeScope;
 }
 
 const OVERLAY_IMAGE_CACHE_LIMIT = 12;
 const imageCache = new Map<string, HTMLImageElement>();
-const logoChannelSelection = createAudioChannelSelectionState('kick');
 
 function getCachedImage(url: string): HTMLImageElement {
 	const cached = getLruEntry(imageCache, url);
@@ -111,10 +122,12 @@ function resolveLogoDrive(context: OverlayRenderContext): {
 	channelRouterSmoothed: number;
 } {
 	const { state, audio } = context;
+	const channelSelection =
+		context.logoScope?.channelSelection ?? LIVE_LOGO_SCOPE.channelSelection;
 	const resolved = resolveAudioChannelValue(
 		audio.channels,
 		state.logoBandMode,
-		logoChannelSelection,
+		channelSelection,
 		state.logoAudioSmoothing,
 		state.audioAutoKickThreshold,
 		state.audioAutoSwitchHoldMs,
@@ -356,6 +369,7 @@ export function drawOverlayLayer(
 	}
 
 	if (layer.type === 'logo') {
+		const logoScope = context.logoScope;
 		const logoDrive = resolveLogoDrive(context);
 		const resolvedState = resolveLogoColorState(
 			responsiveState,
@@ -367,12 +381,13 @@ export function drawOverlayLayer(
 			context.canvas,
 			logoDrive.amplitude,
 			context.dt,
-			resolvedState
+			resolvedState,
+			logoScope
 		);
 
 		// Reactive Neon Edge — usa el driver compartido del Flash Light.
 		if (resolvedState.logoFlashEdgeEnabled) {
-			const rs = getLogoRenderState();
+			const rs = getLogoRenderState(logoScope);
 			const logoCx =
 				context.canvas.width / 2 +
 				resolvedState.logoPositionX * context.canvas.width * 0.5;
@@ -389,7 +404,7 @@ export function drawOverlayLayer(
 					logoCx,
 					logoCy,
 					logoSize,
-					getLogoRotation(),
+					getLogoRotation(logoScope),
 					img,
 					{
 						enabled: resolvedState.logoFlashEdgeEnabled,
@@ -399,15 +414,15 @@ export function drawOverlayLayer(
 						colorMode: resolvedState.logoFlashEdgeColorMode,
 						color: resolvedState.logoFlashEdgeColor
 					},
-					getFlashEdgeDrive(),
-					getFlashEdgeColor(),
+					getFlashEdgeDrive(context.flashEdge),
+					getFlashEdgeColor(context.flashEdge),
 					resolvedState.logoCircularCrop,
 					resolvedState.logoCropRadius
 				);
 			}
 		}
 
-		const rs = getLogoRenderState();
+		const rs = getLogoRenderState(logoScope);
 		const st = resolvedState;
 		setDebugLogoAudio({
 			bandModeRequested: st.logoBandMode,
@@ -507,7 +522,7 @@ export function drawOverlayLayer(
 			return;
 		}
 
-		const logoScale = getLogoRenderState().scale;
+		const logoScale = getLogoRenderState(context.logoScope).scale;
 		// Render policy is the caller's to supply — the renderer no longer reads
 		// the store itself (see SpectrumRenderPolicy).
 		const spectrumRenderPolicy = {
@@ -533,7 +548,8 @@ export function drawOverlayLayer(
 				resolvedPrimarySpectrumState,
 				context.dt,
 				spectrumRenderPolicy,
-				'primary'
+				'primary',
+				context.spectrumScope
 			);
 		}
 
@@ -572,7 +588,8 @@ export function drawOverlayLayer(
 				),
 				context.dt,
 				spectrumRenderPolicy,
-				getSpectrumInstanceRuntimeKey(instance.id)
+				getSpectrumInstanceRuntimeKey(instance.id),
+				context.spectrumScope
 			);
 		}
 	}
