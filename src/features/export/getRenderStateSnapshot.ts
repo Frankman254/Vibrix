@@ -37,7 +37,9 @@ function withExportQuality(state: WallpaperState): WallpaperState {
 		performanceMode: 'high',
 		motionPaused: false,
 		sleepModeActive: false,
-		calibrationSyntheticGroups: {}
+		calibrationSyntheticGroups: {},
+		// A fade in flight is timed on the wall clock; the video starts settled.
+		visualTransition: null
 	};
 }
 

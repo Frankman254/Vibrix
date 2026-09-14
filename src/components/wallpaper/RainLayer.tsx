@@ -6,33 +6,17 @@ import { useShallow } from 'zustand/react/shallow';
 import * as THREE from 'three';
 import { useWallpaperStore } from '@/store/wallpaperStore';
 import { useBackgroundPalette } from '@/hooks/useBackgroundPalette';
+import { getEditorThemePalette } from '@/lib/backgroundPalette';
 import {
-	getEditorThemePalette,
-	resolveModeDrivenColors
-} from '@/lib/backgroundPalette';
+	applyRainUniforms,
+	RAIN_MESH_OVERSCALE,
+	RAIN_MESH_Z,
+	RAIN_PALETTE_SIZE,
+	resolveRainMeshRotation,
+	resolveRainUniforms
+} from '@/features/rain/render/rainUniforms';
 import vertexShader from '@/shaders/rainVertex.glsl';
 import fragmentShader from '@/shaders/rainOverlayFragment.glsl';
-
-const PARTICLE_TYPE_INDEX: Record<string, number> = {
-	lines: 0,
-	drops: 1,
-	dots: 2,
-	bars: 3
-};
-const COLOR_MODE_INDEX: Record<string, number> = {
-	solid: 0,
-	rainbow: 1,
-	completeRotate: 2
-};
-
-function hexToVec3(hex: string): [number, number, number] {
-	const c = hex.replace('#', '');
-	return [
-		parseInt(c.slice(0, 2), 16) / 255,
-		parseInt(c.slice(2, 4), 16) / 255,
-		parseInt(c.slice(4, 6), 16) / 255
-	];
-}
 
 export default function RainLayer({
 	renderOrder = 20
@@ -42,104 +26,44 @@ export default function RainLayer({
 	const meshRef = useRef<THREE.Mesh>(null);
 	const motionTimeRef = useRef(0);
 	const { viewport } = useThree();
-	const {
-		rainIntensity,
-		rainDropCount,
-		rainAngle,
-		rainMeshRotationZ,
-		rainColor,
-		rainColorSource,
-		rainColorMode,
-		rainParticleType,
-		rainLength,
-		rainWidth,
-		rainBlur,
-		rainSpeed,
-		rainVariation,
-		motionPaused,
-		sleepModeActive,
-		editorTheme,
-		filterTargets,
-		filterOpacity
-	} = useWallpaperStore(
+	const { motionPaused, sleepModeActive, editorTheme } = useWallpaperStore(
 		useShallow(state => ({
-			rainIntensity: state.rainIntensity,
-			rainDropCount: state.rainDropCount,
-			rainAngle: state.rainAngle,
-			rainMeshRotationZ: state.rainMeshRotationZ,
-			rainColor: state.rainColor,
-			rainColorSource: state.rainColorSource,
-			rainColorMode: state.rainColorMode,
-			rainParticleType: state.rainParticleType,
-			rainLength: state.rainLength,
-			rainWidth: state.rainWidth,
-			rainBlur: state.rainBlur,
-			rainSpeed: state.rainSpeed,
-			rainVariation: state.rainVariation,
 			motionPaused: state.motionPaused,
 			sleepModeActive: state.sleepModeActive,
-			editorTheme: state.editorTheme,
-			filterTargets: state.filterTargets,
-			filterOpacity: state.filterOpacity
+			editorTheme: state.editorTheme
 		}))
 	);
-	// Filter target wiring: when rain is in filterTargets, attenuate intensity
-	// by filterOpacity so the Looks tab control reaches this layer too.
-	const effectiveRainIntensity = filterTargets.includes('rain')
-		? rainIntensity * filterOpacity
-		: rainIntensity;
 	const backgroundPalette = useBackgroundPalette();
 	const themePalette = useMemo(
 		() => getEditorThemePalette(editorTheme),
 		[editorTheme]
 	);
-	const resolvedColors = useMemo(
-		() =>
-			resolveModeDrivenColors(
-				rainColorSource,
-				rainColor,
-				rainColor,
-				backgroundPalette,
-				themePalette
-			),
-		[rainColorSource, rainColor, backgroundPalette, themePalette]
-	);
-	const activePalette =
-		rainColorSource === 'theme' ? themePalette : backgroundPalette;
-	const usePaletteRainbow =
-		rainColorSource !== 'manual' &&
-		(rainColorMode === 'rainbow' || rainColorMode === 'completeRotate');
-	const resolvedRainColor = resolvedColors.primaryColor;
 
+	// Built ONCE on purpose: GPU uniform objects whose `.value` is mutated in
+	// `useFrame`; the frame fills them before the first draw.
 	const uniforms = useMemo(
 		() => ({
 			uTime: { value: 0 },
-			uRainIntensity: { value: rainIntensity },
-			uDropCount: { value: rainDropCount },
-			uRainAngle: { value: (rainAngle * Math.PI) / 180 },
-			uRainSpeed: { value: rainSpeed },
-			uRainLength: { value: rainLength },
-			uRainWidth: { value: rainWidth },
-			uRainBlur: { value: rainBlur },
-			uRainVariation: { value: rainVariation },
-			uRainColor: {
-				value: new THREE.Vector3(...hexToVec3(resolvedRainColor))
-			},
-			uColorMode: { value: COLOR_MODE_INDEX[rainColorMode] ?? 0 },
-			uUsePaletteRainbow: { value: usePaletteRainbow ? 1 : 0 },
-			uPaletteCount: { value: activePalette.rainbow.length },
+			uRainIntensity: { value: 0 },
+			uDropCount: { value: 0 },
+			uRainAngle: { value: 0 },
+			uRainSpeed: { value: 0 },
+			uRainLength: { value: 0 },
+			uRainWidth: { value: 0 },
+			uRainBlur: { value: 0 },
+			uRainVariation: { value: 0 },
+			uRainColor: { value: new THREE.Vector3() },
+			uColorMode: { value: 0 },
+			uUsePaletteRainbow: { value: 0 },
+			uPaletteCount: { value: 0 },
 			uPaletteColors: {
-				value: activePalette.rainbow.map(
-					color => new THREE.Vector3(...hexToVec3(color))
+				value: Array.from(
+					{ length: RAIN_PALETTE_SIZE },
+					() => new THREE.Vector3()
 				)
 			},
-			uParticleType: { value: PARTICLE_TYPE_INDEX[rainParticleType] ?? 0 }
+			uParticleType: { value: 0 }
 		}),
-		// Built ONCE on purpose: these are GPU uniform objects whose `.value`
-		// is mutated in `useFrame`. Rebuilding them on every settings change
-		// would hand the material new uniform objects mid-flight. Disable must
-		// sit on the hook call; the previous one was inside the object literal.
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 		[]
 	);
 
@@ -147,42 +71,28 @@ export default function RainLayer({
 		if (!meshRef.current) return;
 		if (motionPaused || sleepModeActive) return;
 		const mat = meshRef.current.material as THREE.ShaderMaterial;
+		const state = useWallpaperStore.getState();
 		motionTimeRef.current += Math.min(dt, 0.1);
 		mat.uniforms.uTime.value = motionTimeRef.current;
-		mat.uniforms.uRainIntensity.value = effectiveRainIntensity;
-		mat.uniforms.uDropCount.value = Math.floor(rainDropCount);
-		mat.uniforms.uRainAngle.value = (rainAngle * Math.PI) / 180;
-		mat.uniforms.uRainSpeed.value = rainSpeed;
-		mat.uniforms.uRainLength.value = rainLength;
-		mat.uniforms.uRainWidth.value = rainWidth;
-		mat.uniforms.uRainBlur.value = rainBlur;
-		mat.uniforms.uRainVariation.value = rainVariation;
-		const [r, g, b] = hexToVec3(resolvedRainColor);
-		mat.uniforms.uRainColor.value.set(r, g, b);
-		mat.uniforms.uColorMode.value = COLOR_MODE_INDEX[rainColorMode] ?? 0;
-		mat.uniforms.uUsePaletteRainbow.value = usePaletteRainbow ? 1 : 0;
-		mat.uniforms.uPaletteCount.value = activePalette.rainbow.length;
-		const paletteUniforms = mat.uniforms.uPaletteColors
-			.value as THREE.Vector3[];
-		for (let i = 0; i < paletteUniforms.length; i++) {
-			const [pr, pg, pb] = hexToVec3(
-				activePalette.rainbow[i] ?? activePalette.dominant
-			);
-			paletteUniforms[i].set(pr, pg, pb);
-		}
-		mat.uniforms.uParticleType.value =
-			PARTICLE_TYPE_INDEX[rainParticleType] ?? 0;
-
-		// Z-rotation for 3D tilt effect — scale 1.5× to cover corners when rotated
-		meshRef.current.rotation.z = (rainMeshRotationZ * Math.PI) / 180;
+		applyRainUniforms(
+			mat.uniforms,
+			resolveRainUniforms(state, {
+				background: backgroundPalette,
+				theme: themePalette
+			})
+		);
+		meshRef.current.rotation.z = resolveRainMeshRotation(state);
 	});
 
-	// 1.5× overscale prevents corners from becoming visible during Z-rotation
 	return (
 		<mesh
 			ref={meshRef}
-			position={[0, 0, 0.1]}
-			scale={[viewport.width * 1.5, viewport.height * 1.5, 1]}
+			position={[0, 0, RAIN_MESH_Z]}
+			scale={[
+				viewport.width * RAIN_MESH_OVERSCALE,
+				viewport.height * RAIN_MESH_OVERSCALE,
+				1
+			]}
 			renderOrder={renderOrder}
 		>
 			<planeGeometry args={[1, 1]} />

@@ -23,3 +23,15 @@ export type {
 	StageLightsRuntime,
 	StageLightsSettings
 } from './stageLightsDraw';
+export {
+	createCameraFxRuntime,
+	isCameraFxActive,
+	resolveCameraLayerOffset,
+	stepCameraFx
+} from './cameraFxDraw';
+export type {
+	CameraFxFrame,
+	CameraFxRuntime,
+	CameraFxSettings,
+	CameraOffset
+} from './cameraFxDraw';

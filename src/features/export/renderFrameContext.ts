@@ -30,6 +30,7 @@ export type RenderSubsystemId =
 	| 'motion'
 	| 'particles'
 	| 'rain'
+	| 'particlesForeground'
 	| 'spectrum'
 	| 'logo'
 	| 'trackTitle'
@@ -46,6 +47,7 @@ export const RENDER_SUBSYSTEM_ORDER: readonly RenderSubsystemId[] = [
 	'motion',
 	'particles',
 	'rain',
+	'particlesForeground',
 	'spectrum',
 	'logo',
 	'trackTitle',

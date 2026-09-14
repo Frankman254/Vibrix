@@ -23,8 +23,6 @@ function baseState(
 		audioSourceMode: 'file',
 		audioTracks: [],
 		backgroundImages: [],
-		cameraMotionEnabled: false,
-		cameraShakeEnabled: false,
 		logoEnabled: true,
 		overlays: [],
 		particlesEnabled: false,
@@ -63,20 +61,15 @@ describe('createOfflineExportPlan', () => {
 		expect(plan.status).toBe('blocked');
 	});
 
-	it('warns about every enabled layer the export does not draw yet', () => {
+	it('does not warn about particles, rain or Camera FX, which the export draws', () => {
 		expect(
 			codes(
 				baseState({
 					particlesEnabled: true,
-					rainEnabled: true,
-					cameraShakeEnabled: true
+					rainEnabled: true
 				})
 			)
-		).toEqual([
-			'export-unsupported-particles',
-			'export-unsupported-rain',
-			'export-unsupported-camera-fx'
-		]);
+		).toEqual([]);
 	});
 
 	it('does not warn about image overlays, which the export draws', () => {

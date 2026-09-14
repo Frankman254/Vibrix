@@ -15,6 +15,8 @@ uniform float uDepthAmplitude;
 uniform float uDepthSizeBoost;
 uniform bool uAudioReactive;
 uniform bool uFadeInOut;
+// Output pixels per live device pixel: 1 live, the export's scale offline.
+uniform float uPixelScale;
 
 varying vec3 vColor;
 varying float vAlpha;
@@ -56,6 +58,6 @@ void main() {
   gl_PointSize = min(
     expandedSize,
     uMaxPointSize * max(1.0, vGlowScale + (vGlowReach - 1.0) * 0.22)
-  );
+  ) * uPixelScale;
   gl_Position = projectionMatrix * mvPosition;
 }

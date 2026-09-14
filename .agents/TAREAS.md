@@ -7,22 +7,20 @@
 
 ## Fase 1 · Export de vídeo offline — **en curso**
 
-| Sub-fase | Qué                                                                                       | Estado                                                                                                                           |
-| -------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| 1A       | Fondo + spectrum + logo + audio → MP4, progreso, cancelar                                 | Implementado, **falta la prueba real del usuario** (canción de 3 min en VLC / QuickTime / YouTube)                               |
-| 1B       | Letras Lyrixa en el export                                                                | Implementado (subsistema `lyrics`), falta verificar sincronía ±1 frame con un bundle real                                        |
-| 1C       | Partículas, lluvia, Stage FX, Camera FX, overlays, fondo global, slideshow/escenas, Looks | **En curso** — overlays, fondo global, slideshow y Stage FX hechos (verificados contra el preview); el resto avisa en el planner |
-| 1D       | Presets YouTube/Shorts/Instagram, rango in/out                                            | Pendiente (ya hay selector de resolución y fps)                                                                                  |
-| 1E       | Test de paridad offline vs preview                                                        | Pendiente                                                                                                                        |
+| Sub-fase | Qué                                                                                       | Estado                                                                                             |
+| -------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| 1A       | Fondo + spectrum + logo + audio → MP4, progreso, cancelar                                 | Implementado, **falta la prueba real del usuario** (canción de 3 min en VLC / QuickTime / YouTube) |
+| 1B       | Letras Lyrixa en el export                                                                | Implementado (subsistema `lyrics`), falta verificar sincronía ±1 frame con un bundle real          |
+| 1C       | Partículas, lluvia, Stage FX, Camera FX, overlays, fondo global, slideshow/escenas, Looks | **En curso** — todo hecho salvo Looks (verificado contra el preview)                               |
+| 1D       | Presets YouTube/Shorts/Instagram, rango in/out                                            | Pendiente (ya hay selector de resolución y fps)                                                    |
+| 1E       | Test de paridad offline vs preview                                                        | Pendiente                                                                                          |
 
 ### Siguiente paso concreto
 
 1. Pedir al usuario el resultado de la prueba de 3 min (tiempo, peso, si
    reproduce, si el audio va sincronizado). Si falla, arreglar antes de 1C.
 2. Medir el criterio "≤ 1,5× la duración" y apuntarlo aquí.
-3. 1C, siguiente capa: Camera FX (transformación del frame entero) →
-   partículas/lluvia (R3F, `WebGLRenderer` propio fuera de React).
-   Cada capa que entra quita su aviso del planner y su test.
+3. 1C, lo que queda: Looks, y verificar letras con un bundle Lyrixa real.
 4. Memoria de 1 h: decodificar/analizar el audio por ventanas en vez del
    `AudioBuffer` entero.
 

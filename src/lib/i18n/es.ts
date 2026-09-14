@@ -926,12 +926,6 @@ export const es: Record<TranslationKey, string> = {
 		'Hace falta Web Audio para analizar el audio del export.',
 	offline_issue_webcodecs:
 		'Este navegador no puede codificar vídeo (WebCodecs). Usa Chrome, Edge o Safari recientes, o la grabación de pantalla de abajo.',
-	offline_issue_unsupported_particles:
-		'Las partículas aún no se incluyen en el vídeo exportado.',
-	offline_issue_unsupported_rain:
-		'La lluvia aún no se incluye en el vídeo exportado.',
-	offline_issue_unsupported_camera_fx:
-		'El movimiento y la sacudida de cámara aún no se incluyen en el vídeo exportado.',
 	// Selección del paquete de proyecto
 	project_pkg_selective_caption:
 		'La exportación selectiva omite los módulos deseleccionados y sus blobs de assets correspondientes del paquete `.vibrix`.',

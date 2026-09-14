@@ -48,10 +48,7 @@ function issueLabel(t: Translations, issue: OfflineExportIssue): string {
 		'missing-file-audio': t.offline_issue_missing_file_audio,
 		'live-audio-unsupported': t.offline_issue_live_audio,
 		'web-audio-unavailable': t.offline_issue_web_audio,
-		'webcodecs-unavailable': t.offline_issue_webcodecs,
-		'export-unsupported-particles': t.offline_issue_unsupported_particles,
-		'export-unsupported-rain': t.offline_issue_unsupported_rain,
-		'export-unsupported-camera-fx': t.offline_issue_unsupported_camera_fx
+		'webcodecs-unavailable': t.offline_issue_webcodecs
 	};
 	return labels[issue.code] ?? issue.message;
 }

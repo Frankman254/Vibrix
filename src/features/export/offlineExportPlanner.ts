@@ -17,8 +17,6 @@ export type OfflineExportPlanState = Pick<
 	| 'audioSourceMode'
 	| 'audioTracks'
 	| 'backgroundImages'
-	| 'cameraMotionEnabled'
-	| 'cameraShakeEnabled'
 	| 'logoEnabled'
 	| 'overlays'
 	| 'particlesEnabled'
@@ -184,37 +182,7 @@ function estimateLayerCost(
 	return 'low';
 }
 
-/**
- * Layers the live preview draws but the offline export does not yet. Listed
- * so the plan is honest about what the file will contain (Fase 1C adds them).
- */
-function buildUnsupportedLayerIssues(
-	state: OfflineExportPlanState
-): OfflineExportIssue[] {
-	const unsupported: Array<[boolean, string, string]> = [
-		[
-			state.particlesEnabled,
-			'export-unsupported-particles',
-			'Particles are not included in the exported video yet.'
-		],
-		[
-			state.rainEnabled,
-			'export-unsupported-rain',
-			'Rain is not included in the exported video yet.'
-		],
-		[
-			state.cameraMotionEnabled || state.cameraShakeEnabled,
-			'export-unsupported-camera-fx',
-			'Camera motion and shake are not included in the exported video yet.'
-		]
-	];
-	return unsupported
-		.filter(([active]) => active)
-		.map(([, code, message]) => ({ code, severity: 'warning', message }));
-}
-
 function buildIssues(
-	state: OfflineExportPlanState,
 	audio: OfflineExportAudioPlan,
 	capabilities: BrowserOfflineExportCapabilities
 ): OfflineExportIssue[] {
@@ -254,7 +222,6 @@ function buildIssues(
 		});
 	}
 
-	issues.push(...buildUnsupportedLayerIssues(state));
 	return issues;
 }
 
@@ -263,7 +230,7 @@ export function createOfflineExportPlan(
 	capabilities = detectBrowserOfflineExportCapabilities()
 ): OfflineExportPlan {
 	const audio = resolveAudioPlan(state);
-	const issues = buildIssues(state, audio, capabilities);
+	const issues = buildIssues(audio, capabilities);
 	const hasBlocker = issues.some(issue => issue.severity === 'blocker');
 	const hasWarning = issues.some(issue => issue.severity === 'warning');
 

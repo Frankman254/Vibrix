@@ -5,16 +5,10 @@ import {
 	spectrumSubsystem,
 	trackTitleSubsystem
 } from './audioLayers';
-import {
-	backgroundSubsystem,
-	hudSubsystem,
-	looksSubsystem,
-	motionSubsystem,
-	particlesSubsystem,
-	rainSubsystem
-} from './stubs';
+import { backgroundSubsystem, hudSubsystem, looksSubsystem } from './stubs';
 import { createGlobalBackgroundSubsystem } from './globalBackground';
 import { createOverlaysSubsystem } from './overlays';
+import { createSceneGlSubsystems } from './sceneGl';
 import {
 	createFlashLightSubsystem,
 	createStageLightsSubsystem
@@ -29,9 +23,9 @@ export function installDefaultRenderSubsystems(): void {
 	registerRenderSubsystem(backgroundSubsystem);
 	registerRenderSubsystem(createStageLightsSubsystem());
 	registerRenderSubsystem(looksSubsystem);
-	registerRenderSubsystem(motionSubsystem);
-	registerRenderSubsystem(particlesSubsystem);
-	registerRenderSubsystem(rainSubsystem);
+	for (const subsystem of createSceneGlSubsystems()) {
+		registerRenderSubsystem(subsystem);
+	}
 	registerRenderSubsystem(spectrumSubsystem);
 	registerRenderSubsystem(logoSubsystem);
 	registerRenderSubsystem(trackTitleSubsystem);

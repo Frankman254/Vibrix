@@ -920,12 +920,6 @@ export const en = {
 		'Web Audio is required to analyse the audio for export.',
 	offline_issue_webcodecs:
 		'This browser cannot encode video (WebCodecs). Use a recent Chrome, Edge or Safari, or the screen recorder below.',
-	offline_issue_unsupported_particles:
-		'Particles are not included in the exported video yet.',
-	offline_issue_unsupported_rain:
-		'Rain is not included in the exported video yet.',
-	offline_issue_unsupported_camera_fx:
-		'Camera motion and shake are not included in the exported video yet.',
 	// Project package selection
 	project_pkg_selective_caption:
 		'Selective export omits deselected modules and their matching asset blobs from the `.vibrix` package.',

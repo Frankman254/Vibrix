@@ -21,6 +21,7 @@ import {
 	buildActiveImageSelectionPatch,
 	buildCoveredAutoFitPatch
 } from '@/store/activeImageSelection';
+import { createVisualTransitionSnapshot } from '@/features/visualTransition/visualTransitionCoordinator';
 import type { WallpaperState } from '@/types/wallpaper';
 import { computeOfflineFrameCount } from './offlineVideoFormat';
 
@@ -37,15 +38,22 @@ export type PreparedSlideshowSegment = SlideshowSegment & {
 
 function selectImage(
 	state: Readonly<WallpaperState>,
-	imageId: string | null
+	imageId: string | null,
+	startMs: number
 ): WallpaperState {
 	const { patch } = buildActiveImageSelectionPatch(
 		state as WallpaperState,
 		imageId
 	);
-	// Scene fades are timed against the wall clock, which the export ignores:
-	// the switch is a cut for scene layers, like a reduced-motion preview.
-	return { ...state, ...patch, visualTransition: null };
+	// The same scene fade `setActiveImageId` publishes, started on the video
+	// clock instead of the wall clock so the frame loop can time it.
+	const visualTransition = createVisualTransitionSnapshot({
+		state,
+		patch,
+		toImageId: patch.activeImageId ?? null,
+		startedAtMs: startMs
+	});
+	return { ...state, ...patch, visualTransition };
 }
 
 /**
@@ -73,7 +81,7 @@ export function buildSlideshowSegments(
 		);
 		if (segments.length > 0 && imageId === currentImageId) continue;
 		if (imageId !== currentImageId) {
-			current = Object.freeze(selectImage(current, imageId));
+			current = Object.freeze(selectImage(current, imageId, startMs));
 			currentImageId = imageId;
 		}
 		segments.push({ startMs, imageId, state: current });

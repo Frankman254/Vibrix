@@ -145,3 +145,55 @@ export function ensureTrackFontsLoaded(): void {
 		});
 	}
 }
+
+const EXPORT_FONT_WEIGHTS = [300, 400, 500, 600, 700, 800, 900] as const;
+
+/**
+ * `font-family` / `font-weight` pairs a Lyrixa bundle's styles ask for,
+ * found anywhere in its JSON (layer styles, clip overrides).
+ */
+export function collectBundleFontSpecs(bundle: unknown): string[] {
+	const specs = new Set<string>();
+	const visit = (value: unknown, depth: number) => {
+		if (!value || typeof value !== 'object' || depth > 12) return;
+		if (Array.isArray(value)) {
+			for (const item of value) visit(item, depth + 1);
+			return;
+		}
+		const record = value as Record<string, unknown>;
+		const family = record.fontFamily;
+		if (typeof family === 'string' && family && family !== 'inherit') {
+			const weight = record.fontWeight ?? 400;
+			specs.add(`${weight} 32px ${family}`);
+		}
+		for (const child of Object.values(record)) visit(child, depth + 1);
+	};
+	visit(bundle, 0);
+	return [...specs];
+}
+
+/**
+ * Waits until every track/lyrics face is loaded at every weight a style can
+ * ask for, plus any extra `font` shorthands (a lyrics bundle's own faces).
+ * The offline export draws frame 0 immediately, so it cannot rely on the
+ * fire-and-forget warm-up repainting later.
+ */
+export async function loadTrackFonts(
+	extraFontSpecs: readonly string[] = []
+): Promise<void> {
+	if (typeof document === 'undefined' || !document.fonts) return;
+	ensureTrackFontsLoaded();
+	await Promise.all([
+		...FONT_WARMUP.flatMap(([family]) =>
+			EXPORT_FONT_WEIGHTS.map(weight =>
+				document.fonts
+					.load(`${weight} 32px "${family}"`)
+					.catch(() => undefined)
+			)
+		),
+		...extraFontSpecs.map(spec =>
+			document.fonts.load(spec).catch(() => undefined)
+		)
+	]);
+	await document.fonts.ready;
+}

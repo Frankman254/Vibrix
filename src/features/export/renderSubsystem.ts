@@ -17,6 +17,11 @@ export type RenderSubsystem = {
 		state: Readonly<WallpaperState>,
 		frameStates: readonly Readonly<WallpaperState>[]
 	): Promise<void>;
+	/**
+	 * Runs for every subsystem before any of them paints: state other layers
+	 * read this frame (the Flash Light drive behind Flash Edge) steps here.
+	 */
+	beginFrame?(ctx: RenderFrameContext): void;
 	render(ctx: RenderFrameContext): void;
 	reset?(): void;
 	dispose?(): void;
@@ -60,6 +65,16 @@ export function disposeAllRenderSubsystems(): void {
 		subsystem.dispose?.();
 	}
 	registry.clear();
+}
+
+/**
+ * Frees what every subsystem holds (scratch canvases, the WebGL context)
+ * while keeping them registered: the next export prepares them again.
+ */
+export function releaseRenderSubsystems(): void {
+	for (const subsystem of registry.values()) {
+		subsystem.dispose?.();
+	}
 }
 
 export async function prepareAllRenderSubsystems(

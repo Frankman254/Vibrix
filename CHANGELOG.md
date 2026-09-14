@@ -32,8 +32,8 @@ the version scheme in `src/lib/version.ts`.
   proporcionales a la pista y timestamps manuales. Cada cambio aplica la
   escena de la imagen (o sus overrides legacy), el reencuadre de Keep Covered
   y la paleta del fondo, y la transición de imagen es la del preview. El
-  sync por cambio de pista no aplica: el export es de una sola pista. Las
-  escenas cambian en corte (sin el fundido de escena, que va por reloj).
+  sync por cambio de pista no aplica: el export es de una sola pista. El
+  fundido de escena (`visualTransition`) también sale, por tiempo del vídeo.
   Lo que hace `setActiveImageId` vive ahora en `store/activeImageSelection`,
   compartido por el store y el export.
 - **Stage FX** ya sale en el vídeo: los haces de Stage Lights (sobre la
@@ -42,7 +42,7 @@ the version scheme in `src/lib/version.ts`.
   dibujo viven en `features/stageFx/render` y los usan los canvas en vivo y
   el export. Los tamaños en píxeles (blur, núcleo, destello, borde mínimo)
   se escalan a la resolución de salida. Flash Edge (el fondo que reacciona
-  al flash) no se exporta.
+  al flash) también sale.
 - **Análisis de audio del export = el del preview.** El análisis offline
   imita ahora el `AnalyserNode` en vivo byte a byte (ventana Blackman,
   magnitud / N, suavizado temporal con `audioSmoothing`, dB → byte, canales
@@ -60,8 +60,21 @@ the version scheme in `src/lib/version.ts`.
   frame antes de su máximo, el mismo golpe puede seguir subiendo dentro de
   la ventana de retrigger. A 30 fps el flash disparaba casi a 0 y la ventana
   se tragaba el pico.
-- El planner avisa ahora de **Camera FX** (movimiento y sacudida de cámara),
-  que el export todavía no aplica.
+- **Partículas** (fondo y primer plano) y **lluvia** ya salen en el vídeo.
+  La simulación vive en `features/particles/render/particleSimulation` y los
+  uniforms de la lluvia en `features/rain/render/rainUniforms`; la vista en
+  vivo (R3F) y el export (un `WebGLRenderer` propio, un solo contexto para
+  las tres capas) usan el mismo código y los mismos shaders. El tamaño de
+  punto y el blur de los filtros de partículas se escalan a la resolución de
+  salida.
+- **Camera FX** (movimiento y sacudida) ya sale en el vídeo, por capa: cada
+  capa objetivo se dibuja con la misma transformación que `CameraFxStage`
+  aplica en vivo, y las demás quedan quietas.
+- Las capas se dibujan en el **orden de `zIndex`** del editor (antes, en un
+  orden fijo por tipo).
+- Las **fuentes de las letras Lyrixa** (las que declara el bundle, no solo
+  las del estilo) se cargan antes del primer frame.
+- El planner ya no avisa de partículas, lluvia ni Camera FX.
 
 ### Export de vídeo offline — Fase 1A/1B (en curso)
 
@@ -70,8 +83,7 @@ the version scheme in `src/lib/version.ts`.
   proyecto. No usa `getDisplayMedia`, no depende de que la pestaña esté visible
   y el resultado no depende de la velocidad de la máquina.
 - Capas exportadas: fondo (imagen activa con bass zoom), spectrum, logo, track
-  title y letras Lyrixa. Partículas, lluvia, overlays, fondo global, Stage FX y
-  slideshow aún no: el planner avisa de cada una.
+  title y letras Lyrixa. El resto de capas llegó en la Fase 1C.
 - Resolución y fps elegibles, progreso por fase con ETA, cancelación. Con
   `showSaveFilePicker` escribe en streaming al archivo (y lo descarta al
   cancelar); sin él, descarga al final.

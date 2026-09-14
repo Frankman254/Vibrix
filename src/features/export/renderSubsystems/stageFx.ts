@@ -5,8 +5,9 @@
  * `StageLightsCanvas` / `FlashLightCanvas`, on the export clock and the
  * analysed audio, onto a scratch canvas composited into the frame.
  *
- * Flash Edge (the background image reacting to the flash) is not exported:
- * its drive is a live singleton the rAF loop owns.
+ * The flash steps in `beginFrame`, before any layer paints, and publishes
+ * its drive to the Flash Edge singleton the background and logo read — the
+ * same hand-off the live `FlashLightCanvas` makes every rAF.
  */
 import { getEditorThemePalette } from '@/lib/backgroundPalette';
 import { getCurrentViewportResolution } from '@/features/layout/viewportMetrics';
@@ -19,6 +20,7 @@ import {
 	stepFlashLight,
 	stepStageLights
 } from '@/features/stageFx/render';
+import { updateFlashEdgeDrive } from '@/features/stageFx/flashEdgeDrive';
 import type { RenderFrameContext } from '../renderFrameContext';
 import type { RenderSubsystem } from '../renderSubsystem';
 
@@ -119,14 +121,21 @@ export function createFlashLightSubsystem(): RenderSubsystem {
 	const scratch = createScratch();
 	let runtime = createFlashLightRuntime();
 	let viewportMin = 0;
+	let color = '#ffffff';
 
 	return {
 		id: 'flashLight',
 		async prepare() {
 			viewportMin = readViewportMin();
 		},
-		render(ctx: RenderFrameContext) {
-			if (!ctx.audio || !ctx.state.flashLightEnabled) return;
+		beginFrame(ctx: RenderFrameContext) {
+			// Live, Flash Edge only moves while the Flash Light canvas is
+			// mounted, i.e. while Flash Light is on.
+			if (!ctx.audio || !ctx.state.flashLightEnabled) {
+				runtime.drive = 0;
+				updateFlashEdgeDrive(0, color);
+				return;
+			}
 			stepFlashLight(
 				runtime,
 				ctx.state,
@@ -134,16 +143,20 @@ export function createFlashLightSubsystem(): RenderSubsystem {
 				ctx.timeMs,
 				Math.min(ctx.deltaMs / 1000, MAX_STEP_SEC)
 			);
+			color = resolveFlashLightColor(ctx.state, {
+				background: ctx.palette,
+				theme: getEditorThemePalette(ctx.state.editorTheme)
+			});
+			updateFlashEdgeDrive(runtime.drive, color);
+		},
+		render(ctx: RenderFrameContext) {
+			if (!ctx.audio || !ctx.state.flashLightEnabled) return;
 			if (runtime.drive <= 0.001) return;
 			const target = ctx.canvas.getContext('2d');
 			const { width, height } = ctx.resolution;
 			const scratchCtx = scratch.get(width, height);
 			if (!target || !scratchCtx) return;
 
-			const color = resolveFlashLightColor(ctx.state, {
-				background: ctx.palette,
-				theme: getEditorThemePalette(ctx.state.editorTheme)
-			});
 			scratchCtx.clearRect(0, 0, width, height);
 			drawFlashLight(
 				scratchCtx,

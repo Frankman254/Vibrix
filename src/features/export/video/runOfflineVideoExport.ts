@@ -13,6 +13,11 @@
  * song of encoded audio waiting for video.
  */
 import { formatTrackTitle } from '@/lib/audio/trackTitle';
+import { getCurrentViewportResolution } from '@/features/layout/viewportMetrics';
+import {
+	collectBundleFontSpecs,
+	loadTrackFonts
+} from '@/lib/canvasText/trackFonts';
 import { pinRenderClock } from '@/lib/visual/renderClock';
 import { buildOfflineContext } from '../buildRenderContext';
 import { getRenderStateSnapshot } from '../getRenderStateSnapshot';
@@ -20,6 +25,7 @@ import { createOfflineAudioAnalysisSourceFromBuffer } from '../offlineAudioAnaly
 import { renderFrameAt } from '../renderFrame';
 import {
 	prepareAllRenderSubsystems,
+	releaseRenderSubsystems,
 	registerRenderSubsystem,
 	resetAllRenderSubsystems,
 	type RenderSubsystem
@@ -37,6 +43,7 @@ import {
 	type OfflineVideoExportProgress,
 	type OfflineVideoFormat
 } from './offlineVideoFormat';
+import { createOfflineCameraFx } from './offlineCameraFx';
 import {
 	buildSlideshowSegments,
 	findSlideshowSegmentAt,
@@ -143,6 +150,16 @@ export async function runOfflineVideoExport(
 		buildSlideshowSegments(frozen.state, durationMs, fps),
 		frozen.state
 	);
+	// Lyrics and the track title paint web fonts on frame 0: load every face
+	// first, or the opening frames fall back to system fonts.
+	await loadTrackFonts(
+		Object.values(frozen.state.audioLyricsByTrackAssetId ?? {}).flatMap(
+			entry =>
+				entry?.lyrixaBundle
+					? collectBundleFontSpecs(entry.lyrixaBundle)
+					: []
+		)
+	);
 	await prepareAllRenderSubsystems(
 		segments[0].state,
 		segments.map(segment => segment.state)
@@ -166,6 +183,13 @@ export async function runOfflineVideoExport(
 		format: options.format,
 		sink: options.sink
 	});
+
+	const cameraFx = createOfflineCameraFx(
+		Math.min(
+			getCurrentViewportResolution().width,
+			getCurrentViewportResolution().height
+		)
+	);
 
 	try {
 		resetAllRenderSubsystems();
@@ -195,6 +219,14 @@ export async function runOfflineVideoExport(
 			target.fillRect(0, 0, width, height);
 
 			const segment = findSlideshowSegmentAt(segments, timeMs);
+			const audio = analysis.getSnapshotAt(timeMs);
+			const resolveLayerTransform = cameraFx.step({
+				state: segment.state,
+				audio,
+				timeMs,
+				deltaMs: frameStepMs,
+				resolution: { width, height }
+			});
 			// Pinned only while the frame draws: the live preview keeps real
 			// time across the awaits below.
 			pinRenderClock(timeMs);
@@ -204,7 +236,7 @@ export async function runOfflineVideoExport(
 						canvas,
 						state: segment.state,
 						palette: segment.palette,
-						audio: analysis.getSnapshotAt(timeMs),
+						audio,
 						resolution: { width, height },
 						timeMs,
 						deltaMs: frameStepMs,
@@ -212,7 +244,8 @@ export async function runOfflineVideoExport(
 						trackCurrentTime: timeMs / 1000,
 						trackDuration,
 						abortSignal
-					})
+					}),
+					{ resolveLayerTransform }
 				);
 			} finally {
 				pinRenderClock(null);
@@ -270,6 +303,7 @@ export async function runOfflineVideoExport(
 		throw error;
 	} finally {
 		analysis.dispose();
+		releaseRenderSubsystems();
 		canvas.width = 1;
 		canvas.height = 1;
 	}

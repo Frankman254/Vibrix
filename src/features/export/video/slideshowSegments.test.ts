@@ -80,8 +80,13 @@ describe('buildSlideshowSegments', () => {
 		expect(segments[0].state.spectrumEnabled).toBe(true);
 		expect(segments[1].state.spectrumEnabled).toBe(false);
 		expect(segments[1].state.activeSceneSlotId).toBe(scene.id);
-		// Scene fades run on the wall clock; the export cuts instead.
-		expect(segments[1].state.visualTransition).toBeNull();
+		// The scene fade starts with the segment, on the video clock.
+		expect(segments[1].state.visualTransition).toMatchObject({
+			startedAtMs: segments[1].startMs
+		});
+		expect(segments[1].state.visualTransition?.subsystems).toContain(
+			'spectrum'
+		);
 	});
 });
 
