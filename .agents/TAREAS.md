@@ -19,10 +19,13 @@
 
 0. **[TAREA_EXPORT_RAPIDO_AISLADO.md](TAREA_EXPORT_RAPIDO_AISLADO.md)**
    (fases A→F, un commit por fase, auditoría de Claude entre fases).
-   **Fase A commiteada (`76e9d981`), Fase A.bis commiteada (`d9809cc6`) y
-   Fase C (audio por ventanas, §1.4) commiteada en esta sesión** — todas
-   esperan la auditoría de Claude. Siguen Fase B (medición/calidad/GPU) y
-   Fase D (tramos con pausa/reanudación, que reusa el sink OPFS).
+   **Fase A commiteada (`76e9d981`), Fase A.bis commiteada (`d9809cc6`),
+   Fase C (audio por ventanas, §1.4) y el punto B.2 de Fase B (bitrate
+   explícito en tabla + gate de almacenamiento honesto) commiteados en esta
+   sesión** — todas esperan la auditoría de Claude. De Fase B quedan B.1
+   (instrumentación/tabla), B.3 (`powerPreference` + `webglcontextlost` en
+   `sceneGl.ts`) y B.4 (diagnóstico GPU/encoder en la tab). Sigue Fase D
+   (tramos con pausa/reanudación, que reusa el sink OPFS).
 
 1. Pedir al usuario el resultado de la prueba de 3 min (tiempo, peso, si
    reproduce, si el audio va sincronizado). Si falla, arreglar antes de 1C.

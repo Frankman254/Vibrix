@@ -15,6 +15,32 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Gate de almacenamiento honesto (insufficient-storage)
+
+- **El "no hay espacio" ahora dice números.** El sink OPFS sondea el cupo con
+  `navigator.storage.estimate()` DESPUÉS de barrer restos de exportaciones
+  caídas (antes el barrido era fire-and-forget y competía con la comprobación,
+  leyendo espacio falsamente bajo) y de pedir `storage.persist()`. Si el cupo
+  no alcanza o el disco está lleno al escribir, lanza
+  `OfflineStorageError { neededBytes, freeBytes }`; la UI lo traduce a "esta
+  exportación necesita ~X, hay ~Y libres" (i18n en/es) en vez del mensaje
+  genérico. El fallback de buffer sin OPFS usa el mismo error con `free: null`
+  → "libres: desconocido".
+- **Fix del preview del análisis:** decía "decoded 3.65 GB · memory high" con
+  el costo del decode completo, que el camino streaming nunca paga. Ahora dice
+  "full-buffer would be X" — informativo, no alarma.
+
+### Export de vídeo offline — bitrate explícito (Fase B)
+
+- **Un solo número manda.** `recommendedVideoBitrateFor(width, height, fps)`
+  fija la tabla aprobada: 16 Mbps en 1080p30, ×1.5 a 60 fps (24 Mbps), lineal
+  en píxeles (4K = 64). El encoder codifica a ese bitrate (VBR,
+  `hardwareAcceleration: 'prefer-hardware'` con probe previo y fallback a
+  `QUALITY_HIGH` si el navegador no acepta esa config exacta) y el estimador
+  de tamaño usa la misma función, así que el gate de espacio no puede
+  desviarse de lo que el archivo va a costar. Antes `QUALITY_HIGH` corría a
+  ~38 Mbps medidos en 1080p60, ~1,6× sobre lo que el gate reservaba.
+
 ### Export de vídeo offline — Fase C (audio por ventanas)
 
 - **El audio del export ya no se decodifica entero.** `decodeOfflineAudioFile`
