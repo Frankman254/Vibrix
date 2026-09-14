@@ -12,6 +12,7 @@ import {
 	CanvasSource,
 	Mp4OutputFormat,
 	Output,
+	Quality,
 	QUALITY_HIGH,
 	StreamTarget,
 	WebMOutputFormat,
@@ -23,6 +24,7 @@ import type {
 	OfflineCodecProbe,
 	OfflineVideoFormat
 } from './offlineVideoFormat';
+import { recommendedVideoBitrateFor } from './offlineVideoFormat';
 
 export const mediabunnyCodecProbe: OfflineCodecProbe = {
 	canEncodeVideo: (codec, size) =>
@@ -88,10 +90,33 @@ export async function createOfflineVideoEncoder(options: {
 				})
 			: new WebMOutputFormat();
 
+	// Explicit VBR at the table bitrate keeps predictable quality and file
+	// size (the old QUALITY_HIGH ran ~38 Mbps at 1080p60 on Macs). Hardware
+	// encoding is preferred for long exports. If the browser cannot honour
+	// that exact config, fall back to the old qualitative path so an export
+	// never fails just because the rate-control preference is unsupported.
+	const bitrate = recommendedVideoBitrateFor({
+		width: canvas.width,
+		height: canvas.height,
+		fps
+	});
+	const rateControlled = new Quality({ bitrate, bitrateMode: 'variable' });
+	const canUseRateControl = await canEncodeVideo(format.videoCodec, {
+		width: canvas.width,
+		height: canvas.height,
+		quality: rateControlled,
+		hardwareAcceleration: 'prefer-hardware'
+	}).catch(() => false);
+
 	const output = new Output({ format: outputFormat, target });
 	const videoSource = new CanvasSource(canvas, {
 		codec: format.videoCodec,
-		quality: QUALITY_HIGH,
+		...(canUseRateControl
+			? {
+					quality: rateControlled,
+					hardwareAcceleration: 'prefer-hardware' as const
+				}
+			: { quality: QUALITY_HIGH }),
 		keyFrameInterval: 2
 	});
 	const audioSource = new AudioBufferSource({

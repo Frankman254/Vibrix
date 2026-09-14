@@ -4,6 +4,7 @@ import {
 	computeOfflineFrameCount,
 	estimateOfflineExportEtaMs,
 	estimateOfflineVideoBytes,
+	recommendedVideoBitrateFor,
 	resolveOfflineVideoFormat,
 	type OfflineAudioCodecId,
 	type OfflineCodecProbe,
@@ -106,8 +107,23 @@ describe('offline export progress math', () => {
 	});
 });
 
+describe('recommendedVideoBitrateFor', () => {
+	it('matches the approved quality/size table', () => {
+		expect(
+			recommendedVideoBitrateFor({ width: 1920, height: 1080, fps: 30 })
+		).toBe(16_000_000);
+		// 60 fps pays 1.5x, not 2x: VVR exploits temporal redundancy.
+		expect(
+			recommendedVideoBitrateFor({ width: 1920, height: 1080, fps: 60 })
+		).toBe(24_000_000);
+		expect(
+			recommendedVideoBitrateFor({ width: 3840, height: 2160, fps: 30 })
+		).toBe(64_000_000);
+	});
+});
+
 describe('estimateOfflineVideoBytes', () => {
-	it('tracks QUALITY_HIGH output: 1080p30 ≈ 16 Mbps video + 256 kbps audio', () => {
+	it('uses the encoder bitrate: 1080p30 ≈ 16 Mbps video + 256 kbps audio', () => {
 		const bytes = estimateOfflineVideoBytes({
 			width: 1920,
 			height: 1080,

@@ -162,11 +162,28 @@ export function estimateOfflineExportEtaMs(
 }
 
 /**
+ * The encoder's video target bitrate (bps) for a preset, per the launch
+ * plan's quality/size table: 16 Mbps at 1080p30 (the observed YouTube-safe
+ * tier for this content), ×1.5 for 60 fps (motion needs headroom but not a
+ * doubling), and linear in pixel count above that. One source of truth: the
+ * encoder encodes at exactly this rate and the size estimate below uses it,
+ * so the "does it fit?" gate cannot drift from what the file will cost.
+ */
+export function recommendedVideoBitrateFor(options: {
+	width: number;
+	height: number;
+	fps: number;
+}): number {
+	const pixels = options.width * options.height;
+	const fpsScale = options.fps >= 60 ? 1.5 : 1;
+	return Math.round(16_000_000 * (pixels / (1920 * 1080)) * fpsScale);
+}
+
+/**
  * Rough size of the finished file, for the "does it fit?" check before an
- * export starts. Calibrated against the encoder's own behaviour: QUALITY_HIGH
- * lands near 16 Mbps at 1080p30, which scales with pixel count and frame
- * rate; audio is small but kept generous (256 kbps). Over-estimating only
- * costs a pre-flight warning — under-estimating means a crash at finalize.
+ * export starts. Video comes from the encoder's own target bitrate; audio is
+ * small but kept generous (256 kbps). Over-estimating only costs a pre-flight
+ * warning — under-estimating means a crash mid-write.
  */
 export function estimateOfflineVideoBytes(options: {
 	width: number;
@@ -174,9 +191,7 @@ export function estimateOfflineVideoBytes(options: {
 	fps: number;
 	durationSec: number;
 }): number {
-	const pixels = options.width * options.height;
-	const videoBitsPerSecond =
-		16_000_000 * (pixels / (1920 * 1080)) * (options.fps / 30);
+	const videoBitsPerSecond = recommendedVideoBitrateFor(options);
 	const audioBitsPerSecond = 256_000;
 	return Math.ceil(
 		((videoBitsPerSecond + audioBitsPerSecond) / 8) * options.durationSec
