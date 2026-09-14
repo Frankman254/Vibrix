@@ -108,31 +108,32 @@ describe('offline export progress math', () => {
 });
 
 describe('recommendedVideoBitrateFor', () => {
-	it('matches the approved quality/size table', () => {
+	it('matches the quality table', () => {
 		expect(
 			recommendedVideoBitrateFor({ width: 1920, height: 1080, fps: 30 })
-		).toBe(16_000_000);
+		).toBe(28_000_000);
 		// 60 fps pays 1.5x, not 2x: VVR exploits temporal redundancy.
 		expect(
 			recommendedVideoBitrateFor({ width: 1920, height: 1080, fps: 60 })
-		).toBe(24_000_000);
+		).toBe(42_000_000);
+		// Sub-linear in pixels: 4x the pixels costs ~3x the bits.
 		expect(
 			recommendedVideoBitrateFor({ width: 3840, height: 2160, fps: 30 })
-		).toBe(64_000_000);
+		).toBe(84_900_000);
 	});
 });
 
 describe('estimateOfflineVideoBytes', () => {
-	it('uses the encoder bitrate: 1080p30 ≈ 16 Mbps video + 256 kbps audio', () => {
+	it('uses the encoder bitrate: 1080p30 ≈ 28 Mbps video + 256 kbps audio', () => {
 		const bytes = estimateOfflineVideoBytes({
 			width: 1920,
 			height: 1080,
 			fps: 30,
 			durationSec: 60
 		});
-		// (16e6 + 256e3) / 8 * 60 = 121_920_000 — a bits/bytes slip here
+		// (28e6 + 256e3) / 8 * 60 = 211_920_000 — a bits/bytes slip here
 		// silently under-reserves the disk by 8x.
-		expect(bytes).toBe(121_920_000);
+		expect(bytes).toBe(211_920_000);
 	});
 
 	it('scales with duration, pixels and frame rate', () => {

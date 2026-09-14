@@ -15,6 +15,26 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Export de vídeo offline — audio limpio, más calidad y 4 resoluciones
+
+- **Audio "horrible" arreglado (Brave).** En Brave, la protección antihuellas
+  reescala las muestras de un `AudioBuffer` in-place en cada
+  `getChannelData()`. La pista streaming lo llamaba por cada muestra, así que
+  cada trozo decodificado (1152 muestras en mp3) se apagaba hacia el silencio:
+  ganancia media 0,43 y SNR ~5 dB medidos contra la canción original. Ahora
+  cada canal se lee una vez por trozo.
+- **El encoder recibe las muestras nativas, sin remuestrear.** Solo el
+  análisis del spectrum sigue remuestreando a la tasa del `AudioContext`. El
+  audio del vídeo vuelve a salir a la tasa del archivo (p. ej. 48 kHz),
+  idéntico bit a bit a lo decodificado (verificado en Brave headless). La
+  interpolación lineal costaba ~9 dB. El hook de análisis ya no retiene los
+  trozos que no va a codificar (`feedsEncoder`).
+- **Más bitrate.** 28 Mbps en 1080p30, ×1,5 a 60 fps (42 Mbps) y
+  píxeles^0,8 entre resoluciones (4K60 ≈ 127 Mbps). La tabla anterior
+  (24 Mbps en 1080p60) empastaba partículas y bordes neón.
+- **Resoluciones: 720p, 1080p, 1440p y 4K.** Se quitan Ultrawide 1080p y
+  Ultrawide 1440p.
+
 ### Gate de almacenamiento honesto (insufficient-storage)
 
 - **El "no hay espacio" ahora dice números.** El sink OPFS sondea el cupo con

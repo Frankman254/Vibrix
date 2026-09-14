@@ -105,19 +105,19 @@ Las capas se dibujan por `zIndex`.
 
 Todo bajo `src/features/export/`.
 
-| Archivo                                  | Qué hace                                                                                                    |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `video/runOfflineVideoExport.ts`         | Bucle de frames: congela estado, segmentos del slideshow, audio, `renderFrameAt`, encoder, libera recursos  |
-| `video/offlineAudioTrack.ts`             | Pista de audio streaming: mediabunny por chunks, resample, anillo de dos cursores, rodajas ≤ reloj de vídeo |
-| `renderSubsystem.ts`                     | Registro `RenderSubsystem { id, prepare?, beginFrame?, render, reset?, dispose? }`                          |
-| `renderSubsystems/index.ts`              | `installDefaultRenderSubsystems()`: registra todos los subsistemas                                          |
-| `renderSubsystems/sceneGl.ts`            | Partículas y lluvia con un `WebGLRenderer` propio (mismos shaders que en vivo)                              |
-| `renderSubsystems/stageFx.ts`            | Stage Lights, Flash Light y Flash Edge                                                                      |
-| `renderSubsystems/stubs.ts`              | No-ops que quedan (background, hud)                                                                         |
-| `renderFrame.ts` + `frameComposition.ts` | Orden por `zIndex`, alpha de transición y transform de Camera FX por capa                                   |
-| `video/offlineCameraFx.ts`               | Estado de movimiento y shake avanzado por tiempo del vídeo                                                  |
-| `video/slideshowSegments.ts`             | Qué imagen o escena toca en cada frame, con fundido                                                         |
-| `offlineExportPlanner.ts`                | Avisos y bloqueos antes de exportar (puro, sin canvas)                                                      |
+| Archivo                                  | Qué hace                                                                                                     |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `video/runOfflineVideoExport.ts`         | Bucle de frames: congela estado, segmentos del slideshow, audio, `renderFrameAt`, encoder, libera recursos   |
+| `video/offlineAudioTrack.ts`             | Pista de audio streaming: mediabunny por chunks; análisis remuestreado, encoder con muestras nativas ≤ reloj |
+| `renderSubsystem.ts`                     | Registro `RenderSubsystem { id, prepare?, beginFrame?, render, reset?, dispose? }`                           |
+| `renderSubsystems/index.ts`              | `installDefaultRenderSubsystems()`: registra todos los subsistemas                                           |
+| `renderSubsystems/sceneGl.ts`            | Partículas y lluvia con un `WebGLRenderer` propio (mismos shaders que en vivo)                               |
+| `renderSubsystems/stageFx.ts`            | Stage Lights, Flash Light y Flash Edge                                                                       |
+| `renderSubsystems/stubs.ts`              | No-ops que quedan (background, hud)                                                                          |
+| `renderFrame.ts` + `frameComposition.ts` | Orden por `zIndex`, alpha de transición y transform de Camera FX por capa                                    |
+| `video/offlineCameraFx.ts`               | Estado de movimiento y shake avanzado por tiempo del vídeo                                                   |
+| `video/slideshowSegments.ts`             | Qué imagen o escena toca en cada frame, con fundido                                                          |
+| `offlineExportPlanner.ts`                | Avisos y bloqueos antes de exportar (puro, sin canvas)                                                       |
 
 Código compartido entre la vista en vivo y el export (cambiar uno cambia los
 dos):

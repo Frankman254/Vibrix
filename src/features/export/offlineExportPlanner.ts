@@ -239,7 +239,10 @@ export function createOfflineExportPlan(
 		status: hasBlocker ? 'blocked' : hasWarning ? 'warning' : 'ready',
 		profile: {
 			fps: 30,
-			resolution: OFFLINE_EXPORT_RESOLUTION_PRESETS[0],
+			resolution:
+				OFFLINE_EXPORT_RESOLUTION_PRESETS.find(
+					preset => preset.id === '1080p'
+				) ?? OFFLINE_EXPORT_RESOLUTION_PRESETS[0],
 			qualityMode: 'balanced',
 			containerTarget: 'mp4-friendly'
 		},

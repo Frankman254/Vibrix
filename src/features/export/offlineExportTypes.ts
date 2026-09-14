@@ -5,11 +5,7 @@ export const OFFLINE_EXPORT_ARCHITECTURE_VERSION = 1;
 export const OFFLINE_EXPORT_FPS_OPTIONS = [30, 60] as const;
 export type OfflineExportFps = (typeof OFFLINE_EXPORT_FPS_OPTIONS)[number];
 
-export type OfflineExportResolutionPresetId =
-	| '1080p'
-	| '1440p'
-	| 'ultrawide-1080p'
-	| 'ultrawide-1440p';
+export type OfflineExportResolutionPresetId = '720p' | '1080p' | '1440p' | '4k';
 
 export type OfflineExportResolutionPreset = {
 	id: OfflineExportResolutionPresetId;
@@ -20,20 +16,10 @@ export type OfflineExportResolutionPreset = {
 
 export const OFFLINE_EXPORT_RESOLUTION_PRESETS: OfflineExportResolutionPreset[] =
 	[
+		{ id: '720p', label: '720p', width: 1280, height: 720 },
 		{ id: '1080p', label: '1080p', width: 1920, height: 1080 },
 		{ id: '1440p', label: '1440p', width: 2560, height: 1440 },
-		{
-			id: 'ultrawide-1080p',
-			label: 'Ultrawide 1080p',
-			width: 2560,
-			height: 1080
-		},
-		{
-			id: 'ultrawide-1440p',
-			label: 'Ultrawide 1440p',
-			width: 3440,
-			height: 1440
-		}
+		{ id: '4k', label: '4K', width: 3840, height: 2160 }
 	];
 
 export type OfflineExportQualityMode = 'draft' | 'balanced' | 'production';

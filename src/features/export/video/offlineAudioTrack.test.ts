@@ -81,6 +81,7 @@ function makeTrack(options: Partial<OfflineAudioTrackFromChunksOptions>) {
 		durationSec: 2,
 		targetSampleRate: SAMPLE_RATE,
 		lookaheadSamples: 2048,
+		feedsEncoder: true,
 		...options,
 		makeAudioBuffer: (channels, sampleRate) =>
 			fakeBuffer(channels, sampleRate) as unknown as AudioBuffer
@@ -116,20 +117,66 @@ describe('offline audio track', () => {
 		}
 	});
 
-	it('linearly resamples chunk data to the target rate', async () => {
+	it('linearly resamples the analysis window to the target rate', async () => {
 		// A ramp at 48k sampled at 24k must equal the ramp read at even
 		// native indices (frac = 0 there, so the values are exact).
 		const chunks = chunkRamp(48_000, 7_000);
 		const track = makeTrack({
 			chunks: chunkStream(chunks),
 			targetSampleRate: 24_000,
-			sliceSamples: 4_000
+			lookaheadSamples: 4_000
 		});
-		const data = asFake(await track.nextSlice(4_000)).getChannelData(0);
-		expect(data.length).toBe(4_000);
+		await track.ensureWindow(4_000);
+		const data = new Float32Array(4_000);
+		track.fillWindow(4_000, data);
 		const merged = mergeChunks(chunks);
 		for (let index = 0; index < 4_000; index += 1) {
 			expect(data[index]).toBeCloseTo(merged[index * 2], 6);
+		}
+	});
+
+	it('hands the encoder native samples, untouched, at the native rate', async () => {
+		const chunks = chunkRamp(48_000, 7_000);
+		const track = makeTrack({
+			chunks: chunkStream(chunks),
+			targetSampleRate: 44_100,
+			sliceSamples: 48_000
+		});
+		// Half a second on the analysis clock is 24k native samples.
+		const slice = asFake(await track.nextSlice(22_050));
+		expect(slice.sampleRate).toBe(48_000);
+		expect(slice.length).toBe(24_000);
+		expect(Array.from(slice.getChannelData(0))).toEqual(
+			Array.from(mergeChunks(chunks).subarray(0, 24_000))
+		);
+	});
+
+	it('reads each chunk once (Brave rescales samples per getChannelData)', async () => {
+		async function* farbled(): AsyncGenerator<AudioBuffer> {
+			for (const chunk of chunkRamp(SAMPLE_RATE, 1_000)) {
+				const data = Float32Array.from(chunk);
+				yield {
+					...fakeBuffer([data], SAMPLE_RATE),
+					getChannelData: () => {
+						for (let index = 0; index < data.length; index += 1) {
+							data[index] *= 0.99;
+						}
+						return data;
+					}
+				} as unknown as AudioBuffer;
+			}
+		}
+		const track = makeTrack({
+			chunks: farbled(),
+			durationSec: 1,
+			lookaheadSamples: SAMPLE_RATE
+		});
+		await track.ensureWindow(SAMPLE_RATE);
+		const window = new Float32Array(SAMPLE_RATE);
+		track.fillWindow(SAMPLE_RATE, window);
+		const merged = mergeChunks(chunkRamp(SAMPLE_RATE, 1_000));
+		for (let index = 0; index < SAMPLE_RATE; index += 997) {
+			expect(window[index]).toBeCloseTo(merged[index] * 0.99, 5);
 		}
 	});
 
@@ -174,12 +221,13 @@ describe('offline audio track', () => {
 			chunks: chunkStream(chunkRamp(30_000, 7_000)),
 			durationSec: 30_000 / SAMPLE_RATE,
 			targetSampleRate: 96_000,
-			sliceSamples: 96_000
+			lookaheadSamples: 60_000
 		});
-		const slice = asFake(await track.nextSlice(Number.POSITIVE_INFINITY));
-		expect(slice.length).toBe(60_000);
+		await track.ensureWindow(60_000);
+		const window = new Float32Array(60_000);
+		track.fillWindow(60_000, window);
 		// A rising ramp: the last value must sit near the ramp's end, not 0.
-		expect(slice.getChannelData(0)[slice.length - 1]).toBeGreaterThan(0.9);
+		expect(window[window.length - 1]).toBeGreaterThan(0.9);
 	});
 
 	it('rejects pumps after dispose', async () => {

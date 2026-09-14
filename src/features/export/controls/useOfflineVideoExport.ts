@@ -209,7 +209,10 @@ export function useOfflineVideoExport({
 			setProgress({ ...IDLE_PROGRESS, phase: 'decoding' });
 			// Opens metadata + decoder only: no samples are held before the
 			// frame loop pumps them, so a 3-hour mix never hits RAM at once.
-			audioTrack = await openOfflineAudioTrack(blob, { fftSize });
+			audioTrack = await openOfflineAudioTrack(blob, {
+				fftSize,
+				feedsEncoder: true
+			});
 			controller.signal.throwIfAborted();
 
 			if (sink.kind === 'buffer') {

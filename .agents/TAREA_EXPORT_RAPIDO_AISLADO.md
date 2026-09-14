@@ -199,8 +199,9 @@ al inicio.
     usuario. **Nada de optimizar antes de tener esta tabla.**
 
 2. **Encoder:**
-    - bitrate explícito por resolución y fps (referencia: 1080p30 ≈ 16 Mbps,
-      1080p60 ≈ 24–30 Mbps, 1440p ×1,8, 4K ×4);
+    - bitrate explícito por resolución y fps (hecho y subido el 2026-09-14 a pedido del
+      usuario: 1080p30 = 28 Mbps, 1080p60 = 42 Mbps, píxeles^0,8; ver
+      `recommendedVideoBitrateFor`);
     - `bitrateMode: 'variable'`, `latencyMode: 'quality'`,
       `hardwareAcceleration: 'prefer-hardware'`;
     - si `canEncodeVideo` falla con hardware, reintenta con `'no-preference'`.
