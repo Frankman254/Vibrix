@@ -79,6 +79,11 @@ Las capas se dibujan por `zIndex`.
 
 ### Pendiente (en orden sugerido)
 
+> **Tarea activa:** [TAREA_EXPORT_RAPIDO_AISLADO.md](TAREA_EXPORT_RAPIDO_AISLADO.md)
+> — bug de spectrum acelerado/duplicado (estado compartido preview↔export),
+> calidad en Windows, audio de 1–3 h, pausa/tramos/reanudar y editor libre.
+> Va **antes** que la lista de abajo. Fase por fase, con auditoría de Claude.
+
 1. **Verificar letras** en un vídeo con un bundle Lyrixa real (sincronía ±1
    frame y estilos). No se ha verificado visualmente.
 2. **Flash Edge** no se ha revisado frame a frame.

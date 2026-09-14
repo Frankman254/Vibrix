@@ -17,6 +17,9 @@
 
 ### Siguiente paso concreto
 
+0. **Primero:** [TAREA_EXPORT_RAPIDO_AISLADO.md](TAREA_EXPORT_RAPIDO_AISLADO.md)
+   (fases A→F, un commit por fase, auditoría de Claude entre fases).
+
 1. Pedir al usuario el resultado de la prueba de 3 min (tiempo, peso, si
    reproduce, si el audio va sincronizado). Si falla, arreglar antes de 1C.
 2. Medir el criterio "≤ 1,5× la duración" y apuntarlo aquí.
