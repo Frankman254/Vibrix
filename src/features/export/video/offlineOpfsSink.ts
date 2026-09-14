@@ -77,23 +77,73 @@ export async function sweepStaleOpfsExports(): Promise<void> {
 }
 
 /**
+ * Storage gate failed, with the numbers that prove it. The message stays the
+ * `insufficient-storage` contract the export hook maps; the fields give the
+ * UI the needed/free bytes and the console the raw quota snapshot.
+ */
+export class OfflineStorageError extends Error {
+	readonly neededBytes: number;
+	/** Free bytes reported by the quota system; null when it cannot answer. */
+	readonly freeBytes: number | null;
+
+	constructor(fields: {
+		neededBytes: number;
+		freeBytes: number | null;
+		quotaBytes?: number;
+		usageBytes?: number;
+	}) {
+		super('insufficient-storage');
+		this.name = 'OfflineStorageError';
+		this.neededBytes = fields.neededBytes;
+		this.freeBytes = fields.freeBytes;
+		// Kept only for the console.error trail.
+		this.quotaBytes = fields.quotaBytes ?? null;
+		this.usageBytes = fields.usageBytes ?? null;
+	}
+
+	readonly quotaBytes: number | null;
+	readonly usageBytes: number | null;
+}
+
+/**
+ * Ask the browser to raise this origin's storage ceiling. Persistent storage
+ * lifts the eviction pressure and (on Chrome) grants a much larger share of
+ * the free disk, which multi-hour exports need. Best effort: a denial just
+ * leaves the smaller temporary quota in place.
+ */
+async function ensurePersistentStorage(): Promise<void> {
+	try {
+		if ((await navigator.storage.persisted?.()) === true) return;
+		await navigator.storage.persist?.();
+	} catch {
+		// The quota check below still gets an honest answer.
+	}
+}
+
+/**
  * Free space reported by the quota system, or null when the browser cannot
  * answer. The 10% margin covers muxer overhead and the estimate's own error.
  */
-export async function opfsHasSpaceFor(
-	estimatedBytes: number
-): Promise<boolean> {
+async function opfsFreeBytes(): Promise<{
+	freeBytes: number;
+	quotaBytes: number;
+	usageBytes: number;
+} | null> {
 	try {
 		const estimate = await navigator.storage.estimate();
 		if (
 			typeof estimate.quota !== 'number' ||
 			typeof estimate.usage !== 'number'
 		) {
-			return true;
+			return null;
 		}
-		return estimate.quota - estimate.usage >= estimatedBytes * 1.1;
+		return {
+			freeBytes: estimate.quota - estimate.usage,
+			quotaBytes: estimate.quota,
+			usageBytes: estimate.usage
+		};
 	} catch {
-		return true;
+		return null;
 	}
 }
 
@@ -109,7 +159,9 @@ function sleep(ms: number): Promise<void> {
  * position-based writes land on disk and a cancelled export aborts the file
  * instead of committing a half-video.
  *
- * Throws `insufficient-storage` when the quota check fails or the file cannot
+ * Reclaims files from crashed runs and asks for persistent storage BEFORE the
+ * quota check, so the gate sees today's real free space, not stale debris.
+ * Throws `OfflineStorageError` when the quota check fails or the file cannot
  * be created (a disk-full signal); returns null when OPFS is unavailable and
  * the caller should consider the buffer fallback.
  */
@@ -119,8 +171,16 @@ export async function createOpfsVideoSink(options: {
 	isCancelled: () => boolean;
 }): Promise<OpfsVideoSink | null> {
 	if (!opfsSupported()) return null;
-	if (!(await opfsHasSpaceFor(options.estimatedBytes))) {
-		throw new Error('insufficient-storage');
+	await sweepStaleOpfsExports();
+	await ensurePersistentStorage();
+	const free = await opfsFreeBytes();
+	if (free && free.freeBytes < options.estimatedBytes * 1.1) {
+		throw new OfflineStorageError({
+			neededBytes: options.estimatedBytes,
+			freeBytes: free.freeBytes,
+			quotaBytes: free.quotaBytes,
+			usageBytes: free.usageBytes
+		});
 	}
 
 	let handle: FileSystemFileHandle;
@@ -134,10 +194,12 @@ export async function createOpfsVideoSink(options: {
 		);
 		file = await handle.createWritable();
 	} catch (error) {
-		if (error instanceof Error && error.name === 'QuotaExceededError') {
-			throw new Error('insufficient-storage');
-		}
-		throw new Error('insufficient-storage');
+		// A quota failure or a full disk at createWritable: same honest signal.
+		if (error instanceof OfflineStorageError) throw error;
+		throw new OfflineStorageError({
+			neededBytes: options.estimatedBytes,
+			freeBytes: free?.freeBytes ?? null
+		});
 	}
 
 	const rootPromise = opfsRoot();

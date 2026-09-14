@@ -914,6 +914,9 @@ export const en = {
 		'The export failed. Check the console for details and try again.',
 	offline_error_insufficient_storage:
 		'Not enough storage for this export. Free up space or shorten the video.',
+	offline_error_insufficient_storage_detail:
+		'This export needs about {needed}, and about {free} is free. Free up space, lower the resolution, or shorten the video.',
+	offline_storage_free_unknown: 'unknown',
 	offline_issue_missing_file_audio:
 		'Video export needs an imported audio file or playlist track.',
 	offline_issue_live_audio:

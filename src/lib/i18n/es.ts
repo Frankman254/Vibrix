@@ -920,6 +920,9 @@ export const es: Record<TranslationKey, string> = {
 		'La exportación falló. Revisa la consola y vuelve a intentarlo.',
 	offline_error_insufficient_storage:
 		'No hay suficiente almacenamiento para esta exportación. Libera espacio o acorta el vídeo.',
+	offline_error_insufficient_storage_detail:
+		'Esta exportación necesita unos {needed} y hay unos {free} libres. Libera espacio, baja la resolución o acorta el vídeo.',
+	offline_storage_free_unknown: 'desconocido',
 	offline_issue_missing_file_audio:
 		'Exportar vídeo necesita un archivo de audio importado o una pista de playlist.',
 	offline_issue_live_audio:

@@ -298,6 +298,7 @@ export default function ExportTabBody() {
 				formatChecked={videoExport.formatChecked}
 				progress={videoExport.progress}
 				error={videoExport.error}
+				storageHint={videoExport.storageHint}
 				savedFileName={videoExport.savedFileName}
 				busy={videoExport.busy}
 				canStart={videoExport.canStart}

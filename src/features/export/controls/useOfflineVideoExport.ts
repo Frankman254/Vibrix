@@ -29,7 +29,7 @@ import {
 } from '@/features/export/video/offlineVideoFormat';
 import {
 	createOpfsVideoSink,
-	sweepStaleOpfsExports,
+	OfflineStorageError,
 	type OpfsVideoSink
 } from '@/features/export/video/offlineOpfsSink';
 import { runOfflineVideoExport } from '@/features/export/video/runOfflineVideoExport';
@@ -62,6 +62,12 @@ export type OfflineVideoExportError =
 	| 'insufficient-storage'
 	| 'failed';
 
+/** Numbers behind an 'insufficient-storage' error, for the honest error line. */
+export type OfflineStorageHint = {
+	neededBytes: number;
+	freeBytes: number | null;
+};
+
 const IDLE_PROGRESS: OfflineVideoExportProgress = {
 	phase: 'idle',
 	frameIndex: 0,
@@ -93,6 +99,9 @@ export function useOfflineVideoExport({
 	const [resolutionId, setResolutionId] =
 		useState<OfflineExportResolutionPresetId>('1080p');
 	const [fps, setFps] = useState<OfflineExportFps>(30);
+	const [storageHint, setStorageHint] = useState<OfflineStorageHint | null>(
+		null
+	);
 	const [format, setFormat] = useState<OfflineVideoFormat | null>(null);
 	const [formatChecked, setFormatChecked] = useState(false);
 	const [progress, setProgress] =
@@ -137,6 +146,7 @@ export function useOfflineVideoExport({
 	async function startExport() {
 		if (busy) return;
 		setError(null);
+		setStorageHint(null);
 		setSavedFileName('');
 		if (!offlineAudioAsset) {
 			setError('no-audio');
@@ -158,8 +168,8 @@ export function useOfflineVideoExport({
 		let sink = { kind: 'buffer' } as OfflineVideoSink;
 		let opfs: OpfsVideoSink | null = null;
 		let audioTrack: OfflineAudioTrack | null = null;
-		// Collect files left by exports that crashed before cleanup.
-		void sweepStaleOpfsExports();
+		// (crashed-run cleanup happens inside createOpfsVideoSink, awaited
+		// before its quota check so the numbers it reads are current.)
 
 		const picker = getSavePicker();
 		if (picker) {
@@ -219,6 +229,10 @@ export function useOfflineVideoExport({
 				if (opfs) {
 					sink = { kind: 'stream', writable: opfs.writable };
 				} else if (estimatedBytes > BUFFER_FALLBACK_MAX_BYTES) {
+					setStorageHint({
+						neededBytes: estimatedBytes,
+						freeBytes: null
+					});
 					throw new Error('insufficient-storage');
 				}
 			}
@@ -250,6 +264,12 @@ export function useOfflineVideoExport({
 				setProgress({ ...IDLE_PROGRESS, phase: 'error' });
 				const message =
 					exportError instanceof Error ? exportError.message : '';
+				if (exportError instanceof OfflineStorageError) {
+					setStorageHint({
+						neededBytes: exportError.neededBytes,
+						freeBytes: exportError.freeBytes
+					});
+				}
 				setError(
 					message === 'audio-asset-not-found'
 						? 'audio-not-found'
@@ -283,6 +303,7 @@ export function useOfflineVideoExport({
 		formatChecked,
 		progress,
 		error,
+		storageHint,
 		savedFileName,
 		busy,
 		canStart: canExport && !busy && Boolean(format) && formatChecked,

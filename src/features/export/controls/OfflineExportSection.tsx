@@ -12,8 +12,11 @@ import type {
 	OfflineVideoExportProgress,
 	OfflineVideoFormat
 } from '@/features/export/video/offlineVideoFormat';
-import type { OfflineVideoExportError } from './useOfflineVideoExport';
-import { formatDuration } from '@/features/export/exportFileUtils';
+import type {
+	OfflineStorageHint,
+	OfflineVideoExportError
+} from './useOfflineVideoExport';
+import { formatBytes, formatDuration } from '@/features/export/exportFileUtils';
 import { useT, type Translations } from '@/lib/i18n';
 import { Button, UI_COLORS } from '@/ui';
 import EnumButtons from '@/ui/EnumButtonGroup';
@@ -36,6 +39,7 @@ type OfflineExportSectionProps = {
 	formatChecked: boolean;
 	progress: OfflineVideoExportProgress;
 	error: OfflineVideoExportError | null;
+	storageHint: OfflineStorageHint | null;
 	savedFileName: string;
 	busy: boolean;
 	canStart: boolean;
@@ -82,7 +86,11 @@ function phaseLabel(
 	}
 }
 
-function errorLabel(t: Translations, error: OfflineVideoExportError): string {
+function errorLabel(
+	t: Translations,
+	error: OfflineVideoExportError,
+	storageHint: OfflineStorageHint | null
+): string {
 	switch (error) {
 		case 'no-audio':
 			return t.offline_issue_missing_file_audio;
@@ -90,8 +98,19 @@ function errorLabel(t: Translations, error: OfflineVideoExportError): string {
 			return t.offline_error_no_encoder;
 		case 'audio-not-found':
 			return t.offline_error_audio_not_found;
-		case 'insufficient-storage':
-			return t.offline_error_insufficient_storage;
+		case 'insufficient-storage': {
+			// The numbers turn "free up space" into an actionable demand.
+			if (!storageHint) return t.offline_error_insufficient_storage;
+			const detail = t.offline_error_insufficient_storage_detail
+				.replace('{needed}', formatBytes(storageHint.neededBytes))
+				.replace(
+					'{free}',
+					storageHint.freeBytes === null
+						? t.offline_storage_free_unknown
+						: formatBytes(storageHint.freeBytes)
+				);
+			return `${t.offline_error_insufficient_storage} ${detail}`;
+		}
 		default:
 			return t.offline_error_failed;
 	}
@@ -113,6 +132,7 @@ export default function OfflineExportSection({
 	formatChecked,
 	progress,
 	error,
+	storageHint,
 	savedFileName,
 	busy,
 	canStart,
@@ -259,7 +279,7 @@ export default function OfflineExportSection({
 			) : null}
 			{error ? (
 				<span className="text-[11px] text-red-400">
-					{errorLabel(t, error)}
+					{errorLabel(t, error, storageHint)}
 				</span>
 			) : null}
 

@@ -61,7 +61,9 @@ export function useOfflineAudioAnalysis({
 				const snapshot = source.getSnapshotAt(sampleTimeMs);
 				setOfflineAnalysisStatus('ready');
 				setOfflineAnalysisMessage(
-					`${formatDuration(Math.round(source.summary.durationMs / 1000))} · ${snapshot.bins.length} bins · amp ${snapshot.amplitude.toFixed(3)} · decoded ${formatBytes(source.summary.estimatedDecodedBytes)} · memory ${source.summary.memoryRisk}`
+					// The streamed path never holds the whole buffer: the byte
+					// figure is what a full-buffer decode WOULD have cost.
+					`${formatDuration(Math.round(source.summary.durationMs / 1000))} · ${snapshot.bins.length} bins · amp ${snapshot.amplitude.toFixed(3)} · full-buffer would be ${formatBytes(source.summary.estimatedDecodedBytes)}`
 				);
 			} finally {
 				source.dispose();
