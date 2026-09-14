@@ -75,6 +75,56 @@ líneas ~4660-4680).
 48 kHz en Float32 ≈ **4,1 GB**, lo que revienta la pestaña. Para 1–3 h hay que
 leer el audio por ventanas.
 
+### 1.6 "Array buffer allocation failed" en Brave (captura del usuario, 2026-09-14)
+
+Contexto: `livewallpaperanime.netlify.app` en **Brave**, Ultrawide 1440p a
+60 fps, canción de 4:33. El export falla al **finalizar**:
+
+```
+RangeError: Array buffer allocation failed
+  at ArrayBuffer.slice ← _finalize ← finalize ← finish ← startExport
+```
+
+Causa:
+
+- Brave trae **desactivado** `showSaveFilePicker` (File System Access API), así
+  que `useOfflineVideoExport` cae al sink `buffer`.
+- Con ese sink, mediabunny guarda **todo el MP4 en RAM** (`BufferTarget` +
+  `fastStart: 'in-memory'`) y al final hace `slice` de un buffer de varios GB.
+  Un ultrawide 1440p60 de 4,5 min pasa de 2 GB y el navegador no puede
+  reservarlo.
+- Con mixes de 1–3 h fallaría en cualquier resolución.
+
+En la consola también aparece `THREE.WebGLRenderer: Context Lost`. Puede ser
+el `forceContextLoss()` intencionado de `sceneGl.release()` al terminar, o una
+pérdida real por memoria de GPU. Compruébalo y, si es real, lo cubre la Fase
+B.3.
+
+Arreglo (**Fase A.bis**; hazlo junto con la Fase A o justo después, en su
+propio commit):
+
+1. **Nunca generar el vídeo en RAM.** Si no hay `showSaveFilePicker`, escribe
+   con `StreamTarget` a un archivo de **OPFS**
+   (`navigator.storage.getDirectory()` → `getFileHandle(..., {create:true})` →
+   `createWritable()`; está disponible en Brave, Chrome, Edge y Safari
+   reciente). Usa `fastStart: false`, igual que el sink `stream`.
+2. Al terminar, descarga con `URL.createObjectURL(await handle.getFile())`.
+   El `File` de OPFS está respaldado por disco, así que no carga el vídeo en
+   memoria. Borra el archivo de OPFS después de la descarga (con un retardo
+   razonable) o al empezar el siguiente export.
+3. Antes de empezar, comprueba el espacio con `navigator.storage.estimate()`.
+   Estima el tamaño como bitrate × duración y avisa si no cabe (i18n).
+4. Deja `BufferTarget` solo como último recurso para vídeos pequeños (p. ej.
+   < 500 MB estimados) cuando no haya OPFS; si no, error claro, no crash.
+5. Esto es la base de los tramos en OPFS de la Fase D: diseña el helper para
+   reutilizarlo.
+6. Mensaje en la UI para Brave: "Activa `brave://flags/#file-system-access-api`
+   para elegir dónde guardar". Es opcional, porque con OPFS ya funciona.
+
+**Hecho cuando:** en Brave (sin picker) un export de 1440p60 de más de 4 min
+termina y descarga sin error, y la memoria de la pestaña no crece con la
+duración.
+
 ### 1.5 Bug menor en el commit de Qwen (`71550d46`)
 
 `resolveOverlayAdvancedEffects` (`overlayImageDraw.ts`) calcula
@@ -90,6 +140,8 @@ y déjalo documentado. Añade un test con `sizeFactor: 2` y `rgbShift` pequeño
 ---
 
 ## Fase A · Aislar el estado del export (arregla 1.1 y 1.5) — PRIORIDAD
+
+> La **Fase A.bis** (export sin RAM, §1.6) va en commit propio justo después.
 
 Objetivo: que el preview y el export **no compartan ni un byte de estado
 mutable**.
