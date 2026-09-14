@@ -137,8 +137,15 @@ async function opfsFreeBytes(): Promise<{
 		) {
 			return null;
 		}
+		const freeBytes = estimate.quota - estimate.usage;
+		// Chrome can report usage above its own ceiling (the quota shrinks
+		// when the disk fills, or stale multi-GB files from a crashed run
+		// still count). A negative "free" is the browser contradicting
+		// itself, not proof of a full disk — treating it as a hard block
+		// would reject every export. The real gate is createWritable.
+		if (!(freeBytes >= 0)) return null;
 		return {
-			freeBytes: estimate.quota - estimate.usage,
+			freeBytes,
 			quotaBytes: estimate.quota,
 			usageBytes: estimate.usage
 		};
