@@ -2,7 +2,7 @@ import type { RenderFrameContext } from '../renderFrameContext';
 import type { RenderSubsystem } from '../renderSubsystem';
 
 // Stub subsystems for pipeline slots with no offline draw of their own yet
-// (looks; the background image; the HUD).
+// (the background image; the HUD).
 // Registering them lets renderFrameAt iterate the full pipeline order today;
 // the offline implementations attach later once each layer is migrated to a
 // pure imperative path. Live preview keeps using the existing R3F components
@@ -18,5 +18,4 @@ function makeStub(id: RenderSubsystem['id']): RenderSubsystem {
 }
 
 export const backgroundSubsystem = makeStub('background');
-export const looksSubsystem = makeStub('looks');
 export const hudSubsystem = makeStub('hud');

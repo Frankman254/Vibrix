@@ -70,22 +70,25 @@ el sleep mode del editor.
 - Camera FX (movimiento y shake) por capa.
 - Partículas de fondo y de primer plano, con sus filtros.
 - Lluvia.
+- Los efectos avanzados del editor (Looks) sobre el overlay seleccionado:
+  RGB shift (con envolvente de audio), scanlines y ruido. No es una capa:
+  el subsistema `overlays` los dibuja en un scratch aparte, igual que el
+  canvas extra que monta la vista en vivo.
 
 Las capas se dibujan por `zIndex`.
 
 ### Pendiente (en orden sugerido)
 
-1. **Looks** no se exporta todavía: es lo último de la Fase 1C.
-2. **Verificar letras** en un vídeo con un bundle Lyrixa real (sincronía ±1
+1. **Verificar letras** en un vídeo con un bundle Lyrixa real (sincronía ±1
    frame y estilos). No se ha verificado visualmente.
-3. **Flash Edge** no se ha revisado frame a frame.
-4. Los overlays de imagen se dibujan como **un solo grupo**: una capa con
+2. **Flash Edge** no se ha revisado frame a frame.
+3. Los overlays de imagen se dibujan como **un solo grupo**: una capa con
    `zIndex` entre dos overlays no queda en medio.
-5. Pedir al usuario la prueba real: canción de 3 min, abrirla en
+4. Pedir al usuario la prueba real: canción de 3 min, abrirla en
    VLC/QuickTime y medir "≤ 1,5× la duración".
-6. Memoria: el audio se decodifica entero (1 h ≈ 1,2 GB de PCM). Hay que
+5. Memoria: el audio se decodifica entero (1 h ≈ 1,2 GB de PCM). Hay que
    pasar a análisis por ventanas.
-7. Después: 1D (presets YouTube/Shorts/Instagram, rango in/out) y 1E (test de
+6. Después: 1D (presets YouTube/Shorts/Instagram, rango in/out) y 1E (test de
    paridad offline vs preview). Ver [TAREAS.md](TAREAS.md).
 
 ## 4. Mapa rápido del export
@@ -99,7 +102,7 @@ Todo bajo `src/features/export/`.
 | `renderSubsystems/index.ts`              | `installDefaultRenderSubsystems()`: registra todos los subsistemas                                         |
 | `renderSubsystems/sceneGl.ts`            | Partículas y lluvia con un `WebGLRenderer` propio (mismos shaders que en vivo)                             |
 | `renderSubsystems/stageFx.ts`            | Stage Lights, Flash Light y Flash Edge                                                                     |
-| `renderSubsystems/stubs.ts`              | No-ops que quedan (background, looks, hud)                                                                 |
+| `renderSubsystems/stubs.ts`              | No-ops que quedan (background, hud)                                                                        |
 | `renderFrame.ts` + `frameComposition.ts` | Orden por `zIndex`, alpha de transición y transform de Camera FX por capa                                  |
 | `video/offlineCameraFx.ts`               | Estado de movimiento y shake avanzado por tiempo del vídeo                                                 |
 | `video/slideshowSegments.ts`             | Qué imagen o escena toca en cada frame, con fundido                                                        |

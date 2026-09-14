@@ -26,7 +26,6 @@ export type RenderSubsystemId =
 	| 'globalBackground'
 	| 'background'
 	| 'stageLights'
-	| 'looks'
 	| 'motion'
 	| 'particles'
 	| 'rain'
@@ -43,7 +42,6 @@ export const RENDER_SUBSYSTEM_ORDER: readonly RenderSubsystemId[] = [
 	'globalBackground',
 	'background',
 	'stageLights',
-	'looks',
 	'motion',
 	'particles',
 	'rain',

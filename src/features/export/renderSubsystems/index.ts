@@ -5,7 +5,7 @@ import {
 	spectrumSubsystem,
 	trackTitleSubsystem
 } from './audioLayers';
-import { backgroundSubsystem, hudSubsystem, looksSubsystem } from './stubs';
+import { backgroundSubsystem, hudSubsystem } from './stubs';
 import { createGlobalBackgroundSubsystem } from './globalBackground';
 import { createOverlaysSubsystem } from './overlays';
 import { createSceneGlSubsystems } from './sceneGl';
@@ -22,7 +22,6 @@ export function installDefaultRenderSubsystems(): void {
 	registerRenderSubsystem(createGlobalBackgroundSubsystem());
 	registerRenderSubsystem(backgroundSubsystem);
 	registerRenderSubsystem(createStageLightsSubsystem());
-	registerRenderSubsystem(looksSubsystem);
 	for (const subsystem of createSceneGlSubsystems()) {
 		registerRenderSubsystem(subsystem);
 	}

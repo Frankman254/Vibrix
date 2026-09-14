@@ -67,11 +67,15 @@ Límites conocidos del MVP:
   El criterio "1 h sin crecer memoria" sigue abierto.
 - Las capas de audio se agrupan por tipo, así que el entrelazado de `zIndex`
   entre tipos distintos no es exacto.
-- No exportado aún (1C): Looks. El resto sale desde 1C: overlays (sin los
-  efectos avanzados del editor sobre el overlay seleccionado), fondo global,
-  slideshow con fundido de escena, Stage FX con Flash Edge, Camera FX,
-  partículas y lluvia. Las capas se dibujan por `zIndex`
-  (`frameComposition`); los overlays de imagen se dibujan como un solo grupo.
+- Los efectos avanzados del editor (Looks sobre el overlay seleccionado:
+  RGB shift, scanlines, ruido) se exportan desde 1C: los reproduce el
+  subsistema `overlays` en un scratch aparte, con la misma gate y métricas
+  que en vivo (`resolveOverlayAdvancedEffects`). No hay capa `looks`: es
+  estado de filtro por objetivo, no un subsistema.
+- El resto sale desde 1C: fondo global, slideshow con fundido de escena,
+  Stage FX con Flash Edge, Camera FX, partículas y lluvia. Las capas se
+  dibujan por `zIndex` (`frameComposition`); los overlays de imagen se
+  dibujan como un solo grupo.
 - El slideshow con sync por cambio de pista no avanza: el export es de una
   sola pista, igual que en vivo con una pista.
 - Tamaño de overlays: son píxeles CSS del viewport del editor; con layout
@@ -94,8 +98,9 @@ congelado, snapshot de audio, paleta, canvas) y se comprueba por lo que
 termina en el canvas. `overlayImageDraw.test.ts` ya prueba por ahí.
 
 **Defecto 1 · `renderSubsystems/stubs.ts` no pasa la prueba de borrado.**
-(Estado 1C: los avisos del planner por capa ya no existen; quedan los stubs
-de background, looks y hud.)
+(Estado 1C: los avisos del planner por capa ya no existen; el stub de
+`looks` se borró —era un fantasma: Looks es estado de filtro, no capa—;
+quedan los stubs de background y hud.)
 Son no-ops; `renderFrameAt` ya salta los ids no registrados
 (`if (!subsystem) continue`) y `registerRenderSubsystem` pisa por id. Borrarlos
 hace desaparecer la complejidad: son paso-through puro. Lo que _fingen_ guardar

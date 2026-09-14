@@ -6,7 +6,13 @@
  * pixels, `filter`, `mask-image`, `clip-path`) is unit-tested; the drawing
  * lives in `overlays.ts`.
  */
-import type { AudioSnapshot } from '@/lib/audio/audioChannels';
+import { getScanlineAmount } from '@/lib/canvas/imageEffects';
+import {
+	resolveAudioChannelValue,
+	type AudioChannelSelectionState,
+	type AudioSnapshot
+} from '@/lib/audio/audioChannels';
+import type { AudioEnvelope } from '@/utils/audioEnvelope';
 import type { OverlayImageLayer } from '@/types/layers';
 import type { WallpaperState } from '@/types/wallpaper';
 
@@ -134,5 +140,135 @@ export function resolveOverlayDrawPlan(
 		cropShape: layer.cropShape,
 		cornerRadius: 18 * sizeFactor,
 		fadeStart: Math.max(48, 100 - layer.edgeFade * 120) / 100
+	};
+}
+
+/**
+ * The editor's "advanced" Looks (RGB shift, scanlines, noise) apply to the
+ * *selected* overlay only — they are filter state, not a layer. Live,
+ * `OverlayImageLayerView` mounts an extra canvas whenever
+ * `advancedEffectsActive` holds; the maths lives in `imageCanvasFrameState`.
+ * This mirrors both: the gate is the view's, the metrics are the runtime's,
+ * rescaled from live-viewport CSS px to output px via `sizeFactor`.
+ *
+ * The envelope + channel-selection objects are mutable dependencies owned by
+ * the caller (the subsystem); the resolver only ticks them, which keeps this
+ * function pure enough to test with synthetic audio snapshots.
+ */
+export type OverlayAdvancedEffects = {
+	rgbShiftPixels: number;
+	filmNoiseAmount: number;
+	scanlineAmount: number;
+	scanlineSpacing: number;
+	scanlineThickness: number;
+	/** Live draws the passes at `clamp(layer.opacity * filterOpacity)`. */
+	passAlpha: number;
+};
+
+type AdvancedFilterState = Pick<
+	WallpaperState,
+	| 'rgbShift'
+	| 'scanlinesEnabled'
+	| 'scanlineIntensity'
+	| 'scanlineMode'
+	| 'scanlineSpacing'
+	| 'scanlineThickness'
+	| 'noiseIntensity'
+	| 'filterOpacity'
+	| 'rgbShiftAudioReactive'
+	| 'rgbShiftAudioSensitivity'
+	| 'rgbShiftAudioChannel'
+	| 'rgbShiftAudioSmoothing'
+	| 'rgbShiftAudioAttack'
+	| 'rgbShiftAudioRelease'
+	| 'rgbShiftAudioReactivitySpeed'
+	| 'rgbShiftAudioPeakWindow'
+	| 'rgbShiftAudioPeakFloor'
+	| 'rgbShiftAudioPunch'
+	| 'audioAutoKickThreshold'
+	| 'audioAutoSwitchHoldMs'
+>;
+
+export function resolveOverlayAdvancedEffects(params: {
+	layerOpacity: number;
+	targeted: boolean;
+	state: AdvancedFilterState;
+	audio: AudioSnapshot;
+	channelSelection: AudioChannelSelectionState;
+	envelope: AudioEnvelope;
+	/** Seconds since the previous tick, clamped by the caller's frame dt. */
+	dt: number;
+	timeMs: number;
+	output: Size;
+	sizeFactor: number;
+}): OverlayAdvancedEffects | null {
+	const { state } = params;
+	// Same gate as OverlayImageLayerView.advancedEffectsActive.
+	if (
+		!params.targeted ||
+		!(
+			state.rgbShift > 0.0001 ||
+			(state.scanlinesEnabled && state.scanlineIntensity > 0.001) ||
+			state.noiseIntensity > 0.001
+		)
+	) {
+		return null;
+	}
+	const { value: channelValue } = resolveAudioChannelValue(
+		params.audio.channels,
+		state.rgbShiftAudioChannel,
+		params.channelSelection,
+		state.rgbShiftAudioSmoothing,
+		state.audioAutoKickThreshold,
+		state.audioAutoSwitchHoldMs,
+		params.audio.timestampMs
+	);
+	const envValue = params.envelope.tick(
+		channelValue,
+		Math.max(params.dt, 1 / 120),
+		{
+			attack: state.rgbShiftAudioAttack,
+			release: state.rgbShiftAudioRelease,
+			responseSpeed: state.rgbShiftAudioReactivitySpeed * 2.4,
+			peakWindow: state.rgbShiftAudioPeakWindow,
+			peakFloor: state.rgbShiftAudioPeakFloor,
+			punch: state.rgbShiftAudioPunch,
+			scaleIntensity: 1,
+			min: 0,
+			max: 1
+		}
+	).value;
+	const rgbShiftBoost = state.rgbShiftAudioReactive
+		? envValue * state.rgbShiftAudioSensitivity
+		: 0;
+	// Live clamps at 36 CSS px on the live canvas; offline the whole frame is
+	// `sizeFactor` larger, so the clamp scales with it.
+	const rgbShiftPixels =
+		Math.min(
+			36,
+			Math.max(
+				0,
+				(state.rgbShift + rgbShiftBoost) *
+					Math.min(params.output.width, params.output.height) *
+					0.65
+			)
+		) * params.sizeFactor;
+	return {
+		rgbShiftPixels,
+		filmNoiseAmount: state.noiseIntensity,
+		scanlineAmount: getScanlineAmount(
+			state.scanlineMode,
+			state.scanlinesEnabled ? state.scanlineIntensity : 0,
+			params.timeMs,
+			params.audio.amplitude
+		),
+		// Spacing drives the line count (resolution-independent); thickness
+		// is a pixel width and scales.
+		scanlineSpacing: state.scanlineSpacing,
+		scanlineThickness: state.scanlineThickness * params.sizeFactor,
+		passAlpha: Math.max(
+			0,
+			Math.min(1, params.layerOpacity * state.filterOpacity)
+		)
 	};
 }

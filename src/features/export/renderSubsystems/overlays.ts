@@ -4,9 +4,21 @@
  * scratch canvas per overlay, in CSS order — filter, clip-path, mask — and
  * the result is composited with the overlay's opacity and blend mode.
  *
- * The editor-only "advanced" filter effects (RGB shift, scanlines, noise on
- * the selected overlay) are not reproduced.
+ * The editor-only "advanced" Looks (RGB shift, scanlines, noise on the
+ * selected overlay) are reproduced on a second scratch sized to the rotated
+ * bounding box, mirroring the extra `<ImageLayerCanvas renderBaseImage={false}>`
+ * the view mounts — passes clipped to the layer's shape, soft-edge faded,
+ * then composited unrotated with blend mode `plan.composite` at alpha 1
+ * (the pass alpha is baked in by `applyImagePostProcessPasses`).
  */
+import {
+	applyImagePostProcessPasses,
+	applyOverlayShapeClip,
+	applySoftEdgeMask
+} from '@/lib/canvas/imageEffects';
+import { resolveImagePostProcessQuality } from '@/lib/visual/performanceQuality';
+import { createAudioChannelSelectionState } from '@/lib/audio/audioChannels';
+import { createAudioEnvelope } from '@/utils/audioEnvelope';
 import { getCurrentViewportResolution } from '@/features/layout/viewportMetrics';
 import { buildOverlayLayers } from '@/lib/layers';
 import type { OverlayImageLayer } from '@/types/layers';
@@ -14,6 +26,7 @@ import type { WallpaperState } from '@/types/wallpaper';
 import type { RenderFrameContext } from '../renderFrameContext';
 import type { RenderSubsystem } from '../renderSubsystem';
 import {
+	resolveOverlayAdvancedEffects,
 	resolveOverlayDrawPlan,
 	resolveOverlaySizeFactor,
 	type OverlayDrawPlan
@@ -108,11 +121,31 @@ export function createOverlaysSubsystem(): RenderSubsystem {
 	let liveViewport = { width: 1920, height: 1080 };
 	let scratchCanvas: HTMLCanvasElement | null = null;
 	let scratch: CanvasRenderingContext2D | null = null;
+	let fxCanvas: HTMLCanvasElement | null = null;
+	let fx: CanvasRenderingContext2D | null = null;
+	// The Looks envelope is live across one export at a time; only the
+	// selected overlay is ever targeted, so one envelope suffices.
+	const freshFilterAudio = () => ({
+		envelope: createAudioEnvelope(),
+		channelSelection: createAudioChannelSelectionState()
+	});
+	let filterAudio = freshFilterAudio();
+
+	const releaseCanvas = (
+		canvas: HTMLCanvasElement | null
+	): HTMLCanvasElement | null => {
+		if (canvas) {
+			canvas.width = 1;
+			canvas.height = 1;
+		}
+		return null;
+	};
 
 	return {
 		id: 'overlays',
 		async prepare(state: Readonly<WallpaperState>) {
 			images.clear();
+			filterAudio = freshFilterAudio();
 			liveViewport = getCurrentViewportResolution();
 			const layers = buildOverlayLayers(state).filter(isDrawableOverlay);
 			await Promise.all(
@@ -148,39 +181,109 @@ export function createOverlaysSubsystem(): RenderSubsystem {
 				);
 				const width = Math.round(plan.width);
 				const height = Math.round(plan.height);
-				if (width < 1 || height < 1 || plan.opacity <= 0) continue;
+				if (width < 1 || height < 1) continue;
 
-				if (!scratchCanvas) {
-					scratchCanvas = document.createElement('canvas');
-					scratch = scratchCanvas.getContext('2d');
-				}
-				if (!scratch) return;
-				if (
-					scratchCanvas.width !== width ||
-					scratchCanvas.height !== height
-				) {
-					scratchCanvas.width = width;
-					scratchCanvas.height = height;
-				}
-				paintOverlay(scratch, image, plan, width, height);
+				const advanced = resolveOverlayAdvancedEffects({
+					layerOpacity: layer.opacity,
+					targeted:
+						ctx.state.filterTargets.includes('selected-overlay') &&
+						ctx.state.selectedOverlayId === layer.id,
+					state: ctx.state,
+					audio: ctx.audio,
+					channelSelection: filterAudio.channelSelection,
+					envelope: filterAudio.envelope,
+					dt: Math.min(ctx.deltaMs / 1000, 0.1),
+					timeMs: ctx.timeMs,
+					output: ctx.resolution,
+					sizeFactor
+				});
 
-				target.save();
-				target.globalAlpha = Math.min(1, plan.opacity);
-				target.globalCompositeOperation = plan.composite;
-				target.translate(plan.centerX, plan.centerY);
-				target.rotate(plan.rotationRad);
-				target.drawImage(scratchCanvas, -width / 2, -height / 2);
-				target.restore();
+				if (plan.opacity > 0) {
+					if (!scratchCanvas) {
+						scratchCanvas = document.createElement('canvas');
+						scratch = scratchCanvas.getContext('2d');
+					}
+					if (!scratch) return;
+					if (
+						scratchCanvas.width !== width ||
+						scratchCanvas.height !== height
+					) {
+						scratchCanvas.width = width;
+						scratchCanvas.height = height;
+					}
+					paintOverlay(scratch, image, plan, width, height);
+
+					target.save();
+					target.globalAlpha = Math.min(1, plan.opacity);
+					target.globalCompositeOperation = plan.composite;
+					target.translate(plan.centerX, plan.centerY);
+					target.rotate(plan.rotationRad);
+					target.drawImage(scratchCanvas, -width / 2, -height / 2);
+					target.restore();
+				}
+
+				if (advanced) {
+					// Axis-aligned bounding box of the rotated layer.
+					const cos = Math.abs(Math.cos(plan.rotationRad));
+					const sin = Math.abs(Math.sin(plan.rotationRad));
+					const boxW = Math.ceil(width * cos + height * sin);
+					const boxH = Math.ceil(width * sin + height * cos);
+					if (!fxCanvas) {
+						fxCanvas = document.createElement('canvas');
+						fx = fxCanvas.getContext('2d');
+					}
+					if (!fx) return;
+					if (fxCanvas.width !== boxW || fxCanvas.height !== boxH) {
+						fxCanvas.width = boxW;
+						fxCanvas.height = boxH;
+					}
+					fx.clearRect(0, 0, boxW, boxH);
+					fx.save();
+					fx.translate(boxW / 2, boxH / 2);
+					fx.rotate(plan.rotationRad);
+					applyOverlayShapeClip(fx, width, height, plan.cropShape);
+					applyImagePostProcessPasses({
+						ctx: fx,
+						source: image,
+						width,
+						height,
+						time: ctx.timeMs,
+						opacity: advanced.passAlpha,
+						colorFilter:
+							'brightness(1) contrast(1) saturate(1) hue-rotate(0deg)',
+						rgbShiftPixels: advanced.rgbShiftPixels,
+						filmNoiseAmount: advanced.filmNoiseAmount,
+						scanlineAmount: advanced.scanlineAmount,
+						scanlineSpacing: advanced.scanlineSpacing,
+						scanlineThickness: advanced.scanlineThickness,
+						postQualityTier: resolveImagePostProcessQuality(
+							ctx.state.performanceMode
+						)
+					});
+					applySoftEdgeMask(fx, width, height, layer.edgeFade);
+					fx.restore();
+
+					// The pass alpha is baked into the scratch pixels; the
+					// live advanced canvas blends over the accumulated page
+					// with the layer's blend mode at alpha 1.
+					target.save();
+					target.globalCompositeOperation = plan.composite;
+					target.translate(plan.centerX, plan.centerY);
+					target.drawImage(fxCanvas, -boxW / 2, -boxH / 2);
+					target.restore();
+				}
 			}
+		},
+		reset() {
+			filterAudio = freshFilterAudio();
 		},
 		dispose() {
 			images.clear();
-			if (scratchCanvas) {
-				scratchCanvas.width = 1;
-				scratchCanvas.height = 1;
-			}
-			scratchCanvas = null;
+			scratchCanvas = releaseCanvas(scratchCanvas);
 			scratch = null;
+			fxCanvas = releaseCanvas(fxCanvas);
+			fx = null;
+			filterAudio = freshFilterAudio();
 		}
 	};
 }

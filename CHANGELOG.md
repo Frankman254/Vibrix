@@ -20,8 +20,12 @@ the version scheme in `src/lib/version.ts`.
 - Los **overlays de imagen** ya salen en el vídeo exportado: posición,
   rotación, escala, opacidad (también la reactiva al audio), modo de fusión,
   recorte (redondeado, círculo, rombo), fundido de borde, blur y glow. Los
-  efectos avanzados del editor sobre el overlay seleccionado (RGB shift,
-  scanlines, ruido) no se reproducen.
+  **efectos avanzados del editor** sobre el overlay seleccionado (RGB shift
+  con envolvente reactiva al audio, scanlines y ruido) también salen: el
+  subsistema `overlays` los dibuja en un scratch aparte, con la misma gate y
+  las mismas métricas que la vista en vivo
+  (`resolveOverlayAdvancedEffects`). El stub de capa `looks` se borró: Looks
+  es estado de filtro por objetivo, no una capa del pipeline.
 - El **fondo global** ya sale en el vídeo, debajo de la imagen activa: encuadre
   (fit, escala, posición, reencuadre responsive), filtros propios y los del
   editor cuando lo tienen como destino (incluidos RGB shift, ruido, scanlines,
