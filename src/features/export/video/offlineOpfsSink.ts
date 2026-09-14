@@ -98,9 +98,9 @@ export async function opfsHasSpaceFor(
 }
 
 function sleep(ms: number): Promise<void> {
-	const { promise, resolve } = Promise.withResolvers<void>();
-	window.setTimeout(resolve, ms);
-	return promise;
+	return new Promise(resolve => {
+		window.setTimeout(resolve, ms);
+	});
 }
 
 /**
@@ -153,8 +153,9 @@ export async function createOpfsVideoSink(options: {
 		}
 	};
 
+	const writable = createCancellableFileWritable(file, options.isCancelled);
 	return {
-		writable: createCancellableFileWritable(file, options.isCancelled),
+		writable,
 		async download(fileName: string) {
 			// A File from OPFS is disk-backed: the object URL never loads the
 			// video into memory, the download streams it from disk.
@@ -169,7 +170,7 @@ export async function createOpfsVideoSink(options: {
 			void remove();
 		},
 		async discard() {
-			await this.writable.abort().catch(() => undefined);
+			await writable.abort().catch(() => undefined);
 			const root = await rootPromise;
 			await root.removeEntry(handle.name).catch(() => undefined);
 		}
