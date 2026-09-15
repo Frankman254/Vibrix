@@ -1128,7 +1128,11 @@ export function drawLyricsOverlay(
 			resolveLyricStyleSlots(
 				state,
 				layerOverride,
-				lines[0]?.color,
+				// The resolver documents this as THE ACTIVE line's color; using
+				// lines[0] silently swapped in the previous (inactive) line's
+				// dimmed color whenever a group started on a preview line, so
+				// the picked Active color never reached the cache.
+				lines.find(line => line.isActive)?.color ?? lines[0]?.color,
 				palettes
 			);
 		const strokeWidth = Math.max(
@@ -1153,7 +1157,12 @@ export function drawLyricsOverlay(
 				color:
 					layerOverride?.textColor ??
 					(line.isActive ? fillSlot.primary : line.color),
-				secondaryColor: line.secondaryColor,
+				// The active line's gradient stop comes from its own slot
+				// (panel's Secondary Color), not the global inactive color;
+				// inactive lines keep their dimmed solid paint.
+				secondaryColor: line.isActive
+					? fillSlot.secondary
+					: line.secondaryColor,
 				glowColor: glowSlot.primary,
 				fillSlot: line.isActive
 					? fillSlot
