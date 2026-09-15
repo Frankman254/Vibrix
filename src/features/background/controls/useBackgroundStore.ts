@@ -95,7 +95,6 @@ export function useBackgroundStore() {
 			moveImageEntry: s.moveImageEntry,
 			shuffleImageEntries: s.shuffleImageEntries,
 			autoFrameActiveImage: s.autoFrameActiveImage,
-			autoFitCoveredActiveImage: s.autoFitCoveredActiveImage,
 			autoFrameAllImages: s.autoFrameAllImages,
 			autoFocusActiveImage: s.autoFocusActiveImage,
 			autoPlaceLogoForActiveImage: s.autoPlaceLogoForActiveImage,

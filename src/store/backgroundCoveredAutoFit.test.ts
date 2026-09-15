@@ -122,6 +122,83 @@ describe('autoFitCoveredActiveImage', () => {
 	});
 });
 
+describe('coverage lock switch ON = full recalculation', () => {
+	/** The provenance flag is not importable; mark the active image by hand. */
+	function markHandTuned() {
+		useWallpaperStore.getState().setActiveImageFramingEdited(true);
+	}
+
+	it('refits a hand-tuned composition when the lock is enabled', async () => {
+		setup();
+		markHandTuned();
+		useWallpaperStore.setState({ imageCoverageLockEnabled: false });
+		loadImageDimensionsMock.mockResolvedValue({
+			width: 1080,
+			height: 1920
+		});
+
+		useWallpaperStore.getState().setImageCoverageLockEnabled(true);
+
+		// Turning the switch ON is explicit user intent: the hand-tuned
+		// provenance must not block the recalculation.
+		await vi.waitFor(() =>
+			expect(useWallpaperStore.getState().imageFitMode).toBe('cover')
+		);
+		const s = useWallpaperStore.getState();
+		expect(s.imageScale).toBeCloseTo(1.0, 5);
+		expect(s.imagePositionX).toBe(0);
+		expect(s.imagePositionY).toBe(0);
+		// The recomputed composition is machine-owned again: later viewport
+		// changes keep re-fitting it (otherwise the bug returns on resize).
+		const stored = s.backgroundImages.find(i => i.assetId === 'img-a')!;
+		expect(stored.coverageFramingEdited).toBe(false);
+	});
+
+	it('clears the hand-tuned guard even when the fit already matches', async () => {
+		setup();
+		useWallpaperStore.setState({ imageCoverageLockEnabled: false });
+		loadImageDimensionsMock.mockResolvedValue({
+			width: 1080,
+			height: 1920
+		});
+		// First ON: real refit lands the cover suggestion.
+		useWallpaperStore.getState().setImageCoverageLockEnabled(true);
+		await vi.waitFor(() =>
+			expect(useWallpaperStore.getState().imageFitMode).toBe('cover')
+		);
+		// Simulate a hand-tweak that changes nothing numerically: the fit
+		// already matches, so the patch is a no-op — but turning the switch
+		// ON again must still clear the guard, or the next resize skips the
+		// refit and the stale-framing bug returns.
+		useWallpaperStore.getState().setImageCoverageLockEnabled(false);
+		useWallpaperStore.getState().setActiveImageFramingEdited(true);
+		useWallpaperStore.getState().setImageCoverageLockEnabled(true);
+		await vi.waitFor(() =>
+			expect(
+				useWallpaperStore
+					.getState()
+					.backgroundImages.find(i => i.assetId === 'img-a')!
+					.coverageFramingEdited
+			).toBe(false)
+		);
+	});
+
+	it('passive refits still respect the hand-tuned guard', async () => {
+		setup();
+		markHandTuned();
+		loadImageDimensionsMock.mockResolvedValue({
+			width: 1080,
+			height: 1920
+		});
+
+		await useWallpaperStore.getState().autoFitCoveredActiveImage();
+
+		// Image-switch / viewport refits must never overwrite hand framing.
+		expect(loadImageDimensionsMock).not.toHaveBeenCalled();
+		expect(useWallpaperStore.getState().imageFitMode).toBe('contain');
+	});
+});
+
 describe('setActiveImageId keep-covered re-fit', () => {
 	it('re-fits the newly active locked image for the current viewport', async () => {
 		mem.clear();

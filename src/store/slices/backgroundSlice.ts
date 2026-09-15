@@ -138,13 +138,24 @@ export function createBackgroundSlice(
 					bassReactive: v
 				}))
 			})),
-		setImageCoverageLockEnabled: v =>
+		setImageCoverageLockEnabled: v => {
 			set(state => ({
 				imageCoverageLockEnabled: v,
 				...syncActiveBackgroundImage(state, {
 					coverageLockEnabled: v
 				})
-			})),
+			}));
+			// Switching the lock ON is explicit user intent: recalculate the
+			// active composition from scratch, even over a hand-tuned one.
+			// Clearing the provenance flag first makes the (async, passive)
+			// refit run through the normal path; the flag clear also means
+			// later viewport changes keep re-fitting. Owned by the store so
+			// every entry point (UI switch, quick action) recalculates.
+			if (v) {
+				set(state => setActiveImageFramingEditedPatch(state, false));
+				void get().autoFitCoveredActiveImage();
+			}
+		},
 		setImageAudioSmoothing: v =>
 			set({ imageAudioSmoothing: v, imageBassZoomPresetId: null }),
 		setImageOpacityReactive: v =>

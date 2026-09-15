@@ -12,7 +12,6 @@ type CoverageStore = Pick<
 	| 'imagePositionX'
 	| 'imagePositionY'
 	| 'imageScale'
-	| 'autoFitCoveredActiveImage'
 	| 'setImageCoverageLockEnabled'
 	| 'setImageFitMode'
 	| 'setImageMirrorFill'
@@ -88,13 +87,11 @@ export function useCoverageLockedImageTransform(
 	}, [activeImagePositionRanges, coverageActive, store]);
 
 	function handleToggleCoverageLock(enabled: boolean) {
+		// The store setter owns recalculation: ON clears the hand-tuned guard
+		// and refits the active composition through the same path the quick
+		// action uses. `normalizeCoveredTransform` below still clamps the
+		// transform while the async refit lands.
 		store.setImageCoverageLockEnabled(enabled);
-		// ON refits to the full-bleed framing auto-fit produces — unless the
-		// user hand-tuned this image (`coverageFramingEdited`). Then the refit
-		// is skipped on purpose and `normalizeCoveredTransform` below only
-		// grows/shifts the composition the minimum needed to cover, keeping
-		// their fitMode. The explicit "Auto-fit" action still overrides it.
-		if (enabled) void store.autoFitCoveredActiveImage();
 	}
 
 	// Mirror Fill / Fit Mode changes shift minScale; while Keep Covered is

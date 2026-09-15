@@ -147,7 +147,10 @@ export function buildActiveImageSelectionPatch(
 
 /**
  * Keep Covered refit of the active image for a viewport, or `null` when it
- * does not apply (lock off, hand-tuned framing, already fitted).
+ * does not apply (lock off, hand-tuned framing, already fitted). The
+ * hand-tuned guard (`coverageFramingEdited`) is provenance set by the user's
+ * manual framing; enabling the lock clears it before calling this, so a
+ * deliberate recalculation always lands.
  */
 export function buildCoveredAutoFitPatch(
 	state: WallpaperState,
@@ -169,16 +172,14 @@ export function buildCoveredAutoFitPatch(
 		image.rotation,
 		image.mirrorFill ? (image.mirrorFillCount ?? 0) : 0
 	);
-	if (
+	const alreadyFitted =
 		state.imageFitMode === suggestion.fitMode &&
 		state.imageScale === suggestion.scale &&
 		state.imagePositionX === suggestion.positionX &&
 		state.imagePositionY === suggestion.positionY &&
 		state.imageFocusX === 0.5 &&
-		state.imageFocusY === 0.5
-	) {
-		return null;
-	}
+		state.imageFocusY === 0.5;
+	if (alreadyFitted) return null;
 	return syncStateWithActiveBackgroundImage(state, {
 		imageFitMode: suggestion.fitMode,
 		imageScale: suggestion.scale,
