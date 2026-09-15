@@ -53,10 +53,11 @@
 ## 3. Dónde quedó el trabajo
 
 Fase actual: **Fase 1 · Export de vídeo offline** (tab Export → MP4/WebM
-frame a frame, sin tiempo real). Últimos commits: `373559cd` (gate de
-almacenamiento honesto con números needed/free), `88d4123f` (bitrate VBR en
-tabla: encoder + estimador comparten `recommendedVideoBitrateFor`; 4K con
-persist() ya no se corta a mitad por el cupo de Chrome).
+frame a frame, sin tiempo real). Últimos commits: `42638dea` (Auto Focus y
+Auto Logo por saliencia, `lib/saliency.ts`), `dab55cd5` (color activo de
+letras llegaba mal a la caché de estilos), `f37e8a21` (estado honesto del
+proveedor de IA en Diagnostics + `backend/server/.env.example`),
+`01036b24` (sección `MusicDirectorPlan`, pura).
 
 Principio del usuario: **el vídeo sale a calidad máxima**; el tiempo de render
 no importa. El export ignora el modo de rendimiento, la pausa de movimiento y
