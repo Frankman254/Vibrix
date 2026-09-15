@@ -15,6 +15,43 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Letras: el color activo por fin pinta
+
+- `resolveLyricStyleSlots` documenta su tercer argumento como el color de LA
+  línea activa; se le pasaba `lines[0]`, que es la línea anterior (inactiva)
+  cuando el grupo arrancaba en una línea de preview — el color Active elegido
+  en el panel nunca llegaba a la caché de estilos. El degradado de la línea
+  activa usa ahora su propio slot Secondary, no el color global inactivo.
+
+### AI Director: estado del proveedor y prueba de conexión
+
+- La sonda hacía OPTIONS a `/api/ai/scene-intent`, y el middleware CORS
+  contesta OPTIONS a todo path: decía "disponible" sin proveedor configurado.
+  distingue servidor caído / proveedor no configurado / runtime del proveedor
+  muerto (p. ej. Ollama apagado). Panel nuevo en Diagnostics con botón
+  "Probar conexión". El proveedor sigue siendo decisión del servidor
+  (`backend/server/.env`); el navegador nunca ve claves. Se agrega el
+  `.env.example` que el README ya citaba.
+
+### Interfaz de plan del Music Director (pura, sin UI)
+
+- `MusicDirectorPlan`: secciones con tiempo llevando `SceneIntent`, el mismo
+  vocabulario que consume el compilador de intents. Un productor
+  determinista hoy (segmentación con histéresis sobre la curva de energía) y
+  un parser tolerante para completaciones de modelo futuras. Integración con
+  store/UI: Fase 6+.
+
+### Auto Composition (P2): Auto Focus y Auto Logo por saliencia
+
+- `lib/saliency.ts`: centro de atención determinista (luminancia + contraste +
+  gradiente, sin ML). Auto Focus centra el recorte en la imagen activa o en
+  todo el pool; Auto Logo coloca el logo en la zona vacía de menor saliencia.
+
+### Export: progreso real y 120 fps
+
+- Barra de progreso con porcentaje (frames codificados / totales) y opción
+  120 fps en la tabla de presets.
+
 ### Export de vídeo offline — audio limpio, más calidad y 4 resoluciones
 
 - **Audio "horrible" arreglado (Brave).** En Brave, la protección antihuellas
