@@ -109,6 +109,7 @@ export function useOfflineVideoExport({
 		useState<OfflineVideoExportProgress>(IDLE_PROGRESS);
 	const [savedFileName, setSavedFileName] = useState('');
 	const [savedFileBytes, setSavedFileBytes] = useState<number | null>(null);
+	const [error, setError] = useState<OfflineVideoExportError | null>(null);
 	const abortRef = useRef<AbortController | null>(null);
 
 	const resolution =
@@ -257,6 +258,8 @@ export function useOfflineVideoExport({
 				trackTitle,
 				fftSize,
 				audioSmoothing,
+				extraSubsystems,
+				abortSignal: controller.signal,
 				onProgress: next => {
 					if (next.phase === 'finalizing') finalizing = true;
 					setProgress(next);
