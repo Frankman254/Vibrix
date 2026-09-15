@@ -138,6 +138,7 @@ export default function LogoTab({ onReset }: { onReset: () => void }) {
 			setLogoBaseSize: s.setLogoBaseSize,
 			setLogoPositionX: s.setLogoPositionX,
 			setLogoPositionY: s.setLogoPositionY,
+			autoPlaceLogoForActiveImage: s.autoPlaceLogoForActiveImage,
 			setLogoCircularCrop: s.setLogoCircularCrop,
 			setLogoCropRadius: s.setLogoCropRadius,
 			setLogoBandMode: s.setLogoBandMode,
@@ -530,6 +531,18 @@ export default function LogoTab({ onReset }: { onReset: () => void }) {
 										formatValue={formatDecimal}
 									/>
 								</div>
+								<Button
+									onClick={() =>
+										void store.autoPlaceLogoForActiveImage()
+									}
+									size="sm"
+									density="compact"
+									variant="secondary"
+									title={t.hint_auto_place_logo}
+									full
+								>
+									{t.label_auto_place_logo}
+								</Button>
 								<Slider
 									label="Rotation speed"
 									value={store.logoRotationSpeed}

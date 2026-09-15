@@ -94,6 +94,8 @@ type Props = {
 	onChangeTransitionAudioChannel: (value: AudioReactiveChannel) => void;
 	onChangeTransitionAudioSmoothing: (value: number) => void;
 	onAutoFitAllImages: () => void;
+	onAutoFocusActiveImage: () => void;
+	onAutoFocusAllImages: () => void;
 };
 
 export default function ActiveWallpaperSection({
@@ -165,7 +167,9 @@ export default function ActiveWallpaperSection({
 	onChangeTransitionAudioDrive,
 	onChangeTransitionAudioChannel,
 	onChangeTransitionAudioSmoothing,
-	onAutoFitAllImages
+	onAutoFitAllImages,
+	onAutoFocusActiveImage,
+	onAutoFocusAllImages
 }: Props) {
 	const { confirm } = useDialog();
 	const logoOverrideActive = activeImage?.logoOverride != null;
@@ -208,6 +212,18 @@ export default function ActiveWallpaperSection({
 		});
 		if (!ok) return;
 		onAutoFitAllImages();
+	}
+
+	async function handleAutoFocusAllImages() {
+		const ok = await confirm({
+			title: t.label_auto_focus_all_images,
+			message: t.confirm_auto_focus_all_images,
+			confirmLabel: t.label_auto_focus_all_images,
+			cancelLabel: t.label_cancel,
+			tone: 'warning'
+		});
+		if (!ok) return;
+		onAutoFocusAllImages();
 	}
 
 	async function handleDownloadImage() {
@@ -283,6 +299,8 @@ export default function ActiveWallpaperSection({
 			onChangeImageCoverageLockEnabled={onChangeImageCoverageLockEnabled}
 			onAutoFitActiveImage={onAutoFitActiveImage}
 			onAutoFitAllImages={() => void handleAutoFitAllImages()}
+			onAutoFocusActiveImage={onAutoFocusActiveImage}
+			onAutoFocusAllImages={() => void handleAutoFocusAllImages()}
 			imageMinScale={imageMinScale}
 			onResetFraming={() => void handleResetFraming()}
 			onCenterFocus={onCenterFocus}

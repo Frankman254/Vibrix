@@ -38,6 +38,10 @@ export type {
 	LogoGridCell,
 	LogoNudgeDirection
 } from './domain/logoPositionGrid';
+export {
+	lowMassBoxToLogoPosition,
+	logoBoxSizeForViewport
+} from './domain/autoLogoPlacement';
 
 // ── runtime ─────────────────────────────────────────────────────────────────
 export {

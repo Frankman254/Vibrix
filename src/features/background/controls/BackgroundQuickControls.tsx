@@ -36,6 +36,7 @@ export default function BackgroundQuickControls({
 	onChangeImageCoverageLockEnabled,
 	onAutoFitActiveImage,
 	onAutoFitAllImages,
+	onAutoFocusAllImages,
 	onResetFraming,
 	onDownloadImage
 }: {
@@ -70,6 +71,7 @@ export default function BackgroundQuickControls({
 	onChangeImageCoverageLockEnabled: (value: boolean) => void;
 	onAutoFitActiveImage: () => void;
 	onAutoFitAllImages: () => void;
+	onAutoFocusAllImages: () => void;
 	onResetFraming: () => void;
 	onDownloadImage: () => void;
 }) {
@@ -197,7 +199,7 @@ export default function BackgroundQuickControls({
 				</span>
 			) : null}
 
-			<div className="grid grid-cols-2 gap-2">
+			<div className="grid grid-cols-3 gap-2">
 				<Button
 					onClick={onAutoFitActiveImage}
 					size="sm"
@@ -218,6 +220,17 @@ export default function BackgroundQuickControls({
 					full
 				>
 					{t.label_auto_fit_all_images}
+				</Button>
+				<Button
+					onClick={onAutoFocusAllImages}
+					disabled={imageCount === 0}
+					size="sm"
+					density="compact"
+					variant="secondary"
+					title={t.hint_auto_focus_all_images}
+					full
+				>
+					{t.label_auto_focus_all_images}
 				</Button>
 			</div>
 			<div className="grid grid-cols-2 gap-2">

@@ -405,6 +405,10 @@ export default function BackgroundTab({
 					}}
 					calculatedSwitchAt={calculatedSwitchAt}
 					onAutoFitAllImages={() => void store.autoFitAllImages()}
+					onAutoFocusActiveImage={() =>
+						void store.autoFocusActiveImage()
+					}
+					onAutoFocusAllImages={() => void store.autoFocusAllImages()}
 					onAutoFitActiveImage={() => void autoFitActiveImage()}
 				/>
 			) : null}
@@ -430,6 +434,7 @@ export default function BackgroundTab({
 					onMoveRight={() => moveActiveVisibleImage(1)}
 					onShuffle={shuffleVisibleImages}
 					onAutoFitAll={() => void store.autoFitAllImages()}
+					onAutoFocusAll={() => void store.autoFocusAllImages()}
 				/>
 			) : null}
 			<input

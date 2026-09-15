@@ -220,6 +220,7 @@ function SlideshowPoolSection({
 	onMoveRight,
 	onShuffle,
 	onAutoFitAll,
+	onAutoFocusAll,
 	onVirtualImageSelect
 }: {
 	t: Record<string, string>;
@@ -240,6 +241,7 @@ function SlideshowPoolSection({
 	onMoveRight: () => void;
 	onShuffle: () => void;
 	onAutoFitAll: () => void;
+	onAutoFocusAll: () => void;
 	onVirtualImageSelect: (virtualId: string, fileName: string) => void;
 }) {
 	const { confirm } = useDialog();
@@ -381,6 +383,18 @@ function SlideshowPoolSection({
 		});
 		if (!ok) return;
 		onAutoFitAll();
+	}
+
+	async function handleAutoFocusAll() {
+		const ok = await confirm({
+			title: t.label_auto_focus_all_images,
+			message: t.confirm_auto_focus_all_images,
+			confirmLabel: t.label_auto_focus_all_images,
+			cancelLabel: t.label_cancel,
+			tone: 'warning'
+		});
+		if (!ok) return;
+		onAutoFocusAll();
 	}
 
 	const hasPool = backgroundImages.length > 0;
@@ -538,6 +552,19 @@ function SlideshowPoolSection({
 								title={t.hint_auto_fit_all_images}
 							>
 								{t.label_auto_fit_all_images}
+							</Button>
+							<Button
+								onClick={() => {
+									setMoreMenuOpen(false);
+									void handleAutoFocusAll();
+								}}
+								size="sm"
+								density="compact"
+								variant="secondary"
+								full
+								title={t.hint_auto_focus_all_images}
+							>
+								{t.label_auto_focus_all_images}
 							</Button>
 							<span
 								className="text-[10px] px-1 pt-1"
@@ -703,6 +730,7 @@ export default memo(
 		prev.imagePreviewQuality === next.imagePreviewQuality &&
 		prev.showPoolThumbnails === next.showPoolThumbnails &&
 		prev.onAutoFitAll === next.onAutoFitAll &&
+		prev.onAutoFocusAll === next.onAutoFocusAll &&
 		prev.onSetEntryEnabled === next.onSetEntryEnabled &&
 		prev.onMoveEntryToIndex === next.onMoveEntryToIndex &&
 		prev.t === next.t

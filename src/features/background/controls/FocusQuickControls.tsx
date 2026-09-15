@@ -9,6 +9,7 @@ export default function FocusQuickControls({
 	pickFocusActive,
 	onPickFocus,
 	onCenterFocus,
+	onAutoFocus,
 	onChangeFocusPoint
 }: {
 	t: Record<string, string>;
@@ -17,6 +18,7 @@ export default function FocusQuickControls({
 	pickFocusActive: boolean;
 	onPickFocus: () => void;
 	onCenterFocus: () => void;
+	onAutoFocus: () => void;
 	onChangeFocusPoint: (x: number | null, y: number | null) => void;
 }) {
 	const isAdvanced = useIsAdvanced();
@@ -37,7 +39,7 @@ export default function FocusQuickControls({
 					Focus
 				</span>
 			</div>
-			<div className="grid grid-cols-3 gap-2">
+			<div className="grid grid-cols-2 gap-2">
 				<Button
 					onClick={onPickFocus}
 					size="sm"
@@ -67,6 +69,16 @@ export default function FocusQuickControls({
 					full
 				>
 					{t.label_clear_focus}
+				</Button>
+				<Button
+					onClick={onAutoFocus}
+					size="sm"
+					density="compact"
+					variant="secondary"
+					title={t.hint_auto_focus}
+					full
+				>
+					{t.label_auto_focus}
 				</Button>
 			</div>
 			{pickFocusActive ? (

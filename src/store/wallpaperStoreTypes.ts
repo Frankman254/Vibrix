@@ -673,6 +673,9 @@ export type WallpaperStore = WallpaperState & {
 	setImageUrls: (v: string[]) => void;
 	autoFitAllImages: () => Promise<void>;
 	autoFitCoveredActiveImage: () => Promise<void>;
+	autoFocusActiveImage: () => Promise<void>;
+	autoFocusAllImages: () => Promise<void>;
+	autoPlaceLogoForActiveImage: () => Promise<void>;
 	setActiveImageFramingEdited: (edited: boolean) => void;
 
 	// Persistence (IndexedDB)

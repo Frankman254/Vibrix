@@ -1,8 +1,14 @@
 import { DEFAULT_STATE } from '@/store/defaultState';
 import {
+	analyzeImageUrlSaliency,
 	loadImageDimensions,
 	suggestBackgroundAutoFit
 } from '@/features/background';
+import {
+	lowMassBoxToLogoPosition,
+	logoBoxSizeForViewport
+} from '@/features/logo';
+import { lowestMassBox } from '@/lib/saliency';
 import { createBackgroundImageItem } from '@/features/background/backgroundImages';
 import {
 	buildSceneSlotActivationPatch,
@@ -319,6 +325,115 @@ export function createBackgroundCollectionActions(
 			);
 		},
 		autoFitCoveredActiveImage,
+		autoFocusActiveImage: async () => {
+			const state = get();
+			const activeId = state.activeImageId;
+			const active = state.backgroundImages.find(
+				image => image.assetId === activeId
+			);
+			if (!active?.url) return;
+			let summary;
+			try {
+				summary = await analyzeImageUrlSaliency(active.url);
+			} catch {
+				// Image unloadable: leave the focus point untouched.
+				return;
+			}
+			set(current => {
+				if (current.activeImageId !== activeId) return {};
+				const focusX = summary.focus.x;
+				const focusY = summary.focus.y;
+				// Mirrors the manual focus control: focus is user intent, so the
+				// framing counts as hand-edited and covered auto-fit won't reset it.
+				const backgroundImages = current.backgroundImages.map(image =>
+					image.assetId === activeId
+						? {
+								...image,
+								focusX,
+								focusY,
+								coverageFramingEdited: true
+							}
+						: image
+				);
+				return buildBackgroundImageCollectionPatch(
+					current,
+					backgroundImages,
+					activeId
+				);
+			});
+		},
+		autoFocusAllImages: async () => {
+			const state = get();
+			if (state.backgroundImages.length === 0) return;
+			const activeSetlist = state.activeSetlistId
+				? state.setlists.find(
+						setlist => setlist.id === state.activeSetlistId
+					)
+				: null;
+			const scopedImageIds = activeSetlist
+				? new Set(activeSetlist.imageAssetIds)
+				: null;
+
+			const nextImages = await Promise.all(
+				state.backgroundImages.map(async image => {
+					if (scopedImageIds && !scopedImageIds.has(image.assetId)) {
+						return image;
+					}
+					if (!image.url) return image;
+					try {
+						const summary = await analyzeImageUrlSaliency(
+							image.url
+						);
+						return {
+							...image,
+							focusX: summary.focus.x,
+							focusY: summary.focus.y,
+							// Focus is user intent: mark framing edited so the
+							// covered auto-fit patch never recenters it on resize.
+							coverageFramingEdited: true
+						};
+					} catch {
+						return image;
+					}
+				})
+			);
+			set(current =>
+				buildBackgroundImageCollectionPatch(
+					current,
+					nextImages,
+					current.activeImageId
+				)
+			);
+		},
+		autoPlaceLogoForActiveImage: async () => {
+			const state = get();
+			const activeId = state.activeImageId;
+			const active = state.backgroundImages.find(
+				image => image.assetId === activeId
+			);
+			if (!active?.url) return;
+			const viewportWidth =
+				typeof window === 'undefined' ? 1920 : window.innerWidth;
+			const viewportHeight =
+				typeof window === 'undefined' ? 1080 : window.innerHeight;
+			try {
+				const summary = await analyzeImageUrlSaliency(active.url);
+				const boxSize = logoBoxSizeForViewport(
+					state.logoBaseSize,
+					viewportWidth,
+					viewportHeight
+				);
+				const box = lowestMassBox(summary.grid, boxSize);
+				const pos = lowMassBoxToLogoPosition(box);
+				set(current =>
+					current.activeImageId === activeId
+						? { logoPositionX: pos.x, logoPositionY: pos.y }
+						: {}
+				);
+			} catch {
+				// Image unloadable: keep the current logo placement.
+			}
+		},
 		addImageEntry: (
 			id,
 			url,

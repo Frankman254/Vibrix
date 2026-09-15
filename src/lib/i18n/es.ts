@@ -1243,6 +1243,17 @@ export const es: Record<TranslationKey, string> = {
 		'Haz clic en el preview de la imagen para elegir el punto que debe mantenerse en vista.',
 	hint_image_focus_point:
 		'Guarda el punto visual que debe preservarse cuando cambia el tamano de pantalla.',
+	label_auto_focus: 'Auto Enfocar',
+	hint_auto_focus:
+		'Establece el punto de foco donde la imagen tiene mas detalle visual.',
+	label_auto_focus_all_images: 'Auto Enfocar Todas',
+	hint_auto_focus_all_images:
+		'Establece el punto de foco de cada imagen en su area con mas detalle.',
+	confirm_auto_focus_all_images:
+		'Esto establecera el punto de foco de cada imagen del proyecto actual, o de todo el pool cuando no hay proyecto activo, en su area con mas detalle. Los puntos de foco manuales existentes seran reemplazados. Continuar?',
+	label_auto_place_logo: 'Auto Colocar Logo',
+	hint_auto_place_logo:
+		'Coloca el logo en la esquina con menos detalle de la imagen de fondo activa.',
 	label_scroll_speed: 'Velocidad de Desplazamiento',
 	label_fill_color: 'Color de Relleno',
 	label_stroke_color: 'Color del Borde',

@@ -52,6 +52,8 @@ export default function BackgroundCardShell({
 	onChangeImageCoverageLockEnabled,
 	onAutoFitActiveImage,
 	onAutoFitAllImages,
+	onAutoFocusActiveImage,
+	onAutoFocusAllImages,
 	imageMinScale,
 	onResetFraming,
 	onCenterFocus
@@ -101,6 +103,8 @@ export default function BackgroundCardShell({
 	onChangeImageCoverageLockEnabled: (value: boolean) => void;
 	onAutoFitActiveImage: () => void;
 	onAutoFitAllImages: () => void;
+	onAutoFocusActiveImage: () => void;
+	onAutoFocusAllImages: () => void;
 	imageMinScale: number;
 	onResetFraming: () => void;
 	onCenterFocus: () => void;
@@ -216,6 +220,10 @@ export default function BackgroundCardShell({
 							onCenterFocus();
 							setPickFocusActive(false);
 						}}
+						onAutoFocus={() => {
+							onAutoFocusActiveImage();
+							setPickFocusActive(false);
+						}}
 						onChangeFocusPoint={(x, y) => {
 							onChangeFocusPoint(x, y);
 							setPickFocusActive(false);
@@ -256,6 +264,7 @@ export default function BackgroundCardShell({
 						}
 						onAutoFitActiveImage={onAutoFitActiveImage}
 						onAutoFitAllImages={onAutoFitAllImages}
+						onAutoFocusAllImages={onAutoFocusAllImages}
 						onResetFraming={onResetFraming}
 						onDownloadImage={onDownloadImage}
 					/>

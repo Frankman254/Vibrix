@@ -1230,6 +1230,17 @@ export const en = {
 		'Click the image preview to choose the point to keep in view.',
 	hint_image_focus_point:
 		'Stores the visual point to preserve when the screen size changes.',
+	label_auto_focus: 'Auto Focus',
+	hint_auto_focus:
+		'Sets the focus point where the image has the most visual detail.',
+	label_auto_focus_all_images: 'Auto Focus All',
+	hint_auto_focus_all_images:
+		'Sets the focus point of every image to its most detailed area.',
+	confirm_auto_focus_all_images:
+		'This will set the focus point of every image in the current project, or the whole pool when no project is active, to its most detailed area. Existing manual focus points will be replaced. Continue?',
+	label_auto_place_logo: 'Auto Place Logo',
+	hint_auto_place_logo:
+		'Places the logo in the least busy corner of the active background image.',
 	label_scroll_speed: 'Scroll Speed',
 	label_fill_color: 'Fill Color',
 	label_stroke_color: 'Stroke Color',

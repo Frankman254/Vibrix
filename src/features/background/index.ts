@@ -59,6 +59,12 @@ export {
 } from './domain/backgroundAutoFit';
 export type { AutoFitResult } from './domain/backgroundAutoFit';
 
+// ── domain: auto-composition (saliency-driven focus/logo placement) ────────
+export {
+	analyzeImageUrlSaliency,
+	loadImageElement
+} from './domain/autoComposition';
+
 // ── slideshow playback (model half; the controller is in ./ui) ──────────────
 export {
 	PLAYBACK_ZERO_EPSILON,
