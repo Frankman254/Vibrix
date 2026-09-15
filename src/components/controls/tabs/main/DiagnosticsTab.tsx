@@ -25,6 +25,7 @@ import {
 	ICON_SIZE
 } from '@/ui';
 import DiagnosticsAudioPreviews from './DiagnosticsAudioPreviews';
+import { AiProviderStatusPanel } from '@/features/aiDirector/ui';
 
 function formatMegabytes(value: number | null): string {
 	return value != null ? `${value.toFixed(1)} MB` : 'n/a';
@@ -233,6 +234,8 @@ export default function DiagnosticsTab({ onReset }: { onReset: () => void }) {
 			>
 				<DiagnosticsAudioPreviews />
 			</SectionCard>
+
+			<AiProviderStatusPanel />
 
 			<DiagnosticsStateSnapshot />
 		</EditorTabLayout>

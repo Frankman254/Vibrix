@@ -8,3 +8,4 @@
 export { default as AiDirectorPanel } from './controls/AiDirectorPanel';
 export { default as AiBatchPanel } from './controls/AiBatchPanel';
 export { default as AiIntentEditor } from './controls/AiIntentEditor';
+export { default as AiProviderStatusPanel } from './controls/AiProviderStatusPanel';

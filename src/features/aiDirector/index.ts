@@ -55,6 +55,7 @@ export {
 export type {
 	SceneIntentResult,
 	SceneIntentSource,
+	SceneIntentServiceStatus,
 	RequestSceneIntentOptions
 } from './client/sceneIntentClient';
 
@@ -89,4 +90,21 @@ export type {
 	BatchScenesResult,
 	BuildBatchScenesOptions
 } from './batch/buildBatchScenes';
+
+// --- Music Director plan seam (pure; deterministic producer today) -------
+export {
+	MUSIC_DIRECTOR_PLAN_VERSION,
+	sectionsFromEnergyTimeline,
+	modulateIntent,
+	buildMusicDirectorPlan,
+	parseMusicDirectorPlan
+} from './music/musicDirectorPlan';
+export type {
+	MusicSection,
+	MusicDirectorPlan,
+	BuildMusicDirectorPlanOptions,
+	ParseMusicDirectorPlanResult
+} from './music/musicDirectorPlan';
+export { energyWindows, median } from './music/energyWindows';
+export type { EnergyPoint } from './music/energyWindows';
 export { personalizeIntent } from './batch/personalizeIntent';

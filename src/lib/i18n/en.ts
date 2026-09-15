@@ -1350,6 +1350,16 @@ export const en = {
 		'This creates {scenes} scenes and links one to each of {images} images, replacing any scene they already had.',
 	ai_batch_applied: 'Created {scenes} scenes. {skipped} images skipped.',
 	ai_batch_nothing: 'Nothing to apply.',
+	ai_provider_title: 'Scene-intent provider',
+	ai_provider_subtitle:
+		'Which model the backend uses for scene suggestions, and whether it answers.',
+	ai_provider_testing: 'Testing connection…',
+	ai_provider_ready: 'Provider ready ({provider})',
+	ai_provider_not_ready: 'Server reachable, provider not ready: {reason}',
+	ai_provider_unreachable: 'Scene service not reachable: {reason}',
+	ai_btn_test_connection: 'Test connection',
+	ai_provider_hint_fallback:
+		'Scene suggestions still work: they fall back to the offline heuristic derived from the image itself. The provider lives in the server environment (backend/server/.env); the browser never sees any key.',
 	ai_section_title: 'AI Director',
 	ai_section_subtitle:
 		'Build a scene from the active image, try it on the live wallpaper, then save it.',

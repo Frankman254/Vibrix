@@ -1361,6 +1361,16 @@ export const es: Record<TranslationKey, string> = {
 		'Crea {scenes} escenas y liga una a cada una de {images} imágenes, reemplazando la escena que ya tuvieran.',
 	ai_batch_applied: 'Creadas {scenes} escenas. {skipped} imágenes salteadas.',
 	ai_batch_nothing: 'Nada que aplicar.',
+	ai_provider_title: 'Proveedor de escenas por IA',
+	ai_provider_subtitle:
+		'Qué modelo usa el backend para sugerir escenas, y si responde.',
+	ai_provider_testing: 'Probando conexión…',
+	ai_provider_ready: 'Proveedor listo ({provider})',
+	ai_provider_not_ready: 'Servidor accesible, proveedor no listo: {reason}',
+	ai_provider_unreachable: 'Servicio de escenas inaccesible: {reason}',
+	ai_btn_test_connection: 'Probar conexión',
+	ai_provider_hint_fallback:
+		'Las sugerencias de escenas siguen funcionando: caen a la heurística offline derivada de la propia imagen. El proveedor vive en el entorno del servidor (backend/server/.env); el navegador nunca ve ninguna clave.',
 	ai_section_title: 'AI Director',
 	ai_section_subtitle:
 		'Arma una escena desde la imagen activa, pruébala en el wallpaper y guárdala.',

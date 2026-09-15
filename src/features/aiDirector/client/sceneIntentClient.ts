@@ -141,14 +141,73 @@ export async function requestSceneIntent(
 	}
 }
 
-/** Whether a model-backed suggestion is available in this deployment. */
-export async function probeSceneIntentService(): Promise<boolean> {
+/** What `/api/health` says about the scene-intent provider. */
+export type SceneIntentServiceStatus = {
+	/** The server answered with a health payload. */
+	reachable: boolean;
+	/** A provider is configured and its runtime reports ready. */
+	providerReady: boolean;
+	/** Which provider the server picked ('anthropic' | 'ollama' | …). */
+	provider: string | null;
+	/** Why not ready, when `providerReady` is false. */
+	reason: string | null;
+};
+
+/**
+ * Ask the server which provider it selected and whether it is ready.
+ *
+ * This goes to `/api/health`, NOT an OPTIONS on the endpoint itself: the
+ * CORS middleware answers OPTIONS for every path, so an OPTIONS probe would
+ * report "available" even with no provider configured. The health payload
+ * is the only place that distinguishes "wrong URL" from "not configured"
+ * from "provider up but its runtime is down" (e.g. Ollama not running).
+ */
+export async function probeSceneIntentService(): Promise<SceneIntentServiceStatus> {
 	try {
-		const response = await fetch(SCENE_INTENT_ENDPOINT, {
-			method: 'OPTIONS'
-		});
-		return response.ok;
+		const response = await fetch('/api/health');
+		if (!response.ok) {
+			return {
+				reachable: false,
+				providerReady: false,
+				provider: null,
+				reason: `health responded ${response.status}`
+			};
+		}
+		const payload: unknown = await response.json();
+		if (
+			typeof payload !== 'object' ||
+			payload === null ||
+			!('sceneIntent' in payload) ||
+			typeof payload.sceneIntent !== 'object' ||
+			payload.sceneIntent === null ||
+			!('ok' in payload.sceneIntent)
+		) {
+			return {
+				reachable: false,
+				providerReady: false,
+				provider: null,
+				reason: 'health payload has no sceneIntent field'
+			};
+		}
+		const scene = payload.sceneIntent;
+		return {
+			reachable: true,
+			providerReady: scene.ok === true,
+			provider:
+				'provider' in scene && typeof scene.provider === 'string'
+					? scene.provider
+					: null,
+			reason:
+				'reason' in scene && typeof scene.reason === 'string'
+					? scene.reason
+					: null
+		};
 	} catch {
-		return false;
+		return {
+			reachable: false,
+			providerReady: false,
+			provider: null,
+			reason: 'could not reach the scene service'
+		};
 	}
 }
