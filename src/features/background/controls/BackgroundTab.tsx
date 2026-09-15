@@ -1,8 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-	loadImageDimensions,
-	suggestBackgroundAutoFit
-} from '@/features/background/domain/backgroundAutoFit';
 import { resolveEditorImagePreviewUrl } from '@/lib/editorImagePreviews';
 import { useT } from '@/lib/i18n';
 import { useAudioContext } from '@/context/useAudioContext';
@@ -238,27 +234,6 @@ export default function BackgroundTab({
 		store.setImageRotation(value);
 	}
 
-	async function autoFitActiveImage() {
-		if (!activeImage?.url) return;
-		const { width, height } = await loadImageDimensions(activeImage.url);
-		const suggestion = suggestBackgroundAutoFit(
-			window.innerWidth,
-			window.innerHeight,
-			width,
-			height,
-			store.imageRotation,
-			store.imageMirrorFill ? store.imageMirrorFillCount : 0
-		);
-
-		// Explicit auto-fit: the composition becomes machine-owned again.
-		store.setActiveImageFramingEdited(false);
-		store.setImageFitMode(suggestion.fitMode);
-		store.setImageScale(suggestion.scale);
-		store.setImagePositionX(suggestion.positionX);
-		store.setImagePositionY(suggestion.positionY);
-		store.setImageFocusPoint(null, null);
-	}
-
 	function cycleActiveImage(direction: -1 | 1) {
 		// Prev/next walk the setlist-filtered list — same one the pool
 		// grid renders.
@@ -404,12 +379,11 @@ export default function BackgroundTab({
 						);
 					}}
 					calculatedSwitchAt={calculatedSwitchAt}
-					onAutoFitAllImages={() => void store.autoFitAllImages()}
+					onAutoFrameActive={() => void store.autoFrameActiveImage()}
 					onAutoFocusActiveImage={() =>
 						void store.autoFocusActiveImage()
 					}
-					onAutoFocusAllImages={() => void store.autoFocusAllImages()}
-					onAutoFitActiveImage={() => void autoFitActiveImage()}
+					onAutoFrameAll={() => void store.autoFrameAllImages()}
 				/>
 			) : null}
 
@@ -433,8 +407,7 @@ export default function BackgroundTab({
 					onMoveLeft={() => moveActiveVisibleImage(-1)}
 					onMoveRight={() => moveActiveVisibleImage(1)}
 					onShuffle={shuffleVisibleImages}
-					onAutoFitAll={() => void store.autoFitAllImages()}
-					onAutoFocusAll={() => void store.autoFocusAllImages()}
+					onAutoFrameAll={() => void store.autoFrameAllImages()}
 				/>
 			) : null}
 			<input

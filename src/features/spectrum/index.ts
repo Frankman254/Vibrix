@@ -103,6 +103,10 @@ export {
 } from './runtime/spectrumPlacement';
 export { hydrateSpectrumProfileValues } from './runtime/spectrumProfileHydrate';
 export { invalidateSpectrumPresetMorph } from './runtime/spectrumPresetTransition';
+export {
+	clampSpectrumScale,
+	resolveScaledSpectrumSettings
+} from './domain/spectrumScale';
 
 // ── geometry / color ────────────────────────────────────────────────────────
 export {

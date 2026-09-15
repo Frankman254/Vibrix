@@ -277,7 +277,8 @@ export function dispatchSpectrumRenderer(
 				input.canvas,
 				input.runtime,
 				input.settings,
-				input.timeDomain
+				input.timeDomain,
+				input.dt
 			);
 			return;
 		case 'tunnel':

@@ -671,10 +671,10 @@ export type WallpaperStore = WallpaperState & {
 	setBackgroundImageEntryEnabled: (assetId: string, enabled: boolean) => void;
 	shuffleImageEntries: () => void;
 	setImageUrls: (v: string[]) => void;
-	autoFitAllImages: () => Promise<void>;
+	autoFrameActiveImage: () => Promise<void>;
 	autoFitCoveredActiveImage: () => Promise<void>;
+	autoFrameAllImages: () => Promise<void>;
 	autoFocusActiveImage: () => Promise<void>;
-	autoFocusAllImages: () => Promise<void>;
 	autoPlaceLogoForActiveImage: () => Promise<void>;
 	setActiveImageFramingEdited: (edited: boolean) => void;
 

@@ -7,12 +7,10 @@ import { resolveScaledSpectrumSettings } from './CircularSpectrum';
  * Guards what `spectrumScale` is allowed to multiply.
  *
  * Scale must grow the *figure*. For the scope family the radial figure is a
- * contour wrapped around `spectrumInnerRadius`, so Scale has to scale that
- * radius too — otherwise the ring stays fixed and Scale only fattens the
- * wave. Classic radial keeps its historical semantics (Scale lengthens bars,
- * hole unchanged) so existing presets don't shift. And when Follow Logo is
- * effective, `innerRadius` is derived from the logo (which has its own scale),
- * so multiplying it would drift the ring off the logo.
+ * contour wrapped around `spectrumInnerRadius`, so Scale always scales that
+ * radius — including when Follow Logo is effective: the user scales the base
+ * figure on purpose. Classic radial keeps its historical semantics (Scale
+ * lengthens bars, hole unchanged) so existing presets don't shift.
  */
 function settings(patch: Partial<SpectrumSettings> = {}): SpectrumSettings {
 	return {
@@ -43,7 +41,9 @@ describe('resolveScaledSpectrumSettings', () => {
 		);
 	});
 
-	it('leaves innerRadius alone when Follow Logo drives the ring', () => {
+	it('scales the ring even when Follow Logo drives it', () => {
+		// The user asked for Scale to grow the base figure unconditionally;
+		// the ring pulling away from the logo at Scale != 1 is intended.
 		const s = settings({
 			spectrumScale: 2,
 			spectrumFamily: 'oscilloscope',
@@ -53,12 +53,11 @@ describe('resolveScaledSpectrumSettings', () => {
 			logoEnabled: true
 		});
 		const out = resolveScaledSpectrumSettings(s);
-		expect(out.spectrumInnerRadius).toBe(120);
+		expect(out.spectrumInnerRadius).toBe(240);
 	});
 
-	it('leaves innerRadius alone when the logo is off', () => {
-		// Follow Logo checked but logo disabled: innerRadius is the raw user
-		// value again, so Scale owns it.
+	it('scales the ring when Follow Logo is on but the logo is off', () => {
+		// Logo disabled: innerRadius is the raw user value, so Scale owns it.
 		const s = settings({
 			spectrumScale: 2,
 			spectrumFamily: 'oscilloscope',

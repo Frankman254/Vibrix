@@ -168,20 +168,23 @@ function applyOscilloscopeNeonCore(
  * frame-to-frame lerp factor.
  *
  * Curve is exponential, not linear: most of the perceptual "slow scope"
- * feel lives between alpha ~0.03 and ~0.3, and the previous linear mapping
- * spent half the slider range above 0.5 where the wave already snaps. The
- * power curve concentrates resolution in the low-alpha region the user
- * actually cares about.
+ * feel lives between alpha ~0.01 and ~0.3, and a linear mapping spends half
+ * the slider range above 0.5 where the wave already snaps. The cubic curve
+ * concentrates resolution in the low-alpha region the user actually cares
+ * about.
  *
- * speed=1  → alpha≈0.04 (cinematic, ~25 frames to track new content)
- * speed=2  → alpha≈0.16 (balanced, the new default feel)
- * speed=3  → alpha≈0.40 (responsive)
- * speed=4  → alpha=1.00 (snap = pre-reactivation behavior)
+ * Values are calibrated at 60 FPS; `getSmoothedTimeDomain` rescales them to
+ * the real frame time.
+ *
+ * speed=1  → alpha≈0.008 (cinematic, ~2 s to track new content at 60 fps)
+ * speed=2  → alpha≈0.045 (smooth)
+ * speed=3  → alpha≈0.30 (responsive)
+ * speed=4  → alpha=1.00 (snap = raw PCM each frame)
  */
 function getScopeSmoothingAlpha(scrollSpeed: number): number {
 	const clamped = Math.max(1, Math.min(4, scrollSpeed));
 	const t = (clamped - 1) / 3;
-	return 0.04 + Math.pow(t, 2) * 0.96;
+	return 0.008 + Math.pow(t, 3) * 0.992;
 }
 
 /**
@@ -200,7 +203,8 @@ function getSmoothedTimeDomain(
 	runtime: SpectrumRuntimeState,
 	live: Uint8Array,
 	scrollSpeed: number,
-	barCount: number
+	barCount: number,
+	dtSeconds: number
 ): Uint8Array {
 	if (live.length === 0) return live;
 	const targetLength = Math.max(
@@ -213,7 +217,18 @@ function getSmoothedTimeDomain(
 		runtime.oscilloscopeSmoothedSamples = buffer;
 	}
 	const stride = live.length / targetLength;
-	const alpha = getScopeSmoothingAlpha(scrollSpeed);
+	// The slider is calibrated at 60 fps; rescale to the real frame time so a
+	// 120 Hz display doesn't make the trace twice as quick. `1-(1-a)^(dt/16.7ms)`
+	// keeps the same per-second convergence regardless of frame rate.
+	const baseAlpha = getScopeSmoothingAlpha(scrollSpeed);
+	const alpha =
+		baseAlpha >= 0.999
+			? 1
+			: 1 -
+				Math.pow(
+					1 - baseAlpha,
+					Math.min(0.1, Math.max(0.001, dtSeconds)) * 60
+				);
 	let out = runtime.oscilloscopeDisplaySamples;
 	if (!out || out.length !== targetLength) {
 		out = new Uint8Array(targetLength);
@@ -263,7 +278,8 @@ export function drawOscilloscope(
 	canvas: HTMLCanvasElement,
 	runtime: SpectrumRuntimeState,
 	settings: SpectrumSettings,
-	timeDomain: Uint8Array
+	timeDomain: Uint8Array,
+	dt: number
 ): void {
 	const isRadial = settings.spectrumMode === 'radial';
 	const cx =
@@ -276,7 +292,8 @@ export function drawOscilloscope(
 		runtime,
 		timeDomain,
 		settings.spectrumOscilloscopeScrollSpeed,
-		settings.spectrumBarCount
+		settings.spectrumBarCount,
+		dt
 	);
 
 	// Phosphor afterglow — fade-trail buffer. We render onto an offscreen

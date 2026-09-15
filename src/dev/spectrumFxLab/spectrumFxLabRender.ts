@@ -38,7 +38,14 @@ export function renderLabFrame(
 	ctx.globalAlpha = settings.spectrumOpacity;
 
 	if (mode.startsWith('oscilloscope')) {
-		drawOscilloscope(ctx, canvas, runtime, settings, buffers.timeDomain);
+		drawOscilloscope(
+			ctx,
+			canvas,
+			runtime,
+			settings,
+			buffers.timeDomain,
+			dt
+		);
 	} else if (mode.includes('bars')) {
 		if (mode.endsWith('radial')) {
 			drawRadialBars(

@@ -6,9 +6,17 @@ import {
 } from '@/features/background';
 import {
 	lowMassBoxToLogoPosition,
-	logoBoxSizeForViewport
+	logoBoxSizeForViewport,
+	spectrumAnnulusInImageSpace
 } from '@/features/logo';
-import { lowestMassBox } from '@/lib/saliency';
+import { bestPlacementBox, type SaliencyAvoidRegion } from '@/lib/saliency';
+import {
+	resolveSpectrumPlacement,
+	resolveScaledSpectrumSettings
+} from '@/features/spectrum';
+import { resolveResponsiveSpectrumSettings } from '@/features/layout/responsiveLayout';
+import { resolveImageTransform } from '@/features/background';
+import type { BackgroundImageItem } from '@/types/wallpaper';
 import { createBackgroundImageItem } from '@/features/background/backgroundImages';
 import {
 	buildSceneSlotActivationPatch,
@@ -40,6 +48,141 @@ function prefersReducedMotion(): boolean {
 		typeof window.matchMedia === 'function' &&
 		window.matchMedia('(prefers-reduced-motion: reduce)').matches
 	);
+}
+
+/**
+ * One image, fully framed: the auto-fit composition (scale/fit/position) AND
+ * the saliency focus point. Each half independently survives the other's
+ * load failure — an unloadable url or a failed decode leaves that image
+ * untouched. `coverageFramingEdited: true`: the focus point is user intent,
+ * so the Keep Covered refit must not recentre it afterwards.
+ */
+async function frameImage(
+	image: BackgroundImageItem,
+	viewport: { width: number; height: number }
+): Promise<BackgroundImageItem> {
+	if (!image.url) return image;
+	const [fit, saliency] = await Promise.all([
+		loadImageDimensions(image.url)
+			.then(({ width, height }) =>
+				suggestBackgroundAutoFit(
+					viewport.width,
+					viewport.height,
+					width,
+					height,
+					image.rotation,
+					image.mirrorFill ? (image.mirrorFillCount ?? 0) : 0
+				)
+			)
+			.catch(() => null),
+		analyzeImageUrlSaliency(image.url).catch(() => null)
+	]);
+	if (!fit && !saliency) return image;
+	return {
+		...image,
+		...(fit
+			? {
+					scale: fit.scale,
+					fitMode: fit.fitMode,
+					positionX: fit.positionX,
+					positionY: fit.positionY
+				}
+			: {}),
+		...(saliency
+			? { focusX: saliency.focus.x, focusY: saliency.focus.y }
+			: {}),
+		coverageFramingEdited: true
+	};
+}
+
+/**
+ * The radial spectrum figure as an exclusion zone in image space, or `null`
+ * when nothing is to be avoided (no image geometry, linear mode, or the
+ * spectrum is off). Mirrors the preview's settings pipeline exactly:
+ * per-image override → responsive px scaling → user Scale → Follow-Logo
+ * placement.
+ */
+function buildSpectrumAvoidRegion(params: {
+	state: WallpaperStore;
+	image: BackgroundImageItem;
+	imageWidth: number;
+	imageHeight: number;
+	viewportWidth: number;
+	viewportHeight: number;
+}): SaliencyAvoidRegion | null {
+	const { state, image, viewportWidth, viewportHeight } = params;
+	if (image.rotation !== 0) return null; // mapping is rotation-naive
+	const effective = {
+		...state,
+		...(image.logoOverride ?? {}),
+		...(image.spectrumOverride ?? {})
+	} as WallpaperStore;
+	if (!effective.spectrumEnabled) return null;
+	if (effective.spectrumMode !== 'radial') return null;
+	const responsiveSpectrum = resolveResponsiveSpectrumSettings(
+		{
+			layoutResponsiveEnabled: effective.layoutResponsiveEnabled,
+			layoutReferenceWidth: effective.layoutReferenceWidth,
+			layoutReferenceHeight: effective.layoutReferenceHeight,
+			spectrumLogoGap: effective.spectrumLogoGap,
+			spectrumInnerRadius: effective.spectrumInnerRadius,
+			spectrumBarWidth: effective.spectrumBarWidth,
+			spectrumMinHeight: effective.spectrumMinHeight,
+			spectrumMaxHeight: effective.spectrumMaxHeight,
+			spectrumShadowBlur: effective.spectrumShadowBlur,
+			spectrumOscilloscopeLineWidth:
+				effective.spectrumOscilloscopeLineWidth
+		},
+		viewportWidth,
+		viewportHeight
+	);
+	const placement = resolveSpectrumPlacement(
+		{
+			...effective,
+			// The placement resolver wants the RESPONSIVE px values, like the
+			// stage does.
+			spectrumLogoGap: responsiveSpectrum.spectrumLogoGap,
+			spectrumInnerRadius: responsiveSpectrum.spectrumInnerRadius
+		},
+		{ logoScale: Math.max(effective.logoMinScale, 0.75) }
+	);
+	// Follow-Logo: the ring is always drawn at the logo wherever it goes, so
+	// an exclusion zone centered on the logo is self-referential. No avoid.
+	if (placement.followLogoEffective) return null;
+	const scaled = resolveScaledSpectrumSettings({
+		...effective,
+		...responsiveSpectrum,
+		spectrumInnerRadius: placement.spectrumInnerRadius
+	});
+	const primary = resolveImageTransform({
+		viewportWidth,
+		viewportHeight,
+		imageWidth: params.imageWidth,
+		imageHeight: params.imageHeight,
+		fitMode: image.fitMode,
+		scale: image.scale,
+		positionX: image.positionX,
+		positionY: image.positionY,
+		rotation: image.rotation,
+		mirror: image.mirror,
+		keepCovered: image.coverageLockEnabled,
+		focusX: image.focusX,
+		focusY: image.focusY,
+		mirrorFill: image.mirrorFill,
+		mirrorFillInvert: image.mirrorFillInvert,
+		mirrorFillCount: image.mirrorFillCount,
+		layout: effective
+	}).drawRects[0];
+	if (!primary) return null;
+	return spectrumAnnulusInImageSpace({
+		spectrumPositionX: placement.spectrumPositionX,
+		spectrumPositionY: placement.spectrumPositionY,
+		innerRadius: scaled.spectrumInnerRadius,
+		maxHeight: scaled.spectrumMaxHeight,
+		viewportWidth,
+		viewportHeight,
+		imageRect: primary
+	});
 }
 
 /**
@@ -264,13 +407,36 @@ export function createBackgroundCollectionActions(
 					state.activeImageId
 				);
 			}),
-		autoFitAllImages: async () => {
+		autoFrameActiveImage: async () => {
 			const state = get();
-			if (state.backgroundImages.length === 0) return;
+			const activeId = state.activeImageId;
+			const active = state.backgroundImages.find(
+				image => image.assetId === activeId
+			);
+			if (!active?.url) return;
 			const viewportWidth =
 				typeof window === 'undefined' ? 1920 : window.innerWidth;
 			const viewportHeight =
 				typeof window === 'undefined' ? 1080 : window.innerHeight;
+			const framed = await frameImage(active, {
+				width: viewportWidth,
+				height: viewportHeight
+			});
+			set(current =>
+				current.activeImageId === activeId
+					? buildBackgroundImageCollectionPatch(
+							current,
+							current.backgroundImages.map(image =>
+								image.assetId === activeId ? framed : image
+							),
+							activeId
+						)
+					: {}
+			);
+		},
+		autoFrameAllImages: async () => {
+			const state = get();
+			if (state.backgroundImages.length === 0) return;
 			const activeSetlist = state.activeSetlistId
 				? state.setlists.find(
 						setlist => setlist.id === state.activeSetlistId
@@ -279,41 +445,20 @@ export function createBackgroundCollectionActions(
 			const scopedImageIds = activeSetlist
 				? new Set(activeSetlist.imageAssetIds)
 				: null;
+			const viewportWidth =
+				typeof window === 'undefined' ? 1920 : window.innerWidth;
+			const viewportHeight =
+				typeof window === 'undefined' ? 1080 : window.innerHeight;
 
 			const nextImages = await Promise.all(
-				state.backgroundImages.map(async image => {
+				state.backgroundImages.map(image => {
 					if (scopedImageIds && !scopedImageIds.has(image.assetId)) {
-						return image;
+						return Promise.resolve(image);
 					}
-					if (!image.url) return image;
-
-					try {
-						const { width, height } = await loadImageDimensions(
-							image.url
-						);
-						const suggestion = suggestBackgroundAutoFit(
-							viewportWidth,
-							viewportHeight,
-							width,
-							height,
-							image.rotation,
-							image.mirrorFill ? (image.mirrorFillCount ?? 0) : 0
-						);
-						return {
-							...image,
-							scale: suggestion.scale,
-							fitMode: suggestion.fitMode,
-							positionX: suggestion.positionX,
-							positionY: suggestion.positionY,
-							focusX: 0.5,
-							focusY: 0.5,
-							// Explicit user auto-fit: the composition is machine-
-							// owned again, so autofitCoveredActiveImage may manage it.
-							coverageFramingEdited: false
-						};
-					} catch {
-						return image;
-					}
+					return frameImage(image, {
+						width: viewportWidth,
+						height: viewportHeight
+					});
 				})
 			);
 			set(current =>
@@ -332,78 +477,32 @@ export function createBackgroundCollectionActions(
 				image => image.assetId === activeId
 			);
 			if (!active?.url) return;
-			let summary;
 			try {
-				summary = await analyzeImageUrlSaliency(active.url);
+				const summary = await analyzeImageUrlSaliency(active.url);
+				set(current =>
+					current.activeImageId === activeId
+						? buildBackgroundImageCollectionPatch(
+								current,
+								current.backgroundImages.map(image =>
+									image.assetId === activeId
+										? {
+												...image,
+												focusX: summary.focus.x,
+												focusY: summary.focus.y,
+												// Focus is user intent: mark framing
+												// edited so the covered auto-fit patch
+												// never recenters it on resize.
+												coverageFramingEdited: true
+											}
+										: image
+								),
+								activeId
+							)
+						: {}
+				);
 			} catch {
-				// Image unloadable: leave the focus point untouched.
-				return;
+				// Image unloadable: keep the current focus point.
 			}
-			set(current => {
-				if (current.activeImageId !== activeId) return {};
-				const focusX = summary.focus.x;
-				const focusY = summary.focus.y;
-				// Mirrors the manual focus control: focus is user intent, so the
-				// framing counts as hand-edited and covered auto-fit won't reset it.
-				const backgroundImages = current.backgroundImages.map(image =>
-					image.assetId === activeId
-						? {
-								...image,
-								focusX,
-								focusY,
-								coverageFramingEdited: true
-							}
-						: image
-				);
-				return buildBackgroundImageCollectionPatch(
-					current,
-					backgroundImages,
-					activeId
-				);
-			});
-		},
-		autoFocusAllImages: async () => {
-			const state = get();
-			if (state.backgroundImages.length === 0) return;
-			const activeSetlist = state.activeSetlistId
-				? state.setlists.find(
-						setlist => setlist.id === state.activeSetlistId
-					)
-				: null;
-			const scopedImageIds = activeSetlist
-				? new Set(activeSetlist.imageAssetIds)
-				: null;
-
-			const nextImages = await Promise.all(
-				state.backgroundImages.map(async image => {
-					if (scopedImageIds && !scopedImageIds.has(image.assetId)) {
-						return image;
-					}
-					if (!image.url) return image;
-					try {
-						const summary = await analyzeImageUrlSaliency(
-							image.url
-						);
-						return {
-							...image,
-							focusX: summary.focus.x,
-							focusY: summary.focus.y,
-							// Focus is user intent: mark framing edited so the
-							// covered auto-fit patch never recenters it on resize.
-							coverageFramingEdited: true
-						};
-					} catch {
-						return image;
-					}
-				})
-			);
-			set(current =>
-				buildBackgroundImageCollectionPatch(
-					current,
-					nextImages,
-					current.activeImageId
-				)
-			);
 		},
 		autoPlaceLogoForActiveImage: async () => {
 			const state = get();
@@ -417,13 +516,26 @@ export function createBackgroundCollectionActions(
 			const viewportHeight =
 				typeof window === 'undefined' ? 1080 : window.innerHeight;
 			try {
-				const summary = await analyzeImageUrlSaliency(active.url);
+				const [summary, dimensions] = await Promise.all([
+					analyzeImageUrlSaliency(active.url),
+					loadImageDimensions(active.url)
+				]);
 				const boxSize = logoBoxSizeForViewport(
 					state.logoBaseSize,
 					viewportWidth,
 					viewportHeight
 				);
-				const box = lowestMassBox(summary.grid, boxSize);
+				const avoid = buildSpectrumAvoidRegion({
+					state,
+					image: active,
+					imageWidth: dimensions.width,
+					imageHeight: dimensions.height,
+					viewportWidth,
+					viewportHeight
+				});
+				const box = bestPlacementBox(summary.grid, boxSize, {
+					avoid: avoid ? [avoid] : []
+				});
 				const pos = lowMassBoxToLogoPosition(box);
 				set(current =>
 					current.activeImageId === activeId

@@ -62,7 +62,8 @@ type Props = {
 	onClearLooksOverride: () => void;
 	onChangePlaybackSwitchAt: (v: number | null) => void;
 	calculatedSwitchAt?: number | null;
-	onAutoFitActiveImage: () => void;
+	onAutoFrameActive: () => void;
+	onAutoFocusActiveImage: () => void;
 	onUploadClick: () => void;
 	onPreviousImage: () => void;
 	onNextImage: () => void;
@@ -93,9 +94,7 @@ type Props = {
 	onChangeTransitionAudioDrive: (value: number) => void;
 	onChangeTransitionAudioChannel: (value: AudioReactiveChannel) => void;
 	onChangeTransitionAudioSmoothing: (value: number) => void;
-	onAutoFitAllImages: () => void;
-	onAutoFocusActiveImage: () => void;
-	onAutoFocusAllImages: () => void;
+	onAutoFrameAll: () => void;
 };
 
 export default function ActiveWallpaperSection({
@@ -143,7 +142,7 @@ export default function ActiveWallpaperSection({
 	onClearLooksOverride,
 	onChangePlaybackSwitchAt,
 	calculatedSwitchAt,
-	onAutoFitActiveImage,
+	onAutoFrameActive,
 	onUploadClick,
 	onPreviousImage,
 	onNextImage,
@@ -167,9 +166,8 @@ export default function ActiveWallpaperSection({
 	onChangeTransitionAudioDrive,
 	onChangeTransitionAudioChannel,
 	onChangeTransitionAudioSmoothing,
-	onAutoFitAllImages,
-	onAutoFocusActiveImage,
-	onAutoFocusAllImages
+	onAutoFrameAll,
+	onAutoFocusActiveImage
 }: Props) {
 	const { confirm } = useDialog();
 	const logoOverrideActive = activeImage?.logoOverride != null;
@@ -202,28 +200,16 @@ export default function ActiveWallpaperSection({
 			? calculatedSwitchAt
 			: null;
 
-	async function handleAutoFitAllImages() {
+	async function handleAutoFrameAll() {
 		const ok = await confirm({
-			title: t.label_auto_fit_all_images,
-			message: t.confirm_auto_fit_all_images,
-			confirmLabel: t.label_auto_fit_all_images,
+			title: t.label_auto_frame_all_images,
+			message: t.confirm_auto_frame_all_images,
+			confirmLabel: t.label_auto_frame_all_images,
 			cancelLabel: t.label_cancel,
 			tone: 'warning'
 		});
 		if (!ok) return;
-		onAutoFitAllImages();
-	}
-
-	async function handleAutoFocusAllImages() {
-		const ok = await confirm({
-			title: t.label_auto_focus_all_images,
-			message: t.confirm_auto_focus_all_images,
-			confirmLabel: t.label_auto_focus_all_images,
-			cancelLabel: t.label_cancel,
-			tone: 'warning'
-		});
-		if (!ok) return;
-		onAutoFocusAllImages();
+		onAutoFrameAll();
 	}
 
 	async function handleDownloadImage() {
@@ -297,10 +283,9 @@ export default function ActiveWallpaperSection({
 			onChangeMirrorFillInvert={onChangeMirrorFillInvert}
 			onChangeMirrorFillCount={onChangeMirrorFillCount}
 			onChangeImageCoverageLockEnabled={onChangeImageCoverageLockEnabled}
-			onAutoFitActiveImage={onAutoFitActiveImage}
-			onAutoFitAllImages={() => void handleAutoFitAllImages()}
+			onAutoFrameActive={onAutoFrameActive}
 			onAutoFocusActiveImage={onAutoFocusActiveImage}
-			onAutoFocusAllImages={() => void handleAutoFocusAllImages()}
+			onAutoFrameAll={() => void handleAutoFrameAll()}
 			imageMinScale={imageMinScale}
 			onResetFraming={() => void handleResetFraming()}
 			onCenterFocus={onCenterFocus}

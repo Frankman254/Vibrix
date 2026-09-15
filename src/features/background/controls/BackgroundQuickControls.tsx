@@ -34,9 +34,8 @@ export default function BackgroundQuickControls({
 	onChangeMirrorFillInvert,
 	onChangeMirrorFillCount,
 	onChangeImageCoverageLockEnabled,
-	onAutoFitActiveImage,
-	onAutoFitAllImages,
-	onAutoFocusAllImages,
+	onAutoFrameActive,
+	onAutoFrameAll,
 	onResetFraming,
 	onDownloadImage
 }: {
@@ -69,9 +68,8 @@ export default function BackgroundQuickControls({
 	onChangeMirrorFillInvert: (value: boolean) => void;
 	onChangeMirrorFillCount: (value: number) => void;
 	onChangeImageCoverageLockEnabled: (value: boolean) => void;
-	onAutoFitActiveImage: () => void;
-	onAutoFitAllImages: () => void;
-	onAutoFocusAllImages: () => void;
+	onAutoFrameActive: () => void;
+	onAutoFrameAll: () => void;
 	onResetFraming: () => void;
 	onDownloadImage: () => void;
 }) {
@@ -199,38 +197,27 @@ export default function BackgroundQuickControls({
 				</span>
 			) : null}
 
-			<div className="grid grid-cols-3 gap-2">
+			<div className="grid grid-cols-2 gap-2">
 				<Button
-					onClick={onAutoFitActiveImage}
+					onClick={onAutoFrameActive}
 					size="sm"
 					density="compact"
 					variant="secondary"
-					title={t.hint_auto_fit_image}
+					title={t.hint_auto_frame_current}
 					full
 				>
-					{t.label_auto_fit_image}
+					{t.label_auto_frame_current}
 				</Button>
 				<Button
-					onClick={onAutoFitAllImages}
+					onClick={onAutoFrameAll}
 					disabled={imageCount === 0}
 					size="sm"
 					density="compact"
 					variant="secondary"
-					title={t.hint_auto_fit_all_images}
+					title={t.hint_auto_frame_all_images}
 					full
 				>
-					{t.label_auto_fit_all_images}
-				</Button>
-				<Button
-					onClick={onAutoFocusAllImages}
-					disabled={imageCount === 0}
-					size="sm"
-					density="compact"
-					variant="secondary"
-					title={t.hint_auto_focus_all_images}
-					full
-				>
-					{t.label_auto_focus_all_images}
+					{t.label_auto_frame_all_images}
 				</Button>
 			</div>
 			<div className="grid grid-cols-2 gap-2">

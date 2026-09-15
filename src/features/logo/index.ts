@@ -40,7 +40,8 @@ export type {
 } from './domain/logoPositionGrid';
 export {
 	lowMassBoxToLogoPosition,
-	logoBoxSizeForViewport
+	logoBoxSizeForViewport,
+	spectrumAnnulusInImageSpace
 } from './domain/autoLogoPlacement';
 
 // ── runtime ─────────────────────────────────────────────────────────────────

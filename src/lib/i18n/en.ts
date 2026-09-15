@@ -1215,14 +1215,14 @@ export const en = {
 	label_time_font_size: 'Time Size',
 	label_letter_spacing: 'Letter Spacing',
 	label_title_width: 'Title Width',
-	label_auto_fit_image: 'Auto Fit Current',
-	hint_auto_fit_image:
-		'Fits the active image to the current screen without using audio-reactive scale.',
-	label_auto_fit_all_images: 'Auto Fit All',
-	hint_auto_fit_all_images:
-		'Fits every image in the current project, or the whole pool when no project is active.',
-	confirm_auto_fit_all_images:
-		'This will recalculate framing for every image in the current project, or the whole pool when no project is active. Existing manual X/Y/zoom framing will be replaced. Continue?',
+	label_auto_frame_current: 'Auto Frame',
+	hint_auto_frame_current:
+		'Frames the active image to the current screen and sets its focus point on the most detailed area.',
+	label_auto_frame_all_images: 'Auto Frame All',
+	hint_auto_frame_all_images:
+		'Frames every image in the current project, or the whole pool when no project is active, and focuses each one on its most detailed area.',
+	confirm_auto_frame_all_images:
+		'This will recalculate framing and focus for every image in the current project, or the whole pool when no project is active. Existing manual X/Y/zoom framing and focus points will be replaced. Continue?',
 	label_pick_focus: 'Pick Focus',
 	label_center_focus: 'Center Focus',
 	label_clear_focus: 'Clear Focus',
@@ -1233,11 +1233,6 @@ export const en = {
 	label_auto_focus: 'Auto Focus',
 	hint_auto_focus:
 		'Sets the focus point where the image has the most visual detail.',
-	label_auto_focus_all_images: 'Auto Focus All',
-	hint_auto_focus_all_images:
-		'Sets the focus point of every image to its most detailed area.',
-	confirm_auto_focus_all_images:
-		'This will set the focus point of every image in the current project, or the whole pool when no project is active, to its most detailed area. Existing manual focus points will be replaced. Continue?',
 	label_auto_place_logo: 'Auto Place Logo',
 	hint_auto_place_logo:
 		'Places the logo in the least busy corner of the active background image.',

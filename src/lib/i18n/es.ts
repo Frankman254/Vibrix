@@ -1228,14 +1228,14 @@ export const es: Record<TranslationKey, string> = {
 	label_time_font_size: 'Tamano del Tiempo',
 	label_letter_spacing: 'Espaciado entre Letras',
 	label_title_width: 'Ancho del Titulo',
-	label_auto_fit_image: 'Auto Ajustar Actual',
-	hint_auto_fit_image:
-		'Ajusta la imagen activa a la pantalla actual sin usar la escala reactiva del audio.',
-	label_auto_fit_all_images: 'Auto-ajustar todas',
-	hint_auto_fit_all_images:
-		'Ajusta cada imagen del proyecto actual, o todo el pool cuando no hay proyecto activo.',
-	confirm_auto_fit_all_images:
-		'Esto recalculara el encuadre de cada imagen del proyecto actual, o de todo el pool cuando no hay proyecto activo. El encuadre manual X/Y/zoom existente sera reemplazado. Continuar?',
+	label_auto_frame_current: 'Auto Encuadre',
+	hint_auto_frame_current:
+		'Encuadra la imagen activa a la pantalla actual y pone su punto de foco en el area con mas detalle.',
+	label_auto_frame_all_images: 'Auto Encuadrar Todas',
+	hint_auto_frame_all_images:
+		'Encuadra cada imagen del proyecto actual, o todo el pool cuando no hay proyecto activo, y enfoca cada una en su area con mas detalle.',
+	confirm_auto_frame_all_images:
+		'Esto recalculara el encuadre y el foco de cada imagen del proyecto actual, o de todo el pool cuando no hay proyecto activo. El encuadre manual X/Y/zoom y los puntos de foco existentes seran reemplazados. Continuar?',
 	label_pick_focus: 'Elegir Foco',
 	label_center_focus: 'Centrar Foco',
 	label_clear_focus: 'Limpiar Foco',
@@ -1246,11 +1246,6 @@ export const es: Record<TranslationKey, string> = {
 	label_auto_focus: 'Auto Enfocar',
 	hint_auto_focus:
 		'Establece el punto de foco donde la imagen tiene mas detalle visual.',
-	label_auto_focus_all_images: 'Auto Enfocar Todas',
-	hint_auto_focus_all_images:
-		'Establece el punto de foco de cada imagen en su area con mas detalle.',
-	confirm_auto_focus_all_images:
-		'Esto establecera el punto de foco de cada imagen del proyecto actual, o de todo el pool cuando no hay proyecto activo, en su area con mas detalle. Los puntos de foco manuales existentes seran reemplazados. Continuar?',
 	label_auto_place_logo: 'Auto Colocar Logo',
 	hint_auto_place_logo:
 		'Coloca el logo en la esquina con menos detalle de la imagen de fondo activa.',

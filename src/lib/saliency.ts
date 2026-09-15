@@ -292,6 +292,101 @@ export function lowestMassBox(
 	};
 }
 
+/**
+ * An elliptical ring in normalized image space used as an exclusion zone for
+ * `bestPlacementBox`: candidate boxes overlapping it pay a large cost. The
+ * radial spectrum figure (ring contour + spikes) is the real-world case —
+ * callers map it from canvas px into image space via the resolved draw rect,
+ * which handles cover-crop, position and focus.
+ */
+export type SaliencyAvoidRegion = {
+	/** ring center, 0..1 image space */
+	center: Point01;
+	/** inner ellipse semi-axes (0 = solid disk) */
+	innerRadii: Point01;
+	/** outer ellipse semi-axes */
+	outerRadii: Point01;
+};
+
+/** Cost weight per fraction of the candidate box covered by an avoid region. */
+const AVOID_WEIGHT = 2.5;
+
+/**
+ * The placement search behind "Auto Logo": slide a box of the given size
+ * across the whole image (grid-quantized) and take the position minimizing
+ * `meanSaliency + AVOID_WEIGHT·avoidOverlap + centerBias·distanceToCenter`.
+ *
+ * Behaviour that falls out of the single cost:
+ * - subject (face/eyes) has high saliency mass -> the box avoids it;
+ * - an `avoid` region (e.g. the radial spectrum figure) is dodged even when
+ *   saliency is flat there;
+ * - a fully homogeneous image has equal mass everywhere, so the center bias
+ *   wins and the box lands centered instead of in a corner;
+ * - deterministic: candidates scan row-major, first strict improvement wins.
+ */
+export function bestPlacementBox(
+	grid: SaliencyGrid,
+	box: { width: number; height: number },
+	options?: { avoid?: SaliencyAvoidRegion[]; centerBias?: number }
+): { x: number; y: number; width: number; height: number } {
+	const bw = Math.max(0.01, Math.min(1, box.width));
+	const bh = Math.max(0.01, Math.min(1, box.height));
+	const centerBias = options?.centerBias ?? 0.15;
+	const avoid = options?.avoid ?? [];
+	let best = { x: 0, y: 0, width: bw, height: bh };
+	let bestCost = Infinity;
+	// Candidate origins: grid-cell steps, clamped so the box never leaves
+	// 0..1 (the clamp makes the final column/row land exactly on the edge).
+	for (let iy = 0; iy <= grid.height; iy++) {
+		const y0 = Math.min(iy / grid.height, 1 - bh);
+		for (let ix = 0; ix <= grid.width; ix++) {
+			const x0 = Math.min(ix / grid.width, 1 - bw);
+			let mass = 0;
+			let cells = 0;
+			let inAvoid = 0;
+			for (let gy = 0; gy < grid.height; gy++) {
+				const cy = (gy + 0.5) / grid.height;
+				if (cy < y0 || cy >= y0 + bh) continue;
+				for (let gx = 0; gx < grid.width; gx++) {
+					const cx = (gx + 0.5) / grid.width;
+					if (cx < x0 || cx >= x0 + bw) continue;
+					cells++;
+					mass += grid.values[gy * grid.width + gx];
+					for (const region of avoid) {
+						const dx = cx - region.center.x;
+						const dy = cy - region.center.y;
+						const outer =
+							(dx / Math.max(1e-6, region.outerRadii.x)) ** 2 +
+							(dy / Math.max(1e-6, region.outerRadii.y)) ** 2;
+						if (outer > 1) continue;
+						const inner =
+							region.innerRadii.x <= 0 || region.innerRadii.y <= 0
+								? Infinity
+								: (dx / region.innerRadii.x) ** 2 +
+									(dy / region.innerRadii.y) ** 2;
+						if (inner <= 1) continue;
+						inAvoid++;
+						break;
+					}
+				}
+			}
+			if (cells === 0) continue;
+			const boxCx = x0 + bw / 2;
+			const boxCy = y0 + bh / 2;
+			const centerDist = Math.hypot(boxCx - 0.5, boxCy - 0.5);
+			const cost =
+				mass / cells +
+				AVOID_WEIGHT * (inAvoid / cells) +
+				centerBias * centerDist;
+			if (cost < bestCost - 1e-9) {
+				bestCost = cost;
+				best = { x: x0, y: y0, width: bw, height: bh };
+			}
+		}
+	}
+	return best;
+}
+
 export function summarizeSaliency(grid: SaliencyGrid): SaliencySummary {
 	return {
 		grid,
