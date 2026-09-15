@@ -300,6 +300,7 @@ export default function ExportTabBody() {
 				error={videoExport.error}
 				storageHint={videoExport.storageHint}
 				savedFileName={videoExport.savedFileName}
+				savedFileBytes={videoExport.savedFileBytes}
 				busy={videoExport.busy}
 				canStart={videoExport.canStart}
 				onStartExport={() => void videoExport.startExport()}

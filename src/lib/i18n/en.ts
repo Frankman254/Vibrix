@@ -906,6 +906,7 @@ export const en = {
 	offline_phase_cancelled: 'Export cancelled. No file was kept.',
 	offline_eta: '{time} left',
 	offline_done: 'Saved {name}',
+	offline_done_size: 'Saved {name} ({size})',
 	offline_error_no_encoder:
 		'This browser cannot encode MP4 or WebM video. Try a recent Chrome, Edge or Safari.',
 	offline_error_audio_not_found:

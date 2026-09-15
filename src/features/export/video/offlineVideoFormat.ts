@@ -163,13 +163,14 @@ export function estimateOfflineExportEtaMs(
 
 /**
  * The encoder's video target bitrate (bps) for a preset: 28 Mbps at 1080p30,
- * ×1.5 for 60 fps (motion needs headroom but not a doubling), and pixels^0.8
- * across resolutions (bigger frames need fewer bits per pixel). 1080p60 lands
- * at 42 Mbps, a little above the ~37 Mbps `QUALITY_HIGH` exports that looked
- * right; the 24 Mbps tier before it smeared particles and neon edges. One
- * source of truth: the encoder encodes at exactly this rate and the size
- * estimate below uses it, so the "does it fit?" gate cannot drift from what
- * the file will cost.
+ * ×1.5 for 60 fps (motion needs headroom but not a doubling), ×2 for 120 fps
+ * (each doubling of the frame rate buys less temporal redundancy to exploit,
+ * so the multiplier grows sub-linearly), and pixels^0.8 across resolutions
+ * (bigger frames need fewer bits per pixel). 1080p60 lands at 42 Mbps, a
+ * little above the ~37 Mbps `QUALITY_HIGH` exports that looked right; the 24
+ * Mbps tier before it smeared particles and neon edges. One source of truth:
+ * the encoder encodes at exactly this rate and the size estimate below uses
+ * it, so the "does it fit?" gate cannot drift from what the file will cost.
  */
 export function recommendedVideoBitrateFor(options: {
 	width: number;
@@ -177,7 +178,7 @@ export function recommendedVideoBitrateFor(options: {
 	fps: number;
 }): number {
 	const pixelScale = (options.width * options.height) / (1920 * 1080);
-	const fpsScale = options.fps >= 60 ? 1.5 : 1;
+	const fpsScale = options.fps >= 120 ? 2 : options.fps >= 60 ? 1.5 : 1;
 	const bitrate = 28_000_000 * Math.pow(pixelScale, 0.8) * fpsScale;
 	return Math.round(bitrate / 100_000) * 100_000;
 }

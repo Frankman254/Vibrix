@@ -41,6 +41,7 @@ type OfflineExportSectionProps = {
 	error: OfflineVideoExportError | null;
 	storageHint: OfflineStorageHint | null;
 	savedFileName: string;
+	savedFileBytes: number | null;
 	busy: boolean;
 	canStart: boolean;
 	onStartExport: () => void;
@@ -134,6 +135,7 @@ export default function OfflineExportSection({
 	error,
 	storageHint,
 	savedFileName,
+	savedFileBytes,
 	busy,
 	canStart,
 	onStartExport,
@@ -242,26 +244,45 @@ export default function OfflineExportSection({
 			{busy || progress.phase === 'cancelled' ? (
 				<div className="flex flex-col gap-1">
 					{busy ? (
-						<div
-							className="h-2 w-full overflow-hidden rounded-full border"
-							style={{
-								borderColor: UI_COLORS.accentBorder,
-								background: UI_COLORS.panel
-							}}
-						>
+						<div className="flex flex-col gap-1">
 							<div
-								className="h-full rounded-full transition-[width] duration-150"
+								className="h-2 w-full overflow-hidden rounded-full border"
 								style={{
-									background: UI_COLORS.accent,
-									width: `${Math.max(
-										2,
-										Math.round(progress.ratio * 100)
-									)}%`
+									borderColor: UI_COLORS.accentBorder,
+									background: UI_COLORS.panel
 								}}
-							/>
+							>
+								<div
+									className="h-full rounded-full transition-[width] duration-150"
+									style={{
+										background: UI_COLORS.accent,
+										width: `${Math.max(
+											2,
+											Math.round(progress.ratio * 100)
+										)}%`
+									}}
+								/>
+							</div>
+							{/* A real percent, not just a bar: the bar alone
+							    reads as stuck when the tab is backgrounded
+							    (postMessage yields throttle to ~1 Hz). */}
+							<div className="flex items-center justify-between gap-2">
+								<span
+									className="min-w-0 truncate text-[11px]"
+									style={{ color: UI_COLORS.accent }}
+								>
+									{currentPhaseLabel}
+								</span>
+								<span
+									className="text-[11px] tabular-nums"
+									style={{ color: UI_COLORS.accent }}
+								>
+									{Math.round(progress.ratio * 100)}%
+								</span>
+							</div>
 						</div>
 					) : null}
-					{currentPhaseLabel ? (
+					{!busy && currentPhaseLabel ? (
 						<span
 							className="text-[11px]"
 							style={{ color: UI_COLORS.accent }}
@@ -274,7 +295,12 @@ export default function OfflineExportSection({
 
 			{progress.phase === 'done' && savedFileName ? (
 				<span className="text-[11px] text-green-400">
-					{t.offline_done.replace('{name}', savedFileName)}
+					{(savedFileBytes ? t.offline_done_size : t.offline_done)
+						.replace('{name}', savedFileName)
+						.replace(
+							'{size}',
+							savedFileBytes ? formatBytes(savedFileBytes) : ''
+						)}
 				</span>
 			) : null}
 			{error ? (

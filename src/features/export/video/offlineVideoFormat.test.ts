@@ -116,6 +116,11 @@ describe('recommendedVideoBitrateFor', () => {
 		expect(
 			recommendedVideoBitrateFor({ width: 1920, height: 1080, fps: 60 })
 		).toBe(42_000_000);
+		// 120 fps pays 2x: the second doubling buys less redundancy than
+		// the first, so the multiplier grows sub-linearly.
+		expect(
+			recommendedVideoBitrateFor({ width: 1920, height: 1080, fps: 120 })
+		).toBe(56_000_000);
 		// Sub-linear in pixels: 4x the pixels costs ~3x the bits.
 		expect(
 			recommendedVideoBitrateFor({ width: 3840, height: 2160, fps: 30 })

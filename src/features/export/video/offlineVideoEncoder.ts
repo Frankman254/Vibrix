@@ -61,6 +61,32 @@ export function createCancellableFileWritable(
 	});
 }
 
+/**
+ * Counts the bytes the muxer pushed into a stream sink so a finished export
+ * can report the real file size. Long exports at 4K run to gigabytes; without
+ * the number the user has to open the folder and check.
+ */
+export function createCountingWritable(
+	inner: WritableStream<StreamTargetChunk>,
+	counter: { bytes: number }
+): WritableStream<StreamTargetChunk> {
+	const writer = inner.getWriter();
+	return new WritableStream<StreamTargetChunk>({
+		write: chunk => {
+			counter.bytes += chunk.data.byteLength;
+			return writer.write(chunk);
+		},
+		close: () => {
+			writer.releaseLock();
+			return inner.close();
+		},
+		abort: reason => {
+			writer.releaseLock();
+			return inner.abort(reason);
+		}
+	});
+}
+
 export type OfflineVideoEncoder = {
 	addFrame(timestampSec: number, durationSec: number): Promise<void>;
 	addAudio(buffer: AudioBuffer): Promise<void>;

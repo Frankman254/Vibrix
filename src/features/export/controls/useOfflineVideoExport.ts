@@ -17,6 +17,7 @@ import {
 } from '@/features/export/exportFileUtils';
 import type { RenderSubsystem } from '@/features/export/renderSubsystem';
 import {
+	createCountingWritable,
 	createCancellableFileWritable,
 	mediabunnyCodecProbe,
 	type OfflineVideoSink
@@ -106,8 +107,8 @@ export function useOfflineVideoExport({
 	const [formatChecked, setFormatChecked] = useState(false);
 	const [progress, setProgress] =
 		useState<OfflineVideoExportProgress>(IDLE_PROGRESS);
-	const [error, setError] = useState<OfflineVideoExportError | null>(null);
 	const [savedFileName, setSavedFileName] = useState('');
+	const [savedFileBytes, setSavedFileBytes] = useState<number | null>(null);
 	const abortRef = useRef<AbortController | null>(null);
 
 	const resolution =
@@ -148,6 +149,7 @@ export function useOfflineVideoExport({
 		setError(null);
 		setStorageHint(null);
 		setSavedFileName('');
+		setSavedFileBytes(null);
 		if (!offlineAudioAsset) {
 			setError('no-audio');
 			return;
@@ -167,6 +169,9 @@ export function useOfflineVideoExport({
 		let finalizing = false;
 		let sink = { kind: 'buffer' } as OfflineVideoSink;
 		let opfs: OpfsVideoSink | null = null;
+		// Real bytes the muxer pushed; shown in the done line so a gigabyte
+		// export reports its size without opening the folder.
+		const written = { bytes: 0 };
 		let audioTrack: OfflineAudioTrack | null = null;
 		// (crashed-run cleanup happens inside createOpfsVideoSink, awaited
 		// before its quota check so the numbers it reads are current.)
@@ -188,9 +193,9 @@ export function useOfflineVideoExport({
 				const file = await handle.createWritable();
 				sink = {
 					kind: 'stream',
-					writable: createCancellableFileWritable(
-						file,
-						() => !finalizing
+					writable: createCountingWritable(
+						createCancellableFileWritable(file, () => !finalizing),
+						written
 					)
 				};
 			} catch (pickerError) {
@@ -230,7 +235,10 @@ export function useOfflineVideoExport({
 					isCancelled: () => !finalizing
 				});
 				if (opfs) {
-					sink = { kind: 'stream', writable: opfs.writable };
+					sink = {
+						kind: 'stream',
+						writable: createCountingWritable(opfs.writable, written)
+					};
 				} else if (estimatedBytes > BUFFER_FALLBACK_MAX_BYTES) {
 					setStorageHint({
 						neededBytes: estimatedBytes,
@@ -249,8 +257,6 @@ export function useOfflineVideoExport({
 				trackTitle,
 				fftSize,
 				audioSmoothing,
-				extraSubsystems,
-				abortSignal: controller.signal,
 				onProgress: next => {
 					if (next.phase === 'finalizing') finalizing = true;
 					setProgress(next);
@@ -260,6 +266,9 @@ export function useOfflineVideoExport({
 			if (opfs) await opfs.download(fileName);
 			else if (result.blob) downloadBlobFallback(result.blob, fileName);
 			setSavedFileName(fileName);
+			setSavedFileBytes(
+				result.blob ? result.blob.size : written.bytes || null
+			);
 		} catch (exportError) {
 			if (controller.signal.aborted || isAbortError(exportError)) {
 				setProgress({ ...IDLE_PROGRESS, phase: 'cancelled' });
@@ -308,6 +317,7 @@ export function useOfflineVideoExport({
 		error,
 		storageHint,
 		savedFileName,
+		savedFileBytes,
 		busy,
 		canStart: canExport && !busy && Boolean(format) && formatChecked,
 		startExport,

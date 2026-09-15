@@ -912,6 +912,7 @@ export const es: Record<TranslationKey, string> = {
 		'Exportación cancelada. No se guardó ningún archivo.',
 	offline_eta: 'quedan {time}',
 	offline_done: 'Guardado {name}',
+	offline_done_size: 'Guardado {name} ({size})',
 	offline_error_no_encoder:
 		'Este navegador no puede codificar vídeo MP4 ni WebM. Prueba con Chrome, Edge o Safari recientes.',
 	offline_error_audio_not_found:

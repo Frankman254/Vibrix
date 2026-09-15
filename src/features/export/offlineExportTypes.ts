@@ -2,7 +2,7 @@ import type { AudioSourceMode } from '@/types/wallpaper';
 
 export const OFFLINE_EXPORT_ARCHITECTURE_VERSION = 1;
 
-export const OFFLINE_EXPORT_FPS_OPTIONS = [30, 60] as const;
+export const OFFLINE_EXPORT_FPS_OPTIONS = [30, 60, 120] as const;
 export type OfflineExportFps = (typeof OFFLINE_EXPORT_FPS_OPTIONS)[number];
 
 export type OfflineExportResolutionPresetId = '720p' | '1080p' | '1440p' | '4k';
