@@ -585,6 +585,7 @@ export function createBackgroundSlice(
 			set(state => setActiveImageFramingEditedPatch(state, v)),
 		setBackgroundImageEnabled: v => set({ backgroundImageEnabled: v }),
 		setShowBackgroundScaleMeter: v => set({ showBackgroundScaleMeter: v }),
+		setShowAutoZoomDebug: v => set({ showAutoZoomDebug: v }),
 		setGlobalBackgroundEnabled: v => set({ globalBackgroundEnabled: v }),
 		setGlobalBackgroundId: v => set({ globalBackgroundId: v }),
 		setGlobalBackgroundUrl: v => set({ globalBackgroundUrl: v }),

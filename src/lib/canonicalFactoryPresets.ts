@@ -264,6 +264,7 @@ export const CANONICAL_FACTORY_SETTINGS_PATCH = {
 	rainSpeed: 0.6000000000000001,
 	rainVariation: 0.9500000000000001,
 	rainWidth: 0.0002,
+	showAutoZoomDebug: false,
 	showBackgroundScaleMeter: false,
 	showFps: true,
 	showLogoDiagnosticsHud: false,

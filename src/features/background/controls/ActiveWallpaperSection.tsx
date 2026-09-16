@@ -62,7 +62,7 @@ type Props = {
 	onClearLooksOverride: () => void;
 	onChangePlaybackSwitchAt: (v: number | null) => void;
 	calculatedSwitchAt?: number | null;
-	onAutoFrameActive: () => void;
+	onAutoZoom: () => void;
 	onAutoFocusActiveImage: () => void;
 	onUploadClick: () => void;
 	onPreviousImage: () => void;
@@ -94,7 +94,6 @@ type Props = {
 	onChangeTransitionAudioDrive: (value: number) => void;
 	onChangeTransitionAudioChannel: (value: AudioReactiveChannel) => void;
 	onChangeTransitionAudioSmoothing: (value: number) => void;
-	onAutoFrameAll: () => void;
 };
 
 export default function ActiveWallpaperSection({
@@ -142,7 +141,7 @@ export default function ActiveWallpaperSection({
 	onClearLooksOverride,
 	onChangePlaybackSwitchAt,
 	calculatedSwitchAt,
-	onAutoFrameActive,
+	onAutoZoom,
 	onUploadClick,
 	onPreviousImage,
 	onNextImage,
@@ -166,7 +165,6 @@ export default function ActiveWallpaperSection({
 	onChangeTransitionAudioDrive,
 	onChangeTransitionAudioChannel,
 	onChangeTransitionAudioSmoothing,
-	onAutoFrameAll,
 	onAutoFocusActiveImage
 }: Props) {
 	const { confirm } = useDialog();
@@ -199,18 +197,6 @@ export default function ActiveWallpaperSection({
 		: calculatedSwitchAt != null
 			? calculatedSwitchAt
 			: null;
-
-	async function handleAutoFrameAll() {
-		const ok = await confirm({
-			title: t.label_auto_frame_all_images,
-			message: t.confirm_auto_frame_all_images,
-			confirmLabel: t.label_auto_frame_all_images,
-			cancelLabel: t.label_cancel,
-			tone: 'warning'
-		});
-		if (!ok) return;
-		onAutoFrameAll();
-	}
 
 	async function handleDownloadImage() {
 		const ok = await confirm({
@@ -283,9 +269,8 @@ export default function ActiveWallpaperSection({
 			onChangeMirrorFillInvert={onChangeMirrorFillInvert}
 			onChangeMirrorFillCount={onChangeMirrorFillCount}
 			onChangeImageCoverageLockEnabled={onChangeImageCoverageLockEnabled}
-			onAutoFrameActive={onAutoFrameActive}
+			onAutoZoom={onAutoZoom}
 			onAutoFocusActiveImage={onAutoFocusActiveImage}
-			onAutoFrameAll={() => void handleAutoFrameAll()}
 			imageMinScale={imageMinScale}
 			onResetFraming={() => void handleResetFraming()}
 			onCenterFocus={onCenterFocus}

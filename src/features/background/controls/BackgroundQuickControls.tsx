@@ -34,8 +34,7 @@ export default function BackgroundQuickControls({
 	onChangeMirrorFillInvert,
 	onChangeMirrorFillCount,
 	onChangeImageCoverageLockEnabled,
-	onAutoFrameActive,
-	onAutoFrameAll,
+	onAutoZoom,
 	onResetFraming,
 	onDownloadImage
 }: {
@@ -68,8 +67,7 @@ export default function BackgroundQuickControls({
 	onChangeMirrorFillInvert: (value: boolean) => void;
 	onChangeMirrorFillCount: (value: number) => void;
 	onChangeImageCoverageLockEnabled: (value: boolean) => void;
-	onAutoFrameActive: () => void;
-	onAutoFrameAll: () => void;
+	onAutoZoom: () => void;
 	onResetFraming: () => void;
 	onDownloadImage: () => void;
 }) {
@@ -199,25 +197,14 @@ export default function BackgroundQuickControls({
 
 			<div className="grid grid-cols-2 gap-2">
 				<Button
-					onClick={onAutoFrameActive}
+					onClick={onAutoZoom}
 					size="sm"
 					density="compact"
 					variant="secondary"
-					title={t.hint_auto_frame_current}
+					title={t.hint_auto_zoom}
 					full
 				>
-					{t.label_auto_frame_current}
-				</Button>
-				<Button
-					onClick={onAutoFrameAll}
-					disabled={imageCount === 0}
-					size="sm"
-					density="compact"
-					variant="secondary"
-					title={t.hint_auto_frame_all_images}
-					full
-				>
-					{t.label_auto_frame_all_images}
+					{t.label_auto_zoom}
 				</Button>
 			</div>
 			<div className="grid grid-cols-2 gap-2">

@@ -51,13 +51,14 @@ export type {
 	ResolvedImageTransform
 } from './domain/resolveImageTransform';
 
-// ── domain: auto-fit suggestions ────────────────────────────────────────────
+// ── domain: AutoZoom (Keep Screen Covered minimum scale) ───────────────────
 export {
-	clampCoveredCenterPx,
-	loadImageDimensions,
-	suggestBackgroundAutoFit
-} from './domain/backgroundAutoFit';
-export type { AutoFitResult } from './domain/backgroundAutoFit';
+	AUTOZOOM_SEAM_OVERLAP,
+	compositionCoversViewport,
+	resolveAutoZoomScale
+} from './domain/autoZoom';
+export type { AutoZoomCoverageCheck, AutoZoomInput } from './domain/autoZoom';
+export { loadImageDimensions } from './domain/backgroundAutoFit';
 
 // ── domain: auto-composition (saliency-driven focus/logo placement) ────────
 export {

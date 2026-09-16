@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { BackgroundImageItem } from '@/types/wallpaper';
-import { suggestBackgroundAutoFit } from '@/features/background';
 
 const mem = new Map<string, string>();
 (globalThis as Record<string, unknown>).localStorage = {
@@ -139,119 +138,6 @@ describe('autoFocusActiveImage', () => {
 		const a = s.backgroundImages.find(i => i.assetId === 'img-a')!;
 		expect(a.focusX).toBeNull();
 		expect(a.coverageFramingEdited).not.toBe(true);
-	});
-});
-
-describe('autoFrameActiveImage', () => {
-	it('applies the fit suggestion AND the saliency focus, and syncs the globals', async () => {
-		setup([createBackgroundImageItem('img-a', 'a.png', null)]);
-		analyzeMock.mockResolvedValue(fakeAnalysis());
-
-		await useWallpaperStore.getState().autoFrameActiveImage();
-
-		const s = useWallpaperStore.getState();
-		const stored = s.backgroundImages.find(i => i.assetId === 'img-a')!;
-		// Fit half: the real suggestBackgroundAutoFit against the mocked
-		// 1920x1080 dimensions and the store's headless viewport fallback.
-		const suggestion = suggestBackgroundAutoFit(1920, 1080, 1920, 1080);
-		expect(stored.fitMode).toBe(suggestion.fitMode);
-		expect(stored.scale).toBeCloseTo(suggestion.scale, 5);
-		expect(stored.positionX).toBeCloseTo(suggestion.positionX, 5);
-		expect(stored.positionY).toBeCloseTo(suggestion.positionY, 5);
-		// Focus half: saliency point.
-		expect(stored.focusX).toBeCloseTo(0.125, 5);
-		expect(stored.focusY).toBeCloseTo(0.875, 5);
-		// The runtime patch mirrors the active image into the globals.
-		expect(s.imageScale).toBeCloseTo(suggestion.scale, 5);
-		expect(s.imageFocusX).toBeCloseTo(0.125, 5);
-		expect(s.imageFocusY).toBeCloseTo(0.875, 5);
-		// Framing is machine-derived but includes focus intent: covered
-		// auto-fit must not recenter it later.
-		expect(stored.coverageFramingEdited).toBe(true);
-	});
-
-	it('keeps a saliency-only result when dimension loading fails', async () => {
-		setup([createBackgroundImageItem('img-a', 'a.png', null)]);
-		// Portrait dimensions: a successful fit could never leave scale at
-		// its default in a landscape fallback viewport.
-		loadImageDimensionsMock.mockRejectedValue(new Error('no-decode'));
-		analyzeMock.mockResolvedValue(fakeAnalysis());
-
-		await useWallpaperStore.getState().autoFrameActiveImage();
-
-		const s = useWallpaperStore.getState();
-		const stored = s.backgroundImages.find(i => i.assetId === 'img-a')!;
-		expect(stored.focusX).toBeCloseTo(0.125, 5);
-		expect(stored.scale).toBe(1);
-	});
-
-	it('drops a stale result when the active image changed while analyzing', async () => {
-		setup([
-			createBackgroundImageItem('img-a', 'a.png', null),
-			createBackgroundImageItem('img-b', 'b.png', null)
-		]);
-		analyzeMock.mockImplementation(async () => {
-			// User switched images mid-analysis.
-			useWallpaperStore.setState({ activeImageId: 'img-b' });
-			return fakeAnalysis();
-		});
-
-		await useWallpaperStore.getState().autoFrameActiveImage();
-
-		const s = useWallpaperStore.getState();
-		const a = s.backgroundImages.find(i => i.assetId === 'img-a')!;
-		expect(a.focusX).toBeNull();
-		expect(a.coverageFramingEdited).not.toBe(true);
-	});
-});
-
-describe('autoFrameAllImages', () => {
-	it('reframes every image and syncs the active globals', async () => {
-		setup([
-			createBackgroundImageItem('img-a', 'a.png', null),
-			createBackgroundImageItem('img-b', 'b.png', null)
-		]);
-		analyzeMock.mockResolvedValue(fakeAnalysis());
-
-		await useWallpaperStore.getState().autoFrameAllImages();
-
-		const s = useWallpaperStore.getState();
-		for (const image of s.backgroundImages) {
-			expect(image.focusX).toBeCloseTo(0.125, 5);
-			expect(image.focusY).toBeCloseTo(0.875, 5);
-			// Bulk framing is machine-owned but focus-bearing: a viewport
-			// resize must never erase the computed focus.
-			expect(image.coverageFramingEdited).toBe(true);
-		}
-		expect(s.imageFocusX).toBeCloseTo(0.125, 5);
-	});
-
-	it('only reframes images inside the active setlist scope', async () => {
-		setup([
-			createBackgroundImageItem('img-a', 'a.png', null),
-			createBackgroundImageItem('img-b', 'b.png', null)
-		]);
-		useWallpaperStore.setState({
-			activeSetlistId: 'set-1',
-			setlists: [
-				{
-					id: 'set-1',
-					name: 'Scope',
-					imageAssetIds: ['img-a']
-				} as never
-			]
-		});
-		analyzeMock.mockResolvedValue(fakeAnalysis());
-
-		await useWallpaperStore.getState().autoFrameAllImages();
-
-		const s = useWallpaperStore.getState();
-		const a = s.backgroundImages.find(i => i.assetId === 'img-a')!;
-		const b = s.backgroundImages.find(i => i.assetId === 'img-b')!;
-		expect(a.focusX).toBeCloseTo(0.125, 5);
-		expect(b.focusX).toBeNull();
-		expect(b.coverageFramingEdited).not.toBe(true);
-		expect(analyzeMock).toHaveBeenCalledTimes(1);
 	});
 });
 

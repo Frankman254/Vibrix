@@ -1,8 +1,7 @@
 import { DEFAULT_STATE } from '@/store/defaultState';
 import {
 	analyzeImageUrlSaliency,
-	loadImageDimensions,
-	suggestBackgroundAutoFit
+	loadImageDimensions
 } from '@/features/background';
 import {
 	lowMassBoxToLogoPosition,
@@ -34,6 +33,7 @@ import {
 } from '@/store/backgroundStoreUtils';
 import {
 	buildActiveImageSelectionPatch,
+	buildAutoZoomPatch,
 	buildCoveredAutoFitPatch
 } from '@/store/activeImageSelection';
 import type { WallpaperStore } from '@/store/wallpaperStoreTypes';
@@ -48,51 +48,6 @@ function prefersReducedMotion(): boolean {
 		typeof window.matchMedia === 'function' &&
 		window.matchMedia('(prefers-reduced-motion: reduce)').matches
 	);
-}
-
-/**
- * One image, fully framed: the auto-fit composition (scale/fit/position) AND
- * the saliency focus point. Each half independently survives the other's
- * load failure — an unloadable url or a failed decode leaves that image
- * untouched. `coverageFramingEdited: true`: the focus point is user intent,
- * so the Keep Covered refit must not recentre it afterwards.
- */
-async function frameImage(
-	image: BackgroundImageItem,
-	viewport: { width: number; height: number }
-): Promise<BackgroundImageItem> {
-	if (!image.url) return image;
-	const [fit, saliency] = await Promise.all([
-		loadImageDimensions(image.url)
-			.then(({ width, height }) =>
-				suggestBackgroundAutoFit(
-					viewport.width,
-					viewport.height,
-					width,
-					height,
-					image.rotation,
-					image.mirrorFill ? (image.mirrorFillCount ?? 0) : 0
-				)
-			)
-			.catch(() => null),
-		analyzeImageUrlSaliency(image.url).catch(() => null)
-	]);
-	if (!fit && !saliency) return image;
-	return {
-		...image,
-		...(fit
-			? {
-					scale: fit.scale,
-					fitMode: fit.fitMode,
-					positionX: fit.positionX,
-					positionY: fit.positionY
-				}
-			: {}),
-		...(saliency
-			? { focusX: saliency.focus.x, focusY: saliency.focus.y }
-			: {}),
-		coverageFramingEdited: true
-	};
 }
 
 /**
@@ -225,6 +180,16 @@ export function createBackgroundCollectionActions(
 	set: WallpaperSet,
 	get: WallpaperGet
 ) {
+	/** The viewport the composition is framed against (see callers). */
+	function stageViewport(): { width: number; height: number } {
+		// Same window-fallback pattern the auto-placement actions use; the
+		// renderer draws against the same css size (record render scale only
+		// affects the canvas backing store, not the composition viewport).
+		return typeof window === 'undefined'
+			? { width: 1920, height: 1080 }
+			: { width: window.innerWidth, height: window.innerHeight };
+	}
+
 	/**
 	 * Keep Covered is per-image, but the covering scale is viewport-dependent:
 	 * refit the active image with auto-fit's domain logic. Skips when
@@ -240,10 +205,7 @@ export function createBackgroundCollectionActions(
 		if (!image?.url || image.coverageFramingEdited) return;
 		try {
 			const imageSize = await loadImageDimensions(image.url);
-			const viewport =
-				typeof window === 'undefined'
-					? { width: 1920, height: 1080 }
-					: { width: window.innerWidth, height: window.innerHeight };
+			const viewport = stageViewport();
 			const current = get();
 			if (current.activeImageId !== activeId) return;
 			const patch = buildCoveredAutoFitPatch(
@@ -407,67 +369,29 @@ export function createBackgroundCollectionActions(
 					state.activeImageId
 				);
 			}),
-		autoFrameActiveImage: async () => {
+		// Explicit AutoZoom: raise the stored scale to the coverage minimum
+		// and clamp the center into bounds. User-initiated, so the hand-tuned
+		// guard does not block it — and it does not SET the guard either: the
+		// result is machine framing, and a later viewport change may raise it
+		// again. fitMode and focus are untouched.
+		autoZoomActiveImage: async () => {
 			const state = get();
 			const activeId = state.activeImageId;
-			const active = state.backgroundImages.find(
-				image => image.assetId === activeId
+			const image = state.backgroundImages.find(
+				img => img.assetId === activeId
 			);
-			if (!active?.url) return;
-			const viewportWidth =
-				typeof window === 'undefined' ? 1920 : window.innerWidth;
-			const viewportHeight =
-				typeof window === 'undefined' ? 1080 : window.innerHeight;
-			const framed = await frameImage(active, {
-				width: viewportWidth,
-				height: viewportHeight
-			});
-			set(current =>
-				current.activeImageId === activeId
-					? buildBackgroundImageCollectionPatch(
-							current,
-							current.backgroundImages.map(image =>
-								image.assetId === activeId ? framed : image
-							),
-							activeId
-						)
-					: {}
-			);
-		},
-		autoFrameAllImages: async () => {
-			const state = get();
-			if (state.backgroundImages.length === 0) return;
-			const activeSetlist = state.activeSetlistId
-				? state.setlists.find(
-						setlist => setlist.id === state.activeSetlistId
-					)
-				: null;
-			const scopedImageIds = activeSetlist
-				? new Set(activeSetlist.imageAssetIds)
-				: null;
-			const viewportWidth =
-				typeof window === 'undefined' ? 1920 : window.innerWidth;
-			const viewportHeight =
-				typeof window === 'undefined' ? 1080 : window.innerHeight;
-
-			const nextImages = await Promise.all(
-				state.backgroundImages.map(image => {
-					if (scopedImageIds && !scopedImageIds.has(image.assetId)) {
-						return Promise.resolve(image);
-					}
-					return frameImage(image, {
-						width: viewportWidth,
-						height: viewportHeight
-					});
-				})
-			);
-			set(current =>
-				buildBackgroundImageCollectionPatch(
-					current,
-					nextImages,
-					current.activeImageId
-				)
-			);
+			if (!image?.url) return;
+			try {
+				const imageSize = await loadImageDimensions(image.url);
+				const viewport = stageViewport();
+				const current = get();
+				if (current.activeImageId !== activeId) return;
+				const patch = buildAutoZoomPatch(current, imageSize, viewport);
+				if (patch) set(patch);
+			} catch {
+				// Dimension load failed: leave the composition as-is. The
+				// renderer-side coverage clamp still guarantees full-bleed.
+			}
 		},
 		autoFitCoveredActiveImage,
 		autoFocusActiveImage: async () => {

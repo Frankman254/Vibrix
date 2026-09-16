@@ -50,8 +50,7 @@ export default function BackgroundCardShell({
 	onChangeMirrorFillInvert,
 	onChangeMirrorFillCount,
 	onChangeImageCoverageLockEnabled,
-	onAutoFrameActive,
-	onAutoFrameAll,
+	onAutoZoom,
 	onAutoFocusActiveImage,
 	imageMinScale,
 	onResetFraming,
@@ -100,8 +99,7 @@ export default function BackgroundCardShell({
 	onChangeMirrorFillInvert: (value: boolean) => void;
 	onChangeMirrorFillCount: (value: number) => void;
 	onChangeImageCoverageLockEnabled: (value: boolean) => void;
-	onAutoFrameActive: () => void;
-	onAutoFrameAll: () => void;
+	onAutoZoom: () => void;
 	onAutoFocusActiveImage: () => void;
 	imageMinScale: number;
 	onResetFraming: () => void;
@@ -260,8 +258,7 @@ export default function BackgroundCardShell({
 						onChangeImageCoverageLockEnabled={
 							onChangeImageCoverageLockEnabled
 						}
-						onAutoFrameActive={onAutoFrameActive}
-						onAutoFrameAll={onAutoFrameAll}
+						onAutoZoom={onAutoZoom}
 						onResetFraming={onResetFraming}
 						onDownloadImage={onDownloadImage}
 					/>

@@ -3,6 +3,10 @@ import type { ImageFitMode } from '@/types/wallpaper';
 import { IMAGE_RANGES } from '@/config/ranges';
 import { loadImageDimensions } from '@/features/background/domain/backgroundAutoFit';
 import { resolveImageTransform } from '@/features/background/domain/resolveImageTransform';
+import {
+	resolveOutputCanvasBacking,
+	subscribeOutputRenderQuality
+} from '@/runtime/outputRenderQuality';
 
 type SliderRange = {
 	min: number;
@@ -70,12 +74,16 @@ function createAxisRange(
 }
 
 function getViewportSize(): ViewportSize {
+	// The STAGE viewport (the canvas the wallpaper is drawn on), not the
+	// window: in record mode the composition is laid out at the output
+	// backing size, and the slider must clamp against THAT geometry.
 	if (typeof window === 'undefined') {
 		return { width: 1920, height: 1080 };
 	}
+	const backing = resolveOutputCanvasBacking();
 	return {
-		width: Math.max(1, window.innerWidth),
-		height: Math.max(1, window.innerHeight)
+		width: Math.max(1, backing.cssWidth),
+		height: Math.max(1, backing.cssHeight)
 	};
 }
 
@@ -145,14 +153,12 @@ export function useBackgroundPositionRanges({
 	}, [url]);
 
 	useEffect(() => {
+		// Covers window resize, runtime-mode switches, and render-quality
+		// changes — every event that reshapes the stage viewport.
 		if (typeof window === 'undefined') return undefined;
-
-		const handleResize = () => {
+		return subscribeOutputRenderQuality(() => {
 			setViewport(getViewportSize());
-		};
-
-		window.addEventListener('resize', handleResize);
-		return () => window.removeEventListener('resize', handleResize);
+		});
 	}, []);
 
 	return useMemo(() => {

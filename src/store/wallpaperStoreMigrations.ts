@@ -3026,6 +3026,9 @@ export function migrateWallpaperStore(
 			}
 		}
 	}
+	if (fromVersion < 114) {
+		migratedState.showAutoZoomDebug ??= false;
+	}
 
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;
 }

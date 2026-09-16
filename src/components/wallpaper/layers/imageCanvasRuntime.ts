@@ -6,6 +6,7 @@ import type {
 import type { WallpaperStore } from '@/store/wallpaperStoreTypes';
 import type { AudioEnvelope } from '@/utils/audioEnvelope';
 import { renderBackgroundFrame } from './imageCanvasBackgroundRenderer';
+import { drawAutoZoomDebugOverlay } from './imageCanvasAutoZoomDebug';
 import { renderOverlayImageLayer } from './imageCanvasOverlayRenderer';
 import {
 	getLayerRect,
@@ -349,6 +350,45 @@ export function renderImageCanvasFrame(params: {
 				getFlashEdgeDrive(),
 				getFlashEdgeColor()
 			);
+		}
+
+		// Debug: AutoZoom (Keep-Covered) coverage frames over the live canvas.
+		if (
+			state.showAutoZoomDebug &&
+			loadedImage &&
+			loadedImageUrlRef.current === activeLayer.imageUrl
+		) {
+			drawAutoZoomDebugOverlay({
+				ctx,
+				viewportWidth: canvas.width,
+				viewportHeight: canvas.height,
+				imageWidth: loadedImage.naturalWidth || canvas.width,
+				imageHeight: loadedImage.naturalHeight || canvas.height,
+				snapshot: {
+					scale: activeLayer.scale,
+					positionX: activeLayer.positionX,
+					positionY: activeLayer.positionY,
+					fitMode: activeLayer.fitMode,
+					focusX: activeLayer.focusX,
+					focusY: activeLayer.focusY,
+					coverageLockEnabled: activeLayer.coverageLockEnabled,
+					mirror: activeLayer.mirror,
+					mirrorFill: activeLayer.mirrorFill,
+					mirrorFillInvert: activeLayer.mirrorFillInvert,
+					mirrorFillCount: activeLayer.mirrorFillCount,
+					rotation: activeLayer.rotation
+				},
+				reactiveScaleBoost: bassBoost,
+				parallaxX,
+				parallaxY: -parallaxY,
+				layout: {
+					layoutResponsiveEnabled: state.layoutResponsiveEnabled,
+					layoutBackgroundReframeEnabled:
+						state.layoutBackgroundReframeEnabled,
+					layoutReferenceWidth: state.layoutReferenceWidth,
+					layoutReferenceHeight: state.layoutReferenceHeight
+				}
+			});
 		}
 
 		return shouldKeepAnimating;

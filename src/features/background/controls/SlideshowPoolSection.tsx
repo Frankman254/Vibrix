@@ -219,7 +219,6 @@ function SlideshowPoolSection({
 	onMoveLeft,
 	onMoveRight,
 	onShuffle,
-	onAutoFrameAll,
 	onVirtualImageSelect
 }: {
 	t: Record<string, string>;
@@ -239,7 +238,6 @@ function SlideshowPoolSection({
 	onMoveLeft: () => void;
 	onMoveRight: () => void;
 	onShuffle: () => void;
-	onAutoFrameAll: () => void;
 	onVirtualImageSelect: (virtualId: string, fileName: string) => void;
 }) {
 	const { confirm } = useDialog();
@@ -369,18 +367,6 @@ function SlideshowPoolSection({
 		});
 		if (!ok) return;
 		onClearAllImages();
-	}
-
-	async function handleAutoFrameAll() {
-		const ok = await confirm({
-			title: t.label_auto_frame_all_images,
-			message: t.confirm_auto_frame_all_images,
-			confirmLabel: t.label_auto_frame_all_images,
-			cancelLabel: t.label_cancel,
-			tone: 'warning'
-		});
-		if (!ok) return;
-		onAutoFrameAll();
 	}
 
 	const hasPool = backgroundImages.length > 0;
@@ -525,19 +511,6 @@ function SlideshowPoolSection({
 								full
 							>
 								{t.label_shuffle_order}
-							</Button>
-							<Button
-								onClick={() => {
-									setMoreMenuOpen(false);
-									void handleAutoFrameAll();
-								}}
-								size="sm"
-								density="compact"
-								variant="primary"
-								full
-								title={t.hint_auto_frame_all_images}
-							>
-								{t.label_auto_frame_all_images}
 							</Button>
 							<span
 								className="text-[10px] px-1 pt-1"
@@ -702,7 +675,6 @@ export default memo(
 		prev.activeImageIndex === next.activeImageIndex &&
 		prev.imagePreviewQuality === next.imagePreviewQuality &&
 		prev.showPoolThumbnails === next.showPoolThumbnails &&
-		prev.onAutoFrameAll === next.onAutoFrameAll &&
 		prev.onSetEntryEnabled === next.onSetEntryEnabled &&
 		prev.onMoveEntryToIndex === next.onMoveEntryToIndex &&
 		prev.t === next.t

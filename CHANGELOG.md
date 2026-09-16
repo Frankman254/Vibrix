@@ -15,6 +15,17 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Debug: overlay de frames de cobertura AutoZoom (store v114)
+
+- Nuevo flag persistido `showAutoZoomDebug` (toggle en Diagnostics): dibuja en
+  el canvas el encuadre **autorizado** (ámbar punteado, sin Keep-Covered ni
+  boost) contra el encuadre **dibujado** (verde, tras el clamp), más una fila
+  de texto con escala autorizada / mínima para cubrir / dibujada y los warnings
+  del resolver. Con AutoZoom apagado o sin clamp, ambos frames coinciden y el
+  texto lo dice.
+- `STORE_PERSIST_VERSION` sube a **114**; la migración solo pone el flag a
+  `false` en payloads previos.
+
 ### Letras: el color activo por fin pinta
 
 - `resolveLyricStyleSlots` documenta su tercer argumento como el color de LA
@@ -479,7 +490,7 @@ pliega el look Custom legacy dentro del banco normal de slots y traduce la
 selección. El campo legacy se queda en el esquema para que los proyectos
 exportados antes sigan importándose.
 
-`STORE_PERSIST_VERSION` is at **113**; `PROJECT_SCHEMA_VERSION` and `SETTINGS_SCHEMA_VERSION` remain at **1**. `APP_VERSION` / `package.json`: **0.3.0-alpha.1**.
+`STORE_PERSIST_VERSION` is at **114**; `PROJECT_SCHEMA_VERSION` and `SETTINGS_SCHEMA_VERSION` remain at **1**. `APP_VERSION` / `package.json`: **0.3.0-alpha.1**.
 
 ---
 

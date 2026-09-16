@@ -95,8 +95,8 @@ export function useCoverageLockedImageTransform(
 	}
 
 	// Mirror Fill / Fit Mode changes shift minScale; while Keep Covered is
-	// active, snap scale to the recomputed minimum once per transition
-	// (ranges hook re-runs after the change lands).
+	// active, RAISE scale to the recomputed minimum once per transition
+	// (AutoZoom invariant: never lower a deliberate zoom-in).
 	const pendingCoverageSnap = useRef(false);
 	function handleToggleMirrorFill(enabled: boolean) {
 		store.setImageMirrorFill(enabled);
@@ -118,7 +118,9 @@ export function useCoverageLockedImageTransform(
 			return;
 		}
 		if (!activeImagePositionRanges.ready) return;
-		store.setImageScale(activeImagePositionRanges.minScale);
+		store.setImageScale(
+			Math.max(store.imageScale, activeImagePositionRanges.minScale)
+		);
 		pendingCoverageSnap.current = false;
 		// Only react to ranges/coverage changes; don't re-snap on every store
 		// change (scale included).

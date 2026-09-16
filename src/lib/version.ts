@@ -92,4 +92,6 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // v113: per-image `coverageFramingEdited` provenance flag for Keep-Covered
 // auto-fit. Pre-v113 persisted items lack the flag; normalize derives it from
 // the stored layout (a custom framing is protected from machine overwrite).
-export const STORE_PERSIST_VERSION = 113;
+// v114: `showAutoZoomDebug` debug-overlay flag. Pre-v114 payloads lack it; the
+// overlay is opt-in, so migration only defaults it off.
+export const STORE_PERSIST_VERSION = 114;

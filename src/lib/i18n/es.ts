@@ -211,6 +211,9 @@ export const es: Record<TranslationKey, string> = {
 	label_bg_scale_meter: 'Medidor arriba-izquierda',
 	hint_bg_scale_meter:
 		'HUD: escala base, boost 0–10 respecto al máximo, drive del canal y escala total (base + boost).',
+	label_autozoom_debug: 'Frames de cobertura AutoZoom',
+	hint_autozoom_debug:
+		'Overlay en el canvas: ámbar punteado = tu encuadre autorizado, verde = lo que se dibuja tras el clamp Keep-Covered. El texto muestra escala autorizada / mínima / dibujada.',
 	label_bg_scale_meter_grow: 'Boost',
 	label_bg_scale_meter_drive: 'Drive',
 	label_bg_scale_meter_total: 'Escala',
@@ -1228,14 +1231,9 @@ export const es: Record<TranslationKey, string> = {
 	label_time_font_size: 'Tamano del Tiempo',
 	label_letter_spacing: 'Espaciado entre Letras',
 	label_title_width: 'Ancho del Titulo',
-	label_auto_frame_current: 'Auto Encuadre',
-	hint_auto_frame_current:
-		'Encuadra la imagen activa a la pantalla actual y pone su punto de foco en el area con mas detalle.',
-	label_auto_frame_all_images: 'Auto Encuadrar Todas',
-	hint_auto_frame_all_images:
-		'Encuadra cada imagen del proyecto actual, o todo el pool cuando no hay proyecto activo, y enfoca cada una en su area con mas detalle.',
-	confirm_auto_frame_all_images:
-		'Esto recalculara el encuadre y el foco de cada imagen del proyecto actual, o de todo el pool cuando no hay proyecto activo. El encuadre manual X/Y/zoom y los puntos de foco existentes seran reemplazados. Continuar?',
+	label_auto_zoom: 'Auto Zoom',
+	hint_auto_zoom:
+		'Sube el zoom al minimo que mantiene toda la pantalla cubierta con la composicion actual y vuelve a meter la composicion dentro del cuadro. El modo de ajuste y el punto de foco quedan como estan.',
 	label_pick_focus: 'Elegir Foco',
 	label_center_focus: 'Centrar Foco',
 	label_clear_focus: 'Limpiar Foco',

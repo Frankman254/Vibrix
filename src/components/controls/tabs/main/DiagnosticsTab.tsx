@@ -143,11 +143,13 @@ export default function DiagnosticsTab({ onReset }: { onReset: () => void }) {
 	const store = useWallpaperStore(
 		useShallow(s => ({
 			showBackgroundScaleMeter: s.showBackgroundScaleMeter,
+			showAutoZoomDebug: s.showAutoZoomDebug,
 			showSpectrumDiagnosticsHud: s.showSpectrumDiagnosticsHud,
 			showLogoDiagnosticsHud: s.showLogoDiagnosticsHud,
 			diagnosticsHudPositionX: s.diagnosticsHudPositionX,
 			diagnosticsHudPositionY: s.diagnosticsHudPositionY,
 			setShowBackgroundScaleMeter: s.setShowBackgroundScaleMeter,
+			setShowAutoZoomDebug: s.setShowAutoZoomDebug,
 			setShowSpectrumDiagnosticsHud: s.setShowSpectrumDiagnosticsHud,
 			setShowLogoDiagnosticsHud: s.setShowLogoDiagnosticsHud,
 			setDiagnosticsHudPositionX: s.setDiagnosticsHudPositionX,
@@ -188,6 +190,12 @@ export default function DiagnosticsTab({ onReset }: { onReset: () => void }) {
 						hint={t.hint_bg_scale_meter}
 						checked={store.showBackgroundScaleMeter}
 						onChange={store.setShowBackgroundScaleMeter}
+					/>
+					<ToggleRow
+						label={t.label_autozoom_debug}
+						hint={t.hint_autozoom_debug}
+						checked={store.showAutoZoomDebug}
+						onChange={store.setShowAutoZoomDebug}
 					/>
 					<ToggleRow
 						label={t.label_spectrum_diag_toggle}

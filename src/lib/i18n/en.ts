@@ -208,6 +208,9 @@ export const en = {
 	label_bg_scale_meter: 'Top-left scale meter',
 	hint_bg_scale_meter:
 		'HUD: base scale, audio boost as 0–10 vs max range, channel drive, and total scale (base + boost).',
+	label_autozoom_debug: 'AutoZoom coverage frames',
+	hint_autozoom_debug:
+		'Canvas overlay: amber dashed = your authored framing, green = what is actually drawn after the Keep-Covered clamp. Text shows authored / minimum / drawn scale.',
 	label_bg_scale_meter_grow: 'Boost',
 	label_bg_scale_meter_drive: 'Drive',
 	label_bg_scale_meter_total: 'Scale',
@@ -1215,14 +1218,9 @@ export const en = {
 	label_time_font_size: 'Time Size',
 	label_letter_spacing: 'Letter Spacing',
 	label_title_width: 'Title Width',
-	label_auto_frame_current: 'Auto Frame',
-	hint_auto_frame_current:
-		'Frames the active image to the current screen and sets its focus point on the most detailed area.',
-	label_auto_frame_all_images: 'Auto Frame All',
-	hint_auto_frame_all_images:
-		'Frames every image in the current project, or the whole pool when no project is active, and focuses each one on its most detailed area.',
-	confirm_auto_frame_all_images:
-		'This will recalculate framing and focus for every image in the current project, or the whole pool when no project is active. Existing manual X/Y/zoom framing and focus points will be replaced. Continue?',
+	label_auto_zoom: 'Auto Zoom',
+	hint_auto_zoom:
+		'Raises the zoom to the minimum that keeps the whole screen covered at the current composition, and pulls the composition back inside the frame. Fit mode and focus point are left as they are.',
 	label_pick_focus: 'Pick Focus',
 	label_center_focus: 'Center Focus',
 	label_clear_focus: 'Clear Focus',

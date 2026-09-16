@@ -11,7 +11,8 @@ import {
 	normalizeSceneSlotAgainstState,
 	resolveEffectiveSceneSlotId
 } from '@/features/scenes/sceneSlot';
-import { suggestBackgroundAutoFit } from '@/features/background';
+import { getImageBaseSize, resolveImageTransform } from '@/features/background';
+import { resolveAutoZoomScale } from '@/features/background/domain/autoZoom';
 import {
 	extractLooksProfileSettings,
 	extractParticlesProfileSettings,
@@ -146,6 +147,70 @@ export function buildActiveImageSelectionPatch(
 }
 
 /**
+ * The AutoZoom refit itself: RAISE the stored scale to the coverage minimum
+ * (never lower it — a deliberate zoom-in is kept) and clamp the composition
+ * center back into coverage bounds. `fitMode` and the focus point are user
+ * intent and are NEVER touched. Returns `null` when already fitted.
+ */
+export function buildAutoZoomPatch(
+	state: WallpaperState,
+	imageSize: { width: number; height: number },
+	viewport: { width: number; height: number }
+): Partial<WallpaperState> | null {
+	const image = state.backgroundImages.find(
+		img => img.assetId === state.activeImageId
+	);
+	if (!image?.url) return null;
+	const mirrorFillCount = image.mirrorFill ? (image.mirrorFillCount ?? 0) : 0;
+	const base = getImageBaseSize(
+		viewport.width,
+		viewport.height,
+		imageSize.width,
+		imageSize.height,
+		state.imageFitMode
+	);
+	const autoZoomMin = resolveAutoZoomScale({
+		viewportWidth: viewport.width,
+		viewportHeight: viewport.height,
+		tileWidthAtScaleOne: base.width,
+		tileHeightAtScaleOne: base.height,
+		mirrorFillCount,
+		rotation: image.rotation
+	});
+	const nextScale = Math.max(state.imageScale, autoZoomMin);
+	// Re-resolve the composition at the new scale: its effective position is
+	// the authored position CLAMPED into coverage bounds. This is the same
+	// clamp the renderer applies, so the stored state and the drawn result
+	// cannot disagree.
+	const resolved = resolveImageTransform({
+		viewportWidth: viewport.width,
+		viewportHeight: viewport.height,
+		imageWidth: imageSize.width,
+		imageHeight: imageSize.height,
+		fitMode: state.imageFitMode,
+		scale: nextScale,
+		positionX: state.imagePositionX,
+		positionY: state.imagePositionY,
+		rotation: image.rotation,
+		mirror: state.imageMirror,
+		keepCovered: true,
+		mirrorFill: image.mirrorFill,
+		mirrorFillInvert: state.imageMirrorFillInvert,
+		mirrorFillCount
+	});
+	const alreadyFitted =
+		state.imageScale === nextScale &&
+		state.imagePositionX === resolved.effectivePositionX &&
+		state.imagePositionY === resolved.effectivePositionY;
+	if (alreadyFitted) return null;
+	return syncStateWithActiveBackgroundImage(state, {
+		imageScale: nextScale,
+		imagePositionX: resolved.effectivePositionX,
+		imagePositionY: resolved.effectivePositionY
+	});
+}
+
+/**
  * Keep Covered refit of the active image for a viewport, or `null` when it
  * does not apply (lock off, hand-tuned framing, already fitted). The
  * hand-tuned guard (`coverageFramingEdited`) is provenance set by the user's
@@ -158,34 +223,12 @@ export function buildCoveredAutoFitPatch(
 	viewport: { width: number; height: number }
 ): Partial<WallpaperState> | null {
 	if (!state.activeImageId || !state.imageCoverageLockEnabled) return null;
+	// A hand-tuned composition is the user's intent: never machine-overwrite
+	// it on image switch / viewport change. The explicit AutoZoom action
+	// calls buildAutoZoomPatch directly and ignores this guard.
 	const image = state.backgroundImages.find(
 		img => img.assetId === state.activeImageId
 	);
-	// A hand-tuned composition is the user's intent: never machine-overwrite
-	// it on image switch / viewport change. Explicit auto-fit still wins.
-	if (!image?.url || image.coverageFramingEdited) return null;
-	const suggestion = suggestBackgroundAutoFit(
-		viewport.width,
-		viewport.height,
-		imageSize.width,
-		imageSize.height,
-		image.rotation,
-		image.mirrorFill ? (image.mirrorFillCount ?? 0) : 0
-	);
-	const alreadyFitted =
-		state.imageFitMode === suggestion.fitMode &&
-		state.imageScale === suggestion.scale &&
-		state.imagePositionX === suggestion.positionX &&
-		state.imagePositionY === suggestion.positionY &&
-		state.imageFocusX === 0.5 &&
-		state.imageFocusY === 0.5;
-	if (alreadyFitted) return null;
-	return syncStateWithActiveBackgroundImage(state, {
-		imageFitMode: suggestion.fitMode,
-		imageScale: suggestion.scale,
-		imagePositionX: suggestion.positionX,
-		imagePositionY: suggestion.positionY,
-		imageFocusX: 0.5,
-		imageFocusY: 0.5
-	});
+	if (image?.coverageFramingEdited) return null;
+	return buildAutoZoomPatch(state, imageSize, viewport);
 }

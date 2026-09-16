@@ -406,6 +406,7 @@ export const LEGACY_TAB_KEYS: Record<string, (keyof WallpaperState)[]> = {
 	],
 	diagnostics: [
 		'showBackgroundScaleMeter',
+		'showAutoZoomDebug',
 		'showSpectrumDiagnosticsHud',
 		'showLogoDiagnosticsHud',
 		'diagnosticsHudPositionX',

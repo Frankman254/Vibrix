@@ -915,6 +915,8 @@ export type WallpaperState = {
 	imageRotation: number;
 	/** Debug HUD: live scale boost + audio drive (top-left) */
 	showBackgroundScaleMeter: boolean;
+	/** Debug overlay: authored vs drawn Keep-Covered frames on the canvas */
+	showAutoZoomDebug: boolean;
 	/** Debug HUD: spectrum channel, bins energy, gain, follow-logo placement */
 	showSpectrumDiagnosticsHud: boolean;
 	/** Debug HUD: logo drive, envelope, link to spectrum follow */

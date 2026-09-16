@@ -2,6 +2,7 @@ import {
 	getLayoutReferenceResolution,
 	resolveResponsiveBackgroundTransform
 } from '@/features/layout/responsiveLayout';
+import { AUTOZOOM_SEAM_OVERLAP, resolveAutoZoomScale } from './autoZoom';
 import type { ImageFitMode, WallpaperState } from '@/types/wallpaper';
 
 export type ImageDrawRect = {
@@ -92,8 +93,7 @@ export type ResolveImageTransformParams = {
 	>;
 };
 
-const MAX_AUTO_FIT_SCALE = 4;
-const MIRROR_FILL_SEAM_OVERLAP = 3;
+const MIRROR_FILL_SEAM_OVERLAP = AUTOZOOM_SEAM_OVERLAP;
 
 function clamp(value: number, min: number, max: number): number {
 	if (max < min) return (min + max) / 2;
@@ -274,6 +274,14 @@ function getCoverageBoundsFromUnion(
 	};
 }
 
+/**
+ * Renderer-side coverage minimum. Delegates to `resolveAutoZoomScale` — the
+ * SAME function the store's AutoZoom action and the UI sliders clamp
+ * against. One source of truth: the UI minimum and this render clamp can
+ * never disagree. Inputs are the STATIC composition only (tile base at the
+ * current fitMode, mirror-fill depth, rotation); reactive boost and parallax
+ * are layered on top of the clamp, never inside it.
+ */
 export function resolveMinimumCoverScale(
 	viewportWidth: number,
 	viewportHeight: number,
@@ -283,35 +291,25 @@ export function resolveMinimumCoverScale(
 	rotation = 0,
 	mirrorFillDepth = 0
 ): number {
-	const safeViewportWidth = Math.max(1, viewportWidth);
-	const safeViewportHeight = Math.max(1, viewportHeight);
 	const base = getImageBaseSize(
-		safeViewportWidth,
-		safeViewportHeight,
+		viewportWidth,
+		viewportHeight,
 		Math.max(1, imageWidth),
 		Math.max(1, imageHeight),
 		fitMode
 	);
-	const safeMirrorFillDepth = sanitizeMirrorFillCopyCount(mirrorFillDepth);
-	let low = 0.01;
-	let high = MAX_AUTO_FIT_SCALE;
-
-	for (let i = 0; i < 32; i++) {
-		const mid = (low + high) / 2;
-		const union = getCompositeUnion({
-			width: base.width * mid,
-			height: base.height * mid,
-			rotation,
-			count: safeMirrorFillDepth
-		});
-		const covers =
-			union.maxX - union.minX >= safeViewportWidth &&
-			union.maxY - union.minY >= safeViewportHeight;
-		if (covers) high = mid;
-		else low = mid;
-	}
-
-	return clamp(high, 0.01, MAX_AUTO_FIT_SCALE);
+	return clamp(
+		resolveAutoZoomScale({
+			viewportWidth,
+			viewportHeight,
+			tileWidthAtScaleOne: base.width,
+			tileHeightAtScaleOne: base.height,
+			mirrorFillCount: mirrorFillDepth,
+			rotation
+		}),
+		0.01,
+		100
+	);
 }
 
 /**
