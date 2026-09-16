@@ -110,9 +110,15 @@ export async function createOfflineVideoEncoder(options: {
 	const outputFormat =
 		format.container === 'mp4'
 			? new Mp4OutputFormat({
-					// A stream can seek back to patch the header; a buffer keeps
-					// the index up front so the file plays while downloading.
-					fastStart: sink.kind === 'buffer' ? 'in-memory' : false
+					// The file must be playable from its first byte: QuickTime
+					// needs the whole `moov` before it shows a duration at all,
+					// and opening a 1.3 GB moov-at-end file costs it ~2 minutes.
+					// A buffer keeps the index up front in memory; a stream
+					// can't seek the whole file back, so it gets a fragmented
+					// MP4 whose header ships at the front and whose halves
+					// stay playable even mid-write.
+					fastStart:
+						sink.kind === 'buffer' ? 'in-memory' : 'fragmented'
 				})
 			: new WebMOutputFormat();
 

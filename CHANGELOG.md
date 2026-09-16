@@ -15,6 +15,20 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Export: el MP4 del file-picker se reproduce desde el primer byte
+
+- Con `showSaveFilePicker` el exportador escribía el MP4 con el índice
+  (`moov`) al final del archivo (`fastStart: false`): QuickTime tardaba ~2
+  minutos en abrir un archivo de 1,3 GB y cualquier reproducción mientras la
+  app todavía estaba escribiendo veía duración y velocidad bogus (el
+  "cámara lenta" con "duración alterada" de los últimos exports). El sink de
+  stream ahora escribe **MP4 fragmentado** —header al frente, reproduce
+  incluso a media escritura—; el sink de buffer conserva su índice adelante
+  en memoria. Verificado con el encoder real de la app en Chrome: el archivo
+  fragmentado abre con duración correcta al instante y AVPlayer lo reproduce
+  a 1,0×. Los archivos ya terminados en disco estaban sanos; no hace falta
+  re-muxear nada.
+
 ### Debug: overlay de frames de cobertura AutoZoom (store v114)
 
 - Nuevo flag persistido `showAutoZoomDebug` (toggle en Diagnostics): dibuja en

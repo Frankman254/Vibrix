@@ -33,6 +33,14 @@
 3. Verificar letras con un bundle Lyrixa real (sincronía ±1 frame y estilos).
 4. ~~Memoria de 1 h: decodificar/analizar el audio por ventanas~~ — **hecho
    (Fase C)**: `video/offlineAudioTrack.ts`; el `AudioBuffer` entero se borró.
+5. **Hecho (2026-09-16): "cámara lenta / duración alterada".** Los archivos
+   terminados estaban sanos (AVPlayer los reproduce a 1,0×; stts CFR;
+   duración exacta 266,28 s). El defecto real era del sink de stream:
+   `fastStart: false` ponía el `moov` al final, así que QuickTime tardaba
+   ~2 min en abrir 1,3 GB y un archivo _aún en escritura_ se reproducía con
+   duración y velocidad bogus. `offlineVideoEncoder.ts` ahora escribe MP4
+   fragmentado en el sink de stream (`'in-memory'` solo en buffer). Verificado
+   con el encoder real de la app en Chrome + AVPlayer a 1,0×.
 
 ### Propuesta pendiente de aprobar · looks "Showcase" de fábrica
 
