@@ -134,7 +134,7 @@ export function drawAutoZoomDebugOverlay({
 	const effective = resolveImageTransform({
 		...common,
 		scale: snapshot.scale,
-		keepCovered: snapshot.coverageLockEnabled,
+		keepCovered: true,
 		reactiveScaleBoost
 	});
 	const authored = resolveImageTransform({

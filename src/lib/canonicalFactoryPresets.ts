@@ -32,7 +32,6 @@ export const CANONICAL_FACTORY_SETTINGS_PATCH = {
 	imageBlurReactiveInvert: true,
 	imageBlurReactiveSoftness: 0.65,
 	imageBlurReactiveThreshold: 0.74,
-	imageCoverageLockEnabled: true,
 	imageOpacity: 1,
 	imageOpacityReactive: false,
 	imageOpacityReactiveAmount: 0.25,

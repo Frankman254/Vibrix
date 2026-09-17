@@ -7,8 +7,7 @@ Object.defineProperty(globalThis, 'localStorage', {
 	value: {
 		getItem: (k: string) => mem.get(k) ?? null,
 		setItem: (k: string, v: string) => void mem.set(k, v),
-		removeItem: (k: string) => void mem.delete(k),
-		clear: () => mem.clear()
+		removeItem: (k: string) => void mem.delete(k)
 	},
 	configurable: true
 });
@@ -31,13 +30,11 @@ function setup(overrides: Partial<WallpaperOverrides> = {}) {
 		positionY: 0.3,
 		focusX: 0.2,
 		focusY: 0.9,
-		coverageLockEnabled: true,
 		...overrides.itemSettings
 	});
 	useWallpaperStore.setState({
 		backgroundImages: [item],
 		activeImageId: 'img-a',
-		imageCoverageLockEnabled: true,
 		imageFitMode: 'contain',
 		imageScale: 3.5,
 		imagePositionX: 0.4,
@@ -93,13 +90,15 @@ describe('autoFitCoveredActiveImage', () => {
 		expect(a?.scale).toBeCloseTo(COVER_MIN, 6);
 	});
 
-	it('does nothing while the coverage lock is off', async () => {
-		setup({ state: { imageCoverageLockEnabled: false } });
+	it('never machine-overwrites a hand-tuned framing', async () => {
+		setup();
+		useWallpaperStore.getState().setActiveImageFramingEdited(true);
 
 		await useWallpaperStore.getState().autoFitCoveredActiveImage();
 
 		expect(loadImageDimensionsMock).not.toHaveBeenCalled();
 		expect(useWallpaperStore.getState().imageScale).toBe(3.5);
+		expect(useWallpaperStore.getState().imagePositionX).toBe(0.4);
 	});
 
 	it('leaves the composition untouched when dimensions fail to load', async () => {
@@ -129,74 +128,20 @@ describe('autoFitCoveredActiveImage', () => {
 		expect(useWallpaperStore.getState().imageScale).toBe(3.5);
 	});
 
-	it('refits a hand-tuned composition when the lock is enabled', async () => {
-		setup();
-		useWallpaperStore.getState().setActiveImageFramingEdited(true);
-		// Turning the lock ON clears the provenance flag, then the refit
-		// runs — explicit intent outranks the hand-tuned guard.
-		useWallpaperStore.getState().setImageCoverageLockEnabled(true);
-
-		// 0.4 exceeds the covered X bound at scale 3.5 (±0.107...): clamped.
-		await vi.waitFor(() =>
-			expect(useWallpaperStore.getState().imagePositionX).toBeCloseTo(
-				0.107421875,
-				6
-			)
-		);
-
-		const s = useWallpaperStore.getState();
-		expect(s.imageFitMode).toBe('contain');
-		expect(s.imageScale).toBe(3.5); // already above the minimum
-		expect(s.imageFocusX).toBe(0.2);
-		expect(s.imagePositionY).toBe(0.3); // within bounds, kept
-		expect(s.imageCoverageLockEnabled).toBe(true);
-		expect(
-			s.backgroundImages.find(i => i.assetId === 'img-a')
-				?.coverageFramingEdited
-		).toBe(false);
-	});
-
-	it('clears the hand-tuned guard even when the fit already matches', async () => {
-		// Position already inside bounds at the current scale: the patch is
-		// already-fitted, but the guard must still clear on lock-on.
-		setup({ state: { imagePositionX: 0.05 } });
-		useWallpaperStore.getState().setActiveImageFramingEdited(true);
-		expect(
-			useWallpaperStore
-				.getState()
-				.backgroundImages.find(i => i.assetId === 'img-a')
-				?.coverageFramingEdited
-		).toBe(true);
-
-		useWallpaperStore.getState().setImageCoverageLockEnabled(true);
-
-		await vi.waitFor(() =>
-			expect(
-				useWallpaperStore
-					.getState()
-					.backgroundImages.find(i => i.assetId === 'img-a')
-					?.coverageFramingEdited
-			).toBe(false)
-		);
-		expect(useWallpaperStore.getState().imagePositionX).toBe(0.05);
-	});
-
-	it('re-fits the newly active locked image for the current viewport', async () => {
-		// A previously-active image can be locked and still sub-minimum for
-		// this viewport (it was composed elsewhere). The other image is NOT
-		// locked, so it never gets a passive refit.
-		const lockedDirty = createBackgroundImageItem('img-b', 'b.png', null, {
+	it('re-fits the newly active image for the current viewport', async () => {
+		// A previously-active image can still be sub-minimum for this
+		// viewport (it was composed elsewhere). Selecting it passive-refits.
+		const dirty = createBackgroundImageItem('img-b', 'b.png', null, {
 			fitMode: 'contain',
-			scale: 1.2,
-			coverageLockEnabled: true
+			scale: 1.2
 		});
-		const other = createBackgroundImageItem('img-c', 'c.png', null, {
-			coverageLockEnabled: false
-		});
+		const other = {
+			...createBackgroundImageItem('img-c', 'c.png', null),
+			coverageFramingEdited: true
+		};
 		useWallpaperStore.setState({
-			backgroundImages: [lockedDirty, other],
+			backgroundImages: [dirty, other],
 			activeImageId: 'img-c',
-			imageCoverageLockEnabled: false,
 			imageFitMode: 'contain',
 			imageScale: 1,
 			imagePositionX: 0,
@@ -228,14 +173,14 @@ describe('autoFitCoveredActiveImage', () => {
 		).toBeCloseTo(COVER_MIN, 6);
 	});
 
-	it('does not re-fit an image without its own coverage lock', async () => {
-		const unlocked = createBackgroundImageItem('img-b', 'b.png', null, {
-			coverageLockEnabled: false
-		});
+	it('does not passive-refit a hand-tuned image on selection', async () => {
+		const handTuned = {
+			...createBackgroundImageItem('img-b', 'b.png', null),
+			coverageFramingEdited: true
+		};
 		useWallpaperStore.setState({
-			backgroundImages: [unlocked],
+			backgroundImages: [handTuned],
 			activeImageId: null,
-			imageCoverageLockEnabled: false,
 			imageFitMode: 'contain',
 			imageScale: 3.5,
 			imageMirrorFill: false,
@@ -247,7 +192,102 @@ describe('autoFitCoveredActiveImage', () => {
 		await Promise.resolve();
 
 		// The selection mirrors the item's sub-minimum scale (1) and NO
-		// passive refit runs: an unlocked image keeps its framing.
+		// passive refit runs: a hand-tuned image keeps its framing.
 		expect(useWallpaperStore.getState().imageScale).toBe(1);
+	});
+});
+
+describe('autoCoverFitActiveImage', () => {
+	it('sets the exact covered framing over a hand-tuned composition and clears provenance', async () => {
+		setup();
+		useWallpaperStore.getState().setActiveImageFramingEdited(true);
+
+		await useWallpaperStore.getState().autoCoverFitActiveImage();
+
+		// Explicit fit is a full recalculation: scale lands EXACTLY on the
+		// coverage minimum (it may shrink from the hand-tuned 3.5), and the
+		// composition is clamped into coverage bounds at that scale.
+		const s = useWallpaperStore.getState();
+		expect(s.imageFitMode).toBe('contain');
+		expect(s.imageFocusX).toBe(0.2);
+		expect(s.imageFocusY).toBe(0.9);
+		expect(s.imageScale).toBeCloseTo(COVER_MIN, 6);
+		// At exactly the covering scale the only authored X that keeps
+		// focusX=0.2 centered is -(0.5-0.2)*2 = -0.6 (focus is user intent:
+		// the fit lands on it, never recenters it).
+		expect(s.imagePositionX).toBeCloseTo(-0.6, 6);
+		const a = s.backgroundImages.find(i => i.assetId === 'img-a');
+		expect(a?.coverageFramingEdited).toBe(false);
+		expect(a?.scale).toBeCloseTo(COVER_MIN, 6);
+	});
+
+	it('clears the hand-tuned guard even when the framing already matches', async () => {
+		setup({
+			itemSettings: { scale: COVER_MIN, positionX: -0.6, positionY: 0.3 },
+			state: { imageScale: COVER_MIN, imagePositionX: -0.6 }
+		});
+		useWallpaperStore.getState().setActiveImageFramingEdited(true);
+		expect(
+			useWallpaperStore
+				.getState()
+				.backgroundImages.find(i => i.assetId === 'img-a')
+				?.coverageFramingEdited
+		).toBe(true);
+
+		await useWallpaperStore.getState().autoCoverFitActiveImage();
+
+		expect(
+			useWallpaperStore
+				.getState()
+				.backgroundImages.find(i => i.assetId === 'img-a')
+				?.coverageFramingEdited
+		).toBe(false);
+		expect(useWallpaperStore.getState().imagePositionX).toBeCloseTo(
+			-0.6,
+			6
+		);
+	});
+
+	it('fits every image whose dimensions loaded, keeping the rest', async () => {
+		const a = {
+			...createBackgroundImageItem('img-a', 'a.png', null, {
+				fitMode: 'contain',
+				scale: 1
+			}),
+			coverageFramingEdited: true
+		};
+		const b = createBackgroundImageItem('img-b', 'b.png', null, {
+			fitMode: 'contain',
+			scale: 1
+		});
+		useWallpaperStore.setState({
+			backgroundImages: [a, b],
+			activeImageId: 'img-a',
+			imageFitMode: 'contain',
+			imageScale: 1,
+			imagePositionX: 0,
+			imagePositionY: 0,
+			imageFocusX: null,
+			imageFocusY: null,
+			imageMirrorFill: false,
+			imageMirrorFillCount: 0
+		});
+		loadImageDimensionsMock.mockImplementation((url: string) =>
+			url === 'b.png'
+				? Promise.reject(new Error('decode failed'))
+				: Promise.resolve({ width: 1080, height: 1920 })
+		);
+
+		await useWallpaperStore.getState().autoCoverFitAllImages();
+
+		const s = useWallpaperStore.getState();
+		const fittedA = s.backgroundImages.find(i => i.assetId === 'img-a');
+		const keptB = s.backgroundImages.find(i => i.assetId === 'img-b');
+		// Explicit fit-all outranks the hand-tuned guard and exact-fits the
+		// item with dims; the broken item keeps its framing.
+		expect(fittedA?.scale).toBeCloseTo(COVER_MIN, 6);
+		expect(fittedA?.coverageFramingEdited).toBe(false);
+		expect(keptB?.scale).toBe(1);
+		expect(keptB?.coverageFramingEdited).toBe(false);
 	});
 });

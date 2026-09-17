@@ -227,9 +227,6 @@ export const en = {
 	label_bg_zoom_preset_smooth: 'Smooth',
 	label_bg_zoom_preset_punchy: 'Punchy',
 	label_bg_zoom_preset_active: 'Preset',
-	label_bg_coverage_lock: 'Keep screen covered',
-	hint_bg_coverage_constrained:
-		'Position and scale are constrained to avoid empty background.',
 	hint_bg_coverage_min_scale: 'Minimum scale required for coverage.',
 	label_mirror_fill: 'Mirror Fill',
 	label_mirror_fill_invert: 'Invert Fill',
@@ -1218,9 +1215,14 @@ export const en = {
 	label_time_font_size: 'Time Size',
 	label_letter_spacing: 'Letter Spacing',
 	label_title_width: 'Title Width',
-	label_auto_zoom: 'Auto Zoom',
-	hint_auto_zoom:
-		'Raises the zoom to the minimum that keeps the whole screen covered at the current composition, and pulls the composition back inside the frame. Fit mode and focus point are left as they are.',
+	label_cover_fit: 'Cover Fit',
+	hint_cover_fit:
+		'Sets the framing to exactly the scale that keeps the whole screen covered at the current composition. Fit mode and focus point are left as they are.',
+	label_cover_fit_all: 'Cover Fit All',
+	hint_cover_fit_all:
+		'Applies Cover Fit to every background image whose dimensions are known. Hand-tuned framings are overwritten.',
+	confirm_cover_fit_all:
+		'This re-frames every background image to full coverage, including hand-tuned ones. Continue?',
 	label_pick_focus: 'Pick Focus',
 	label_center_focus: 'Center Focus',
 	label_clear_focus: 'Clear Focus',
@@ -2124,8 +2126,6 @@ export const en = {
 	qa_img_opac_t: 'Image opacity audio reactive',
 	qa_rgb_audio: 'RGB AUDIO',
 	qa_rgb_audio_t: 'RGB shift audio reactive',
-	qa_keep_cover: 'KEEP COVER',
-	qa_keep_cover_t: 'Keep screen covered',
 	qa_mirror_fill: 'MIRROR FILL',
 	qa_mirror_fill_t: 'Mirror fill tiles',
 	// Spectrum

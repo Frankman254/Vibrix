@@ -230,9 +230,6 @@ export const es: Record<TranslationKey, string> = {
 	label_bg_zoom_preset_smooth: 'Suave',
 	label_bg_zoom_preset_punchy: 'Punch',
 	label_bg_zoom_preset_active: 'Preset',
-	label_bg_coverage_lock: 'Mantener pantalla cubierta',
-	hint_bg_coverage_constrained:
-		'La posición y la escala se limitan para no exponer el fondo.',
 	hint_bg_coverage_min_scale: 'Escala mínima requerida para cubrir.',
 	label_mirror_fill: 'Mosaico espejado',
 	label_mirror_fill_invert: 'Invertir Fill',
@@ -1231,9 +1228,14 @@ export const es: Record<TranslationKey, string> = {
 	label_time_font_size: 'Tamano del Tiempo',
 	label_letter_spacing: 'Espaciado entre Letras',
 	label_title_width: 'Ancho del Titulo',
-	label_auto_zoom: 'Auto Zoom',
-	hint_auto_zoom:
-		'Sube el zoom al minimo que mantiene toda la pantalla cubierta con la composicion actual y vuelve a meter la composicion dentro del cuadro. El modo de ajuste y el punto de foco quedan como estan.',
+	label_cover_fit: 'Cover Fit',
+	hint_cover_fit:
+		'Ajusta el encuadre a la escala exacta que mantiene toda la pantalla cubierta con la composicion actual. El modo de ajuste y el punto de foco quedan como estan.',
+	label_cover_fit_all: 'Cover Fit Todas',
+	hint_cover_fit_all:
+		'Aplica Cover Fit a cada imagen de fondo cuyas dimensiones se conocen. Los encuadres ajustados a mano se sobrescriben.',
+	confirm_cover_fit_all:
+		'Esto reencuadra todas las imagenes de fondo a cobertura total, incluidas las ajustadas a mano. Continuar?',
 	label_pick_focus: 'Elegir Foco',
 	label_center_focus: 'Centrar Foco',
 	label_clear_focus: 'Limpiar Foco',
@@ -2147,8 +2149,6 @@ export const es: Record<TranslationKey, string> = {
 	qa_img_opac_t: 'Opacidad de imagen reactiva al audio',
 	qa_rgb_audio: 'RGB AUDIO',
 	qa_rgb_audio_t: 'Desfase RGB reactivo al audio',
-	qa_keep_cover: 'CUBRIR',
-	qa_keep_cover_t: 'Mantener pantalla cubierta',
 	qa_mirror_fill: 'RELLENO',
 	qa_mirror_fill_t: 'Relleno en espejo',
 	// Espectro

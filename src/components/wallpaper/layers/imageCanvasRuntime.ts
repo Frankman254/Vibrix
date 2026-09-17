@@ -371,7 +371,6 @@ export function renderImageCanvasFrame(params: {
 					fitMode: activeLayer.fitMode,
 					focusX: activeLayer.focusX,
 					focusY: activeLayer.focusY,
-					coverageLockEnabled: activeLayer.coverageLockEnabled,
 					mirror: activeLayer.mirror,
 					mirrorFill: activeLayer.mirrorFill,
 					mirrorFillInvert: activeLayer.mirrorFillInvert,

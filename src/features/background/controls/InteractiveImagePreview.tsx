@@ -38,7 +38,6 @@ export default function InteractiveImagePreview({
 	mirrorFill,
 	mirrorFillInvert,
 	mirrorFillCount,
-	coverageLockActive,
 	layoutResponsiveEnabled,
 	layoutBackgroundReframeEnabled,
 	layoutReferenceWidth,
@@ -60,7 +59,6 @@ export default function InteractiveImagePreview({
 	mirrorFill: boolean;
 	mirrorFillInvert: boolean;
 	mirrorFillCount: number;
-	coverageLockActive: boolean;
 	layoutResponsiveEnabled: boolean;
 	layoutBackgroundReframeEnabled: boolean;
 	layoutReferenceWidth: number;
@@ -116,7 +114,7 @@ export default function InteractiveImagePreview({
 		positionY,
 		fitMode,
 		mirror,
-		keepCovered: coverageLockActive,
+		keepCovered: true,
 		focusX,
 		focusY,
 		mirrorFill,
@@ -291,9 +289,7 @@ export default function InteractiveImagePreview({
 			>
 				{pickFocusActive
 					? 'Click to set focus point'
-					: coverageLockActive
-						? 'Drag to pan — kept covered · Dot = bass-zoom anchor'
-						: 'Drag to pan · Dot = bass-zoom anchor'}
+					: 'Drag to pan — kept covered · Dot = bass-zoom anchor'}
 			</div>
 		</div>
 	);

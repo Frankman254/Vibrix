@@ -34,7 +34,6 @@ const baseSnapshot = {
 	fitMode: 'cover' as const,
 	focusX: null,
 	focusY: null,
-	coverageLockEnabled: true,
 	mirror: false,
 	mirrorFill: false,
 	mirrorFillInvert: false,
@@ -46,7 +45,7 @@ describe('drawAutoZoomDebugOverlay ', () => {
 	it('draws authored (dashed) and effective (solid) frames when clamp lifts scale', () => {
 		const calls: Call[] = [];
 		// 'contain' fit on a wide image in a square viewport at scale 1 leaves
-		// gaps -> Keep-Covered must lift the drawn scale above authored.
+		// gaps -> the unconditional coverage clamp lifts the drawn scale.
 		drawAutoZoomDebugOverlay({
 			ctx: mockCtx(calls),
 			viewportWidth: 800,
@@ -87,24 +86,5 @@ describe('drawAutoZoomDebugOverlay ', () => {
 			.filter(c => c.op === 'fillText')
 			.map(c => String(c.args[0]));
 		expect(text.some(line => line.includes('no clamp'))).toBe(true);
-	});
-
-	it('coverageLock off never lifts scale', () => {
-		const calls: Call[] = [];
-		drawAutoZoomDebugOverlay({
-			ctx: mockCtx(calls),
-			viewportWidth: 800,
-			viewportHeight: 800,
-			imageWidth: 1600,
-			imageHeight: 600,
-			snapshot: { ...baseSnapshot, coverageLockEnabled: false },
-			reactiveScaleBoost: 0,
-			parallaxX: 0,
-			parallaxY: 0
-		});
-		const text = calls
-			.filter(c => c.op === 'fillText')
-			.map(c => String(c.args[0]));
-		expect(text[0]).toMatch(/authored ([\d.]+)\s+min [\d.]+\s+drawn \1/);
 	});
 });

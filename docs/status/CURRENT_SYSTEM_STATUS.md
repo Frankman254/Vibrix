@@ -1,6 +1,6 @@
 # Current System Status
 
-**As of:** `chore/fase-0-higiene` (`main`) · App `0.4.1-alpha` · Store persist **v115**
+**As of:** `chore/fase-0-higiene` (`main`) · App `0.4.1-alpha` · Store persist **v116**
 
 This document describes the product **as implemented in code**, not aspirational roadmaps.
 
@@ -25,7 +25,7 @@ This document describes the product **as implemented in code**, not aspirational
 | -------------------------------- | ------ | ----------------------------------------------------------- |
 | Vite + React 19 SPA              | Stable | HashRouter (`#/edit`, `#/present`, `#/record`, `#/preview`) |
 | Shared `WallpaperAppProviders`   | Stable | Single `AudioDataProvider` above route shells               |
-| Zustand + `localStorage` persist | Stable | `STORE_PERSIST_VERSION = 115`                               |
+| Zustand + `localStorage` persist | Stable | `STORE_PERSIST_VERSION = 116`                               |
 | IndexedDB assets                 | Stable | Images, audio blobs                                         |
 | Vitest + GitHub Actions CI       | Stable | format, lint, types, tests, docs:check, build               |
 
@@ -172,7 +172,7 @@ See `docs/features/SPECTRUM_ENGINE.md` (ownership model) and
 | Constant                  | Value         | Location                                    |
 | ------------------------- | ------------- | ------------------------------------------- |
 | `APP_VERSION`             | `0.4.1-alpha` | `src/lib/version.ts`, `package.json`        |
-| `STORE_PERSIST_VERSION`   | **115**       | Migrations in `wallpaperStoreMigrations.ts` |
+| `STORE_PERSIST_VERSION`   | **116**       | Migrations in `wallpaperStoreMigrations.ts` |
 | `PROJECT_SCHEMA_VERSION`  | 1             |                                             |
 | `SETTINGS_SCHEMA_VERSION` | 1             |                                             |
 
@@ -191,6 +191,11 @@ Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 | v106    | Radial shapes normalized + 6 retired; `spectrumRadialSharpness`         |
 | v107–10 | Retired FX cleanup + unified Looks catalog and audio routing            |
 | v111    | Cache-safe Vibrix factory logo URL and legacy logo migration            |
+| v112    | Built-in logo variant mode (vector/pixel/auto)                          |
+| v113    | Per-image `coverageFramingEdited` provenance flag                       |
+| v114    | `showAutoZoomDebug` coverage-overlay debug flag                         |
+| v115    | `sceneServiceBaseUrl` (AI scene-intent service location)                |
+| v116    | Keep-Covered unconditional; `imageCoverageLockEnabled` removed          |
 
 ---
 

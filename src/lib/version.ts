@@ -96,4 +96,7 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // overlay is opt-in, so migration only defaults it off.
 // v115: `sceneServiceBaseUrl` — where the AI scene-intent service lives.
 // Pre-v115 payloads lack it; '' keeps the historical same-origin behavior.
-export const STORE_PERSIST_VERSION = 115;
+// v116: Keep-Covered is unconditional — the `imageCoverageLockEnabled` global
+// and its per-image / per-profile-slot mirrors are removed (the Cover Fit
+// buttons replace the AutoZoom action). The migration strips the keys.
+export const STORE_PERSIST_VERSION = 116;

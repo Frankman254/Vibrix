@@ -57,7 +57,6 @@ export interface BackgroundImageLayer extends BaseLayer<
 	fitMode: ImageFitMode;
 	focusX: number | null;
 	focusY: number | null;
-	coverageLockEnabled: boolean;
 	mirror: boolean;
 	mirrorFill: boolean;
 	mirrorFillInvert: boolean;

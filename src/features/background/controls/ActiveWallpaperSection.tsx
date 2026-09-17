@@ -37,7 +37,6 @@ type Props = {
 	imageMirrorFill: boolean;
 	imageMirrorFillInvert: boolean;
 	imageMirrorFillCount: number;
-	imageCoverageLockEnabled: boolean;
 	layoutResponsiveEnabled: boolean;
 	layoutBackgroundReframeEnabled: boolean;
 	layoutReferenceWidth: number;
@@ -62,7 +61,8 @@ type Props = {
 	onClearLooksOverride: () => void;
 	onChangePlaybackSwitchAt: (v: number | null) => void;
 	calculatedSwitchAt?: number | null;
-	onAutoZoom: () => void;
+	onCoverFitCurrent: () => void;
+	onCoverFitAll: () => void;
 	onAutoFocusActiveImage: () => void;
 	onUploadClick: () => void;
 	onPreviousImage: () => void;
@@ -87,7 +87,6 @@ type Props = {
 	onChangeMirrorFill: (value: boolean) => void;
 	onChangeMirrorFillInvert: (value: boolean) => void;
 	onChangeMirrorFillCount: (value: number) => void;
-	onChangeImageCoverageLockEnabled: (value: boolean) => void;
 	onChangeTransitionType: (value: SlideshowTransitionType) => void;
 	onChangeTransitionDuration: (value: number) => void;
 	onChangeTransitionIntensity: (value: number) => void;
@@ -116,7 +115,6 @@ export default function ActiveWallpaperSection({
 	imageMirrorFill,
 	imageMirrorFillInvert,
 	imageMirrorFillCount,
-	imageCoverageLockEnabled,
 	layoutResponsiveEnabled,
 	layoutBackgroundReframeEnabled,
 	layoutReferenceWidth,
@@ -141,7 +139,8 @@ export default function ActiveWallpaperSection({
 	onClearLooksOverride,
 	onChangePlaybackSwitchAt,
 	calculatedSwitchAt,
-	onAutoZoom,
+	onCoverFitCurrent,
+	onCoverFitAll,
 	onUploadClick,
 	onPreviousImage,
 	onNextImage,
@@ -158,7 +157,6 @@ export default function ActiveWallpaperSection({
 	onChangeMirrorFill,
 	onChangeMirrorFillInvert,
 	onChangeMirrorFillCount,
-	onChangeImageCoverageLockEnabled,
 	onChangeTransitionType,
 	onChangeTransitionDuration,
 	onChangeTransitionIntensity,
@@ -227,6 +225,18 @@ export default function ActiveWallpaperSection({
 		onChangeRotation(0);
 	}
 
+	async function handleCoverFitAll() {
+		const ok = await confirm({
+			title: t.label_cover_fit_all,
+			message: t.confirm_cover_fit_all,
+			confirmLabel: t.label_cover_fit_all,
+			cancelLabel: t.label_cancel,
+			tone: 'warning'
+		});
+		if (!ok) return;
+		onCoverFitAll();
+	}
+
 	return (
 		<BackgroundCardShell
 			t={t}
@@ -252,7 +262,6 @@ export default function ActiveWallpaperSection({
 			imageMirrorFill={imageMirrorFill}
 			imageMirrorFillInvert={imageMirrorFillInvert}
 			imageMirrorFillCount={imageMirrorFillCount}
-			coverageLockActive={imageCoverageLockEnabled}
 			layoutResponsiveEnabled={layoutResponsiveEnabled}
 			layoutBackgroundReframeEnabled={layoutBackgroundReframeEnabled}
 			layoutReferenceWidth={layoutReferenceWidth}
@@ -260,7 +269,6 @@ export default function ActiveWallpaperSection({
 			onChangePositionX={onChangePositionX}
 			onChangePositionY={onChangePositionY}
 			onChangeFocusPoint={onChangeFocusPoint}
-			onChangeFitMode={onChangeFitMode}
 			onChangeScale={onChangeScale}
 			onChangeRotation={onChangeRotation}
 			onChangeOpacity={onChangeOpacity}
@@ -268,8 +276,8 @@ export default function ActiveWallpaperSection({
 			onChangeMirrorFill={onChangeMirrorFill}
 			onChangeMirrorFillInvert={onChangeMirrorFillInvert}
 			onChangeMirrorFillCount={onChangeMirrorFillCount}
-			onChangeImageCoverageLockEnabled={onChangeImageCoverageLockEnabled}
-			onAutoZoom={onAutoZoom}
+			onCoverFitCurrent={onCoverFitCurrent}
+			onCoverFitAll={() => void handleCoverFitAll()}
 			onAutoFocusActiveImage={onAutoFocusActiveImage}
 			imageMinScale={imageMinScale}
 			onResetFraming={() => void handleResetFraming()}

@@ -876,11 +876,6 @@ function migrateBackgroundProfileSlots(state: Partial<WallpaperStore>) {
 		values: slot.values
 			? {
 					...slot.values,
-					imageCoverageLockEnabled:
-						typeof slot.values.imageCoverageLockEnabled ===
-						'boolean'
-							? slot.values.imageCoverageLockEnabled
-							: DEFAULT_STATE.imageCoverageLockEnabled,
 					imageAudioChannel: normalizeAudioChannel(
 						slot.values.imageAudioChannel,
 						DEFAULT_STATE.imageAudioChannel
@@ -1096,6 +1091,16 @@ export function migrateWallpaperStore(
 	delete sanitizedState.logoAudioSmoothingEnabled;
 	delete sanitizedState.imageAudioSmoothingEnabled;
 	delete sanitizedState.rgbShiftAudioSmoothingEnabled;
+	// v116: Keep-Covered is unconditional. The global lock, its per-image
+	// mirror (item rebuilds drop it automatically), and its per-profile-slot
+	// mirrors are gone; strip them so they cannot linger in saved projects.
+	delete sanitizedState.imageCoverageLockEnabled;
+	for (const slot of sanitizedState.backgroundProfileSlots ?? []) {
+		if (slot.values) {
+			delete (slot.values as unknown as Record<string, unknown>)
+				.imageCoverageLockEnabled;
+		}
+	}
 
 	const persistedParticleColorMode = (state as { particleColorMode?: string })
 		.particleColorMode;
@@ -1333,10 +1338,6 @@ export function migrateWallpaperStore(
 				? Math.round(state.layoutReferenceHeight)
 				: currentViewportReference.height,
 		layerZIndices: state.layerZIndices ?? {},
-		imageCoverageLockEnabled:
-			typeof state.imageCoverageLockEnabled === 'boolean'
-				? state.imageCoverageLockEnabled
-				: DEFAULT_STATE.imageCoverageLockEnabled,
 		spectrumMode: state.spectrumMode ?? legacySpectrumMode,
 		spectrumLinearOrientation:
 			state.spectrumLinearOrientation ?? legacySpectrumLinearOrientation,

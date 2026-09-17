@@ -9,7 +9,7 @@ import SlideshowPoolSection from './SlideshowPoolSection';
 import BgZoomAudioSection from './BgZoomAudioSection';
 import { FlashEdgeSection } from '@/features/flashEdge/controls/FlashEdgeSection';
 import { useBackgroundPositionRanges } from './useBackgroundPositionRanges';
-import { useCoverageLockedImageTransform } from './useCoverageLockedImageTransform';
+import { useCoveredImageTransform } from './useCoveredImageTransform';
 import { useBackgroundImageActions } from './useBackgroundImageActions';
 import { BackgroundViewTabs } from './backgroundViewTabs';
 import {
@@ -107,7 +107,7 @@ export default function BackgroundTab({
 		layoutReferenceHeight: store.layoutReferenceHeight,
 		mirror: store.imageMirror,
 		rotation: store.imageRotation,
-		keepCovered: store.imageCoverageLockEnabled,
+		keepCovered: true,
 		focusX: store.imageFocusX,
 		focusY: store.imageFocusY,
 		mirrorFill: store.imageMirrorFill,
@@ -130,9 +130,8 @@ export default function BackgroundTab({
 		handleChangePositionX,
 		handleChangePositionY,
 		handleChangeScale,
-		handleToggleCoverageLock,
 		handleToggleMirrorFill
-	} = useCoverageLockedImageTransform(store, activeImagePositionRanges);
+	} = useCoveredImageTransform(store, activeImagePositionRanges);
 	const {
 		clearAllImages,
 		downloadActiveImage,
@@ -282,7 +281,6 @@ export default function BackgroundTab({
 					imageMirrorFill={store.imageMirrorFill}
 					imageMirrorFillInvert={store.imageMirrorFillInvert}
 					imageMirrorFillCount={store.imageMirrorFillCount}
-					imageCoverageLockEnabled={store.imageCoverageLockEnabled}
 					layoutResponsiveEnabled={store.layoutResponsiveEnabled}
 					layoutBackgroundReframeEnabled={
 						store.layoutBackgroundReframeEnabled
@@ -331,7 +329,6 @@ export default function BackgroundTab({
 					onChangeMirrorFillInvert={store.setImageMirrorFillInvert}
 					onChangeMirrorFillCount={store.setImageMirrorFillCount}
 					imageMinScale={activeImagePositionRanges.minScale}
-					onChangeImageCoverageLockEnabled={handleToggleCoverageLock}
 					onChangeTransitionType={store.setSlideshowTransitionType}
 					onChangeTransitionDuration={
 						store.setSlideshowTransitionDuration
@@ -379,7 +376,10 @@ export default function BackgroundTab({
 						);
 					}}
 					calculatedSwitchAt={calculatedSwitchAt}
-					onAutoZoom={() => void store.autoZoomActiveImage()}
+					onCoverFitCurrent={() =>
+						void store.autoCoverFitActiveImage()
+					}
+					onCoverFitAll={() => void store.autoCoverFitAllImages()}
 					onAutoFocusActiveImage={() =>
 						void store.autoFocusActiveImage()
 					}

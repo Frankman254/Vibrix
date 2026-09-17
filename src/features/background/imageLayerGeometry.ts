@@ -17,7 +17,6 @@ export type BackgroundImageSnapshot = Pick<
 	| 'fitMode'
 	| 'focusX'
 	| 'focusY'
-	| 'coverageLockEnabled'
 	| 'mirror'
 	| 'mirrorFill'
 	| 'mirrorFillInvert'
@@ -106,7 +105,6 @@ export function getLayerRect(
 				fitMode: layer.fitMode,
 				focusX: layer.focusX,
 				focusY: layer.focusY,
-				coverageLockEnabled: layer.coverageLockEnabled,
 				mirror: layer.mirror,
 				mirrorFill: layer.mirrorFill,
 				mirrorFillInvert: layer.mirrorFillInvert,
@@ -177,7 +175,8 @@ export function getBackgroundDrawRectsFromSnapshot(
 		positionY: snapshot.positionY,
 		rotation: snapshot.rotation,
 		mirror: snapshot.mirror,
-		keepCovered: snapshot.coverageLockEnabled,
+		// Coverage is unconditional: the draw always clamps to the covered composition.
+		keepCovered: true,
 		focusX: snapshot.focusX,
 		focusY: snapshot.focusY,
 		mirrorFill: snapshot.mirrorFill,

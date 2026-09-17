@@ -311,7 +311,6 @@ export type TrackTitleProfileSettings = Pick<
 
 const BACKGROUND_PROFILE_KEYS = [
 	'imageBassReactive',
-	'imageCoverageLockEnabled',
 	'imageBassScaleIntensity',
 	'imageAudioReactiveDecay',
 	'imageAudioSmoothing',

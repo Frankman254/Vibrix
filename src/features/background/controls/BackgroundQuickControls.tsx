@@ -1,14 +1,12 @@
 import { IMAGE_RANGES } from '@/config/ranges';
 import type { SliderRange } from '@/types/controls';
 import { Button, UI_COLORS } from '@/ui';
-import BgFitModeSelector from './BgFitModeSelector';
 import BgPreciseSliderControl from './BgPreciseSliderControl';
 import { SwitchRow } from './activeWallpaperAtoms';
 import { formatDecimal } from './bgFormat';
 
 export default function BackgroundQuickControls({
 	t,
-	imageFitMode,
 	imageScale,
 	imagePositionX,
 	imagePositionY,
@@ -20,10 +18,8 @@ export default function BackgroundQuickControls({
 	imageMirrorFill,
 	imageMirrorFillInvert,
 	imageMirrorFillCount,
-	imageCoverageLockEnabled,
 	imageMinScale,
 	imageCount,
-	onChangeFitMode,
 	onChangeScale,
 	onChangePositionX,
 	onChangePositionY,
@@ -33,13 +29,12 @@ export default function BackgroundQuickControls({
 	onChangeMirrorFill,
 	onChangeMirrorFillInvert,
 	onChangeMirrorFillCount,
-	onChangeImageCoverageLockEnabled,
-	onAutoZoom,
+	onCoverFitCurrent,
+	onCoverFitAll,
 	onResetFraming,
 	onDownloadImage
 }: {
 	t: Record<string, string>;
-	imageFitMode: Parameters<typeof BgFitModeSelector>[0]['value'];
 	imageScale: number;
 	imagePositionX: number;
 	imagePositionY: number;
@@ -51,12 +46,8 @@ export default function BackgroundQuickControls({
 	imageMirrorFill: boolean;
 	imageMirrorFillInvert: boolean;
 	imageMirrorFillCount: number;
-	imageCoverageLockEnabled: boolean;
 	imageMinScale: number;
 	imageCount: number;
-	onChangeFitMode: (
-		value: Parameters<typeof BgFitModeSelector>[0]['value']
-	) => void;
 	onChangeScale: (value: number) => void;
 	onChangePositionX: (value: number) => void;
 	onChangePositionY: (value: number) => void;
@@ -66,8 +57,8 @@ export default function BackgroundQuickControls({
 	onChangeMirrorFill: (value: boolean) => void;
 	onChangeMirrorFillInvert: (value: boolean) => void;
 	onChangeMirrorFillCount: (value: number) => void;
-	onChangeImageCoverageLockEnabled: (value: boolean) => void;
-	onAutoZoom: () => void;
+	onCoverFitCurrent: () => void;
+	onCoverFitAll: () => void;
 	onResetFraming: () => void;
 	onDownloadImage: () => void;
 }) {
@@ -94,23 +85,10 @@ export default function BackgroundQuickControls({
 				</span>
 			</div>
 
-			{/* Keep Covered pins the fit to the recomputed full-bleed cover;
-			    exposing the selector would let the user pick a mode the lock
-			    immediately overwrites. */}
-			{imageCoverageLockEnabled ? null : (
-				<BgFitModeSelector
-					label={t.label_fit_mode}
-					value={imageFitMode}
-					onChange={onChangeFitMode}
-				/>
-			)}
-
-			<div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-				<SwitchRow
-					label={t.label_bg_coverage_lock}
-					checked={imageCoverageLockEnabled}
-					onChange={onChangeImageCoverageLockEnabled}
-				/>
+			{/* Coverage is unconditional: the fit mode no longer reaches the
+			    pixels (the draw floor is the covered scale either way), so the
+			    selector is gone. Cover Fit is the explicit recalculation. */}
+			<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
 				<SwitchRow
 					label={t.label_mirror_image}
 					checked={imageMirror}
@@ -186,7 +164,7 @@ export default function BackgroundQuickControls({
 					{t.hint_mirror_fill}
 				</span>
 			) : null}
-			{imageCoverageLockEnabled && imageScale <= imageMinScale + 0.001 ? (
+			{imageScale <= imageMinScale + 0.001 ? (
 				<span
 					className="text-[11px]"
 					style={{ color: 'var(--editor-accent-muted)' }}
@@ -197,14 +175,24 @@ export default function BackgroundQuickControls({
 
 			<div className="grid grid-cols-2 gap-2">
 				<Button
-					onClick={onAutoZoom}
+					onClick={onCoverFitCurrent}
 					size="sm"
 					density="compact"
 					variant="secondary"
-					title={t.hint_auto_zoom}
+					title={t.hint_cover_fit}
 					full
 				>
-					{t.label_auto_zoom}
+					{t.label_cover_fit}
+				</Button>
+				<Button
+					onClick={onCoverFitAll}
+					size="sm"
+					density="compact"
+					variant="secondary"
+					title={t.hint_cover_fit_all}
+					full
+				>
+					{t.label_cover_fit_all}
 				</Button>
 			</div>
 			<div className="grid grid-cols-2 gap-2">

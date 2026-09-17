@@ -228,8 +228,6 @@ type BuildLooksActionsOptions = {
 	setImageBassReactive: (value: boolean) => void;
 	imageMirror: boolean;
 	setImageMirror: (value: boolean) => void;
-	imageCoverageLockEnabled: boolean;
-	setImageCoverageLockEnabled: (value: boolean) => void;
 	imageMirrorFill: boolean;
 	setImageMirrorFill: (value: boolean) => void;
 	imageOpacityReactive: boolean;
@@ -257,15 +255,6 @@ export function buildLooksActions(
 			active: o.imageMirror,
 			small: true,
 			onClick: () => o.setImageMirror(!o.imageMirror)
-		},
-		{
-			label: o.t.qa_keep_cover,
-			title: o.t.qa_keep_cover_t,
-			icon: makeIcon(Monitor),
-			active: o.imageCoverageLockEnabled,
-			small: true,
-			onClick: () =>
-				o.setImageCoverageLockEnabled(!o.imageCoverageLockEnabled)
 		},
 		{
 			label: o.t.qa_mirror_fill,

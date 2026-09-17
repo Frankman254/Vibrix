@@ -396,8 +396,6 @@ export function useQuickActionsViewModel({
 			setImageBassReactive: state.setImageBassReactive,
 			imageMirror: state.imageMirror,
 			setImageMirror: state.setImageMirror,
-			imageCoverageLockEnabled: state.imageCoverageLockEnabled,
-			setImageCoverageLockEnabled: state.setImageCoverageLockEnabled,
 			imageMirrorFill: state.imageMirrorFill,
 			setImageMirrorFill: state.setImageMirrorFill,
 			imageOpacityReactive: state.imageOpacityReactive,

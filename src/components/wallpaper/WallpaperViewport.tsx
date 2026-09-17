@@ -71,7 +71,6 @@ export default function WallpaperViewport({
 					imageMirror: state.imageMirror,
 					imageMirrorFill: state.imageMirrorFill,
 					imageMirrorFillInvert: state.imageMirrorFillInvert,
-					imageCoverageLockEnabled: state.imageCoverageLockEnabled,
 					imageRotation: state.imageRotation,
 					slideshowTransitionType: state.slideshowTransitionType,
 					slideshowTransitionDuration:

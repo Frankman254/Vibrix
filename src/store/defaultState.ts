@@ -66,7 +66,6 @@ export const DEFAULT_STATE: WallpaperState = {
 	imageFocusY: null,
 	imageOpacity: 1,
 	imageBassReactive: false,
-	imageCoverageLockEnabled: true,
 	imageBassScaleIntensity: 0.5,
 	imageAudioReactiveDecay: 0.62,
 	imageAudioSmoothing: 0.18,

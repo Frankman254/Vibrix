@@ -383,7 +383,6 @@ export interface BackgroundImageItem {
 	focusY: number | null;
 	rotation: number;
 	fitMode: ImageFitMode;
-	coverageLockEnabled: boolean;
 	/** True once the user hand-tuned this framing; Keep-Covered auto-fit
 	 *  skips flagged images. Derived for pre-v113 persisted data. */
 	coverageFramingEdited: boolean;
@@ -834,7 +833,6 @@ export interface LogoProfileSettings {
 
 export interface BackgroundProfileSettings {
 	imageBassReactive: boolean;
-	imageCoverageLockEnabled: boolean;
 	imageBassScaleIntensity: number;
 	imageAudioReactiveDecay: number;
 	imageAudioSmoothing: number;
@@ -880,7 +878,6 @@ export type WallpaperState = {
 	imageFocusY: number | null;
 	imageOpacity: number;
 	imageBassReactive: boolean;
-	imageCoverageLockEnabled: boolean;
 	imageBassScaleIntensity: number;
 	imageAudioReactiveDecay: number;
 	imageAudioSmoothing: number;

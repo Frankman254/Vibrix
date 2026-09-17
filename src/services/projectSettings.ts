@@ -170,9 +170,6 @@ function normalizeBackgroundImages(
 		focusY: source.imageFocusY ?? DEFAULT_STATE.imageFocusY,
 		rotation: source.imageRotation ?? DEFAULT_STATE.imageRotation,
 		fitMode: source.imageFitMode ?? DEFAULT_STATE.imageFitMode,
-		coverageLockEnabled:
-			source.imageCoverageLockEnabled ??
-			DEFAULT_STATE.imageCoverageLockEnabled,
 		mirror: source.imageMirror ?? DEFAULT_STATE.imageMirror,
 		mirrorFill: source.imageMirrorFill ?? DEFAULT_STATE.imageMirrorFill,
 		mirrorFillInvert:
@@ -258,10 +255,6 @@ function normalizeBackgroundImages(
 							? image.rotation
 							: fallback.rotation,
 					fitMode: image.fitMode ?? fallback.fitMode,
-					coverageLockEnabled:
-						typeof image.coverageLockEnabled === 'boolean'
-							? image.coverageLockEnabled
-							: fallback.coverageLockEnabled,
 					mirror:
 						typeof image.mirror === 'boolean'
 							? image.mirror
@@ -472,8 +465,6 @@ function normalizeWallpaperState(
 	nextState.imageAudioChannel =
 		activeImage?.audioChannel ?? nextState.imageAudioChannel;
 	nextState.imageFitMode = activeImage?.fitMode ?? nextState.imageFitMode;
-	nextState.imageCoverageLockEnabled =
-		activeImage?.coverageLockEnabled ?? nextState.imageCoverageLockEnabled;
 	nextState.imageMirror = activeImage?.mirror ?? nextState.imageMirror;
 	nextState.imageMirrorFill =
 		activeImage?.mirrorFill ?? nextState.imageMirrorFill;

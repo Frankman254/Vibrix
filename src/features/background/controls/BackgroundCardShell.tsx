@@ -33,7 +33,6 @@ export default function BackgroundCardShell({
 	imageMirrorFill,
 	imageMirrorFillInvert,
 	imageMirrorFillCount,
-	coverageLockActive,
 	layoutResponsiveEnabled,
 	layoutBackgroundReframeEnabled,
 	layoutReferenceWidth,
@@ -41,7 +40,6 @@ export default function BackgroundCardShell({
 	onChangePositionX,
 	onChangePositionY,
 	onChangeFocusPoint,
-	onChangeFitMode,
 	onChangeScale,
 	onChangeRotation,
 	onChangeOpacity,
@@ -49,8 +47,8 @@ export default function BackgroundCardShell({
 	onChangeMirrorFill,
 	onChangeMirrorFillInvert,
 	onChangeMirrorFillCount,
-	onChangeImageCoverageLockEnabled,
-	onAutoZoom,
+	onCoverFitCurrent,
+	onCoverFitAll,
 	onAutoFocusActiveImage,
 	imageMinScale,
 	onResetFraming,
@@ -80,7 +78,6 @@ export default function BackgroundCardShell({
 	imageMirrorFill: boolean;
 	imageMirrorFillInvert: boolean;
 	imageMirrorFillCount: number;
-	coverageLockActive: boolean;
 	layoutResponsiveEnabled: boolean;
 	layoutBackgroundReframeEnabled: boolean;
 	layoutReferenceWidth: number;
@@ -88,9 +85,6 @@ export default function BackgroundCardShell({
 	onChangePositionX: (value: number) => void;
 	onChangePositionY: (value: number) => void;
 	onChangeFocusPoint: (x: number | null, y: number | null) => void;
-	onChangeFitMode: (
-		value: Parameters<typeof BgFitModeSelector>[0]['value']
-	) => void;
 	onChangeScale: (value: number) => void;
 	onChangeRotation: (value: number) => void;
 	onChangeOpacity: (value: number) => void;
@@ -98,8 +92,8 @@ export default function BackgroundCardShell({
 	onChangeMirrorFill: (value: boolean) => void;
 	onChangeMirrorFillInvert: (value: boolean) => void;
 	onChangeMirrorFillCount: (value: number) => void;
-	onChangeImageCoverageLockEnabled: (value: boolean) => void;
-	onAutoZoom: () => void;
+	onCoverFitCurrent: () => void;
+	onCoverFitAll: () => void;
 	onAutoFocusActiveImage: () => void;
 	imageMinScale: number;
 	onResetFraming: () => void;
@@ -176,7 +170,6 @@ export default function BackgroundCardShell({
 						mirrorFill={imageMirrorFill}
 						mirrorFillInvert={imageMirrorFillInvert}
 						mirrorFillCount={imageMirrorFillCount}
-						coverageLockActive={coverageLockActive}
 						layoutResponsiveEnabled={layoutResponsiveEnabled}
 						layoutBackgroundReframeEnabled={
 							layoutBackgroundReframeEnabled
@@ -230,7 +223,6 @@ export default function BackgroundCardShell({
 				{activeImage?.url ? (
 					<BackgroundQuickControls
 						t={t}
-						imageFitMode={imageFitMode}
 						imageScale={imageScale}
 						imagePositionX={imagePositionX}
 						imagePositionY={imagePositionY}
@@ -242,10 +234,8 @@ export default function BackgroundCardShell({
 						imageMirrorFill={imageMirrorFill}
 						imageMirrorFillInvert={imageMirrorFillInvert}
 						imageMirrorFillCount={imageMirrorFillCount}
-						imageCoverageLockEnabled={coverageLockActive}
 						imageMinScale={imageMinScale}
 						imageCount={imageCount}
-						onChangeFitMode={onChangeFitMode}
 						onChangeScale={onChangeScale}
 						onChangePositionX={onChangePositionX}
 						onChangePositionY={onChangePositionY}
@@ -255,10 +245,8 @@ export default function BackgroundCardShell({
 						onChangeMirrorFill={onChangeMirrorFill}
 						onChangeMirrorFillInvert={onChangeMirrorFillInvert}
 						onChangeMirrorFillCount={onChangeMirrorFillCount}
-						onChangeImageCoverageLockEnabled={
-							onChangeImageCoverageLockEnabled
-						}
-						onAutoZoom={onAutoZoom}
+						onCoverFitCurrent={onCoverFitCurrent}
+						onCoverFitAll={onCoverFitAll}
 						onResetFraming={onResetFraming}
 						onDownloadImage={onDownloadImage}
 					/>

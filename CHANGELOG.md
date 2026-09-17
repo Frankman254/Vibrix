@@ -15,6 +15,25 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Fondo: cubrir pantalla deja de ser un switch (store v116)
+
+- `keepCovered` entra **unconditional** al resolve del transform: ningún
+  encuadre puede dibujar bordes vacíos, ni en el editor ni en el export. Se
+  va el switch `imageCoverageLockEnabled` (global, por-imagen y por-slot de
+  perfil) junto con su quick action "KEEP COVER"; la migración v116 los
+  stripa de proyectos guardados.
+- Lo que el switch no podía dar: un encuadre _guardado_ que cubra de verdad.
+  Dos acciones nuevas — **Cover Fit** (el fondo activo) y **Cover Fit All**
+  (todas las imágenes del slideshow, con confirmación) — escriben el encuadre
+  exacto que cubre el viewport actual (la escala puede bajar también) y
+  anclan al punto de foco si existe. El encuadre hecho a mano
+  (`coverageFramingEdited`) sigue protegido contra el refit pasivo del
+  select-Imagen/resize; los botones explícitos son la recalculación
+  deliberada y sí lo sobrescriben.
+- El refit pasivo (selección de imagen / cambio de viewport) deja de estar
+  gateado por el lock: sin lock que apagar, el único guard es la
+  procedencia hand-tuned.
+
 ### IA: servicio de escenas configurable + proveedor OpenAI-compatible (store v115)
 
 - Nueva clave persistida `sceneServiceBaseUrl` (default `''` = mismo origen):
@@ -527,7 +546,7 @@ pliega el look Custom legacy dentro del banco normal de slots y traduce la
 selección. El campo legacy se queda en el esquema para que los proyectos
 exportados antes sigan importándose.
 
-`STORE_PERSIST_VERSION` is at **115**; `PROJECT_SCHEMA_VERSION` and `SETTINGS_SCHEMA_VERSION` remain at **1**. `APP_VERSION` / `package.json`: **0.3.0-alpha.1**.
+`STORE_PERSIST_VERSION` is at **116**; `PROJECT_SCHEMA_VERSION` and `SETTINGS_SCHEMA_VERSION` remain at **1**. `APP_VERSION` / `package.json`: **0.3.0-alpha.1**.
 
 ---
 

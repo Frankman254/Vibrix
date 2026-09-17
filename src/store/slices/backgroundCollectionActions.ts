@@ -33,8 +33,9 @@ import {
 } from '@/store/backgroundStoreUtils';
 import {
 	buildActiveImageSelectionPatch,
-	buildAutoZoomPatch,
-	buildCoveredAutoFitPatch
+	buildCoveredAutoFitPatch,
+	buildCoverFitAllImagesPatch,
+	buildCoverFitPatch
 } from '@/store/activeImageSelection';
 import type { WallpaperStore } from '@/store/wallpaperStoreTypes';
 import type { StateCreator } from 'zustand';
@@ -120,7 +121,7 @@ function buildSpectrumAvoidRegion(params: {
 		positionY: image.positionY,
 		rotation: image.rotation,
 		mirror: image.mirror,
-		keepCovered: image.coverageLockEnabled,
+		keepCovered: true,
 		focusX: image.focusX,
 		focusY: image.focusY,
 		mirrorFill: image.mirrorFill,
@@ -191,14 +192,14 @@ export function createBackgroundCollectionActions(
 	}
 
 	/**
-	 * Keep Covered is per-image, but the covering scale is viewport-dependent:
-	 * refit the active image with auto-fit's domain logic. Skips when
-	 * coverageFramingEdited; race-safe (aborts if active image/lock change during load).
+	 * Coverage is unconditional: refit the active image with the passive
+	 * raise-only auto-fit domain logic. Skips when coverageFramingEdited;
+	 * race-safe (aborts if the active image changes during load).
 	 */
 	async function autoFitCoveredActiveImage(): Promise<void> {
 		const state = get();
 		const activeId = state.activeImageId;
-		if (!activeId || !state.imageCoverageLockEnabled) return;
+		if (!activeId) return;
 		const image = state.backgroundImages.find(
 			img => img.assetId === activeId
 		);
@@ -369,12 +370,12 @@ export function createBackgroundCollectionActions(
 					state.activeImageId
 				);
 			}),
-		// Explicit AutoZoom: raise the stored scale to the coverage minimum
-		// and clamp the center into bounds. User-initiated, so the hand-tuned
-		// guard does not block it — and it does not SET the guard either: the
-		// result is machine framing, and a later viewport change may raise it
-		// again. fitMode and focus are untouched.
-		autoZoomActiveImage: async () => {
+		// Explicit Cover Fit: set the stored framing EXACTLY to the covered
+		// composition (scale may shrink as well as grow — this is a deliberate
+		// recalculation, unlike the passive raise-only refit) and clear the
+		// hand-tuned provenance so later viewport changes keep it fitted.
+		// fitMode and focus are untouched.
+		autoCoverFitActiveImage: async () => {
 			const state = get();
 			const activeId = state.activeImageId;
 			const image = state.backgroundImages.find(
@@ -386,12 +387,42 @@ export function createBackgroundCollectionActions(
 				const viewport = stageViewport();
 				const current = get();
 				if (current.activeImageId !== activeId) return;
-				const patch = buildAutoZoomPatch(current, imageSize, viewport);
+				const patch = buildCoverFitPatch(current, imageSize, viewport);
 				if (patch) set(patch);
 			} catch {
 				// Dimension load failed: leave the composition as-is. The
 				// renderer-side coverage clamp still guarantees full-bleed.
 			}
+		},
+		// The same exact fit for EVERY background image, so the whole slideshow
+		// lands covered on every viewport. Items whose dimensions fail to load
+		// keep their framing (the draw-side clamp still guarantees full-bleed).
+		autoCoverFitAllImages: async () => {
+			const state = get();
+			const images = state.backgroundImages.filter(img => img.url);
+			if (images.length === 0) return;
+			const viewport = stageViewport();
+			const dimsByAssetId: Record<
+				string,
+				{ width: number; height: number } | undefined
+			> = {};
+			await Promise.all(
+				images.map(async image => {
+					try {
+						dimsByAssetId[image.assetId] =
+							await loadImageDimensions(image.url as string);
+					} catch {
+						dimsByAssetId[image.assetId] = undefined;
+					}
+				})
+			);
+			const current = get();
+			const patch = buildCoverFitAllImagesPatch(
+				current,
+				dimsByAssetId,
+				viewport
+			);
+			if (patch) set(patch);
 		},
 		autoFitCoveredActiveImage,
 		autoFocusActiveImage: async () => {
