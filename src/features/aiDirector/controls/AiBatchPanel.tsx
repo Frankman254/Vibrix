@@ -46,6 +46,7 @@ export default function AiBatchPanel() {
 		useShallow(s => ({
 			backgroundImages: s.backgroundImages,
 			sceneSlots: s.sceneSlots,
+			sceneServiceBaseUrl: s.sceneServiceBaseUrl,
 			applyAiBatch: s.applyAiBatch
 		}))
 	);
@@ -103,7 +104,8 @@ export default function AiBatchPanel() {
 			);
 			const result = await requestSceneIntent({
 				signature: cluster.representative.signature,
-				imageUrl: image?.url ?? image?.thumbnailUrl ?? null
+				imageUrl: image?.url ?? image?.thumbnailUrl ?? null,
+				baseUrl: store.sceneServiceBaseUrl
 			});
 			nextPlans.push({
 				cluster,

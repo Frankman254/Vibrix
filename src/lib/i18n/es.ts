@@ -1364,6 +1364,18 @@ export const es: Record<TranslationKey, string> = {
 	ai_btn_test_connection: 'Probar conexión',
 	ai_provider_hint_fallback:
 		'Las sugerencias de escenas siguen funcionando: caen a la heurística offline derivada de la propia imagen. El proveedor vive en el entorno del servidor (backend/server/.env); el navegador nunca ve ninguna clave.',
+	ai_service_save: 'Guardar',
+	ai_service_base_url_hint:
+		'URL base del servicio de escenas. Vacío = mismo origen (proxy de dev / servidor desplegado). Ponele http://localhost:8787 para usar un backend en tu máquina.',
+	ai_service_setup_title: 'Cómo correr el servicio',
+	ai_service_req_mac:
+		'Requisitos: Node 18+, Homebrew, Ollama y el modelo `qwen3:8b` (≈5 GB). RAM libre: 8 GB+. El primer pedido puede tardar ~20 s.',
+	ai_service_req_windows:
+		'Requisitos: Node 18+, winget, Ollama + `qwen3:8b` (≈5 GB). PowerShell. El primer pedido puede tardar ~20 s.',
+	ai_service_req_dgx:
+		'Requisitos: un servidor OpenAI-compatible (vLLM / LM Studio) en la red, accesible por IP. El backend corre en tu máquina y llama al servidor por IP: sin problema de mixed-content. Los modelos con razonado tardan más.',
+	ai_service_copy: 'Copiar comando',
+	ai_service_copied: 'Copiado',
 	ai_section_title: 'AI Director',
 	ai_section_subtitle:
 		'Arma una escena desde la imagen activa, pruébala en el wallpaper y guárdala.',

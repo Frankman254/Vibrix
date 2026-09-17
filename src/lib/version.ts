@@ -94,4 +94,6 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // the stored layout (a custom framing is protected from machine overwrite).
 // v114: `showAutoZoomDebug` debug-overlay flag. Pre-v114 payloads lack it; the
 // overlay is opt-in, so migration only defaults it off.
-export const STORE_PERSIST_VERSION = 114;
+// v115: `sceneServiceBaseUrl` — where the AI scene-intent service lives.
+// Pre-v115 payloads lack it; '' keeps the historical same-origin behavior.
+export const STORE_PERSIST_VERSION = 115;

@@ -98,6 +98,7 @@ export const DEFAULT_STATE: WallpaperState = {
 	diagnosticsHudPositionY: 0.06,
 	filterTargets: ['background'],
 	filterOpacity: 1,
+	sceneServiceBaseUrl: '',
 	filterBrightness: 1,
 	filterContrast: 1,
 	filterSaturation: 1,

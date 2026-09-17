@@ -14,7 +14,7 @@ código y cómo pensarlo** — para que puedas ubicar cualquier feature sin abri
 > avísame.
 
 > Fecha de la serie: 2026-06 · Versión del proyecto: `0.3.0-alpha` ·
-> `STORE_PERSIST_VERSION = 114` (see `src/lib/version.ts`).
+> `STORE_PERSIST_VERSION = 115` (see `src/lib/version.ts`).
 
 ---
 

@@ -1674,6 +1674,10 @@ export type WallpaperState = {
 	language: Language;
 	isPresetDirty: boolean;
 	showFps: boolean;
+	/** Scene-service (backend) base URL for AI features. '' means same-origin
+	 *  (dev proxy / deployed server). Set it to point the app at a backend on
+	 *  your own machine or LAN, e.g. http://localhost:8787. */
+	sceneServiceBaseUrl: string;
 	controlPanelAnchor: ControlPanelAnchor;
 	/** Pixel offset applied on top of the anchor — set by dragging the panel
 	 *  header. Reset to 0 via the anchor selector or a context menu. */

@@ -47,7 +47,15 @@ export type RequestSceneIntentOptions = {
 	/** Free-text steer from the user ("make it calmer", "more retro"). */
 	guidance?: string;
 	signal?: AbortSignal;
+	/** Scene-service base URL (see `sceneServiceBaseUrl` in the store).
+	 *  '' / undefined means same-origin. */
+	baseUrl?: string;
 };
+
+/** Join a configured base URL with an API path; '' means same-origin. */
+export function sceneServiceUrl(baseUrl: string | undefined, path: string) {
+	return baseUrl ? `${baseUrl.replace(/\/+$/, '')}${path}` : path;
+}
 
 function heuristicResult(
 	signature: ImageSignature,
@@ -91,12 +99,15 @@ export async function requestSceneIntent(
 			}
 		}
 
-		const response = await fetch(SCENE_INTENT_ENDPOINT, {
-			method: 'POST',
-			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify({ signature, seed, guidance, image }),
-			signal: controller.signal
-		});
+		const response = await fetch(
+			sceneServiceUrl(options.baseUrl, SCENE_INTENT_ENDPOINT),
+			{
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ signature, seed, guidance, image }),
+				signal: controller.signal
+			}
+		);
 
 		if (!response.ok) {
 			return heuristicResult(
@@ -162,9 +173,11 @@ export type SceneIntentServiceStatus = {
  * is the only place that distinguishes "wrong URL" from "not configured"
  * from "provider up but its runtime is down" (e.g. Ollama not running).
  */
-export async function probeSceneIntentService(): Promise<SceneIntentServiceStatus> {
+export async function probeSceneIntentService(
+	baseUrl?: string
+): Promise<SceneIntentServiceStatus> {
 	try {
-		const response = await fetch('/api/health');
+		const response = await fetch(sceneServiceUrl(baseUrl, '/api/health'));
 		if (!response.ok) {
 			return {
 				reachable: false,

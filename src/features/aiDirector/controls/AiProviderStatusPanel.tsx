@@ -1,38 +1,128 @@
-import { useCallback, useEffect, useState } from 'react';
-import { CheckCircle2, Loader2, PlugZap, XCircle } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { CheckCircle2, Copy, Loader2, PlugZap, XCircle } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
+import { useWallpaperStore } from '@/store/wallpaperStore';
 import { useT } from '@/lib/i18n';
 import { probeSceneIntentService } from '../index';
 import type { SceneIntentServiceStatus } from '../index';
-import { Button, SectionCard, UI_COLORS, FONT, ICON_SIZE } from '@/ui';
+import {
+	Button,
+	EnumButtonGroup,
+	SectionCard,
+	TextInput,
+	UI_COLORS,
+	FONT,
+	ICON_SIZE
+} from '@/ui';
+
+type SetupPlatform = 'mac' | 'windows' | 'dgx';
+
+const PLATFORMS = ['mac', 'windows', 'dgx'] as const;
+
+function detectPlatform(): SetupPlatform {
+	return /Windows/i.test(navigator.userAgent) ? 'windows' : 'mac';
+}
 
 /**
- * Scene-intent provider status (Settings-adjacent surface: Diagnostics tab).
+ * Scene-intent service: configure + status (Diagnostics tab).
  *
- * The provider choice lives in the server's environment (`LWAG_AI_PROVIDER`,
- * `ANTHROPIC_API_KEY`, `OLLAMA_MODEL` — see backend/server/.env.example); the
- * browser must never know a key exists. This panel is the read-back side of
- * that abstraction: it asks `/api/health` which provider the server selected
- * and whether its runtime answers, so "which model is this deployment using,
- * and is it up?" is visible in-app instead of only via curl.
+ * Two halves of one seam. The *base URL* decides which backend the browser
+ * talks to: '' means same-origin (dev proxy / deployed server); a URL points
+ * the app at a backend on the user's own machine or tailnet. The *command
+ * generator* produces the exact shell line that starts such a backend — with
+ * the current app origin baked into `LWAG_ALLOWED_ORIGIN` so CORS matches
+ * without the user editing anything. The provider choice itself stays in the
+ * server's environment; the browser never learns a key exists. `Test` asks
+ * that backend `/api/health` and reports which provider it selected.
  */
 export default function AiProviderStatusPanel() {
 	const t = useT();
+	const store = useWallpaperStore(
+		useShallow(s => ({
+			sceneServiceBaseUrl: s.sceneServiceBaseUrl,
+			setSceneServiceBaseUrl: s.setSceneServiceBaseUrl
+		}))
+	);
 	const [status, setStatus] = useState<SceneIntentServiceStatus | null>(null);
 	const [testing, setTesting] = useState(false);
+	const [draftUrl, setDraftUrl] = useState(store.sceneServiceBaseUrl);
+	const [platform, setPlatform] = useState<SetupPlatform>(detectPlatform);
+	const [dgxUrl, setDgxUrl] = useState('http://100.70.87.17:8888/v1');
+	const [dgxModel, setDgxModel] = useState('qwen3.8-flash-next');
+	const [copied, setCopied] = useState(false);
 
 	const runTest = useCallback(async () => {
 		setTesting(true);
 		try {
-			setStatus(await probeSceneIntentService());
+			setStatus(await probeSceneIntentService(store.sceneServiceBaseUrl));
 		} finally {
 			setTesting(false);
 		}
-	}, []);
+	}, [store.sceneServiceBaseUrl]);
 
-	// Probe once on mount so the state is visible without a click.
+	// Probe once on mount (and after the base URL changes) so the state is
+	// visible without a click.
 	useEffect(() => {
 		void runTest();
 	}, [runTest]);
+
+	// Keep the draft in sync if the store value changes elsewhere.
+	useEffect(() => {
+		setDraftUrl(store.sceneServiceBaseUrl);
+	}, [store.sceneServiceBaseUrl]);
+
+	const saveUrl = () => {
+		store.setSceneServiceBaseUrl(draftUrl);
+	};
+
+	const origin = window.location.origin;
+	const commands: Record<SetupPlatform, string> = useMemo(
+		() => ({
+			mac: `# 1 · first time only: install + model
+brew install ollama   # or download from https://ollama.com
+ollama pull qwen3:8b
+
+# 2 · run the scene service (repo root)
+cd backend/server && npm install
+LWAG_AI_PROVIDER=ollama OLLAMA_MODEL=qwen3:8b \\
+LWAG_ALLOWED_ORIGIN="${origin}" \\
+node src/index.mjs
+
+# 3 · set Base URL above to http://localhost:8787 and Test`,
+			windows: `# 1 · first time only: install + model
+winget install Ollama.Ollama
+ollama pull qwen3:8b
+
+# 2 · run the scene service (repo root; PowerShell)
+cd backend\\server; npm install
+$env:LWAG_AI_PROVIDER='ollama'; $env:OLLAMA_MODEL='qwen3:8b'
+$env:LWAG_ALLOWED_ORIGIN='${origin}'
+node src\\index.mjs
+
+# 3 · set Base URL above to http://localhost:8787 and Test`,
+			dgx: `# vLLM (or any OpenAI-compatible server) already serving the
+# model on the DGX. Run the backend on this machine; it
+# reaches the DGX server-side, so no mixed-content issue.
+cd backend/server && npm install
+LWAG_AI_PROVIDER=openai OPENAI_BASE_URL="${dgxUrl}" \\
+OPENAI_MODEL="${dgxModel}" \\
+LWAG_ALLOWED_ORIGIN="${origin}" \\
+node src/index.mjs
+
+# then set Base URL above to http://localhost:8787 and Test`
+		}),
+		[origin, dgxUrl, dgxModel]
+	);
+
+	const copyCommand = async () => {
+		try {
+			await navigator.clipboard.writeText(commands[platform]);
+			setCopied(true);
+			setTimeout(() => setCopied(false), 1500);
+		} catch {
+			// Clipboard unavailable (insecure context): user selects manually.
+		}
+	};
 
 	const ok = status !== null && status.providerReady;
 	const label =
@@ -99,6 +189,41 @@ export default function AiProviderStatusPanel() {
 						{t.ai_btn_test_connection}
 					</Button>
 				</div>
+
+				{/* Which backend the browser talks to */}
+				<div className="flex items-center gap-2">
+					<TextInput
+						size="sm"
+						full
+						value={draftUrl}
+						placeholder="http://localhost:8787"
+						onChange={e => setDraftUrl(e.target.value)}
+						onKeyDown={e => {
+							if (e.key === 'Enter') saveUrl();
+						}}
+						style={{ fontFamily: FONT.mono, fontSize: 11 }}
+					/>
+					<Button
+						type="button"
+						size="sm"
+						density="compact"
+						variant="secondary"
+						onClick={saveUrl}
+						disabled={
+							draftUrl.trim().replace(/\/+$/, '') ===
+							store.sceneServiceBaseUrl
+						}
+					>
+						{t.ai_service_save}
+					</Button>
+				</div>
+				<p
+					className="text-[10px] leading-relaxed"
+					style={{ color: UI_COLORS.fgMute }}
+				>
+					{t.ai_service_base_url_hint}
+				</p>
+
 				{!ok ? (
 					<p
 						className="text-[10px] leading-relaxed"
@@ -107,6 +232,72 @@ export default function AiProviderStatusPanel() {
 						{t.ai_provider_hint_fallback}
 					</p>
 				) : null}
+
+				{/* How to start a backend yourself */}
+				<div className="flex items-center justify-between gap-2">
+					<span
+						className="text-[10px] uppercase tracking-wide"
+						style={{ color: UI_COLORS.fgMute }}
+					>
+						{t.ai_service_setup_title}
+					</span>
+					<EnumButtonGroup
+						options={PLATFORMS}
+						value={platform}
+						onChange={setPlatform}
+					/>
+				</div>
+				<p
+					className="text-[10px] leading-relaxed"
+					style={{ color: UI_COLORS.fgMute }}
+				>
+					{platform === 'mac'
+						? t.ai_service_req_mac
+						: platform === 'windows'
+							? t.ai_service_req_windows
+							: t.ai_service_req_dgx}
+				</p>
+				{platform === 'dgx' ? (
+					<div className="flex items-center gap-2">
+						<TextInput
+							size="xs"
+							full
+							value={dgxUrl}
+							onChange={e => setDgxUrl(e.target.value)}
+							style={{ fontFamily: FONT.mono, fontSize: 10 }}
+						/>
+						<TextInput
+							size="xs"
+							full
+							value={dgxModel}
+							onChange={e => setDgxModel(e.target.value)}
+							style={{ fontFamily: FONT.mono, fontSize: 10 }}
+						/>
+					</div>
+				) : null}
+				<pre
+					className="max-h-44 overflow-auto rounded p-2 text-[10px] leading-relaxed"
+					style={{
+						background: UI_COLORS.panel,
+						color: UI_COLORS.fg,
+						fontFamily: FONT.mono,
+						whiteSpace: 'pre'
+					}}
+				>
+					{commands[platform]}
+				</pre>
+				<div className="flex justify-end">
+					<Button
+						type="button"
+						size="sm"
+						density="compact"
+						variant="secondary"
+						onClick={() => void copyCommand()}
+						icon={<Copy size={ICON_SIZE.xs} />}
+					>
+						{copied ? t.ai_service_copied : t.ai_service_copy}
+					</Button>
+				</div>
 			</div>
 		</SectionCard>
 	);

@@ -12,16 +12,34 @@
  * the wire contract is typed on its side and every response is re-validated
  * there.
  */
+import { networkInterfaces } from 'node:os';
 import express from 'express';
 import pg from 'pg';
 import { createSceneIntentHandler } from './sceneIntentRoute.mjs';
 import { createAnthropicProvider } from './providers/anthropic.mjs';
 import { createOllamaProvider } from './providers/ollama.mjs';
+import { createOpenAiCompatProvider } from './providers/openaiCompat.mjs';
 import { createProjectsRouter } from './projectsRoute.mjs';
 
 const PORT = Number(process.env.PORT ?? 8787);
-const ALLOWED_ORIGIN =
-	process.env.LWAG_ALLOWED_ORIGIN ?? 'http://localhost:5173';
+// All interfaces, so the app reached by LAN or tailnet address — not just
+// localhost — can call it. HOST=127.0.0.1 keeps it on this machine only.
+const HOST = process.env.HOST ?? '0.0.0.0';
+// Comma-separated so the same backend can serve the app on the vite dev
+// server, the deployed web origin, and a Tauri shell at once. '*' reflects any
+// origin (dev only — do not ship it with DATABASE_URL set).
+const ALLOWED_ORIGINS = (
+	process.env.LWAG_ALLOWED_ORIGIN ?? 'http://localhost:5173'
+)
+	.split(',')
+	.map(origin => origin.trim());
+
+/** Reflect whichever configured origin the request came from, or none. */
+function allowedOriginFor(reqOrigin) {
+	if (!reqOrigin) return null;
+	if (ALLOWED_ORIGINS.includes('*')) return reqOrigin;
+	return ALLOWED_ORIGINS.includes(reqOrigin) ? reqOrigin : null;
+}
 
 /**
  * Bearer-token auth.
@@ -71,7 +89,8 @@ const app = express();
 app.use(express.json({ limit: '32mb' }));
 
 app.use((req, res, next) => {
-	res.set('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
+	const origin = allowedOriginFor(req.headers.origin);
+	if (origin) res.set('Access-Control-Allow-Origin', origin);
 	res.set('Access-Control-Allow-Headers', 'content-type, authorization');
 	res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
 	if (req.method === 'OPTIONS') {
@@ -104,6 +123,7 @@ app.get('/api/health', (_req, res) => {
 function selectProvider() {
 	const explicit = process.env.LWAG_AI_PROVIDER;
 	if (explicit === 'ollama') return createOllamaProvider();
+	if (explicit === 'openai') return createOpenAiCompatProvider();
 	if (explicit === 'anthropic') {
 		return process.env.ANTHROPIC_API_KEY
 			? createAnthropicProvider({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -113,6 +133,11 @@ function selectProvider() {
 		return createAnthropicProvider({
 			apiKey: process.env.ANTHROPIC_API_KEY
 		});
+	}
+	// A configured OpenAI-compatible server (vLLM on a DGx, LM Studio) wins
+	// over Ollama because pointing one at the server IS the intent to use it.
+	if (process.env.OPENAI_BASE_URL && process.env.OPENAI_MODEL) {
+		return createOpenAiCompatProvider();
 	}
 	return createOllamaProvider();
 }
@@ -158,6 +183,16 @@ if (process.env.DATABASE_URL) {
 	console.warn('[server] DATABASE_URL unset — project sync disabled.');
 }
 
-app.listen(PORT, () => {
-	console.log(`[server] listening on http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+	console.log(`[server] listening on http://${HOST}:${PORT}`);
+	if (HOST === '0.0.0.0') {
+		// Print the reachable addresses: the log line above is not one.
+		for (const [, entries] of Object.entries(networkInterfaces())) {
+			for (const entry of entries ?? []) {
+				if (entry.family === 'IPv4' && !entry.internal) {
+					console.log(`[server]   http://${entry.address}:${PORT}`);
+				}
+			}
+		}
+	}
 });

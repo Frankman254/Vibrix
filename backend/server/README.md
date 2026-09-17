@@ -40,15 +40,18 @@ not mounted at all.
 
 ## Scene intents — hosted or local
 
-The provider is pluggable and both implement the same small interface, so the
-route never learns which one ran.
+The provider is pluggable and all three implement the same small interface, so
+the route never learns which one ran.
 
-| `LWAG_AI_PROVIDER` | Needs                             | Notes                        |
-| ------------------ | --------------------------------- | ---------------------------- |
-| `ollama`           | A local Ollama and a pulled model | No key, no quota, no network |
-| `anthropic`        | `ANTHROPIC_API_KEY`               | Best quality; costs money    |
+| `LWAG_AI_PROVIDER` | Needs                              | Notes                                                                  |
+| ------------------ | ---------------------------------- | ---------------------------------------------------------------------- |
+| `ollama`           | A local Ollama and a pulled model  | No key, no quota, no network                                           |
+| `openai`           | `OPENAI_BASE_URL` + `OPENAI_MODEL` | Any OpenAI-compatible server: vLLM, LM Studio, llama.cpp, Ollama `/v1` |
+| `anthropic`        | `ANTHROPIC_API_KEY`                | Best quality; costs money                                              |
 
-Unset picks Anthropic when a key is present, and falls back to local Ollama.
+Unset picks Anthropic when a key is present, then an OpenAI-compatible server
+when `OPENAI_BASE_URL` + `OPENAI_MODEL` are set, and falls back to local Ollama.
+`LWAG_ALLOWED_ORIGIN` is a comma-separated list; `*` reflects any origin.
 
 ### Running fully local
 

@@ -1353,6 +1353,18 @@ export const en = {
 	ai_btn_test_connection: 'Test connection',
 	ai_provider_hint_fallback:
 		'Scene suggestions still work: they fall back to the offline heuristic derived from the image itself. The provider lives in the server environment (backend/server/.env); the browser never sees any key.',
+	ai_service_save: 'Save',
+	ai_service_base_url_hint:
+		'Scene-service base URL. Empty = same origin (dev proxy / deployed server). Set http://localhost:8787 to use a backend running on your own machine.',
+	ai_service_setup_title: 'How to run the service',
+	ai_service_req_mac:
+		'Requirements: Node 18+, Homebrew, Ollama and the `qwen3:8b` model (≈5 GB). 8 GB+ free RAM. The first request can take ~20 s.',
+	ai_service_req_windows:
+		'Requirements: Node 18+, winget, Ollama + `qwen3:8b` (≈5 GB). PowerShell. The first request can take ~20 s.',
+	ai_service_req_dgx:
+		'Requirements: an OpenAI-compatible server (vLLM / LM Studio) on the network, reachable by IP. The backend runs on your machine and calls it by IP — no mixed-content problem. Reasoning models take longer.',
+	ai_service_copy: 'Copy command',
+	ai_service_copied: 'Copied',
 	ai_section_title: 'AI Director',
 	ai_section_subtitle:
 		'Build a scene from the active image, try it on the live wallpaper, then save it.',

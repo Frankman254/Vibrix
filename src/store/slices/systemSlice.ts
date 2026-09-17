@@ -123,6 +123,8 @@ export function createSystemSlice(
 		},
 		setLanguage: v => set({ language: v }),
 		setShowFps: v => set({ showFps: v }),
+		setSceneServiceBaseUrl: v =>
+			set({ sceneServiceBaseUrl: v.trim().replace(/\/+$/, '') }),
 		setControlPanelAnchor: v =>
 			set({
 				controlPanelAnchor: v,

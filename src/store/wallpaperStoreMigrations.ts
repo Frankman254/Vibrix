@@ -3029,6 +3029,9 @@ export function migrateWallpaperStore(
 	if (fromVersion < 114) {
 		migratedState.showAutoZoomDebug ??= false;
 	}
+	if (fromVersion < 115) {
+		migratedState.sceneServiceBaseUrl ??= '';
+	}
 
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;
 }

@@ -1,0 +1,149 @@
+/**
+ * OpenAI-compatible provider (vLLM, LM Studio, llama.cpp server, Ollama /v1).
+ *
+ * Third adapter at the same seam as `ollama` and `anthropic`, so the route
+ * still never learns which one ran. It exists because the interesting local
+ * runtimes are not Ollama: a vLLM server (e.g. a DGx Spark on the tailnet)
+ * speaks `/v1/chat/completions`, not Ollama's `/api/chat`, and one adapter per
+ * dialect is cheaper than pretending they are the same thing.
+ *
+ * Structured output is requested the way these servers enforce it —
+ * `response_format: { type: 'json_schema', json_schema: { strict: true } }` —
+ * which is what keeps a small model from returning a shape the client has to
+ * guess at. Verified against vLLM with the real `SCENE_INTENT_SCHEMA`.
+ */
+
+/** Local runtimes are slow to cold-load a model; stay generous but bounded. */
+const REQUEST_TIMEOUT_MS = 180_000;
+
+/** `http://host:port/v1/` and `http://host:port/v1` both mean the same place. */
+function normalizeBase(host) {
+	return String(host).replace(/\/+$/, '');
+}
+
+export function createOpenAiCompatProvider({
+	host = process.env.OPENAI_BASE_URL || 'http://127.0.0.1:8000/v1',
+	model = process.env.OPENAI_MODEL || '',
+	/** Optional bearer token; local servers ignore it, hosted ones require it. */
+	apiKey = process.env.OPENAI_API_KEY || '',
+	/** Text-only is the safe default: a vision-less server rejects images. */
+	supportsImages = process.env.OPENAI_VISION === '1',
+	logger = console
+} = {}) {
+	const base = normalizeBase(host);
+
+	const headers = { 'content-type': 'application/json' };
+	if (apiKey) headers.authorization = `Bearer ${apiKey}`;
+
+	return {
+		name: `openai:${model || '(no model set)'}`,
+
+		async generateIntent({ system, userText, image, schema }) {
+			const content = [];
+			// Only send the image when the server was told the model takes one;
+			// a text-only model answers 400 rather than ignoring it.
+			if (image?.base64 && supportsImages) {
+				content.push({
+					type: 'image_url',
+					image_url: {
+						url: `data:${image.mediaType};base64,${image.base64}`
+					}
+				});
+			}
+			content.push({ type: 'text', text: userText });
+
+			const controller = new AbortController();
+			const timeout = setTimeout(
+				() => controller.abort(),
+				REQUEST_TIMEOUT_MS
+			);
+
+			try {
+				const response = await fetch(`${base}/chat/completions`, {
+					method: 'POST',
+					headers,
+					signal: controller.signal,
+					body: JSON.stringify({
+						model,
+						stream: false,
+						response_format: {
+							type: 'json_schema',
+							json_schema: {
+								name: 'scene_intent',
+								strict: true,
+								schema
+							}
+						},
+						messages: [
+							{ role: 'system', content: system },
+							{ role: 'user', content }
+						],
+						// vLLM-style reasoning servers take this and answer
+						// directly; without it a thinking model spends the whole
+						// budget on `reasoning` and leaves `content` empty.
+						// Harmless elsewhere: unknown kwargs are ignored.
+						chat_template_kwargs: { enable_thinking: false },
+						temperature: 0.4,
+						max_tokens: 1500
+					})
+				});
+
+				if (!response.ok) {
+					throw new Error(
+						`${response.status}: ${(await response.text()).slice(0, 300)}`
+					);
+				}
+
+				const payload = await response.json();
+				const message = payload?.choices?.[0]?.message;
+				const text =
+					typeof message?.content === 'string'
+						? message.content.trim()
+						: '';
+				if (!text) {
+					// A reasoning model can spend the whole budget thinking and
+					// leave `content` empty; say so instead of a bare parse error.
+					throw new Error(
+						message?.reasoning
+							? 'model returned reasoning but no answer (raise max_tokens or disable thinking)'
+							: 'model returned empty content'
+					);
+				}
+				return JSON.parse(text);
+			} finally {
+				clearTimeout(timeout);
+			}
+		},
+
+		/** Whether the server answers and actually serves the configured model. */
+		async health() {
+			if (!model) {
+				return { ok: false, reason: 'OPENAI_MODEL not set' };
+			}
+			try {
+				const response = await fetch(`${base}/models`, {
+					headers,
+					signal: AbortSignal.timeout(5000)
+				});
+				if (!response.ok) return { ok: false, reason: 'unreachable' };
+				const payload = await response.json();
+				const names = (Array.isArray(payload?.data) ? payload.data : [])
+					.map(entry => entry?.id)
+					.filter(Boolean);
+				return names.includes(model)
+					? { ok: true, model, models: names }
+					: {
+							ok: false,
+							reason: `model ${model} not served here`,
+							models: names
+						};
+			} catch (error) {
+				logger.warn(
+					'[openai-compat] health check failed:',
+					error?.message
+				);
+				return { ok: false, reason: 'unreachable' };
+			}
+		}
+	};
+}

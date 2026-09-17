@@ -15,6 +15,29 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### IA: servicio de escenas configurable + proveedor OpenAI-compatible (store v115)
+
+- Nueva clave persistida `sceneServiceBaseUrl` (default `''` = mismo origen):
+  la app puede apuntar a un backend en la máquina del usuario o en su red
+  (p. ej. `http://localhost:8787`) en vez de depender del proxy de dev /
+  servidor desplegado. `requestSceneIntent` y `probeSceneIntentService`
+  aceptan `baseUrl`; los tres llamantes (Director, Batch, panel de estado)
+  la leen del store. Migración v115: `''` conserva el comportamiento histórico.
+- El panel de Diagnostics ahora es también ventana de configuración: input de
+  base URL con botón Test, y un generador de comandos (Mac / Windows / DGX)
+  que produce la línea exacta para correr el backend — con el origin actual
+  de la app quemado en `LWAG_ALLOWED_ORIGIN` para que CORS matchee sin
+  editar nada.
+- Backend: provider `openai-compat` (`LWAG_AI_PROVIDER=openai` +
+  `OPENAI_BASE_URL`/`OPENAI_MODEL`) — un adaptador para vLLM, LM Studio,
+  llama.cpp y el shim `/v1` de Ollama; probado contra vLLM en una DGX Spark
+  por tailscale (intents válidos con `response_format: json_schema`).
+  `chat_template_kwargs.enable_thinking=false` para modelos con razonado.
+  `LWAG_ALLOWED_ORIGIN` acepta lista separada por comas y refleja el origin
+  que coincide (o `*`).
+
+- `STORE_PERSIST_VERSION` sube a **115**.
+
 ### Export: el MP4 del file-picker se reproduce desde el primer byte
 
 - Con `showSaveFilePicker` el exportador escribía el MP4 con el índice
@@ -504,7 +527,7 @@ pliega el look Custom legacy dentro del banco normal de slots y traduce la
 selección. El campo legacy se queda en el esquema para que los proyectos
 exportados antes sigan importándose.
 
-`STORE_PERSIST_VERSION` is at **114**; `PROJECT_SCHEMA_VERSION` and `SETTINGS_SCHEMA_VERSION` remain at **1**. `APP_VERSION` / `package.json`: **0.3.0-alpha.1**.
+`STORE_PERSIST_VERSION` is at **115**; `PROJECT_SCHEMA_VERSION` and `SETTINGS_SCHEMA_VERSION` remain at **1**. `APP_VERSION` / `package.json`: **0.3.0-alpha.1**.
 
 ---
 

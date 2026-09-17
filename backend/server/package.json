@@ -5,8 +5,8 @@
 	"type": "module",
 	"description": "API server for Live Wallpaper: AI scene intents + project sync.",
 	"scripts": {
-		"start": "node src/index.mjs",
-		"dev": "node --watch src/index.mjs"
+		"start": "node --env-file-if-exists=.env src/index.mjs",
+		"dev": "node --watch --env-file-if-exists=.env src/index.mjs"
 	},
 	"dependencies": {
 		"@anthropic-ai/sdk": "^0.70.0",

@@ -803,6 +803,7 @@ export type WallpaperStore = WallpaperState & {
 	surpriseMe: () => void;
 	setLanguage: (v: Language) => void;
 	setShowFps: (v: boolean) => void;
+	setSceneServiceBaseUrl: (v: string) => void;
 	setControlPanelAnchor: (v: ControlPanelAnchor) => void;
 	setControlPanelOffset: (x: number, y: number) => void;
 	setHudLiquidGlassEnabled: (v: boolean) => void;
