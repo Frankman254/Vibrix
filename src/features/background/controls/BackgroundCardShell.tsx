@@ -19,6 +19,7 @@ export default function BackgroundCardShell({
 	onDownloadImage,
 	children,
 	imageFitMode,
+	imageFramingManualEnabled,
 	imageScale,
 	imagePositionX,
 	imagePositionY,
@@ -47,6 +48,7 @@ export default function BackgroundCardShell({
 	onChangeMirrorFill,
 	onChangeMirrorFillInvert,
 	onChangeMirrorFillCount,
+	onChangeFramingManualEnabled,
 	onCoverFitCurrent,
 	onCoverFitAll,
 	onAutoFocusActiveImage,
@@ -64,6 +66,7 @@ export default function BackgroundCardShell({
 	onDownloadImage: () => void;
 	children: ReactNode;
 	imageFitMode: Parameters<typeof BgFitModeSelector>[0]['value'];
+	imageFramingManualEnabled: boolean;
 	imageScale: number;
 	imagePositionX: number;
 	imagePositionY: number;
@@ -92,6 +95,7 @@ export default function BackgroundCardShell({
 	onChangeMirrorFill: (value: boolean) => void;
 	onChangeMirrorFillInvert: (value: boolean) => void;
 	onChangeMirrorFillCount: (value: number) => void;
+	onChangeFramingManualEnabled: (value: boolean) => void;
 	onCoverFitCurrent: () => void;
 	onCoverFitAll: () => void;
 	onAutoFocusActiveImage: () => void;
@@ -160,6 +164,7 @@ export default function BackgroundCardShell({
 					<InteractiveImagePreview
 						imageUrl={imagePreviewUrl || activeImage.url}
 						fitMode={imageFitMode}
+						keepCovered={!imageFramingManualEnabled}
 						scale={imageScale}
 						positionX={imagePositionX}
 						positionY={imagePositionY}
@@ -245,6 +250,10 @@ export default function BackgroundCardShell({
 						onChangeMirrorFill={onChangeMirrorFill}
 						onChangeMirrorFillInvert={onChangeMirrorFillInvert}
 						onChangeMirrorFillCount={onChangeMirrorFillCount}
+						framingManualEnabled={imageFramingManualEnabled}
+						onChangeFramingManualEnabled={
+							onChangeFramingManualEnabled
+						}
 						onCoverFitCurrent={onCoverFitCurrent}
 						onCoverFitAll={onCoverFitAll}
 						onResetFraming={onResetFraming}

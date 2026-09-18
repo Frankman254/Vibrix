@@ -29,6 +29,8 @@ export default function BackgroundQuickControls({
 	onChangeMirrorFill,
 	onChangeMirrorFillInvert,
 	onChangeMirrorFillCount,
+	framingManualEnabled,
+	onChangeFramingManualEnabled,
 	onCoverFitCurrent,
 	onCoverFitAll,
 	onResetFraming,
@@ -57,6 +59,8 @@ export default function BackgroundQuickControls({
 	onChangeMirrorFill: (value: boolean) => void;
 	onChangeMirrorFillInvert: (value: boolean) => void;
 	onChangeMirrorFillCount: (value: number) => void;
+	framingManualEnabled: boolean;
+	onChangeFramingManualEnabled: (value: boolean) => void;
 	onCoverFitCurrent: () => void;
 	onCoverFitAll: () => void;
 	onResetFraming: () => void;
@@ -85,9 +89,23 @@ export default function BackgroundQuickControls({
 				</span>
 			</div>
 
-			{/* Coverage is unconditional: the fit mode no longer reaches the
-			    pixels (the draw floor is the covered scale either way), so the
-			    selector is gone. Cover Fit is the explicit recalculation. */}
+			{/* Manual framing: the coverage math (AutoZoom floor + keep-covered
+			    clamp) steps aside so scale and position are exactly what the
+			    user types. Turning it off refits the image automatically. */}
+			<SwitchRow
+				label={t.label_manual_framing}
+				checked={framingManualEnabled}
+				onChange={onChangeFramingManualEnabled}
+			/>
+			<span
+				className="text-[11px]"
+				style={{ color: 'var(--editor-accent-muted)' }}
+			>
+				{framingManualEnabled
+					? t.hint_manual_framing_on
+					: t.hint_manual_framing_off}
+			</span>
+
 			<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
 				<SwitchRow
 					label={t.label_mirror_image}
@@ -164,7 +182,7 @@ export default function BackgroundQuickControls({
 					{t.hint_mirror_fill}
 				</span>
 			) : null}
-			{imageScale <= imageMinScale + 0.001 ? (
+			{!framingManualEnabled && imageScale <= imageMinScale + 0.001 ? (
 				<span
 					className="text-[11px]"
 					style={{ color: 'var(--editor-accent-muted)' }}

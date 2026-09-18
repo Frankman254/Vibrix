@@ -55,6 +55,8 @@ export interface BackgroundImageLayer extends BaseLayer<
 > {
 	imageUrl: string | null;
 	fitMode: ImageFitMode;
+	/** False in manual framing mode: the draw skips the coverage clamp. */
+	keepCovered: boolean;
 	focusX: number | null;
 	focusY: number | null;
 	mirror: boolean;

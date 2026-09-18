@@ -199,7 +199,7 @@ export function createBackgroundCollectionActions(
 	async function autoFitCoveredActiveImage(): Promise<void> {
 		const state = get();
 		const activeId = state.activeImageId;
-		if (!activeId) return;
+		if (!activeId || state.imageFramingManualEnabled) return;
 		const image = state.backgroundImages.find(
 			img => img.assetId === activeId
 		);
@@ -221,7 +221,39 @@ export function createBackgroundCollectionActions(
 		}
 	}
 
+	/**
+	 * The explicit Cover Fit of the active image (exact covered framing, the
+	 * hand-tuned provenance cleared). Named because both the Cover Fit button
+	 * and leaving manual framing mode run it.
+	 */
+	async function coverFitActiveImage(): Promise<void> {
+		const state = get();
+		const activeId = state.activeImageId;
+		const image = state.backgroundImages.find(
+			img => img.assetId === activeId
+		);
+		if (!image?.url) return;
+		try {
+			const imageSize = await loadImageDimensions(image.url);
+			const viewport = stageViewport();
+			const current = get();
+			if (current.activeImageId !== activeId) return;
+			const patch = buildCoverFitPatch(current, imageSize, viewport);
+			if (patch) set(patch);
+		} catch {
+			// Dimension load failed: leave the composition as-is. The
+			// renderer-side coverage clamp still guarantees full-bleed.
+		}
+	}
+
 	return {
+		// Manual framing OFF hands the composition back to the coverage math,
+		// so refit the active image right away instead of waiting for the next
+		// viewport change: the switch has to show its effect immediately.
+		setImageFramingManualEnabled: v => {
+			set({ imageFramingManualEnabled: v });
+			if (!v) void coverFitActiveImage();
+		},
 		setImagePlaybackSwitchAt: v =>
 			set(state => ({
 				backgroundImages: state.backgroundImages.map(img =>
@@ -375,25 +407,7 @@ export function createBackgroundCollectionActions(
 		// recalculation, unlike the passive raise-only refit) and clear the
 		// hand-tuned provenance so later viewport changes keep it fitted.
 		// fitMode and focus are untouched.
-		autoCoverFitActiveImage: async () => {
-			const state = get();
-			const activeId = state.activeImageId;
-			const image = state.backgroundImages.find(
-				img => img.assetId === activeId
-			);
-			if (!image?.url) return;
-			try {
-				const imageSize = await loadImageDimensions(image.url);
-				const viewport = stageViewport();
-				const current = get();
-				if (current.activeImageId !== activeId) return;
-				const patch = buildCoverFitPatch(current, imageSize, viewport);
-				if (patch) set(patch);
-			} catch {
-				// Dimension load failed: leave the composition as-is. The
-				// renderer-side coverage clamp still guarantees full-bleed.
-			}
-		},
+		autoCoverFitActiveImage: coverFitActiveImage,
 		// The same exact fit for EVERY background image, so the whole slideshow
 		// lands covered on every viewport. Items whose dimensions fail to load
 		// keep their framing (the draw-side clamp still guarantees full-bleed).

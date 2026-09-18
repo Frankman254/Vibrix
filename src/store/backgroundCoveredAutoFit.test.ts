@@ -44,6 +44,7 @@ function setup(overrides: Partial<WallpaperOverrides> = {}) {
 		imageRotation: 0,
 		imageMirrorFill: false,
 		imageMirrorFillCount: 0,
+		imageFramingManualEnabled: false,
 		...overrides.state
 	});
 	return item;
@@ -289,5 +290,54 @@ describe('autoCoverFitActiveImage', () => {
 		expect(fittedA?.coverageFramingEdited).toBe(false);
 		expect(keptB?.scale).toBe(1);
 		expect(keptB?.coverageFramingEdited).toBe(false);
+	});
+});
+
+describe('setImageFramingManualEnabled', () => {
+	it('stops the passive refit while manual framing is on', async () => {
+		setup({
+			itemSettings: { scale: 1.5 },
+			state: { imageScale: 1.5, imagePositionX: 0.5 }
+		});
+		useWallpaperStore.getState().setImageFramingManualEnabled(true);
+
+		await useWallpaperStore.getState().autoFitCoveredActiveImage();
+
+		const s = useWallpaperStore.getState();
+		expect(loadImageDimensionsMock).not.toHaveBeenCalled();
+		// The sub-minimum scale the user asked for survives untouched.
+		expect(s.imageScale).toBe(1.5);
+		expect(s.imagePositionX).toBe(0.5);
+	});
+
+	it('refits the active image as soon as manual framing is turned off', async () => {
+		setup({
+			// No focus point: the exact fit then lands dead centre, so the
+			// assertion below is about coverage and nothing else.
+			itemSettings: { scale: 1.5, focusX: null, focusY: null },
+			state: {
+				imageScale: 1.5,
+				imagePositionX: 0.5,
+				imageFocusX: null,
+				imageFocusY: null,
+				imageFramingManualEnabled: true
+			}
+		});
+
+		useWallpaperStore.getState().setActiveImageFramingEdited(true);
+
+		useWallpaperStore.getState().setImageFramingManualEnabled(false);
+		// The refit loads the image dimensions, so let its promise settle.
+		await vi.waitFor(() => {
+			expect(useWallpaperStore.getState().imageScale).not.toBe(1.5);
+		});
+
+		const s = useWallpaperStore.getState();
+		expect(s.imageFramingManualEnabled).toBe(false);
+		expect(s.imageScale).toBeCloseTo(COVER_MIN, 6);
+		expect(s.imagePositionX).toBeCloseTo(0, 6);
+		// Cover Fit is a machine framing again.
+		const a = s.backgroundImages.find(i => i.assetId === 'img-a');
+		expect(a?.coverageFramingEdited).toBe(false);
 	});
 });

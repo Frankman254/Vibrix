@@ -41,6 +41,7 @@ export function buildSceneLayers(state: WallpaperState): SceneLayer[] {
 			},
 			imageUrl: state.imageUrl,
 			fitMode: state.imageFitMode,
+			keepCovered: !state.imageFramingManualEnabled,
 			focusX: state.imageFocusX,
 			focusY: state.imageFocusY,
 			mirror: state.imageMirror,

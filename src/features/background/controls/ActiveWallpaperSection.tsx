@@ -23,6 +23,7 @@ type Props = {
 	activeImageIndex: number;
 	imageCount: number;
 	imageFitMode: Parameters<typeof BgFitModeSelector>[0]['value'];
+	imageFramingManualEnabled: boolean;
 	imageScale: number;
 	imagePositionX: number;
 	imagePositionY: number;
@@ -61,6 +62,7 @@ type Props = {
 	onClearLooksOverride: () => void;
 	onChangePlaybackSwitchAt: (v: number | null) => void;
 	calculatedSwitchAt?: number | null;
+	onChangeFramingManualEnabled: (value: boolean) => void;
 	onCoverFitCurrent: () => void;
 	onCoverFitAll: () => void;
 	onAutoFocusActiveImage: () => void;
@@ -101,6 +103,7 @@ export default function ActiveWallpaperSection({
 	activeImageIndex,
 	imageCount,
 	imageFitMode,
+	imageFramingManualEnabled,
 	imageScale,
 	imagePositionX,
 	imagePositionY,
@@ -139,6 +142,7 @@ export default function ActiveWallpaperSection({
 	onClearLooksOverride,
 	onChangePlaybackSwitchAt,
 	calculatedSwitchAt,
+	onChangeFramingManualEnabled,
 	onCoverFitCurrent,
 	onCoverFitAll,
 	onUploadClick,
@@ -248,6 +252,7 @@ export default function ActiveWallpaperSection({
 			onNextImage={onNextImage}
 			onDownloadImage={handleDownloadImage}
 			imageFitMode={imageFitMode}
+			imageFramingManualEnabled={imageFramingManualEnabled}
 			imageScale={imageScale}
 			imagePositionX={imagePositionX}
 			imagePositionY={imagePositionY}
@@ -276,6 +281,7 @@ export default function ActiveWallpaperSection({
 			onChangeMirrorFill={onChangeMirrorFill}
 			onChangeMirrorFillInvert={onChangeMirrorFillInvert}
 			onChangeMirrorFillCount={onChangeMirrorFillCount}
+			onChangeFramingManualEnabled={onChangeFramingManualEnabled}
 			onCoverFitCurrent={onCoverFitCurrent}
 			onCoverFitAll={() => void handleCoverFitAll()}
 			onAutoFocusActiveImage={onAutoFocusActiveImage}

@@ -99,4 +99,8 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // v116: Keep-Covered is unconditional — the `imageCoverageLockEnabled` global
 // and its per-image / per-profile-slot mirrors are removed (the Cover Fit
 // buttons replace the AutoZoom action). The migration strips the keys.
-export const STORE_PERSIST_VERSION = 116;
+// v117: `imageFramingManualEnabled` — the manual framing switch. Coverage math
+// stays the default (false); turning it on hands scale/position back to the
+// user untouched. Pre-v117 payloads lack the key, so migration defaults it off
+// and nothing changes for existing projects.
+export const STORE_PERSIST_VERSION = 117;

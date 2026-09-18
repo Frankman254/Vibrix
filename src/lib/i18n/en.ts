@@ -1215,6 +1215,11 @@ export const en = {
 	label_time_font_size: 'Time Size',
 	label_letter_spacing: 'Letter Spacing',
 	label_title_width: 'Title Width',
+	label_manual_framing: 'Manual Framing',
+	hint_manual_framing_on:
+		'Manual mode: scale and position are exactly what you set here. Nothing re-frames the image and the screen may not stay fully covered.',
+	hint_manual_framing_off:
+		'Automatic mode: the image is kept covering the whole screen, so the scale cannot go below the coverage minimum. Turn this on to edit the values freely.',
 	label_cover_fit: 'Cover Fit',
 	hint_cover_fit:
 		'Sets the framing to exactly the scale that keeps the whole screen covered at the current composition. Fit mode and focus point are left as they are.',

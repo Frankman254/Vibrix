@@ -904,6 +904,12 @@ export type WallpaperState = {
 	imageAudioChannel: AudioReactiveChannel;
 	backgroundProfileSlots: ProfileSlot<BackgroundProfileSettings>[];
 	imageFitMode: ImageFitMode;
+	/**
+	 * Manual framing: the coverage math (AutoZoom raise, keep-covered clamp)
+	 * is off and scale/position are whatever the user typed. Turning it back
+	 * off re-enables the math and refits the active image.
+	 */
+	imageFramingManualEnabled: boolean;
 	imageMirror: boolean;
 	imageMirrorFill: boolean;
 	imageMirrorFillInvert: boolean;

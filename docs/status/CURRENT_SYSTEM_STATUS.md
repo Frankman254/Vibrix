@@ -1,6 +1,6 @@
 # Current System Status
 
-**As of:** `chore/fase-0-higiene` (`main`) · App `0.4.1-alpha` · Store persist **v116**
+**As of:** `chore/fase-0-higiene` (`main`) · App `0.4.1-alpha` · Store persist **v117**
 
 This document describes the product **as implemented in code**, not aspirational roadmaps.
 
@@ -25,7 +25,7 @@ This document describes the product **as implemented in code**, not aspirational
 | -------------------------------- | ------ | ----------------------------------------------------------- |
 | Vite + React 19 SPA              | Stable | HashRouter (`#/edit`, `#/present`, `#/record`, `#/preview`) |
 | Shared `WallpaperAppProviders`   | Stable | Single `AudioDataProvider` above route shells               |
-| Zustand + `localStorage` persist | Stable | `STORE_PERSIST_VERSION = 116`                               |
+| Zustand + `localStorage` persist | Stable | `STORE_PERSIST_VERSION = 117`                               |
 | IndexedDB assets                 | Stable | Images, audio blobs                                         |
 | Vitest + GitHub Actions CI       | Stable | format, lint, types, tests, docs:check, build               |
 
@@ -172,7 +172,7 @@ See `docs/features/SPECTRUM_ENGINE.md` (ownership model) and
 | Constant                  | Value         | Location                                    |
 | ------------------------- | ------------- | ------------------------------------------- |
 | `APP_VERSION`             | `0.4.1-alpha` | `src/lib/version.ts`, `package.json`        |
-| `STORE_PERSIST_VERSION`   | **116**       | Migrations in `wallpaperStoreMigrations.ts` |
+| `STORE_PERSIST_VERSION`   | **117**       | Migrations in `wallpaperStoreMigrations.ts` |
 | `PROJECT_SCHEMA_VERSION`  | 1             |                                             |
 | `SETTINGS_SCHEMA_VERSION` | 1             |                                             |
 
@@ -196,6 +196,7 @@ Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 | v114    | `showAutoZoomDebug` coverage-overlay debug flag                         |
 | v115    | `sceneServiceBaseUrl` (AI scene-intent service location)                |
 | v116    | Keep-Covered unconditional; `imageCoverageLockEnabled` removed          |
+| v117    | `imageFramingManualEnabled`: manual framing switch (coverage math off)  |
 
 ---
 

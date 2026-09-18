@@ -126,6 +126,7 @@ export type WallpaperStore = WallpaperState & {
 	captureImageRainOverride: () => void;
 	captureImageLooksOverride: () => void;
 	setImageFitMode: (v: ImageFitMode) => void;
+	setImageFramingManualEnabled: (v: boolean) => void;
 	setImageMirror: (v: boolean) => void;
 	setImageMirrorFill: (v: boolean) => void;
 	setImageMirrorFillInvert: (v: boolean) => void;

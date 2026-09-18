@@ -32,6 +32,7 @@ const baseSnapshot = {
 	positionX: 0,
 	positionY: 0,
 	fitMode: 'cover' as const,
+	keepCovered: true,
 	focusX: null,
 	focusY: null,
 	mirror: false,

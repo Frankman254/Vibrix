@@ -107,7 +107,7 @@ export default function BackgroundTab({
 		layoutReferenceHeight: store.layoutReferenceHeight,
 		mirror: store.imageMirror,
 		rotation: store.imageRotation,
-		keepCovered: true,
+		keepCovered: !store.imageFramingManualEnabled,
 		focusX: store.imageFocusX,
 		focusY: store.imageFocusY,
 		mirrorFill: store.imageMirrorFill,
@@ -268,6 +268,7 @@ export default function BackgroundTab({
 					activeImageIndex={activeImageIndex}
 					imageCount={visibleBackgroundImages.length}
 					imageFitMode={store.imageFitMode}
+					imageFramingManualEnabled={store.imageFramingManualEnabled}
 					imageScale={store.imageScale}
 					imagePositionX={store.imagePositionX}
 					imagePositionY={store.imagePositionY}
@@ -376,6 +377,9 @@ export default function BackgroundTab({
 						);
 					}}
 					calculatedSwitchAt={calculatedSwitchAt}
+					onChangeFramingManualEnabled={
+						store.setImageFramingManualEnabled
+					}
 					onCoverFitCurrent={() =>
 						void store.autoCoverFitActiveImage()
 					}

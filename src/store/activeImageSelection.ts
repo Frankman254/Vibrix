@@ -215,7 +215,7 @@ export function buildAutoZoomPatch(
 
 /**
  * Keep Covered refit of the active image for a viewport, or `null` when it
- * does not apply (hand-tuned framing, already fitted). The hand-tuned guard
+ * does not apply (manual framing mode, hand-tuned framing, already fitted). The hand-tuned guard
  * (`coverageFramingEdited`) is provenance set by the user's manual framing;
  * the explicit Cover Fit buttons clear it because they ARE the deliberate
  * recalculation.
@@ -225,6 +225,9 @@ export function buildCoveredAutoFitPatch(
 	imageSize: { width: number; height: number },
 	viewport: { width: number; height: number }
 ): Partial<WallpaperState> | null {
+	// Manual framing: the coverage math is off, so nothing refits behind the
+	// user's back. The renderer skips the clamp for the same reason.
+	if (state.imageFramingManualEnabled) return null;
 	if (!state.activeImageId) return null;
 	// A hand-tuned composition is the user's intent: never machine-overwrite
 	// it on image switch / viewport change.

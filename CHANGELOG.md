@@ -15,6 +15,19 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Fondo: switch de Encuadre Manual (store v117)
+
+- Nueva clave persistida `imageFramingManualEnabled` (default `false`). Con el
+  switch **Encuadre Manual** encendido se apagan todos los cálculos internos:
+  el piso de escala de AutoZoom, el clamp keep-covered del renderer, el
+  preview del editor y el refit pasivo por cambio de imagen/viewport. La
+  escala y la posición son exactamente las que escribe el usuario, aunque la
+  pantalla quede sin cubrir.
+- Al apagarlo vuelven los cálculos **y la imagen activa se reencuadra sola**
+  (Cover Fit exacto), sin esperar al siguiente resize.
+- Motivo: con la cobertura incondicional algunas imágenes quedaban con
+  demasiado zoom y no había forma de corregirlo a mano.
+
 ### Fondo: cubrir pantalla deja de ser un switch (store v116)
 
 - `keepCovered` entra **unconditional** al resolve del transform: ningún
@@ -546,7 +559,7 @@ pliega el look Custom legacy dentro del banco normal de slots y traduce la
 selección. El campo legacy se queda en el esquema para que los proyectos
 exportados antes sigan importándose.
 
-`STORE_PERSIST_VERSION` is at **116**; `PROJECT_SCHEMA_VERSION` and `SETTINGS_SCHEMA_VERSION` remain at **1**. `APP_VERSION` / `package.json`: **0.3.0-alpha.1**.
+`STORE_PERSIST_VERSION` is at **117**; `PROJECT_SCHEMA_VERSION` and `SETTINGS_SCHEMA_VERSION` remain at **1**. `APP_VERSION` / `package.json`: **0.3.0-alpha.1**.
 
 ---
 

@@ -28,6 +28,7 @@ function getScreenAspect(): number {
 export default function InteractiveImagePreview({
 	imageUrl,
 	fitMode,
+	keepCovered,
 	scale,
 	positionX,
 	positionY,
@@ -49,6 +50,8 @@ export default function InteractiveImagePreview({
 }: {
 	imageUrl: string;
 	fitMode: Parameters<typeof BgFitModeSelector>[0]['value'];
+	/** False in manual framing mode: the preview drops the coverage clamp too. */
+	keepCovered: boolean;
 	scale: number;
 	positionX: number;
 	positionY: number;
@@ -114,7 +117,7 @@ export default function InteractiveImagePreview({
 		positionY,
 		fitMode,
 		mirror,
-		keepCovered: true,
+		keepCovered,
 		focusX,
 		focusY,
 		mirrorFill,

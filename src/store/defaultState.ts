@@ -84,6 +84,7 @@ export const DEFAULT_STATE: WallpaperState = {
 	imageAudioChannel: 'kick',
 	backgroundProfileSlots: createDefaultBackgroundProfileSlots(),
 	imageFitMode: 'contain',
+	imageFramingManualEnabled: false,
 	imageMirror: false,
 	imageMirrorFill: false,
 	imageMirrorFillInvert: false,

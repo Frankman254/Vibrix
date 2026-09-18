@@ -7,6 +7,7 @@ type BackgroundPositionRanges = ReturnType<typeof useBackgroundPositionRanges>;
 type CoveredStore = Pick<
 	BackgroundStore,
 	| 'imageFitMode'
+	| 'imageFramingManualEnabled'
 	| 'imageMirrorFill'
 	| 'imagePositionX'
 	| 'imagePositionY'
@@ -24,19 +25,25 @@ function clampToRange(value: number, range: { min: number; max: number }) {
 }
 
 /**
- * Coverage is unconditional: the draw side ALWAYS clamps to the covered
- * composition (`resolveImageTransform` keepCovered=true), so every UI edit
- * goes through the same clamp. Persisting a transform the renderer would
- * immediately overwrite would desync editor state from pixels.
+ * Coverage is the default: the draw side clamps to the covered composition
+ * (`resolveImageTransform` keepCovered=true), so every UI edit goes through
+ * the same clamp. Persisting a transform the renderer would immediately
+ * overwrite would desync editor state from pixels.
+ *
+ * Manual framing (`imageFramingManualEnabled`) turns the whole thing off:
+ * the renderer skips the clamp too, so the sliders write what the user typed
+ * and nothing snaps back.
  */
 export function useCoveredImageTransform(
 	store: CoveredStore,
 	activeImagePositionRanges: BackgroundPositionRanges
 ) {
+	const manual = store.imageFramingManualEnabled;
+
 	function handleChangeScale(value: number) {
 		store.setActiveImageFramingEdited(true);
 		store.setImageScale(
-			activeImagePositionRanges.ready
+			!manual && activeImagePositionRanges.ready
 				? Math.max(value, activeImagePositionRanges.minScale)
 				: value
 		);
@@ -45,7 +52,7 @@ export function useCoveredImageTransform(
 	function handleChangePositionX(value: number) {
 		store.setActiveImageFramingEdited(true);
 		store.setImagePositionX(
-			activeImagePositionRanges.ready
+			!manual && activeImagePositionRanges.ready
 				? clampToRange(value, {
 						min: activeImagePositionRanges.coverageBounds.minX,
 						max: activeImagePositionRanges.coverageBounds.maxX
@@ -57,7 +64,7 @@ export function useCoveredImageTransform(
 	function handleChangePositionY(value: number) {
 		store.setActiveImageFramingEdited(true);
 		store.setImagePositionY(
-			activeImagePositionRanges.ready
+			!manual && activeImagePositionRanges.ready
 				? clampToRange(value, {
 						min: activeImagePositionRanges.coverageBounds.minY,
 						max: activeImagePositionRanges.coverageBounds.maxY
@@ -67,6 +74,7 @@ export function useCoveredImageTransform(
 	}
 
 	const normalizeCoveredTransform = useCallback(() => {
+		if (store.imageFramingManualEnabled) return;
 		if (!activeImagePositionRanges.ready) return;
 		const { minScale, coverageBounds } = activeImagePositionRanges;
 		const nextScale = Math.max(store.imageScale, minScale);
@@ -94,14 +102,14 @@ export function useCoveredImageTransform(
 	const pendingCoverageSnap = useRef(false);
 	function handleToggleMirrorFill(enabled: boolean) {
 		store.setImageMirrorFill(enabled);
-		if (enabled) {
+		if (enabled && !manual) {
 			pendingCoverageSnap.current = true;
 		}
 	}
 	function handleChangeFitMode(value: CoveredStore['imageFitMode']) {
 		store.setActiveImageFramingEdited(true);
 		store.setImageFitMode(value);
-		pendingCoverageSnap.current = true;
+		if (!manual) pendingCoverageSnap.current = true;
 	}
 	useEffect(() => {
 		if (!pendingCoverageSnap.current) return;

@@ -1228,6 +1228,11 @@ export const es: Record<TranslationKey, string> = {
 	label_time_font_size: 'Tamano del Tiempo',
 	label_letter_spacing: 'Espaciado entre Letras',
 	label_title_width: 'Ancho del Titulo',
+	label_manual_framing: 'Encuadre Manual',
+	hint_manual_framing_on:
+		'Modo manual: la escala y la posicion son exactamente las que pongas aqui. Nada reencuadra la imagen y la pantalla puede quedar sin cubrir del todo.',
+	hint_manual_framing_off:
+		'Modo automatico: la imagen se mantiene cubriendo toda la pantalla, asi que la escala no baja del minimo de cobertura. Activa esto para editar los valores a voluntad.',
 	label_cover_fit: 'Cover Fit',
 	hint_cover_fit:
 		'Ajusta el encuadre a la escala exacta que mantiene toda la pantalla cubierta con la composicion actual. El modo de ajuste y el punto de foco quedan como estan.',
