@@ -15,6 +15,21 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Export de vídeo: el render sobrevive al cambio de pestaña (store v118)
+
+- La exportación offline ya no vive en el estado del componente. Pasa a un
+  runtime de módulo (`features/export/video/offlineVideoExportRuntime`): salir
+  de la pestaña Export ya **no aborta el encoder** ni borra el estado, y al
+  volver el panel muestra el progreso real del run en curso.
+- Barra global de progreso arriba del todo del editor
+  (`components/app/OfflineExportProgressBar`), con porcentaje, fase/ETA y
+  botón de cancelar, para poder seguir editando sin perder de vista el render.
+  Al terminar muestra el archivo guardado (o el error) hasta que se cierra.
+- Nuevas claves persistidas `offlineExportResolutionId` y `offlineExportFps`:
+  la resolución y los fps elegidos se quedan puestos hasta que se cambien, en
+  vez de volver a 1080p/30 en cada visita. La migración v118 escribe esos
+  mismos valores históricos en proyectos anteriores.
+
 ### Fondo: switch de Encuadre Manual (store v117)
 
 - Nueva clave persistida `imageFramingManualEnabled` (default `false`). Con el
@@ -559,7 +574,7 @@ pliega el look Custom legacy dentro del banco normal de slots y traduce la
 selección. El campo legacy se queda en el esquema para que los proyectos
 exportados antes sigan importándose.
 
-`STORE_PERSIST_VERSION` is at **117**; `PROJECT_SCHEMA_VERSION` and `SETTINGS_SCHEMA_VERSION` remain at **1**. `APP_VERSION` / `package.json`: **0.3.0-alpha.1**.
+`STORE_PERSIST_VERSION` is at **118**; `PROJECT_SCHEMA_VERSION` and `SETTINGS_SCHEMA_VERSION` remain at **1**. `APP_VERSION` / `package.json`: **0.3.0-alpha.1**.
 
 ---
 

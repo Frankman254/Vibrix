@@ -1,50 +1,27 @@
-import { useEffect, useRef, useState } from 'react';
-import { loadImageBlob } from '@/lib/db/imageDb';
+import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import { useWallpaperStore } from '@/store/wallpaperStore';
 import type { OfflineExportAudioAssetRef } from '@/features/export/offlineExportPlanner';
-import {
-	OFFLINE_EXPORT_RESOLUTION_PRESETS,
-	type OfflineExportFps,
-	type OfflineExportResolutionPresetId
-} from '@/features/export/offlineExportTypes';
-import {
-	openOfflineAudioTrack,
-	type OfflineAudioTrack
-} from '@/features/export/video/offlineAudioTrack';
-import {
-	buildDescriptiveExportFileName,
-	downloadBlobFallback,
-	type ExportNamingState
-} from '@/features/export/exportFileUtils';
+import { OFFLINE_EXPORT_RESOLUTION_PRESETS } from '@/features/export/offlineExportTypes';
+import type { ExportNamingState } from '@/features/export/exportFileUtils';
 import type { RenderSubsystem } from '@/features/export/renderSubsystem';
+import { mediabunnyCodecProbe } from '@/features/export/video/offlineVideoEncoder';
 import {
-	createCountingWritable,
-	createCancellableFileWritable,
-	mediabunnyCodecProbe,
-	type OfflineVideoSink
-} from '@/features/export/video/offlineVideoEncoder';
-import {
-	estimateOfflineVideoBytes,
 	resolveOfflineVideoFormat,
-	type OfflineVideoExportProgress,
 	type OfflineVideoFormat
 } from '@/features/export/video/offlineVideoFormat';
 import {
-	createOpfsVideoSink,
-	OfflineStorageError,
-	type OpfsVideoSink
-} from '@/features/export/video/offlineOpfsSink';
-import { runOfflineVideoExport } from '@/features/export/video/runOfflineVideoExport';
+	cancelOfflineVideoExport,
+	getOfflineVideoExportSnapshot,
+	isOfflineVideoExportBusyPhase,
+	startOfflineVideoExport,
+	subscribeOfflineVideoExport
+} from '@/features/export/video/offlineVideoExportRuntime';
 
-type SavePicker = (options: {
-	suggestedName: string;
-	types: { description: string; accept: Record<string, string[]> }[];
-}) => Promise<FileSystemFileHandle>;
-
-/**
- * Largest file the no-picker/no-OPFS path may keep in RAM. Beyond this the
- * browser throws while finalizing; the encoder was never asked to try.
- */
-const BUFFER_FALLBACK_MAX_BYTES = 500 * 1024 * 1024;
+export type {
+	OfflineStorageHint,
+	OfflineVideoExportError
+} from '@/features/export/video/offlineVideoExportRuntime';
 
 type UseOfflineVideoExportArgs = {
 	offlineAudioAsset: OfflineExportAudioAssetRef | null;
@@ -56,38 +33,6 @@ type UseOfflineVideoExportArgs = {
 	canExport: boolean;
 };
 
-export type OfflineVideoExportError =
-	| 'no-audio'
-	| 'no-encoder'
-	| 'audio-not-found'
-	| 'insufficient-storage'
-	| 'failed';
-
-/** Numbers behind an 'insufficient-storage' error, for the honest error line. */
-export type OfflineStorageHint = {
-	neededBytes: number;
-	freeBytes: number | null;
-};
-
-const IDLE_PROGRESS: OfflineVideoExportProgress = {
-	phase: 'idle',
-	frameIndex: 0,
-	frameCount: 0,
-	ratio: 0,
-	elapsedMs: 0,
-	etaMs: null
-};
-
-function getSavePicker(): SavePicker | null {
-	const picker = (window as Window & { showSaveFilePicker?: SavePicker })
-		.showSaveFilePicker;
-	return typeof picker === 'function' ? picker.bind(window) : null;
-}
-
-function isAbortError(error: unknown): boolean {
-	return error instanceof DOMException && error.name === 'AbortError';
-}
-
 export function useOfflineVideoExport({
 	offlineAudioAsset,
 	exportNamingState,
@@ -97,20 +42,26 @@ export function useOfflineVideoExport({
 	extraSubsystems,
 	canExport
 }: UseOfflineVideoExportArgs) {
-	const [resolutionId, setResolutionId] =
-		useState<OfflineExportResolutionPresetId>('1080p');
-	const [fps, setFps] = useState<OfflineExportFps>(30);
-	const [storageHint, setStorageHint] = useState<OfflineStorageHint | null>(
-		null
+	// Resolution and fps are a standing preference, not a per-visit choice:
+	// they live in the persisted store so a reload (or a tab switch) keeps
+	// whatever the user picked last.
+	const { resolutionId, fps, setResolutionId, setFps } = useWallpaperStore(
+		useShallow(state => ({
+			resolutionId: state.offlineExportResolutionId,
+			fps: state.offlineExportFps,
+			setResolutionId: state.setOfflineExportResolutionId,
+			setFps: state.setOfflineExportFps
+		}))
 	);
 	const [format, setFormat] = useState<OfflineVideoFormat | null>(null);
 	const [formatChecked, setFormatChecked] = useState(false);
-	const [progress, setProgress] =
-		useState<OfflineVideoExportProgress>(IDLE_PROGRESS);
-	const [savedFileName, setSavedFileName] = useState('');
-	const [savedFileBytes, setSavedFileBytes] = useState<number | null>(null);
-	const [error, setError] = useState<OfflineVideoExportError | null>(null);
-	const abortRef = useRef<AbortController | null>(null);
+	// The run itself lives outside React (see offlineVideoExportRuntime): the
+	// Export tab unmounts whenever the user looks at anything else.
+	const run = useSyncExternalStore(
+		subscribeOfflineVideoExport,
+		getOfflineVideoExportSnapshot,
+		getOfflineVideoExportSnapshot
+	);
 
 	const resolution =
 		OFFLINE_EXPORT_RESOLUTION_PRESETS.find(
@@ -137,176 +88,21 @@ export function useOfflineVideoExport({
 		};
 	}, [resolution.width, resolution.height]);
 
-	useEffect(() => () => abortRef.current?.abort(), []);
+	const busy = isOfflineVideoExportBusyPhase(run.progress.phase);
 
-	const busy =
-		progress.phase === 'preparing' ||
-		progress.phase === 'decoding' ||
-		progress.phase === 'rendering' ||
-		progress.phase === 'finalizing';
-
-	async function startExport() {
-		if (busy) return;
-		setError(null);
-		setStorageHint(null);
-		setSavedFileName('');
-		setSavedFileBytes(null);
-		if (!offlineAudioAsset) {
-			setError('no-audio');
-			return;
-		}
-		if (!format) {
-			setError('no-encoder');
-			return;
-		}
-
-		const fileName = buildDescriptiveExportFileName({
-			kind: 'recording',
-			state: exportNamingState,
-			extension: format.extension,
-			fps: String(fps)
+	function startExport() {
+		void startOfflineVideoExport({
+			offlineAudioAsset,
+			exportNamingState,
+			trackTitle,
+			fftSize,
+			audioSmoothing,
+			extraSubsystems,
+			format,
+			width: resolution.width,
+			height: resolution.height,
+			fps
 		});
-		const controller = new AbortController();
-		let finalizing = false;
-		let sink = { kind: 'buffer' } as OfflineVideoSink;
-		let opfs: OpfsVideoSink | null = null;
-		// Real bytes the muxer pushed; shown in the done line so a gigabyte
-		// export reports its size without opening the folder.
-		const written = { bytes: 0 };
-		let audioTrack: OfflineAudioTrack | null = null;
-		// (crashed-run cleanup happens inside createOpfsVideoSink, awaited
-		// before its quota check so the numbers it reads are current.)
-
-		const picker = getSavePicker();
-		if (picker) {
-			try {
-				const handle = await picker({
-					suggestedName: fileName,
-					types: [
-						{
-							description: 'Video',
-							accept: {
-								[format.mimeType]: [`.${format.extension}`]
-							}
-						}
-					]
-				});
-				const file = await handle.createWritable();
-				sink = {
-					kind: 'stream',
-					writable: createCountingWritable(
-						createCancellableFileWritable(file, () => !finalizing),
-						written
-					)
-				};
-			} catch (pickerError) {
-				if (isAbortError(pickerError)) return;
-				// No usable picker (permissions, iframe): disk via OPFS below.
-			}
-		}
-
-		abortRef.current = controller;
-		setProgress({ ...IDLE_PROGRESS, phase: 'preparing' });
-
-		try {
-			const blob = await loadImageBlob(offlineAudioAsset.assetId);
-			if (!blob) throw new Error('audio-asset-not-found');
-			controller.signal.throwIfAborted();
-			setProgress({ ...IDLE_PROGRESS, phase: 'decoding' });
-			// Opens metadata + decoder only: no samples are held before the
-			// frame loop pumps them, so a 3-hour mix never hits RAM at once.
-			audioTrack = await openOfflineAudioTrack(blob, {
-				fftSize,
-				feedsEncoder: true
-			});
-			controller.signal.throwIfAborted();
-
-			if (sink.kind === 'buffer') {
-				const estimatedBytes = estimateOfflineVideoBytes({
-					width: resolution.width,
-					height: resolution.height,
-					fps,
-					durationSec: audioTrack.durationSec
-				});
-				// No picker (Brave, Firefox): stream to disk instead of RAM;
-				// BufferTarget stays the last resort for small files only.
-				opfs = await createOpfsVideoSink({
-					fileName,
-					estimatedBytes,
-					isCancelled: () => !finalizing
-				});
-				if (opfs) {
-					sink = {
-						kind: 'stream',
-						writable: createCountingWritable(opfs.writable, written)
-					};
-				} else if (estimatedBytes > BUFFER_FALLBACK_MAX_BYTES) {
-					setStorageHint({
-						neededBytes: estimatedBytes,
-						freeBytes: null
-					});
-					throw new Error('insufficient-storage');
-				}
-			}
-			const result = await runOfflineVideoExport({
-				audioTrack,
-				format,
-				sink,
-				width: resolution.width,
-				height: resolution.height,
-				fps,
-				trackTitle,
-				fftSize,
-				audioSmoothing,
-				extraSubsystems,
-				abortSignal: controller.signal,
-				onProgress: next => {
-					if (next.phase === 'finalizing') finalizing = true;
-					setProgress(next);
-				}
-			});
-
-			if (opfs) await opfs.download(fileName);
-			else if (result.blob) downloadBlobFallback(result.blob, fileName);
-			setSavedFileName(fileName);
-			setSavedFileBytes(
-				result.blob ? result.blob.size : written.bytes || null
-			);
-		} catch (exportError) {
-			if (controller.signal.aborted || isAbortError(exportError)) {
-				setProgress({ ...IDLE_PROGRESS, phase: 'cancelled' });
-			} else {
-				setProgress({ ...IDLE_PROGRESS, phase: 'error' });
-				const message =
-					exportError instanceof Error ? exportError.message : '';
-				if (exportError instanceof OfflineStorageError) {
-					setStorageHint({
-						neededBytes: exportError.neededBytes,
-						freeBytes: exportError.freeBytes
-					});
-				}
-				setError(
-					message === 'audio-asset-not-found'
-						? 'audio-not-found'
-						: message === 'insufficient-storage'
-							? 'insufficient-storage'
-							: 'failed'
-				);
-				console.error('[offline-export]', exportError);
-			}
-			if (opfs) {
-				await opfs.discard();
-			} else if (sink.kind === 'stream') {
-				await sink.writable.abort().catch(() => undefined);
-			}
-		} finally {
-			audioTrack?.dispose();
-			abortRef.current = null;
-		}
-	}
-
-	function cancelExport() {
-		abortRef.current?.abort();
 	}
 
 	return {
@@ -316,14 +112,14 @@ export function useOfflineVideoExport({
 		setFps,
 		format,
 		formatChecked,
-		progress,
-		error,
-		storageHint,
-		savedFileName,
-		savedFileBytes,
+		progress: run.progress,
+		error: run.error,
+		storageHint: run.storageHint,
+		savedFileName: run.savedFileName,
+		savedFileBytes: run.savedFileBytes,
 		busy,
 		canStart: canExport && !busy && Boolean(format) && formatChecked,
 		startExport,
-		cancelExport
+		cancelExport: cancelOfflineVideoExport
 	};
 }

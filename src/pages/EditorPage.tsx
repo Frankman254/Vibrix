@@ -8,6 +8,7 @@ import { useWindowPresentationControls } from '@/hooks/useWindowPresentationCont
 import OutputModeDevDiagnostics from '@/components/app/OutputModeDevDiagnostics';
 import { useRuntimeUiMode } from '@/runtime/useRuntimeUiMode';
 import StoragePersistenceNotice from '@/components/app/StoragePersistenceNotice';
+import OfflineExportProgressBar from '@/components/app/OfflineExportProgressBar';
 
 export default function EditorPage() {
 	const [panelOpen, setPanelOpen] = useState(false);
@@ -40,6 +41,7 @@ export default function EditorPage() {
 				onForceClose={() => void toggleMiniPlayer()}
 			/>
 			<DragModeOverlay />
+			<OfflineExportProgressBar />
 			<StoragePersistenceNotice />
 			{import.meta.env.DEV && isEditMode ? (
 				<OutputModeDevDiagnostics

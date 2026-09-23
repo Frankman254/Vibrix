@@ -92,6 +92,8 @@ export const DEFAULT_STATE: WallpaperState = {
 	imageRotation: 0,
 	showBackgroundScaleMeter: false,
 	showAutoZoomDebug: false,
+	offlineExportResolutionId: '1080p',
+	offlineExportFps: 30,
 	showSpectrumDiagnosticsHud: false,
 	showLogoDiagnosticsHud: false,
 	diagnosticsHudPositionX: 0.02,

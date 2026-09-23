@@ -1,11 +1,16 @@
-import type { AudioSourceMode } from '@/types/wallpaper';
+import type {
+	AudioSourceMode,
+	OfflineExportFps,
+	OfflineExportResolutionPresetId
+} from '@/types/wallpaper';
+
+export type { OfflineExportFps, OfflineExportResolutionPresetId };
 
 export const OFFLINE_EXPORT_ARCHITECTURE_VERSION = 1;
 
-export const OFFLINE_EXPORT_FPS_OPTIONS = [30, 60, 120] as const;
-export type OfflineExportFps = (typeof OFFLINE_EXPORT_FPS_OPTIONS)[number];
-
-export type OfflineExportResolutionPresetId = '720p' | '1080p' | '1440p' | '4k';
+export const OFFLINE_EXPORT_FPS_OPTIONS = [
+	30, 60, 120
+] as const satisfies readonly OfflineExportFps[];
 
 export type OfflineExportResolutionPreset = {
 	id: OfflineExportResolutionPresetId;

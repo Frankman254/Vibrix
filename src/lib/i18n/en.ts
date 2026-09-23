@@ -905,6 +905,9 @@ export const en = {
 	offline_phase_finalizing: 'Finalizing file...',
 	offline_phase_cancelled: 'Export cancelled. No file was kept.',
 	offline_eta: '{time} left',
+	offline_global_title: 'Exporting video',
+	offline_global_finished: 'Video export',
+	offline_global_dismiss: 'Hide export notice',
 	offline_done: 'Saved {name}',
 	offline_done_size: 'Saved {name} ({size})',
 	offline_error_no_encoder:

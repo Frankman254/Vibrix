@@ -911,6 +911,9 @@ export const es: Record<TranslationKey, string> = {
 	offline_phase_cancelled:
 		'Exportación cancelada. No se guardó ningún archivo.',
 	offline_eta: 'quedan {time}',
+	offline_global_title: 'Exportando vídeo',
+	offline_global_finished: 'Exportación de vídeo',
+	offline_global_dismiss: 'Ocultar aviso de exportación',
 	offline_done: 'Guardado {name}',
 	offline_done_size: 'Guardado {name} ({size})',
 	offline_error_no_encoder:

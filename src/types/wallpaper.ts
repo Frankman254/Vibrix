@@ -2,6 +2,11 @@ import type { CustomPresetsMap } from './presets';
 import type { AudioLyricsTrackEntry } from '@/features/lyrics/domain/types';
 
 export type PerformanceMode = 'low' | 'medium' | 'high';
+/** Offline video export profile. The presets that carry the pixel sizes live
+ *  in `features/export/offlineExportTypes`; the vocabulary lives here so the
+ *  persisted store can name them without importing a feature. */
+export type OfflineExportFps = 30 | 60 | 120;
+export type OfflineExportResolutionPresetId = '720p' | '1080p' | '1440p' | '4k';
 export type UIMode = 'simple' | 'advanced';
 export type LogoVariantMode = 'vector' | 'pixel' | 'auto';
 export type ActiveTool =
@@ -1669,6 +1674,11 @@ export type WallpaperState = {
 	layoutReferenceHeight: number;
 	/** Persisted collapsed state for the editor shell sidebar. */
 	editorSidebarCollapsed: boolean;
+
+	// Offline video export — standing output preferences. The run itself is not
+	// store state (see features/export/video/offlineVideoExportRuntime).
+	offlineExportResolutionId: OfflineExportResolutionPresetId;
+	offlineExportFps: OfflineExportFps;
 
 	// System
 	performanceMode: PerformanceMode;

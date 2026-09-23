@@ -3037,6 +3037,12 @@ export function migrateWallpaperStore(
 		// Manual framing is opt-in: existing projects keep the coverage math.
 		migratedState.imageFramingManualEnabled ??= false;
 	}
+	if (fromVersion < 118) {
+		// The export profile used to be component state, so nothing was
+		// stored; the historical defaults become the persisted ones.
+		migratedState.offlineExportResolutionId ??= '1080p';
+		migratedState.offlineExportFps ??= 30;
+	}
 
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;
 }
