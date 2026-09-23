@@ -15,6 +15,22 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Export: el Now Playing ya no se acelera con el render en vivo
+
+- Los offsets del marquee del título (widget y modo libre) vivían en globales
+  de módulo compartidas entre el canvas en vivo y el export. Mientras se
+  renderizaba el vídeo, el bucle rAF de pantalla seguía avanzando **el mismo**
+  offset con deltas de reloj real: cada fotograma exportado recibía su delta
+  (1/fps) _más_ todo el tiempo real transcurrido, así que el texto corría
+  mucho más rápido y daba saltos. Al entrar el modo reposo (o al ocultarse la
+  pestaña) el bucle en vivo se paraba y el vídeo se estabilizaba solo.
+- Ahora hay un `TrackTitleScope` (mismo patrón que `LogoScope` /
+  `SpectrumScope`): el export crea el suyo por run y los componentes en vivo
+  usan el scope LIVE. Medido: 60 fotogramas a dt=1/60 dan offset 146 px con y
+  sin un bucle en vivo dibujando en paralelo; compartiendo runtime daban 1022.
+- Se scopean también los canvas de texto cacheados, que antes se invalidaban
+  mutuamente entre el tamaño de pantalla y el del export.
+
 ### Export de vídeo: el render sobrevive al cambio de pestaña (store v118)
 
 - La exportación offline ya no vive en el estado del componente. Pasa a un

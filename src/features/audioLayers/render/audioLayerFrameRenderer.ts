@@ -15,6 +15,7 @@ import { drawOverlayLayer } from '@/features/audioLayers/render/overlayLayerRegi
 import type { LogoScope } from '@/features/logo';
 import type { SpectrumScope } from '@/features/spectrum';
 import type { FlashEdgeScope } from '@/features/stageFx/flashEdgeDrive';
+import type { TrackTitleScope } from '@/features/audioLayers/render/trackTitleScope';
 import {
 	drawFilmNoise,
 	drawRgbShift,
@@ -49,6 +50,7 @@ export type AudioLayerFrameRenderInput = {
 	logoScope?: LogoScope;
 	spectrumScope?: SpectrumScope;
 	flashEdge?: FlashEdgeScope;
+	trackTitleScope?: TrackTitleScope;
 };
 
 function isRenderableAudioLayer(
@@ -151,7 +153,8 @@ export function renderAudioLayerFrame(
 		trackDuration: input.trackDuration,
 		logoScope: input.logoScope,
 		spectrumScope: input.spectrumScope,
-		flashEdge: input.flashEdge
+		flashEdge: input.flashEdge,
+		trackTitleScope: input.trackTitleScope
 	};
 	const filterActive = isFilterTargetActive(
 		nextLayer,

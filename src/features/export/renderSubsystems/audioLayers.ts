@@ -99,7 +99,8 @@ function makeAudioLayerSubsystem(
 					frameState: surface.frameState,
 					logoScope: ctx.scope?.logo,
 					spectrumScope: ctx.scope?.spectrum,
-					flashEdge: ctx.scope?.flashEdge
+					flashEdge: ctx.scope?.flashEdge,
+					trackTitleScope: ctx.scope?.trackTitle
 				});
 				target.drawImage(surface.canvas, 0, 0);
 			}

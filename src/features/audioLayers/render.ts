@@ -38,4 +38,10 @@ export type {
 	NowPlayingData,
 	NowPlayingWidgetSettings
 } from './render/nowPlayingWidget';
+export {
+	createTrackTitleScope,
+	resetTrackTitleScope,
+	LIVE_TRACK_TITLE_SCOPE
+} from './render/trackTitleScope';
+export type { TrackTitleScope } from './render/trackTitleScope';
 export { getCoverImage, clearCoverImageCache } from './render/coverImageCache';

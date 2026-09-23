@@ -13,6 +13,12 @@ import {
 	createOffscreenCanvas,
 	getTextRenderScale
 } from '@/lib/canvasText/textRenderCache';
+import {
+	LIVE_TRACK_TITLE_SCOPE,
+	resetTrackTextRuntime,
+	type TrackTextRuntime,
+	type TrackTitleScope
+} from '@/features/audioLayers/render/trackTitleScope';
 
 export type { NowPlayingData };
 
@@ -92,39 +98,6 @@ type TrackTitleSettings = SharedTrackDetailsSettings &
 		| 'audioTrackTimeFilterBlur'
 		| 'audioTrackTimeFilterHueRotate'
 	>;
-
-type TextRuntime = {
-	offset: number;
-	lastText: string;
-	cacheKey: string;
-	renderedCanvas: HTMLCanvasElement | null;
-	measuredWidth: number;
-	canvasPaddingX: number;
-	logicalCanvasWidth: number;
-	logicalCanvasHeight: number;
-};
-
-const titleRuntime: TextRuntime = {
-	offset: 0,
-	lastText: '',
-	cacheKey: '',
-	renderedCanvas: null,
-	measuredWidth: 0,
-	canvasPaddingX: 0,
-	logicalCanvasWidth: 0,
-	logicalCanvasHeight: 0
-};
-
-const timeRuntime: TextRuntime = {
-	offset: 0,
-	lastText: '',
-	cacheKey: '',
-	renderedCanvas: null,
-	measuredWidth: 0,
-	canvasPaddingX: 0,
-	logicalCanvasWidth: 0,
-	logicalCanvasHeight: 0
-};
 
 function clamp(value: number, min: number, max: number): number {
 	return Math.min(max, Math.max(min, value));
@@ -320,7 +293,7 @@ function renderTextToCache(
 	lineSettings: TextLineSettings,
 	letterSpacing: number,
 	rgbShiftPx: number,
-	runtime: TextRuntime
+	runtime: TrackTextRuntime
 ) {
 	const glyphs = Array.from(text);
 	const measureCanvas = createOffscreenCanvas(8, 8);
@@ -431,17 +404,6 @@ function renderTextToCache(
 	runtime.logicalCanvasHeight = logicalHeight;
 }
 
-function resetRuntime(runtime: TextRuntime) {
-	runtime.offset = 0;
-	runtime.lastText = '';
-	runtime.cacheKey = '';
-	runtime.renderedCanvas = null;
-	runtime.measuredWidth = 0;
-	runtime.canvasPaddingX = 0;
-	runtime.logicalCanvasWidth = 0;
-	runtime.logicalCanvasHeight = 0;
-}
-
 function roundCanvasPosition(value: number): number {
 	return Math.round(value * 2) / 2;
 }
@@ -500,7 +462,7 @@ function drawTextLine({
 	ctx: CanvasRenderingContext2D;
 	canvas: HTMLCanvasElement;
 	text: string;
-	runtime: TextRuntime;
+	runtime: TrackTextRuntime;
 	settings: TextLineSettings;
 	centerX: number;
 	centerY: number;
@@ -690,11 +652,12 @@ export function drawTrackTitleOverlay(
 	currentTime: number,
 	duration: number,
 	dt: number,
-	settings: TrackTitleSettings
+	settings: TrackTitleSettings,
+	scope: TrackTitleScope = LIVE_TRACK_TITLE_SCOPE
 ): void {
 	if (settings.nowPlayingMode === 'widget') {
-		resetRuntime(titleRuntime);
-		resetRuntime(timeRuntime);
+		resetTrackTextRuntime(scope.overlayTitle);
+		resetTrackTextRuntime(scope.overlayTime);
 		drawNowPlayingWidget(
 			ctx,
 			canvas,
@@ -702,7 +665,8 @@ export function drawTrackTitleOverlay(
 			currentTime,
 			duration,
 			dt,
-			settings
+			settings,
+			scope
 		);
 		return;
 	}
@@ -722,8 +686,8 @@ export function drawTrackTitleOverlay(
 	const showTitle = settings.audioTrackTitleEnabled && cleanTitle.length > 0;
 	const showTime = settings.audioTrackTimeEnabled && timeText.length > 0;
 
-	if (!showTitle) resetRuntime(titleRuntime);
-	if (!showTime) resetRuntime(timeRuntime);
+	if (!showTitle) resetTrackTextRuntime(scope.overlayTitle);
+	if (!showTime) resetTrackTextRuntime(scope.overlayTime);
 	if (!showTitle && !showTime) return;
 
 	const titleWidthRatio = clamp(settings.audioTrackTitleWidth, 0.2, 1);
@@ -791,7 +755,7 @@ export function drawTrackTitleOverlay(
 			ctx,
 			canvas,
 			text: cleanTitle,
-			runtime: titleRuntime,
+			runtime: scope.overlayTitle,
 			settings: titleLineSettings,
 			centerX: titleCenterX,
 			centerY: titleCenterY,
@@ -809,7 +773,7 @@ export function drawTrackTitleOverlay(
 			ctx,
 			canvas,
 			text: timeText,
-			runtime: timeRuntime,
+			runtime: scope.overlayTime,
 			settings: timeLineSettings,
 			centerX: timeCenterX,
 			centerY: timeCenterY,

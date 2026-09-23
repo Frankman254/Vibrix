@@ -29,18 +29,25 @@ import {
 	createFlashEdgeScope,
 	type FlashEdgeScope
 } from '@/features/stageFx/flashEdgeDrive';
+import {
+	createTrackTitleScope,
+	resetTrackTitleScope,
+	type TrackTitleScope
+} from '@/features/audioLayers/render';
 
 export type RenderScope = {
 	spectrum: SpectrumScope;
 	logo: LogoScope;
 	flashEdge: FlashEdgeScope;
+	trackTitle: TrackTitleScope;
 };
 
 export function createRenderScope(): RenderScope {
 	return {
 		spectrum: createSpectrumScope(),
 		logo: createLogoScope(),
-		flashEdge: createFlashEdgeScope()
+		flashEdge: createFlashEdgeScope(),
+		trackTitle: createTrackTitleScope()
 	};
 }
 
@@ -50,4 +57,5 @@ export function resetRenderScope(scope: RenderScope): void {
 	resetLogoScope(scope.logo);
 	scope.flashEdge.drive = 0;
 	scope.flashEdge.color = '#ffffff';
+	resetTrackTitleScope(scope.trackTitle);
 }

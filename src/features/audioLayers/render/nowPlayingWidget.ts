@@ -1,6 +1,11 @@
 import type { WallpaperState } from '@/types/wallpaper';
 import { buildTrackFont } from '@/lib/canvasText/trackFonts';
 import { applyTextTreatment } from '@/lib/canvasText/trackTextTreatment';
+import {
+	LIVE_TRACK_TITLE_SCOPE,
+	type MarqueeLineRuntime,
+	type TrackTitleScope
+} from '@/features/audioLayers/render/trackTitleScope';
 
 /** Resolved now-playing payload handed to the renderer each frame. */
 export type NowPlayingData = {
@@ -42,14 +47,7 @@ export type NowPlayingWidgetSettings = Pick<
 	| 'audioTrackTimeTextColor'
 >;
 
-type LineRuntime = { text: string; offset: number };
-
-/** Per-line marquee offsets. A single live caller (the wallpaper) uses these;
- *  the offline export renders a static frame so the offsets stay at 0. */
-const widgetRuntime: Record<'title' | 'artist', LineRuntime> = {
-	title: { text: '', offset: 0 },
-	artist: { text: '', offset: 0 }
-};
+type LineRuntime = MarqueeLineRuntime;
 
 const MARQUEE_GAP_FACTOR = 1.6;
 
@@ -267,7 +265,8 @@ export function drawNowPlayingWidget(
 	currentTime: number,
 	duration: number,
 	dt: number,
-	settings: NowPlayingWidgetSettings
+	settings: NowPlayingWidgetSettings,
+	scope: TrackTitleScope = LIVE_TRACK_TITLE_SCOPE
 ): void {
 	const title = (
 		settings.audioTrackTitleUppercase
@@ -468,7 +467,7 @@ export function drawNowPlayingWidget(
 		drawLine({
 			ctx,
 			text: artist,
-			runtime: widgetRuntime.artist,
+			runtime: scope.widgetArtist,
 			x: textLeft,
 			y: cursorY,
 			columnWidth: textWidth,
@@ -494,7 +493,7 @@ export function drawNowPlayingWidget(
 	drawLine({
 		ctx,
 		text: title,
-		runtime: widgetRuntime.title,
+		runtime: scope.widgetTitle,
 		x: textLeft,
 		y: cursorY,
 		columnWidth: textWidth,

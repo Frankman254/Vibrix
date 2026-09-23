@@ -55,6 +55,10 @@ import {
 import { syntheticKickValue } from '@/features/calibration';
 import { drawSpectrum } from '@/features/spectrum/render';
 import { drawTrackTitleOverlay } from '@/features/audioLayers/render/trackTitleOverlay';
+import {
+	LIVE_TRACK_TITLE_SCOPE,
+	type TrackTitleScope
+} from '@/features/audioLayers/render/trackTitleScope';
 import type { NowPlayingData } from '@/features/audioLayers/render/nowPlayingWidget';
 import { drawLyricsOverlay } from '@/features/lyrics';
 import { resolveActiveAudioAssetId } from '@/lib/audio/activeTrack';
@@ -76,6 +80,7 @@ export interface OverlayRenderContext {
 	logoScope?: LogoScope;
 	spectrumScope?: SpectrumScope;
 	flashEdge?: FlashEdgeScope;
+	trackTitleScope?: TrackTitleScope;
 }
 
 const OVERLAY_IMAGE_CACHE_LIMIT = 12;
@@ -473,7 +478,8 @@ export function drawOverlayLayer(
 			context.trackCurrentTime,
 			context.trackDuration,
 			context.dt,
-			resolvedState
+			resolvedState,
+			context.trackTitleScope ?? LIVE_TRACK_TITLE_SCOPE
 		);
 		return;
 	}
