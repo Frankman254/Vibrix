@@ -10,6 +10,7 @@ import {
 	type BackgroundPalette
 } from '@/lib/backgroundPalette';
 import type { WallpaperState } from '@/types/wallpaper';
+import { isFilterTargetActive } from '@/features/filterLooks/filterStack';
 
 export type RainSettings = Pick<
 	WallpaperState,
@@ -83,7 +84,7 @@ export function resolveRainUniforms(
 	palettes: { background: BackgroundPalette; theme: BackgroundPalette }
 ): RainUniformValues {
 	// Looks' "filter opacity" reaches rain when it is a filter target.
-	const intensity = settings.filterTargets.includes('rain')
+	const intensity = isFilterTargetActive(settings, 'rain')
 		? settings.rainIntensity * settings.filterOpacity
 		: settings.rainIntensity;
 	const resolvedColors = resolveModeDrivenColors(

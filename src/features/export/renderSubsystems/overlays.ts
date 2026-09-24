@@ -21,6 +21,7 @@ import { createAudioChannelSelectionState } from '@/lib/audio/audioChannels';
 import { createAudioEnvelope } from '@/utils/audioEnvelope';
 import { getCurrentViewportResolution } from '@/features/layout/viewportMetrics';
 import { buildOverlayLayers } from '@/lib/layers';
+import { isFilterTargetActive } from '@/features/filterLooks/filterStack';
 import type { OverlayImageLayer } from '@/types/layers';
 import type { WallpaperState } from '@/types/wallpaper';
 import type { RenderFrameContext } from '../renderFrameContext';
@@ -186,7 +187,7 @@ export function createOverlaysSubsystem(): RenderSubsystem {
 				const advanced = resolveOverlayAdvancedEffects({
 					layerOpacity: layer.opacity,
 					targeted:
-						ctx.state.filterTargets.includes('selected-overlay') &&
+						isFilterTargetActive(ctx.state, 'selected-overlay') &&
 						ctx.state.selectedOverlayId === layer.id,
 					state: ctx.state,
 					audio: ctx.audio,

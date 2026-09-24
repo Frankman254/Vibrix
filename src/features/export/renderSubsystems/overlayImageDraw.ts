@@ -15,6 +15,7 @@ import {
 import type { AudioEnvelope } from '@/utils/audioEnvelope';
 import type { OverlayImageLayer } from '@/types/layers';
 import type { WallpaperState } from '@/types/wallpaper';
+import { isFilterTargetActive } from '@/features/filterLooks/filterStack';
 
 type Size = { width: number; height: number };
 
@@ -110,7 +111,7 @@ export function resolveOverlayDrawPlan(
 	sizeFactor: number
 ): OverlayDrawPlan {
 	const targeted =
-		state.filterTargets.includes('selected-overlay') &&
+		isFilterTargetActive(state, 'selected-overlay') &&
 		state.selectedOverlayId === layer.id;
 	const blurPx =
 		(Math.max(0, layer.edgeBlur) + (targeted ? state.filterBlur : 0)) *

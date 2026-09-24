@@ -18,6 +18,7 @@ import {
 	resolveResponsiveBackgroundTransform
 } from '@/features/layout/responsiveLayout';
 import type { WallpaperState } from '@/types/wallpaper';
+import { isFilterTargetActive } from '@/features/filterLooks/filterStack';
 import { getBackgroundBaseSize } from './imageLayerGeometry';
 
 export type GlobalBackgroundDrawSettings = Pick<
@@ -84,7 +85,7 @@ function clamp01(value: number): number {
 }
 
 function isFilterActive(settings: GlobalBackgroundDrawSettings): boolean {
-	return settings.filterTargets.includes('global-background');
+	return isFilterTargetActive(settings, 'global-background');
 }
 
 function resolveScanlineIntensity(

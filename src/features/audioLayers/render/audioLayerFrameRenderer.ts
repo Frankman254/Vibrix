@@ -12,6 +12,7 @@ import { getOverlayLayerById } from '@/lib/layers';
 import { resolveTrackDisplay } from '@/lib/audio/trackMetadata';
 import { getCoverImage } from '@/features/audioLayers/render/coverImageCache';
 import { drawOverlayLayer } from '@/features/audioLayers/render/overlayLayerRegistry';
+import { isFilterTargetActive } from '@/features/filterLooks/filterStack';
 import type { LogoScope } from '@/features/logo';
 import type { SpectrumScope } from '@/features/spectrum';
 import type { FlashEdgeScope } from '@/features/stageFx/flashEdgeDrive';
@@ -64,17 +65,12 @@ function isRenderableAudioLayer(
 	);
 }
 
-function isFilterTargetActive(
+function isAudioLayerFiltered(
 	layer: RenderableAudioLayer,
-	filterTargets: string[]
+	state: Pick<WallpaperState, 'filterTargets'>
 ): boolean {
-	return (
-		(layer.type === 'logo' && filterTargets.includes('logo')) ||
-		(layer.type === 'spectrum' && filterTargets.includes('spectrum')) ||
-		(layer.type === 'track-title' &&
-			filterTargets.includes('track-title')) ||
-		(layer.type === 'lyrics' && filterTargets.includes('lyrics'))
-	);
+	// Every renderable audio layer's type is also its filter-target id.
+	return isFilterTargetActive(state, layer.type);
 }
 
 /**
@@ -156,10 +152,7 @@ export function renderAudioLayerFrame(
 		flashEdge: input.flashEdge,
 		trackTitleScope: input.trackTitleScope
 	};
-	const filterActive = isFilterTargetActive(
-		nextLayer,
-		input.state.filterTargets
-	);
+	const filterActive = isAudioLayerFiltered(nextLayer, input.state);
 
 	// `scanlinesEnabled` is the switch every other renderer honours; this one
 	// read `scanlineIntensity` straight through, so turning scanlines off in

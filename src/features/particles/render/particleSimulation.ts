@@ -19,6 +19,7 @@ import {
 import { randomBetween } from '@/lib/math';
 import { PARTICLE_LIMITS } from '@/store/defaultState';
 import { createAudioEnvelope } from '@/utils/audioEnvelope';
+import { isFilterTargetActive } from '@/features/filterLooks/filterStack';
 import type {
 	ParticleDepthFlowDirection,
 	ParticleDepthFlowMode,
@@ -505,7 +506,7 @@ export function stepParticles(
 	const safeDt = Math.min(dtSec, 0.1);
 	const envelopeDt = Math.max(safeDt, 1 / 120);
 	// Looks' "filter opacity" reaches particles when they are a filter target.
-	const opacityMultiplier = s.filterTargets.includes('particles')
+	const opacityMultiplier = isFilterTargetActive(s, 'particles')
 		? s.filterOpacity
 		: 1;
 

@@ -1,12 +1,13 @@
 import type { CSSProperties } from 'react';
 import type { BackgroundImageLayer, OverlayImageLayer } from '@/types/layers';
-import type { FilterTarget, WallpaperState } from '@/types/wallpaper';
+import type { WallpaperState } from '@/types/wallpaper';
 import {
 	type ImageDrawRect,
 	getImageBaseSize,
 	resolveImageTransform
 } from './index';
 import { getLruEntry, setLruEntry } from '@/lib/lruCache';
+import { isFilterTargetActive } from '@/features/filterLooks/filterStack';
 
 export type ImageLayer = BackgroundImageLayer | OverlayImageLayer;
 export type BackgroundImageSnapshot = Pick<
@@ -194,15 +195,15 @@ export function getBackgroundDrawRectsFromSnapshot(
 
 export function targetMatches(
 	layer: ImageLayer,
-	filterTargets: FilterTarget[],
+	state: Pick<WallpaperState, 'filterTargets'>,
 	selectedOverlayId: string | null
 ): boolean {
 	if (layer.type === 'background-image') {
-		return filterTargets.includes('background');
+		return isFilterTargetActive(state, 'background');
 	}
 
 	return (
-		filterTargets.includes('selected-overlay') &&
+		isFilterTargetActive(state, 'selected-overlay') &&
 		layer.id === selectedOverlayId
 	);
 }

@@ -125,7 +125,7 @@ export function renderImageCanvasFrame(params: {
 	});
 	const filterActive = targetMatches(
 		activeLayer,
-		state.filterTargets,
+		state,
 		state.selectedOverlayId
 	);
 	const audio = getAudioSnapshot();

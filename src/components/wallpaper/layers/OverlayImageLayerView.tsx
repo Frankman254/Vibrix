@@ -3,6 +3,7 @@ import type { OverlayImageLayer } from '@/types/layers';
 import ImageLayerCanvas from '@/components/wallpaper/layers/ImageLayerCanvas';
 import { useAudioData } from '@/hooks/useAudioData';
 import { useWallpaperStore } from '@/store/wallpaperStore';
+import { isFilterTargetActive } from '@/features/filterLooks/filterStack';
 
 function getBlendMode(
 	blendMode: OverlayImageLayer['blendMode']
@@ -64,7 +65,7 @@ export default function OverlayImageLayerView({
 	} = useWallpaperStore();
 
 	const filterTargetMatches =
-		filterTargets.includes('selected-overlay') &&
+		isFilterTargetActive({ filterTargets }, 'selected-overlay') &&
 		selectedOverlayId === layer.id;
 	const advancedEffectsActive =
 		filterTargetMatches &&
