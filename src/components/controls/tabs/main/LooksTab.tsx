@@ -43,6 +43,7 @@ import AudioChannelSelector from '@/editor/AudioChannelSelector';
 import { AdvancedOnly, useIsSimple } from '@/editor/UIMode';
 import { useDialog } from '@/editor/DialogProvider';
 import { confirmResetFiltersDefaults } from '@/editor/confirmCritical';
+import EffectLayerStack from '@/components/controls/tabs/main/looks/EffectLayerStack';
 
 const FILTER_TARGETS: FilterTarget[] = [
 	'global-background',
@@ -472,6 +473,10 @@ export default function LooksTab({ onReset }: { onReset: () => void }) {
 					{t.btn_randomize}
 				</Button>
 			</SectionCard>
+
+			<AdvancedOnly>
+				<EffectLayerStack targetLabels={filterTargetLabels} />
+			</AdvancedOnly>
 
 			<AdvancedOnly>
 				<SectionCard

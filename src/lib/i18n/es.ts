@@ -384,6 +384,22 @@ export const es: Record<TranslationKey, string> = {
 	label_rgb_shift_audio_sensitivity: 'Intensidad RGB por Audio',
 	label_audio_channel: 'Canal de Audio',
 	label_transition_audio_channel: 'Canal de Audio de la Transición',
+	// Capas de efectos (pila de Looks)
+	looks_layers_section: 'Capas de Efectos',
+	looks_layers_hint:
+		'Cada capa tiene sus propios valores y sus propios destinos. Cuando dos capas apuntan a lo mismo, gana la de arriba: las capas no se mezclan.',
+	looks_layers_add: 'Añadir capa',
+	looks_layers_default_name: 'Capa {index}',
+	looks_layers_no_targets: 'Sin destinos todavía',
+	looks_layers_enable: 'Activar capa',
+	looks_layers_disable: 'Desactivar capa',
+	looks_layers_move_up: 'Subir capa',
+	looks_layers_move_down: 'Bajar capa',
+	looks_layers_duplicate: 'Duplicar capa',
+	looks_layers_remove: 'Eliminar capa',
+	confirm_delete_effect_layer_title: 'Eliminar capa de efectos',
+	confirm_delete_effect_layer_message:
+		'Se borrará «{name}» y sus valores. Las capas de debajo se quedan con sus destinos.',
 	hint_filter_target:
 		'Elige qué capa de imagen recibe RGB shift, scanlines, grano film y filtros de color.',
 	// Fit mode

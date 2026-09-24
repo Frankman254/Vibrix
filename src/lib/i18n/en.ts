@@ -382,6 +382,22 @@ export const en = {
 	label_rgb_shift_audio_sensitivity: 'RGB Shift Audio Drive',
 	label_audio_channel: 'Audio Channel',
 	label_transition_audio_channel: 'Transition Audio Channel',
+	// Effect layers (Looks stack)
+	looks_layers_section: 'Effect Layers',
+	looks_layers_hint:
+		'Each layer has its own values and its own targets. When two layers name the same target, the higher one wins — layers never blend.',
+	looks_layers_add: 'Add layer',
+	looks_layers_default_name: 'Layer {index}',
+	looks_layers_no_targets: 'No targets yet',
+	looks_layers_enable: 'Enable layer',
+	looks_layers_disable: 'Disable layer',
+	looks_layers_move_up: 'Move layer up',
+	looks_layers_move_down: 'Move layer down',
+	looks_layers_duplicate: 'Duplicate layer',
+	looks_layers_remove: 'Delete layer',
+	confirm_delete_effect_layer_title: 'Delete effect layer',
+	confirm_delete_effect_layer_message:
+		'"{name}" and its values will be deleted. The layers under it take over its targets.',
 	hint_filter_target:
 		'Choose which image layer receives RGB shift, scanlines, film grain, and color filters.',
 	// Fit mode

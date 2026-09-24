@@ -12,7 +12,8 @@ import { getOverlayLayerById } from '@/lib/layers';
 import { resolveTrackDisplay } from '@/lib/audio/trackMetadata';
 import { getCoverImage } from '@/features/audioLayers/render/coverImageCache';
 import { drawOverlayLayer } from '@/features/audioLayers/render/overlayLayerRegistry';
-import { isFilterTargetActive } from '@/features/filterLooks/filterStack';
+import { resolveFilterStack } from '@/features/filterLooks/filterStack';
+import type { FilterLookSettings } from '@/features/filterLooks/filterLooks';
 import type { LogoScope } from '@/features/logo';
 import type { SpectrumScope } from '@/features/spectrum';
 import type { FlashEdgeScope } from '@/features/stageFx/flashEdgeDrive';
@@ -65,14 +66,6 @@ function isRenderableAudioLayer(
 	);
 }
 
-function isAudioLayerFiltered(
-	layer: RenderableAudioLayer,
-	state: Pick<WallpaperState, 'filterTargets'>
-): boolean {
-	// Every renderable audio layer's type is also its filter-target id.
-	return isFilterTargetActive(state, layer.type);
-}
-
 /**
  * True when the Looks stack would change nothing for this layer.
  *
@@ -84,18 +77,18 @@ function isAudioLayerFiltered(
  * way.
  */
 export function isLayerFilterInert(
-	state: WallpaperState,
+	stack: FilterLookSettings,
 	scanlineAmount: number
 ): boolean {
 	return (
-		state.filterOpacity >= 0.999 &&
-		Math.abs(state.filterBrightness - 1) < 0.001 &&
-		Math.abs(state.filterContrast - 1) < 0.001 &&
-		Math.abs(state.filterSaturation - 1) < 0.001 &&
-		state.filterBlur < 0.01 &&
-		Math.abs(state.filterHueRotate) < 0.01 &&
-		state.rgbShift <= 0.0001 &&
-		state.noiseIntensity <= 0.001 &&
+		stack.filterOpacity >= 0.999 &&
+		Math.abs(stack.filterBrightness - 1) < 0.001 &&
+		Math.abs(stack.filterContrast - 1) < 0.001 &&
+		Math.abs(stack.filterSaturation - 1) < 0.001 &&
+		stack.filterBlur < 0.01 &&
+		Math.abs(stack.filterHueRotate) < 0.01 &&
+		stack.rgbShift <= 0.0001 &&
+		stack.noiseIntensity <= 0.001 &&
 		scanlineAmount <= 0.001
 	);
 }
@@ -152,22 +145,25 @@ export function renderAudioLayerFrame(
 		flashEdge: input.flashEdge,
 		trackTitleScope: input.trackTitleScope
 	};
-	const filterActive = isAudioLayerFiltered(nextLayer, input.state);
+	// Every renderable audio layer's type is also its filter-target id. The
+	// winning stack is not necessarily the layer the Looks tab is editing.
+	const stack = resolveFilterStack(input.state, nextLayer.type);
 
 	// `scanlinesEnabled` is the switch every other renderer honours; this one
 	// read `scanlineIntensity` straight through, so turning scanlines off in
 	// the Looks tab still drew them over the logo, spectrum, track and lyrics
 	// layers whenever those were filter targets.
-	const scanlineAmount = input.state.scanlinesEnabled
-		? getScanlineAmount(
-				input.state.scanlineMode,
-				input.state.scanlineIntensity,
-				input.timeMs,
-				input.audio.amplitude
-			)
-		: 0;
+	const scanlineAmount =
+		stack && stack.scanlinesEnabled
+			? getScanlineAmount(
+					stack.scanlineMode,
+					stack.scanlineIntensity,
+					input.timeMs,
+					input.audio.amplitude
+				)
+			: 0;
 
-	if (!filterActive || isLayerFilterInert(input.state, scanlineAmount)) {
+	if (!stack || isLayerFilterInert(stack, scanlineAmount)) {
 		drawOverlayLayer(nextLayer, {
 			ctx: input.ctx,
 			...drawContext
@@ -197,12 +193,12 @@ export function renderAudioLayerFrame(
 	});
 
 	input.ctx.save();
-	input.ctx.globalAlpha = Math.max(0, Math.min(1, input.state.filterOpacity));
-	input.ctx.filter = `brightness(${input.state.filterBrightness}) contrast(${input.state.filterContrast}) saturate(${input.state.filterSaturation}) blur(${input.state.filterBlur}px) hue-rotate(${input.state.filterHueRotate}deg)`;
+	input.ctx.globalAlpha = Math.max(0, Math.min(1, stack.filterOpacity));
+	input.ctx.filter = `brightness(${stack.filterBrightness}) contrast(${stack.filterContrast}) saturate(${stack.filterSaturation}) blur(${stack.filterBlur}px) hue-rotate(${stack.filterHueRotate}deg)`;
 	input.ctx.drawImage(snapshotCanvas, 0, 0);
 	input.ctx.filter = 'none';
 	input.ctx.globalCompositeOperation = 'source-atop';
-	if (input.state.rgbShift > 0.0001) {
+	if (stack.rgbShift > 0.0001) {
 		input.ctx.save();
 		input.ctx.translate(input.canvas.width / 2, input.canvas.height / 2);
 		drawRgbShift(
@@ -210,12 +206,12 @@ export function renderAudioLayerFrame(
 			snapshotCanvas,
 			input.canvas.width,
 			input.canvas.height,
-			input.state.rgbShift *
+			stack.rgbShift *
 				Math.min(input.canvas.width, input.canvas.height) *
 				0.65,
 			'brightness(1) contrast(1) saturate(1) hue-rotate(0deg)',
 			input.timeMs,
-			input.state.filterOpacity
+			stack.filterOpacity
 		);
 		input.ctx.restore();
 	}
@@ -225,18 +221,18 @@ export function renderAudioLayerFrame(
 		input.ctx,
 		input.canvas.width,
 		input.canvas.height,
-		input.state.noiseIntensity,
+		stack.noiseIntensity,
 		input.timeMs,
-		input.state.filterOpacity
+		stack.filterOpacity
 	);
 	drawScanlines(
 		input.ctx,
 		input.canvas.width,
 		input.canvas.height,
 		scanlineAmount,
-		input.state.scanlineSpacing,
-		input.state.scanlineThickness,
-		input.state.filterOpacity
+		stack.scanlineSpacing,
+		stack.scanlineThickness,
+		stack.filterOpacity
 	);
 	input.ctx.restore();
 	input.ctx.restore();

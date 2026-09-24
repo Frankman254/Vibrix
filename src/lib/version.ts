@@ -107,4 +107,4 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // export profile is now a standing preference instead of component state, so
 // leaving the Export tab (or reloading) keeps the chosen output. Pre-v118
 // payloads lack both keys; migration writes the historical defaults (1080p/30).
-export const STORE_PERSIST_VERSION = 118;
+export const STORE_PERSIST_VERSION = 119;

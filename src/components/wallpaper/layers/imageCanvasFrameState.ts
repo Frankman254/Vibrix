@@ -1,4 +1,5 @@
 import type { AudioEnvelope } from '@/utils/audioEnvelope';
+import type { FilterLookSettings } from '@/features/filterLooks/filterLooks';
 import { clamp, lerp } from '@/lib/math';
 import { getScanlineAmount } from '@/lib/canvas/imageEffects';
 import type { BackgroundImageLayer } from '@/types/layers';
@@ -243,7 +244,8 @@ export function resolveEffectiveLayerOpacity(
 
 export function resolveLayerFilterMetrics(params: {
 	state: WallpaperStore;
-	filterActive: boolean;
+	/** The effect layer painting this image layer, or null when none does. */
+	stack: FilterLookSettings | null;
 	isTransitioning: boolean;
 	time: number;
 	amplitude: number;
@@ -255,7 +257,7 @@ export function resolveLayerFilterMetrics(params: {
 }): LayerFilterMetrics {
 	const {
 		state,
-		filterActive,
+		stack,
 		isTransitioning,
 		time,
 		amplitude,
@@ -266,9 +268,9 @@ export function resolveLayerFilterMetrics(params: {
 		canvasHeight
 	} = params;
 
-	const brightness = filterActive ? state.filterBrightness : 1;
-	const contrast = filterActive ? state.filterContrast : 1;
-	const saturation = filterActive ? state.filterSaturation : 1;
+	const brightness = stack?.filterBrightness ?? 1;
+	const contrast = stack?.filterContrast ?? 1;
+	const saturation = stack?.filterSaturation ?? 1;
 	const audioBlurBoost =
 		!isTransitioning && state.imageBlurReactive
 			? resolveReactiveDriver(
@@ -279,20 +281,19 @@ export function resolveLayerFilterMetrics(params: {
 					state.imageBlurReactiveInvert
 				) * state.imageBlurReactiveAmount
 			: 0;
-	const blur = clamp(
-		(filterActive ? state.filterBlur : 0) + audioBlurBoost,
-		0,
-		32
-	);
-	const hue = filterActive ? state.filterHueRotate : 0;
+	const blur = clamp((stack?.filterBlur ?? 0) + audioBlurBoost, 0, 32);
+	const hue = stack?.filterHueRotate ?? 0;
 	const colorFilter = `brightness(${brightness}) contrast(${contrast}) saturate(${saturation}) hue-rotate(${hue}deg)`;
-	const rgbShiftBoost = state.rgbShiftAudioReactive
-		? rgbShiftChannelValue * state.rgbShiftAudioSensitivity
+	// The RGB-shift audio drive belongs to the winning layer too: a look that
+	// says "shift by 0.01" and a global that says "follow the hi-hat" are one
+	// visual idea, so they must not come from two different layers.
+	const rgbShiftBoost = stack?.rgbShiftAudioReactive
+		? rgbShiftChannelValue * stack.rgbShiftAudioSensitivity
 		: 0;
 	const rgbShiftPixels =
-		filterActive && !isTransitioning
+		stack && !isTransitioning
 			? clamp(
-					(state.rgbShift + rgbShiftBoost) *
+					(stack.rgbShift + rgbShiftBoost) *
 						Math.min(canvasWidth, canvasHeight) *
 						0.65,
 					0,
@@ -300,25 +301,22 @@ export function resolveLayerFilterMetrics(params: {
 				)
 			: 0;
 	const scanlineAmount =
-		filterActive && !isTransitioning
+		stack && !isTransitioning
 			? getScanlineAmount(
-					state.scanlineMode,
-					state.scanlinesEnabled ? state.scanlineIntensity : 0,
+					stack.scanlineMode,
+					stack.scanlinesEnabled ? stack.scanlineIntensity : 0,
 					time,
 					amplitude
 				)
 			: 0;
 	const filmNoiseAmount =
-		filterActive && !isTransitioning ? state.noiseIntensity : 0;
-	const vignetteAmount =
-		filterActive && !isTransitioning ? state.filterVignette : 0;
-	const bloomAmount =
-		filterActive && !isTransitioning ? state.filterBloom : 0;
-	const lumaThreshold = filterActive ? state.filterLumaThreshold : 0.72;
-	const lensWarpAmount =
-		filterActive && !isTransitioning ? state.filterLensWarp : 0;
+		stack && !isTransitioning ? stack.noiseIntensity : 0;
+	const vignetteAmount = stack && !isTransitioning ? stack.filterVignette : 0;
+	const bloomAmount = stack && !isTransitioning ? stack.filterBloom : 0;
+	const lumaThreshold = stack?.filterLumaThreshold ?? 0.72;
+	const lensWarpAmount = stack && !isTransitioning ? stack.filterLensWarp : 0;
 	const heatDistortionAmount =
-		filterActive && !isTransitioning ? state.filterHeatDistortion : 0;
+		stack && !isTransitioning ? stack.filterHeatDistortion : 0;
 
 	return {
 		brightness,

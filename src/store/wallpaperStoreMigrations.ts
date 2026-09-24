@@ -37,9 +37,14 @@ import { hydrateSpectrumProfileValues } from '@/features/spectrum';
 import {
 	RGB_SHIFT_AUDIO_KEYS,
 	CUSTOM_FILTER_LOOK_ID,
+	extractFilterLookSettingsFromState,
 	extractRgbShiftAudioSettings,
 	toFilterLookSlotSelectionId
 } from '@/features/filterLooks/filterLooks';
+import {
+	createDefaultEffectLayer,
+	DEFAULT_EFFECT_LAYER_ID
+} from '@/features/filterLooks/effectLayers';
 import { getCurrentViewportResolution } from '@/features/layout/viewportMetrics';
 import { normalizeSpectrumSettings } from '@/features/spectrum';
 import {
@@ -3042,6 +3047,20 @@ export function migrateWallpaperStore(
 		// stored; the historical defaults become the persisted ones.
 		migratedState.offlineExportResolutionId ??= '1080p';
 		migratedState.offlineExportFps ??= 30;
+	}
+	if (fromVersion < 119) {
+		// The single Looks stack becomes the first effect layer. Its values are
+		// still the legacy `filter*` keys — the entry is the snapshot — so the
+		// editor opens exactly as the user left it, with an "add layer" button
+		// it did not have before.
+		migratedState.activeEffectLayerId ??= DEFAULT_EFFECT_LAYER_ID;
+		migratedState.effectLayers ??= [
+			createDefaultEffectLayer(
+				extractFilterLookSettingsFromState(migratedState),
+				migratedState.filterTargets ?? [],
+				migratedState.activeFilterLookId ?? null
+			)
+		];
 	}
 
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;

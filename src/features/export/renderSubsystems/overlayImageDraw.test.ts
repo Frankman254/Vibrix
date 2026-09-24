@@ -46,17 +46,15 @@ function overlay(
 	};
 }
 
-const FILTERS = {
-	filterTargets: [],
-	selectedOverlayId: null,
+/** The stack an effect layer hands over once it targets this overlay. */
+const LOOK = {
 	filterOpacity: 0.5,
 	filterBrightness: 2,
 	filterContrast: 1,
 	filterSaturation: 1,
 	filterBlur: 4,
-	filterHueRotate: 90,
-	layoutResponsiveEnabled: false
-} as unknown as Parameters<typeof resolveOverlayDrawPlan>[1];
+	filterHueRotate: 90
+} as unknown as NonNullable<Parameters<typeof resolveOverlayDrawPlan>[1]>;
 
 const AUDIO = {
 	amplitude: 0.25,
@@ -117,7 +115,7 @@ describe('resolveOverlayDrawPlan', () => {
 				scale: 2,
 				rotation: 90
 			}),
-			FILTERS,
+			null,
 			AUDIO,
 			OUTPUT,
 			1
@@ -132,7 +130,7 @@ describe('resolveOverlayDrawPlan', () => {
 	it('applies the editor filters only to the targeted overlay', () => {
 		const untargeted = resolveOverlayDrawPlan(
 			overlay(),
-			FILTERS,
+			null,
 			AUDIO,
 			OUTPUT,
 			1
@@ -142,11 +140,7 @@ describe('resolveOverlayDrawPlan', () => {
 
 		const targeted = resolveOverlayDrawPlan(
 			overlay(),
-			{
-				...FILTERS,
-				filterTargets: ['selected-overlay'],
-				selectedOverlayId: 'ov-1'
-			} as typeof FILTERS,
+			LOOK,
 			AUDIO,
 			OUTPUT,
 			1
@@ -159,7 +153,7 @@ describe('resolveOverlayDrawPlan', () => {
 	it('scales pixel effects with the size factor and maps blend modes', () => {
 		const plan = resolveOverlayDrawPlan(
 			overlay({ edgeBlur: 2, blendMode: 'screen', cropShape: 'rounded' }),
-			FILTERS,
+			null,
 			AUDIO,
 			OUTPUT,
 			2
@@ -173,15 +167,14 @@ describe('resolveOverlayDrawPlan', () => {
 		expect(
 			resolveOverlayDrawPlan(
 				overlay({ edgeFade: 1 }),
-				FILTERS,
+				null,
 				AUDIO,
 				OUTPUT,
 				1
 			).fadeStart
 		).toBe(0.48);
 		expect(
-			resolveOverlayDrawPlan(overlay(), FILTERS, AUDIO, OUTPUT, 1)
-				.fadeStart
+			resolveOverlayDrawPlan(overlay(), null, AUDIO, OUTPUT, 1).fadeStart
 		).toBe(1);
 	});
 });
@@ -204,10 +197,15 @@ const LOOKS = {
 	rgbShiftAudioReactivitySpeed: 1,
 	rgbShiftAudioPeakWindow: 0.5,
 	rgbShiftAudioPeakFloor: 0.05,
-	rgbShiftAudioPunch: 0.4,
+	rgbShiftAudioPunch: 0.4
+} as unknown as NonNullable<
+	Parameters<typeof resolveOverlayAdvancedEffects>[0]['look']
+>;
+
+const CHANNEL_STATE = {
 	audioAutoKickThreshold: 0.5,
 	audioAutoSwitchHoldMs: 500
-} as unknown as Parameters<typeof resolveOverlayAdvancedEffects>[0]['state'];
+} as Parameters<typeof resolveOverlayAdvancedEffects>[0]['state'];
 
 const LOOKS_AUDIO = {
 	amplitude: 0.25,
@@ -220,8 +218,8 @@ function advanced(
 ) {
 	return resolveOverlayAdvancedEffects({
 		layerOpacity: 1,
-		targeted: true,
-		state: LOOKS,
+		look: LOOKS,
+		state: CHANNEL_STATE,
 		audio: LOOKS_AUDIO,
 		channelSelection: createAudioChannelSelectionState(),
 		envelope: createAudioEnvelope(),
@@ -235,17 +233,17 @@ function advanced(
 
 describe('resolveOverlayAdvancedEffects', () => {
 	it('is off for untargeted overlays (gate mirrors the live view)', () => {
-		expect(advanced({ targeted: false })).toBeNull();
+		expect(advanced({ look: null })).toBeNull();
 	});
 
 	it('is off when every advanced effect is zero', () => {
-		expect(advanced({ state: { ...LOOKS, rgbShift: 0 } })).toBeNull();
+		expect(advanced({ look: { ...LOOKS, rgbShift: 0 } })).toBeNull();
 	});
 
 	it('needs scanlines enabled *and* intense to count as active', () => {
 		expect(
 			advanced({
-				state: {
+				look: {
 					...LOOKS,
 					rgbShift: 0,
 					scanlinesEnabled: true,
@@ -255,7 +253,7 @@ describe('resolveOverlayAdvancedEffects', () => {
 		).toBeNull();
 		expect(
 			advanced({
-				state: {
+				look: {
 					...LOOKS,
 					rgbShift: 0,
 					scanlinesEnabled: true,
@@ -268,13 +266,13 @@ describe('resolveOverlayAdvancedEffects', () => {
 	it('computes rgbShiftPixels at 0.65 of the short edge, clamped at 36', () => {
 		const fx = advanced();
 		expect(fx?.rgbShiftPixels).toBeCloseTo(0.02 * 1080 * 0.65, 5);
-		const low = advanced({ state: { ...LOOKS, rgbShift: 2 } });
+		const low = advanced({ look: { ...LOOKS, rgbShift: 2 } });
 		expect(low?.rgbShiftPixels).toBe(36);
 	});
 
 	it('scales one clamped shift per output size factor', () => {
 		const half = advanced({
-			state: { ...LOOKS, rgbShift: 2 },
+			look: { ...LOOKS, rgbShift: 2 },
 			sizeFactor: 2
 		});
 		expect(half?.rgbShiftPixels).toBe(72);
@@ -294,7 +292,7 @@ describe('resolveOverlayAdvancedEffects', () => {
 	it('lets the audio envelope push the shift past the base state', () => {
 		const base = advanced()!.rgbShiftPixels;
 		const reactive = advanced({
-			state: { ...LOOKS, rgbShiftAudioReactive: true }
+			look: { ...LOOKS, rgbShiftAudioReactive: true }
 		})!;
 		expect(reactive.rgbShiftPixels).toBeGreaterThan(base);
 	});
@@ -306,7 +304,7 @@ describe('resolveOverlayAdvancedEffects', () => {
 
 	it('keeps scanline spacing raw and scales thickness', () => {
 		const fx = advanced({
-			state: {
+			look: {
 				...LOOKS,
 				rgbShift: 0,
 				scanlinesEnabled: true,

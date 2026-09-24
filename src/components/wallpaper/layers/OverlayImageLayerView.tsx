@@ -3,7 +3,7 @@ import type { OverlayImageLayer } from '@/types/layers';
 import ImageLayerCanvas from '@/components/wallpaper/layers/ImageLayerCanvas';
 import { useAudioData } from '@/hooks/useAudioData';
 import { useWallpaperStore } from '@/store/wallpaperStore';
-import { isFilterTargetActive } from '@/features/filterLooks/filterStack';
+import { resolveFilterStack } from '@/features/filterLooks/filterStack';
 
 function getBlendMode(
 	blendMode: OverlayImageLayer['blendMode']
@@ -49,29 +49,17 @@ export default function OverlayImageLayerView({
 }) {
 	const { getAudioSnapshot } = useAudioData();
 	const [audioOpacityFactor, setAudioOpacityFactor] = useState(1);
-	const {
-		filterTargets,
-		filterOpacity,
-		selectedOverlayId,
-		filterBrightness,
-		filterContrast,
-		filterSaturation,
-		filterBlur,
-		filterHueRotate,
-		rgbShift,
-		scanlinesEnabled,
-		scanlineIntensity,
-		noiseIntensity
-	} = useWallpaperStore();
-
-	const filterTargetMatches =
-		isFilterTargetActive({ filterTargets }, 'selected-overlay') &&
-		selectedOverlayId === layer.id;
+	const state = useWallpaperStore();
+	// The effect layer that paints overlays is not necessarily the one the
+	// Looks tab is editing, so the values come from the resolver, never from
+	// the state's own `filter*` keys.
+	const stack = resolveFilterStack(state, 'selected-overlay');
+	const look = state.selectedOverlayId === layer.id ? stack : null;
 	const advancedEffectsActive =
-		filterTargetMatches &&
-		(rgbShift > 0.0001 ||
-			(scanlinesEnabled && scanlineIntensity > 0.001) ||
-			noiseIntensity > 0.001);
+		look !== null &&
+		(look.rgbShift > 0.0001 ||
+			(look.scanlinesEnabled && look.scanlineIntensity > 0.001) ||
+			look.noiseIntensity > 0.001);
 	const blurPx = Math.max(0, layer.edgeBlur);
 	const glowPx = 8 + layer.edgeGlow * 26;
 	const fadePercent = Math.max(48, 100 - layer.edgeFade * 120);
@@ -138,11 +126,11 @@ export default function OverlayImageLayerView({
 						opacity:
 							layer.opacity *
 							audioOpacityFactor *
-							(filterTargetMatches ? filterOpacity : 1),
+							(look ? look.filterOpacity : 1),
 						userSelect: 'none',
 						pointerEvents: 'none',
 						objectFit: 'fill',
-						filter: `brightness(${filterTargetMatches ? filterBrightness : 1}) contrast(${filterTargetMatches ? filterContrast : 1}) saturate(${filterTargetMatches ? filterSaturation : 1}) blur(${blurPx + (filterTargetMatches ? filterBlur : 0)}px) hue-rotate(${filterTargetMatches ? filterHueRotate : 0}deg) drop-shadow(0 0 ${glowPx}px rgba(255,255,255,${0.18 + layer.edgeGlow * 0.2}))`,
+						filter: `brightness(${look ? look.filterBrightness : 1}) contrast(${look ? look.filterContrast : 1}) saturate(${look ? look.filterSaturation : 1}) blur(${blurPx + (look ? look.filterBlur : 0)}px) hue-rotate(${look ? look.filterHueRotate : 0}deg) drop-shadow(0 0 ${glowPx}px rgba(255,255,255,${0.18 + layer.edgeGlow * 0.2}))`,
 						WebkitMaskImage: `radial-gradient(ellipse at center, rgba(0,0,0,1) ${fadePercent}%, rgba(0,0,0,0) 100%)`,
 						maskImage: `radial-gradient(ellipse at center, rgba(0,0,0,1) ${fadePercent}%, rgba(0,0,0,0) 100%)`,
 						...cropStyles

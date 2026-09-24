@@ -304,6 +304,30 @@ export type FilterTarget =
 	| 'rain'
 	| 'track-title'
 	| 'lyrics';
+
+/**
+ * One Looks treatment with its own values and its own set of target layers.
+ *
+ * Before effect layers there was a single stack of `filter*` values plus a
+ * target list, so pointing the treatment at the spectrum took it away from the
+ * background: the list was a choice between layers, never a composition of
+ * them. Each layer here owns a full `FilterLookSettings`, so a CRT background
+ * and a clean spectrum are two layers rather than an impossible request.
+ *
+ * Order is top-down and decides who wins: when two layers name the same
+ * target, the first one in the array paints it. Values are never blended —
+ * multiplying brightnesses across layers makes one slider change how a
+ * different layer looks, and that is not something a user can predict.
+ */
+export type EffectLayer = {
+	id: string;
+	name: string;
+	enabled: boolean;
+	targets: FilterTarget[];
+	/** Factory look / slot selection this layer last applied, if any. */
+	lookId: string | null;
+	settings: import('@/features/filterLooks/filterLooks').FilterLookSettings;
+};
 export type SlideshowTransitionType =
 	| 'fade'
 	| 'slide-left'
@@ -932,6 +956,16 @@ export type WallpaperState = {
 	/** Diagnostics HUD stack anchor (viewport fraction 0–1, top-left origin). */
 	diagnosticsHudPositionX: number;
 	diagnosticsHudPositionY: number;
+	/**
+	 * Every effect layer, top-down. The ACTIVE layer's live values are the
+	 * legacy `filter*` keys below — its entry here is a snapshot that goes
+	 * stale while it is selected, which is why readers must go through
+	 * `features/filterLooks/filterStack` instead of indexing this array.
+	 */
+	effectLayers: EffectLayer[];
+	/** Which layer the Looks tab is editing. */
+	activeEffectLayerId: string;
+	/** Target list of the ACTIVE effect layer. */
 	filterTargets: FilterTarget[];
 	filterOpacity: number;
 	filterBrightness: number;

@@ -21,7 +21,7 @@ import { createAudioChannelSelectionState } from '@/lib/audio/audioChannels';
 import { createAudioEnvelope } from '@/utils/audioEnvelope';
 import { getCurrentViewportResolution } from '@/features/layout/viewportMetrics';
 import { buildOverlayLayers } from '@/lib/layers';
-import { isFilterTargetActive } from '@/features/filterLooks/filterStack';
+import { resolveFilterStack } from '@/features/filterLooks/filterStack';
 import type { OverlayImageLayer } from '@/types/layers';
 import type { WallpaperState } from '@/types/wallpaper';
 import type { RenderFrameContext } from '../renderFrameContext';
@@ -170,12 +170,22 @@ export function createOverlaysSubsystem(): RenderSubsystem {
 				.filter(isDrawableOverlay)
 				.sort((a, b) => a.zIndex - b.zIndex);
 
+			// One resolution per frame: which effect layer paints overlays.
+			const overlayLook = resolveFilterStack(
+				ctx.state,
+				'selected-overlay'
+			);
+
 			for (const layer of layers) {
 				const image = images.get(layer.id);
 				if (!image) continue;
+				const look =
+					ctx.state.selectedOverlayId === layer.id
+						? overlayLook
+						: null;
 				const plan = resolveOverlayDrawPlan(
 					layer,
-					ctx.state,
+					look,
 					ctx.audio,
 					ctx.resolution,
 					sizeFactor
@@ -186,9 +196,7 @@ export function createOverlaysSubsystem(): RenderSubsystem {
 
 				const advanced = resolveOverlayAdvancedEffects({
 					layerOpacity: layer.opacity,
-					targeted:
-						isFilterTargetActive(ctx.state, 'selected-overlay') &&
-						ctx.state.selectedOverlayId === layer.id,
+					look,
 					state: ctx.state,
 					audio: ctx.audio,
 					channelSelection: filterAudio.channelSelection,

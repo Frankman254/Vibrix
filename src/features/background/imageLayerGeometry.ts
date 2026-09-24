@@ -195,7 +195,10 @@ export function getBackgroundDrawRectsFromSnapshot(
 
 export function targetMatches(
 	layer: ImageLayer,
-	state: Pick<WallpaperState, 'filterTargets'>,
+	state: Pick<
+		WallpaperState,
+		'effectLayers' | 'activeEffectLayerId' | 'filterTargets'
+	>,
 	selectedOverlayId: string | null
 ): boolean {
 	if (layer.type === 'background-image') {

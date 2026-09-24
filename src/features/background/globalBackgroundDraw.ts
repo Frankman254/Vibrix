@@ -18,7 +18,8 @@ import {
 	resolveResponsiveBackgroundTransform
 } from '@/features/layout/responsiveLayout';
 import type { WallpaperState } from '@/types/wallpaper';
-import { isFilterTargetActive } from '@/features/filterLooks/filterStack';
+import { resolveFilterStack } from '@/features/filterLooks/filterStack';
+import type { FilterLookSettings } from '@/features/filterLooks/filterLooks';
 import { getBackgroundBaseSize } from './imageLayerGeometry';
 
 export type GlobalBackgroundDrawSettings = Pick<
@@ -37,24 +38,13 @@ export type GlobalBackgroundDrawSettings = Pick<
 	| 'layoutBackgroundReframeEnabled'
 	| 'layoutReferenceWidth'
 	| 'layoutReferenceHeight'
+	| 'effectLayers'
+	| 'activeEffectLayerId'
 	| 'filterTargets'
-	| 'filterBrightness'
-	| 'filterContrast'
-	| 'filterSaturation'
-	| 'filterBlur'
-	| 'filterHueRotate'
-	| 'filterOpacity'
-	| 'filterVignette'
-	| 'filterBloom'
-	| 'filterLumaThreshold'
-	| 'rgbShift'
-	| 'noiseIntensity'
-	| 'scanlineMode'
-	| 'scanlinesEnabled'
-	| 'scanlineIntensity'
-	| 'scanlineSpacing'
-	| 'scanlineThickness'
->;
+> &
+	// The whole Looks stack: resolving which effect layer wins may hand back
+	// the active layer, whose live values are these keys on the state.
+	FilterLookSettings;
 
 type Size = { width: number; height: number };
 
@@ -71,6 +61,17 @@ export type GlobalBackgroundDrawPlan = {
 	rgbShiftPixels: number;
 	filmNoiseAmount: number;
 	scanlineIntensity: number;
+	/**
+	 * Looks values the paint pass needs. They ride along in the plan because
+	 * the winning effect layer is resolved once, here — the draw call has no
+	 * business asking which layer targets the global background.
+	 */
+	scanlineMode: WallpaperState['scanlineMode'];
+	scanlineSpacing: number;
+	scanlineThickness: number;
+	filterBloom: number;
+	filterLumaThreshold: number;
+	filterVignette: number;
 };
 
 /**
@@ -84,25 +85,28 @@ function clamp01(value: number): number {
 	return Math.max(0, Math.min(1, value));
 }
 
-function isFilterActive(settings: GlobalBackgroundDrawSettings): boolean {
-	return isFilterTargetActive(settings, 'global-background');
+/** The effect layer painting the global background, if any. */
+function resolveStack(
+	settings: GlobalBackgroundDrawSettings
+): FilterLookSettings | null {
+	return resolveFilterStack(settings, 'global-background');
 }
 
-function resolveScanlineIntensity(
-	settings: GlobalBackgroundDrawSettings
-): number {
-	return settings.scanlinesEnabled ? settings.scanlineIntensity : 0;
+function resolveScanlineIntensity(stack: FilterLookSettings | null): number {
+	if (!stack?.scanlinesEnabled) return 0;
+	return stack.scanlineIntensity;
 }
 
 /** Whether the frame changes over time, so the live view must keep drawing. */
 export function hasAnimatedGlobalBackgroundFilter(
 	settings: GlobalBackgroundDrawSettings
 ): boolean {
+	const stack = resolveStack(settings);
 	return (
-		isFilterActive(settings) &&
-		(settings.rgbShift > 0.0001 ||
-			settings.noiseIntensity > 0.001 ||
-			resolveScanlineIntensity(settings) > 0.001)
+		stack !== null &&
+		(stack.rgbShift > 0.0001 ||
+			stack.noiseIntensity > 0.001 ||
+			resolveScanlineIntensity(stack) > 0.001)
 	);
 }
 
@@ -111,7 +115,8 @@ export function resolveGlobalBackgroundDrawPlan(
 	canvas: Size,
 	image: Size
 ): GlobalBackgroundDrawPlan {
-	const filterActive = isFilterActive(settings);
+	const stack = resolveStack(settings);
+	const filterActive = stack !== null;
 	const imageWidth = image.width || canvas.width;
 	const imageHeight = image.height || canvas.height;
 
@@ -155,21 +160,17 @@ export function resolveGlobalBackgroundDrawPlan(
 	}
 
 	const brightness =
-		settings.globalBackgroundBrightness *
-		(filterActive ? settings.filterBrightness : 1);
+		settings.globalBackgroundBrightness * (stack?.filterBrightness ?? 1);
 	const contrast =
-		settings.globalBackgroundContrast *
-		(filterActive ? settings.filterContrast : 1);
+		settings.globalBackgroundContrast * (stack?.filterContrast ?? 1);
 	const saturation =
-		settings.globalBackgroundSaturation *
-		(filterActive ? settings.filterSaturation : 1);
+		settings.globalBackgroundSaturation * (stack?.filterSaturation ?? 1);
 	const blur = Math.min(
 		MAX_COMBINED_BLUR_PX,
-		settings.globalBackgroundBlur + (filterActive ? settings.filterBlur : 0)
+		settings.globalBackgroundBlur + (stack?.filterBlur ?? 0)
 	);
 	const hue =
-		settings.globalBackgroundHueRotate +
-		(filterActive ? settings.filterHueRotate : 0);
+		settings.globalBackgroundHueRotate + (stack?.filterHueRotate ?? 0);
 
 	return {
 		cx: canvas.width / 2 + positionX * canvas.width * 0.5,
@@ -177,16 +178,21 @@ export function resolveGlobalBackgroundDrawPlan(
 		width: base.width * scale,
 		height: base.height * scale,
 		opacity: clamp01(
-			settings.globalBackgroundOpacity *
-				(filterActive ? settings.filterOpacity : 1)
+			settings.globalBackgroundOpacity * (stack?.filterOpacity ?? 1)
 		),
 		filter: `brightness(${brightness}) contrast(${contrast}) saturate(${saturation}) blur(${blur}px) hue-rotate(${hue}deg)`,
 		filterActive,
-		rgbShiftPixels: filterActive
-			? settings.rgbShift * Math.min(canvas.width, canvas.height) * 0.65
+		rgbShiftPixels: stack
+			? stack.rgbShift * Math.min(canvas.width, canvas.height) * 0.65
 			: 0,
-		filmNoiseAmount: filterActive ? settings.noiseIntensity : 0,
-		scanlineIntensity: resolveScanlineIntensity(settings)
+		filmNoiseAmount: stack?.noiseIntensity ?? 0,
+		scanlineIntensity: resolveScanlineIntensity(stack),
+		scanlineMode: stack?.scanlineMode ?? 'always',
+		scanlineSpacing: stack?.scanlineSpacing ?? 0,
+		scanlineThickness: stack?.scanlineThickness ?? 0,
+		filterBloom: stack?.filterBloom ?? 0,
+		filterLumaThreshold: stack?.filterLumaThreshold ?? 0,
+		filterVignette: stack?.filterVignette ?? 0
 	};
 }
 
@@ -217,7 +223,7 @@ export function drawGlobalBackgroundFrame(
 	ctx.filter = 'none';
 	if (plan.filterActive) {
 		const scanlineAmount = getScanlineAmount(
-			settings.scanlineMode,
+			plan.scanlineMode,
 			plan.scanlineIntensity,
 			timeMs,
 			amplitude
@@ -245,8 +251,8 @@ export function drawGlobalBackgroundFrame(
 			width,
 			height,
 			scanlineAmount,
-			settings.scanlineSpacing,
-			settings.scanlineThickness,
+			plan.scanlineSpacing,
+			plan.scanlineThickness,
 			ctx.globalAlpha
 		);
 		drawBloom(
@@ -254,17 +260,11 @@ export function drawGlobalBackgroundFrame(
 			image,
 			width,
 			height,
-			settings.filterBloom,
-			settings.filterLumaThreshold,
+			plan.filterBloom,
+			plan.filterLumaThreshold,
 			ctx.globalAlpha
 		);
-		drawVignette(
-			ctx,
-			width,
-			height,
-			settings.filterVignette,
-			ctx.globalAlpha
-		);
+		drawVignette(ctx, width, height, plan.filterVignette, ctx.globalAlpha);
 	}
 	ctx.restore();
 }

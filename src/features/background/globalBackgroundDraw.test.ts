@@ -23,6 +23,19 @@ function settings(
 		layoutBackgroundReframeEnabled: false,
 		layoutReferenceWidth: 1920,
 		layoutReferenceHeight: 1080,
+		// One active effect layer, the shape every migrated project has: its
+		// live targets are `filterTargets`, so overrides below still drive it.
+		effectLayers: [
+			{
+				id: 'effect-layer-1',
+				name: '',
+				enabled: true,
+				targets: [],
+				lookId: null,
+				settings: {}
+			}
+		],
+		activeEffectLayerId: 'effect-layer-1',
 		filterTargets: [],
 		filterBrightness: 2,
 		filterContrast: 1,

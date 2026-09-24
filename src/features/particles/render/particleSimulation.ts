@@ -19,7 +19,7 @@ import {
 import { randomBetween } from '@/lib/math';
 import { PARTICLE_LIMITS } from '@/store/defaultState';
 import { createAudioEnvelope } from '@/utils/audioEnvelope';
-import { isFilterTargetActive } from '@/features/filterLooks/filterStack';
+import { resolveFilterValue } from '@/features/filterLooks/filterStack';
 import type {
 	ParticleDepthFlowDirection,
 	ParticleDepthFlowMode,
@@ -86,6 +86,8 @@ export type ParticleSettings = Pick<
 	| 'performanceMode'
 	| 'audioAutoKickThreshold'
 	| 'audioAutoSwitchHoldMs'
+	| 'effectLayers'
+	| 'activeEffectLayerId'
 	| 'filterTargets'
 	| 'filterOpacity'
 >;
@@ -505,10 +507,10 @@ export function stepParticles(
 	const lifeArr = buffers.lives;
 	const safeDt = Math.min(dtSec, 0.1);
 	const envelopeDt = Math.max(safeDt, 1 / 120);
-	// Looks' "filter opacity" reaches particles when they are a filter target.
-	const opacityMultiplier = isFilterTargetActive(s, 'particles')
-		? s.filterOpacity
-		: 1;
+	// Looks' "filter opacity" reaches particles from whichever effect layer
+	// targets them — not necessarily the one the Looks tab is editing.
+	const opacityMultiplier =
+		resolveFilterValue(s, 'particles', 'filterOpacity') ?? 1;
 
 	const { value: channelLevel } = resolveAudioChannelValue(
 		audio.channels,

@@ -5,6 +5,7 @@ import type {
 } from '@/lib/audio/audioChannels';
 import type { WallpaperStore } from '@/store/wallpaperStoreTypes';
 import type { AudioEnvelope } from '@/utils/audioEnvelope';
+import { resolveFilterStack } from '@/features/filterLooks/filterStack';
 import { renderBackgroundFrame } from './imageCanvasBackgroundRenderer';
 import { drawAutoZoomDebugOverlay } from './imageCanvasAutoZoomDebug';
 import { renderOverlayImageLayer } from './imageCanvasOverlayRenderer';
@@ -123,11 +124,17 @@ export function renderImageCanvasFrame(params: {
 		transitionStartRef,
 		effectiveTimeRef
 	});
-	const filterActive = targetMatches(
-		activeLayer,
-		state,
-		state.selectedOverlayId
-	);
+	// Which effect layer paints this image layer — not necessarily the one
+	// the Looks tab is editing.
+	const stack = targetMatches(activeLayer, state, state.selectedOverlayId)
+		? resolveFilterStack(
+				state,
+				activeLayer.type === 'background-image'
+					? 'background'
+					: 'selected-overlay'
+			)
+		: null;
+	const filterActive = stack !== null;
 	const audio = getAudioSnapshot();
 	const amplitude = audio.amplitude;
 	const {
@@ -253,7 +260,7 @@ export function renderImageCanvasFrame(params: {
 		heatDistortionAmount
 	} = resolveLayerFilterMetrics({
 		state,
-		filterActive,
+		stack,
 		isTransitioning,
 		time,
 		amplitude,
@@ -308,12 +315,11 @@ export function renderImageCanvasFrame(params: {
 			filterActive,
 			layerOpacity: effectiveBackgroundOpacity,
 			rgbShiftPixels,
-			scanlineMode: state.scanlineMode,
-			scanlineIntensity: state.scanlinesEnabled
-				? state.scanlineIntensity
-				: 0,
-			scanlineSpacing: state.scanlineSpacing,
-			scanlineThickness: state.scanlineThickness,
+			scanlineMode: stack?.scanlineMode ?? 'always',
+			scanlineIntensity:
+				stack && stack.scanlinesEnabled ? stack.scanlineIntensity : 0,
+			scanlineSpacing: stack?.scanlineSpacing ?? 0,
+			scanlineThickness: stack?.scanlineThickness ?? 0,
 			filmNoiseAmount,
 			vignetteAmount,
 			bloomAmount,
@@ -405,7 +411,7 @@ export function renderImageCanvasFrame(params: {
 		rect,
 		renderBaseImage,
 		filterActive,
-		filterOpacity: filterActive ? state.filterOpacity : 1,
+		filterOpacity: stack?.filterOpacity ?? 1,
 		brightness,
 		contrast,
 		saturation,
@@ -414,8 +420,8 @@ export function renderImageCanvasFrame(params: {
 		rgbShiftPixels,
 		filmNoiseAmount,
 		scanlineAmount,
-		scanlineSpacing: state.scanlineSpacing,
-		scanlineThickness: state.scanlineThickness,
+		scanlineSpacing: stack?.scanlineSpacing ?? 0,
+		scanlineThickness: stack?.scanlineThickness ?? 0,
 		time,
 		imagePostQuality
 	});

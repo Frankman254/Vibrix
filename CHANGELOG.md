@@ -15,6 +15,29 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Capas de efectos: varios Looks vivos a la vez (store v119)
+
+- Antes había **un solo** juego de valores de Looks y una lista de destinos
+  exclusiva: apuntar el efecto de cámara al spectrum te quitaba los filtros del
+  fondo, y había que elegir entre el logo o la imagen. Ahora `effectLayers` es
+  una pila: cada capa tiene sus propios 25 valores y su propia lista de
+  destinos, y se pueden añadir hasta 6.
+- **Cuando dos capas apuntan a lo mismo, gana la de arriba** — las capas no se
+  mezclan. Es deliberado: multiplicar brillos entre capas hace que mover un
+  slider cambie el look de otra capa, algo que no se puede predecir mirando la
+  UI. Apagar una capa deja pasar la siguiente que nombre ese destino, como
+  ocultar una capa en un editor de imagen.
+- Regla interna que hay que conocer antes de tocar esto: **los valores en vivo
+  de la capa activa son las claves `filter*` del estado**, no su entrada en el
+  array; la entrada es un snapshot que `syncActiveEffectLayer` refresca. Por eso
+  siguen funcionando sin tocarse todos los setters, los looks de fábrica, el
+  randomizer, los slots de perfil, los presets y las escenas. Nada fuera de
+  `features/filterLooks/` debe indexar el array para leer valores: se pasa por
+  `resolveFilterStack` / `resolveFilterValue`.
+- Migración a v119: tu estado actual se convierte en la primera capa, con tus
+  destinos y tus valores. El editor abre exactamente como lo dejaste, solo que
+  ahora hay un botón de añadir capa.
+
 ### Export: el Now Playing ya no se acelera con el render en vivo
 
 - Los offsets del marquee del título (widget y modo libre) vivían en globales
@@ -590,7 +613,7 @@ pliega el look Custom legacy dentro del banco normal de slots y traduce la
 selección. El campo legacy se queda en el esquema para que los proyectos
 exportados antes sigan importándose.
 
-`STORE_PERSIST_VERSION` is at **118**; `PROJECT_SCHEMA_VERSION` and `SETTINGS_SCHEMA_VERSION` remain at **1**. `APP_VERSION` / `package.json`: **0.3.0-alpha.1**.
+`STORE_PERSIST_VERSION` is at **119**; `PROJECT_SCHEMA_VERSION` and `SETTINGS_SCHEMA_VERSION` remain at **1**. `APP_VERSION` / `package.json`: **0.3.0-alpha.1**.
 
 ---
 

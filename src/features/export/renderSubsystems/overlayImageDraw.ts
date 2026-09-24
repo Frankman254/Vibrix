@@ -15,22 +15,9 @@ import {
 import type { AudioEnvelope } from '@/utils/audioEnvelope';
 import type { OverlayImageLayer } from '@/types/layers';
 import type { WallpaperState } from '@/types/wallpaper';
-import { isFilterTargetActive } from '@/features/filterLooks/filterStack';
+import type { FilterLookSettings } from '@/features/filterLooks/filterLooks';
 
 type Size = { width: number; height: number };
-
-type OverlayFilterState = Pick<
-	WallpaperState,
-	| 'filterTargets'
-	| 'selectedOverlayId'
-	| 'filterOpacity'
-	| 'filterBrightness'
-	| 'filterContrast'
-	| 'filterSaturation'
-	| 'filterBlur'
-	| 'filterHueRotate'
-	| 'layoutResponsiveEnabled'
->;
 
 function clamp01(value: number): number {
 	return Math.max(0, Math.min(1, value));
@@ -103,18 +90,21 @@ const COMPOSITE: Record<
 	multiply: 'multiply'
 };
 
+/**
+ * `look` is the Looks stack that paints overlays, already resolved by the
+ * caller — `null` when this overlay is not the targeted one, or when no effect
+ * layer names `selected-overlay`. Resolving it here would mean handing this
+ * pure function the whole store just to walk `effectLayers`.
+ */
 export function resolveOverlayDrawPlan(
 	layer: OverlayImageLayer,
-	state: OverlayFilterState,
+	look: FilterLookSettings | null,
 	audio: Pick<AudioSnapshot, 'amplitude' | 'channels'>,
 	output: Size,
 	sizeFactor: number
 ): OverlayDrawPlan {
-	const targeted =
-		isFilterTargetActive(state, 'selected-overlay') &&
-		state.selectedOverlayId === layer.id;
 	const blurPx =
-		(Math.max(0, layer.edgeBlur) + (targeted ? state.filterBlur : 0)) *
+		(Math.max(0, layer.edgeBlur) + (look ? look.filterBlur : 0)) *
 		sizeFactor;
 	const glowPx = (8 + layer.edgeGlow * 26) * sizeFactor;
 	const glowAlpha = 0.18 + layer.edgeGlow * 0.2;
@@ -128,14 +118,14 @@ export function resolveOverlayDrawPlan(
 		opacity:
 			layer.opacity *
 			resolveOverlayAudioOpacity(layer, audio) *
-			(targeted ? state.filterOpacity : 1),
+			(look ? look.filterOpacity : 1),
 		composite: COMPOSITE[layer.blendMode] ?? 'source-over',
 		filter: [
-			`brightness(${targeted ? state.filterBrightness : 1})`,
-			`contrast(${targeted ? state.filterContrast : 1})`,
-			`saturate(${targeted ? state.filterSaturation : 1})`,
+			`brightness(${look ? look.filterBrightness : 1})`,
+			`contrast(${look ? look.filterContrast : 1})`,
+			`saturate(${look ? look.filterSaturation : 1})`,
 			`blur(${blurPx}px)`,
-			`hue-rotate(${targeted ? state.filterHueRotate : 0}deg)`,
+			`hue-rotate(${look ? look.filterHueRotate : 0}deg)`,
 			`drop-shadow(0 0 ${glowPx}px rgba(255,255,255,${glowAlpha}))`
 		].join(' '),
 		cropShape: layer.cropShape,
@@ -166,33 +156,16 @@ export type OverlayAdvancedEffects = {
 	passAlpha: number;
 };
 
+/** The channel-selection dials, which are not part of a Looks stack. */
 type AdvancedFilterState = Pick<
 	WallpaperState,
-	| 'rgbShift'
-	| 'scanlinesEnabled'
-	| 'scanlineIntensity'
-	| 'scanlineMode'
-	| 'scanlineSpacing'
-	| 'scanlineThickness'
-	| 'noiseIntensity'
-	| 'filterOpacity'
-	| 'rgbShiftAudioReactive'
-	| 'rgbShiftAudioSensitivity'
-	| 'rgbShiftAudioChannel'
-	| 'rgbShiftAudioSmoothing'
-	| 'rgbShiftAudioAttack'
-	| 'rgbShiftAudioRelease'
-	| 'rgbShiftAudioReactivitySpeed'
-	| 'rgbShiftAudioPeakWindow'
-	| 'rgbShiftAudioPeakFloor'
-	| 'rgbShiftAudioPunch'
-	| 'audioAutoKickThreshold'
-	| 'audioAutoSwitchHoldMs'
+	'audioAutoKickThreshold' | 'audioAutoSwitchHoldMs'
 >;
 
 export function resolveOverlayAdvancedEffects(params: {
 	layerOpacity: number;
-	targeted: boolean;
+	/** Resolved by the caller; `null` = this overlay is not a filter target. */
+	look: FilterLookSettings | null;
 	state: AdvancedFilterState;
 	audio: AudioSnapshot;
 	channelSelection: AudioChannelSelectionState;
@@ -203,7 +176,7 @@ export function resolveOverlayAdvancedEffects(params: {
 	output: Size;
 	sizeFactor: number;
 }): OverlayAdvancedEffects | null {
-	const { state } = params;
+	const { state, look } = params;
 	// Same gate as OverlayImageLayerView.advancedEffectsActive. The live path
 	// also gates on `!isTransitioning`, but that is the *per-image* crossfade
 	// inside ImageLayerCanvas (one image replacing another). Offline exports
@@ -211,20 +184,20 @@ export function resolveOverlayAdvancedEffects(params: {
 	// here; scene fades are composited as subsystem alpha in frameComposition.
 	// Deliberate: no isTransitioning gate offline.
 	if (
-		!params.targeted ||
+		!look ||
 		!(
-			state.rgbShift > 0.0001 ||
-			(state.scanlinesEnabled && state.scanlineIntensity > 0.001) ||
-			state.noiseIntensity > 0.001
+			look.rgbShift > 0.0001 ||
+			(look.scanlinesEnabled && look.scanlineIntensity > 0.001) ||
+			look.noiseIntensity > 0.001
 		)
 	) {
 		return null;
 	}
 	const { value: channelValue } = resolveAudioChannelValue(
 		params.audio.channels,
-		state.rgbShiftAudioChannel,
+		look.rgbShiftAudioChannel,
 		params.channelSelection,
-		state.rgbShiftAudioSmoothing,
+		look.rgbShiftAudioSmoothing,
 		state.audioAutoKickThreshold,
 		state.audioAutoSwitchHoldMs,
 		params.audio.timestampMs
@@ -233,19 +206,19 @@ export function resolveOverlayAdvancedEffects(params: {
 		channelValue,
 		Math.max(params.dt, 1 / 120),
 		{
-			attack: state.rgbShiftAudioAttack,
-			release: state.rgbShiftAudioRelease,
-			responseSpeed: state.rgbShiftAudioReactivitySpeed * 2.4,
-			peakWindow: state.rgbShiftAudioPeakWindow,
-			peakFloor: state.rgbShiftAudioPeakFloor,
-			punch: state.rgbShiftAudioPunch,
+			attack: look.rgbShiftAudioAttack,
+			release: look.rgbShiftAudioRelease,
+			responseSpeed: look.rgbShiftAudioReactivitySpeed * 2.4,
+			peakWindow: look.rgbShiftAudioPeakWindow,
+			peakFloor: look.rgbShiftAudioPeakFloor,
+			punch: look.rgbShiftAudioPunch,
 			scaleIntensity: 1,
 			min: 0,
 			max: 1
 		}
 	).value;
-	const rgbShiftBoost = state.rgbShiftAudioReactive
-		? envValue * state.rgbShiftAudioSensitivity
+	const rgbShiftBoost = look.rgbShiftAudioReactive
+		? envValue * look.rgbShiftAudioSensitivity
 		: 0;
 	// Live clamps at 36 CSS px on the live canvas. The offline `output` is
 	// already `sizeFactor` times the live canvas, so the raw shift must come
@@ -257,24 +230,24 @@ export function resolveOverlayAdvancedEffects(params: {
 	const rgbShiftPixels =
 		Math.min(
 			36,
-			Math.max(0, (state.rgbShift + rgbShiftBoost) * liveShortEdge * 0.65)
+			Math.max(0, (look.rgbShift + rgbShiftBoost) * liveShortEdge * 0.65)
 		) * params.sizeFactor;
 	return {
 		rgbShiftPixels,
-		filmNoiseAmount: state.noiseIntensity,
+		filmNoiseAmount: look.noiseIntensity,
 		scanlineAmount: getScanlineAmount(
-			state.scanlineMode,
-			state.scanlinesEnabled ? state.scanlineIntensity : 0,
+			look.scanlineMode,
+			look.scanlinesEnabled ? look.scanlineIntensity : 0,
 			params.timeMs,
 			params.audio.amplitude
 		),
 		// Spacing drives the line count (resolution-independent); thickness
 		// is a pixel width and scales.
-		scanlineSpacing: state.scanlineSpacing,
-		scanlineThickness: state.scanlineThickness * params.sizeFactor,
+		scanlineSpacing: look.scanlineSpacing,
+		scanlineThickness: look.scanlineThickness * params.sizeFactor,
 		passAlpha: Math.max(
 			0,
-			Math.min(1, params.layerOpacity * state.filterOpacity)
+			Math.min(1, params.layerOpacity * look.filterOpacity)
 		)
 	};
 }

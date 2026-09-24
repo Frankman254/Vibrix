@@ -24,6 +24,7 @@ import {
 	syncActiveBackgroundImage
 } from '@/store/backgroundStoreUtils';
 import { createBackgroundCollectionActions } from '@/store/slices/backgroundCollectionActions';
+import { createEffectLayerActions } from '@/store/slices/effectLayerActions';
 import type { WallpaperStore } from '@/store/wallpaperStoreTypes';
 import { DEFAULT_STATE } from '@/store/defaultState';
 import {
@@ -690,6 +691,7 @@ export function createBackgroundSlice(
 		setSlideshowManualTimestampsEnabled: v =>
 			set({ slideshowManualTimestampsEnabled: v }),
 		...createBackgroundCollectionActions(set, get),
+		...createEffectLayerActions(set),
 		// Derived from the canonical key list instead of a hand-written one.
 		// The hand-written version had drifted: it reset four of the ten
 		// `rgbShiftAudio*` keys and left `scanlinesEnabled` alone, so "reset"
