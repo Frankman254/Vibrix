@@ -7,7 +7,6 @@ import {
 	type CompositionRow,
 	type CompositionSubsystemId
 } from '@/store/imageCompositionSummary';
-import type { WallpaperState } from '@/types/wallpaper';
 import ImageSceneAssignment from './ImageSceneAssignment';
 
 const ROW_LABEL_KEYS: Record<CompositionSubsystemId, keyof Translations> = {
@@ -42,44 +41,72 @@ const SOURCE_LABEL_KEYS: Record<CompositionRow['source'], keyof Translations> =
  */
 export default function ImageCompositionPanel() {
 	const t = useT();
+	// Flat selection on purpose: the store's action identities are stable, so a
+	// shallow compare of a flat object settles. Grouping them into nested
+	// `{capture: {...}}` objects here rebuilds those objects on every call,
+	// which never compares equal and spins React until it gives up.
 	const store = useWallpaperStore(
 		useShallow(s => ({
 			activeImageId: s.activeImageId,
 			backgroundImages: s.backgroundImages,
-			capture: {
-				logo: s.captureImageLogoOverride,
-				spectrum: s.captureImageSpectrumOverride,
-				particles: s.captureImageParticlesOverride,
-				rain: s.captureImageRainOverride,
-				looks: s.captureImageLooksOverride,
-				cameraFx: s.captureImageCameraFxOverride,
-				lights: s.captureImageLightsOverride,
-				trackTitle: s.captureImageTrackTitleOverride
-			},
-			clear: {
-				logo: () => s.setImageLogoOverride(null),
-				spectrum: () => s.setImageSpectrumOverride(null),
-				particles: () => s.setImageParticlesOverride(null),
-				rain: () => s.setImageRainOverride(null),
-				looks: () => s.setImageLooksOverride(null),
-				cameraFx: () => s.setImageCameraFxOverride(null),
-				lights: () => s.setImageLightsOverride(null),
-				trackTitle: () => s.setImageTrackTitleOverride(null)
-			}
+			globalCompositionOverride: s.globalCompositionOverride,
+			sceneSlots: s.sceneSlots,
+			defaultSceneSlotId: s.defaultSceneSlotId,
+			logoProfileSlots: s.logoProfileSlots,
+			spectrumProfileSlots: s.spectrumProfileSlots,
+			particlesProfileSlots: s.particlesProfileSlots,
+			rainProfileSlots: s.rainProfileSlots,
+			looksProfileSlots: s.looksProfileSlots,
+			cameraFxProfileSlots: s.cameraFxProfileSlots,
+			lightsProfileSlots: s.lightsProfileSlots,
+			trackTitleProfileSlots: s.trackTitleProfileSlots,
+			captureLogo: s.captureImageLogoOverride,
+			captureSpectrum: s.captureImageSpectrumOverride,
+			captureParticles: s.captureImageParticlesOverride,
+			captureRain: s.captureImageRainOverride,
+			captureLooks: s.captureImageLooksOverride,
+			captureCameraFx: s.captureImageCameraFxOverride,
+			captureLights: s.captureImageLightsOverride,
+			captureTrackTitle: s.captureImageTrackTitleOverride,
+			setLogo: s.setImageLogoOverride,
+			setSpectrum: s.setImageSpectrumOverride,
+			setParticles: s.setImageParticlesOverride,
+			setRain: s.setImageRainOverride,
+			setLooks: s.setImageLooksOverride,
+			setCameraFx: s.setImageCameraFxOverride,
+			setLights: s.setImageLightsOverride,
+			setTrackTitle: s.setImageTrackTitleOverride
 		}))
 	);
-	// The summary reads slots and scenes across the whole state, so it is
-	// derived from a snapshot instead of a hand-written selector list.
-	const state = useWallpaperStore.getState() as unknown as WallpaperState;
+	const capture: Record<CompositionSubsystemId, () => void> = {
+		logo: store.captureLogo,
+		spectrum: store.captureSpectrum,
+		particles: store.captureParticles,
+		rain: store.captureRain,
+		looks: store.captureLooks,
+		cameraFx: store.captureCameraFx,
+		lights: store.captureLights,
+		trackTitle: store.captureTrackTitle
+	};
+	const clear: Record<CompositionSubsystemId, () => void> = {
+		logo: () => store.setLogo(null),
+		spectrum: () => store.setSpectrum(null),
+		particles: () => store.setParticles(null),
+		rain: () => store.setRain(null),
+		looks: () => store.setLooks(null),
+		cameraFx: () => store.setCameraFx(null),
+		lights: () => store.setLights(null),
+		trackTitle: () => store.setTrackTitle(null)
+	};
 	const image = store.backgroundImages.find(
 		img => img.assetId === store.activeImageId
 	);
 	if (!image) return null;
-	const summary = describeImageComposition(state, image);
+	const summary = describeImageComposition(store, image);
 
 	return (
 		<div className="flex flex-col gap-2">
-			<div className="text-[12px] font-semibold">{t.img_carry_title}</div>
+			{/* No title here: the collapsible section header already says it. */}
 			<Caption as="p">{t.img_carry_hint}</Caption>
 			{summary.globalMode ? (
 				<Caption as="p">{t.img_carry_global_mode_banner}</Caption>
@@ -124,7 +151,7 @@ export default function ImageCompositionPanel() {
 							</div>
 							<div className="flex shrink-0 items-center gap-1">
 								<Button
-									onClick={store.capture[row.id]}
+									onClick={capture[row.id]}
 									size="sm"
 									density="compact"
 									variant="secondary"
@@ -133,7 +160,7 @@ export default function ImageCompositionPanel() {
 								</Button>
 								{row.hasOverride ? (
 									<Button
-										onClick={store.clear[row.id]}
+										onClick={clear[row.id]}
 										size="sm"
 										density="compact"
 										variant="ghost"

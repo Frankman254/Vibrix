@@ -28,6 +28,23 @@ import type {
 	WallpaperState
 } from '@/types/wallpaper';
 
+/** Exactly the state this derivation reads — so a UI can subscribe to that and
+ *  nothing else, and still never show a stale scene name. */
+export type CompositionStateSource = Pick<
+	WallpaperState,
+	| 'globalCompositionOverride'
+	| 'sceneSlots'
+	| 'defaultSceneSlotId'
+	| 'logoProfileSlots'
+	| 'spectrumProfileSlots'
+	| 'particlesProfileSlots'
+	| 'rainProfileSlots'
+	| 'looksProfileSlots'
+	| 'cameraFxProfileSlots'
+	| 'lightsProfileSlots'
+	| 'trackTitleProfileSlots'
+>;
+
 export type CompositionSourceId =
 	/** Global composition mode is on: the live controls win everywhere. */
 	| 'global-mode'
@@ -81,7 +98,7 @@ const SUBSYSTEMS: ReadonlyArray<{
 	overrideKey: keyof BackgroundImageItem | null;
 	slotKey: keyof BackgroundImageItem | null;
 	slots: (
-		state: WallpaperState
+		state: CompositionStateSource
 	) => ReadonlyArray<{ id: string; name: string }>;
 }> = [
 	{
@@ -143,7 +160,7 @@ const SUBSYSTEMS: ReadonlyArray<{
 ];
 
 export function describeImageComposition(
-	state: WallpaperState,
+	state: CompositionStateSource,
 	image: BackgroundImageItem
 ): ImageCompositionSummary {
 	const globalMode =

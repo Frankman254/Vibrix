@@ -332,3 +332,30 @@ export function buildSceneSlotActivationPatch(
 
 	return patch;
 }
+
+/** The three states a scene can hold for one subsystem, as the editor shows them. */
+export type SceneBindingMode = 'keep' | 'off' | 'slot';
+
+export function sceneBindingMode(ref: SceneSlotRef): SceneBindingMode {
+	if (ref == null) return 'keep';
+	if (ref === 'off') return 'off';
+	return 'slot';
+}
+
+/**
+ * What a scene binding becomes when the user presses one of the three state
+ * buttons. `undefined` means "nothing to do": pressing "Slot" with no saved
+ * slot in that family must not silently bind an empty one, which would look
+ * like a scene that applies something and applies nothing.
+ */
+export function resolveSceneBindingChange(
+	mode: SceneBindingMode,
+	current: SceneSlotRef,
+	slots: ReadonlyArray<{ id: string; values: unknown | null }>
+): SceneSlotRef | undefined {
+	if (mode === 'keep') return null;
+	if (mode === 'off') return 'off';
+	const usable = slots.filter(slot => slot.values !== null);
+	const kept = usable.find(slot => slot.id === current);
+	return (kept ?? usable[0])?.id;
+}

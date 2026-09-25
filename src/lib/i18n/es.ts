@@ -1519,6 +1519,9 @@ export const es: Record<TranslationKey, string> = {
 	scene_slot_empty_suffix: 'vacío',
 	scene_slot_keep: 'Sin cambios',
 	scene_slot_disabled: 'Desactivado',
+	scene_slot_use: 'Slot',
+	scene_slot_none_saved:
+		'Todavía no hay ningún slot guardado de este subsistema.',
 	scene_select_no_saved_slots: 'Sin slots guardados',
 	scene_bindings_hint:
 		'Los slots vienen del panel de cada función. Guarda un slot allí para que aparezca aquí.',

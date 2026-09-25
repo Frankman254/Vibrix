@@ -15,6 +15,19 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Escenas: tres estados visibles en vez de un desplegable
+
+- Cada subsistema de una escena tiene tres estados — **No change** (la escena no
+  dice nada), **Disabled** (la escena lo apaga) y **Slot** (aplica un slot
+  guardado) — y ahora son tres botones. Antes eran las dos primeras opciones de
+  la lista de slots, así que «¿qué hace esta escena con el logo?» se contestaba
+  abriendo un menú. El selector de slot solo existe cuando la respuesta es un slot.
+- La regla de «pasar a Slot tiene que caer en algo real» es una función pura
+  (`resolveSceneBindingChange`, en `features/scenes/sceneSlot.ts`) con test: si no
+  hay ningún slot guardado con valores, pulsar **Slot** no hace nada en vez de
+  dejar la escena atada a un slot vacío, que parecía aplicar algo y no aplicaba.
+- La fila de binding sale de `SceneTab` a `scene/SceneBindingRow.tsx`.
+
 ### Qué lleva esta imagen: una sola pantalla y tres overrides nuevos (store v126)
 
 - **Overrides nuevos por imagen**: `cameraFxOverride`, `lightsOverride` y

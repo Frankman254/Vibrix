@@ -16,6 +16,7 @@ import { useWallpaperStore } from '@/store/wallpaperStore';
 import { useT } from '@/lib/i18n';
 import { useTabViewState } from '@/hooks/useTabViewState';
 import SetlistsPanel from './scene/SetlistsPanel';
+import SceneBindingRow from './scene/SceneBindingRow';
 import { AiDirectorPanel, AiBatchPanel } from '@/features/aiDirector/ui';
 import { resolveEditorImagePreviewUrl } from '@/lib/editorImagePreviews';
 import {
@@ -25,7 +26,6 @@ import {
 	EditorTabHeader,
 	EditorTabLayout,
 	IconButton,
-	Select,
 	SegmentedControl,
 	FloatingPanel,
 	UI_COLORS,
@@ -49,12 +49,6 @@ type SceneSlotFeatureKey =
 	| 'cameraFxSlotId'
 	| 'logoSlotId'
 	| 'trackTitleSlotId';
-
-// Numeric sentinels for the 3-state binding picker (Select<number>): KEEP =
-// "no change" (null), OFF = force the subsystem off ('off'). Non-negative
-// values are real slot indices.
-const SCENE_BINDING_KEEP = '__keep__';
-const SCENE_BINDING_OFF = '__off__';
 
 type FeatureColumn = {
 	key: SceneSlotFeatureKey;
@@ -646,74 +640,19 @@ export default function SceneTab({
 							padded={false}
 						>
 							<div className="flex flex-col gap-2 px-4 py-3">
-								{visibleColumns.map(col => {
-									const current = activeScene[col.key];
-									// 3-state value: KEEP (null) | OFF ('off') | slot index.
-									const selectValue =
-										current == null
-											? SCENE_BINDING_KEEP
-											: current === 'off'
-												? SCENE_BINDING_OFF
-												: current;
-									const options = [
-										{
-											value: SCENE_BINDING_KEEP,
-											label: t.scene_slot_keep
-										},
-										{
-											value: SCENE_BINDING_OFF,
-											label: t.scene_slot_disabled
-										},
-										...col.slots.map((s, idx) => ({
-											value: s.id,
-											label:
-												s.values === null
-													? `#${idx + 1} · ${s.name} (${t.scene_slot_empty_suffix})`
-													: `#${idx + 1} · ${s.name}`,
-											disabled: s.values === null
-										}))
-									];
-									return (
-										<div
-											key={col.key}
-											className="flex items-center justify-between gap-3"
-										>
-											<span
-												className="text-[12px] font-medium flex items-center gap-2"
-												style={{ color: UI_COLORS.fg }}
-											>
-												{col.label}
-											</span>
-											<div style={{ minWidth: 180 }}>
-												<Select<string>
-													value={selectValue}
-													options={options}
-													size="sm"
-													full
-													ariaLabel={`${col.label} slot`}
-													onChange={next => {
-														const ref =
-															next ===
-															SCENE_BINDING_KEEP
-																? null
-																: next ===
-																	  SCENE_BINDING_OFF
-																	? 'off'
-																	: next;
-														commitSceneBinding(
-															activeScene.id,
-															{
-																[col.key]: ref
-															} as Partial<
-																typeof activeScene
-															>
-														);
-													}}
-												/>
-											</div>
-										</div>
-									);
-								})}
+								{visibleColumns.map(col => (
+									<SceneBindingRow
+										key={col.key}
+										label={col.label}
+										value={activeScene[col.key]}
+										slots={col.slots}
+										onChange={ref =>
+											commitSceneBinding(activeScene.id, {
+												[col.key]: ref
+											} as Partial<typeof activeScene>)
+										}
+									/>
+								))}
 								<p
 									className="text-[10px]"
 									style={{ color: UI_COLORS.fgMute }}

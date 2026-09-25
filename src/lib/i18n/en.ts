@@ -1507,6 +1507,8 @@ export const en = {
 	scene_slot_empty_suffix: 'empty',
 	scene_slot_keep: 'No change',
 	scene_slot_disabled: 'Disabled',
+	scene_slot_use: 'Slot',
+	scene_slot_none_saved: 'No saved slot yet for this subsystem.',
 	scene_select_no_saved_slots: 'No saved slots',
 	scene_bindings_hint:
 		"Slots come from each feature's own panel. Save a slot there to make it selectable here.",

@@ -421,6 +421,17 @@ Ordenadas por (valor visible ÷ riesgo), no por tema.
   `end` al marcar.
 - Aviso visual cuando marcar reordena el pase.
 
+### Fase I — UI de escenas — **HECHA** (sin cambio de persistencia)
+
+- Tres estados por subsistema como **tres botones** (`SceneBindingRow`), no como
+  las dos primeras opciones del desplegable de slots. El selector de slot aparece
+  solo cuando el estado es «Slot».
+- `resolveSceneBindingChange` / `sceneBindingMode` (`features/scenes/sceneSlot.ts`)
+  son puras y tienen test: pulsar «Slot» sin ningún slot guardado **no hace nada**,
+  en vez de atar la escena a un slot vacío.
+- «Capturar escena actual» ya existía (`captureSceneSlotFromCurrent`, con test) y
+  se deja como está: el botón de cámara de la cabecera de Scenes.
+
 ### Fase G — Coherencia de "per image" — **HECHA** (store v126)
 
 - Documentar y aplicar las tres categorías (global / por imagen / por escena).
@@ -694,7 +705,7 @@ la patch. Y la fase no se da por cerrada sin las tres.
 | **F**  | ✅ Botón "marcar aquí" + atajo `M` + anclaje de transición                     | v123 hecho       |
 | **G**  | ✅ Coherencia per-image + pantalla única «qué lleva esta imagen»               | v126 hecho       |
 | **H**  | ✅ Modo global que pisa per-image sin borrarlo + "Guardar en todas"            | v121 hecho       |
-| **I**  | UI de escenas con botones de tres estados + "capturar escena actual"           | —                |
+| **I**  | ✅ UI de escenas con botones de tres estados + "capturar escena actual"        | sin persistencia |
 | **J**  | _(futuro, no en este plan)_ Línea de tiempo de eventos                         | —                |
 
 Orden de ejecución: **A → E1 → H → F → B → C → G → I → E2 → E3 → E4 → D**.
