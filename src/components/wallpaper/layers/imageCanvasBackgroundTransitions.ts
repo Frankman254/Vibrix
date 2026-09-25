@@ -122,34 +122,98 @@ function drawBgImage(
 	}
 }
 
-function drawClippedBgImage(
+let transitionSourceCanvas: HTMLCanvasElement | null = null;
+let transitionSourceCtx: CanvasRenderingContext2D | null = null;
+
+function getTransitionSourceContext(
+	width: number,
+	height: number
+): CanvasRenderingContext2D | null {
+	if (typeof document === 'undefined') return null;
+	if (!transitionSourceCanvas) {
+		transitionSourceCanvas = document.createElement('canvas');
+		transitionSourceCtx = transitionSourceCanvas.getContext('2d');
+	}
+	if (!transitionSourceCtx || !transitionSourceCanvas) return null;
+	if (
+		transitionSourceCanvas.width !== width ||
+		transitionSourceCanvas.height !== height
+	) {
+		transitionSourceCanvas.width = width;
+		transitionSourceCanvas.height = height;
+	}
+	return transitionSourceCtx;
+}
+
+/**
+ * The incoming image composed once, full canvas, ready to be sampled.
+ *
+ * The tiled transitions used to redraw the whole image — filters and all —
+ * inside every tile's clip: ~190 full-screen draws per frame for Dissolve, each
+ * one with a `blur()` on it. That is the lag. Now the image is composed once
+ * and each tile copies the pixels it needs.
+ */
+function renderTransitionSource(
 	dc: BgDrawContext,
 	sourceImage: HTMLImageElement,
-	snapshot: BackgroundImageSnapshot,
+	snapshot: BackgroundImageSnapshot
+): HTMLCanvasElement | null {
+	const ctx = getTransitionSourceContext(dc.canvasWidth, dc.canvasHeight);
+	if (!ctx || !transitionSourceCanvas) return null;
+	ctx.save();
+	ctx.setTransform(1, 0, 0, 1, 0, 0);
+	ctx.globalAlpha = 1;
+	ctx.filter = 'none';
+	ctx.clearRect(0, 0, dc.canvasWidth, dc.canvasHeight);
+	ctx.restore();
+	// Layer opacity is applied when the tiles land on the real canvas, so the
+	// source stays at full strength and a tile can still fade in on its own.
+	drawBgImage({ ...dc, ctx, layerOpacity: 1 }, sourceImage, snapshot, 1);
+	return transitionSourceCanvas;
+}
+
+/**
+ * One tile of the composed source, displaced by the transition's warp.
+ *
+ * `offsetX/offsetY` mean what they meant when the tile redrew the image: the
+ * content moves by that much, so the pixels come from the opposite side.
+ */
+function blitTransitionTile(
+	dc: BgDrawContext,
+	source: HTMLCanvasElement,
 	clipX: number,
 	clipY: number,
 	clipWidth: number,
 	clipHeight: number,
 	alpha: number,
-	transitionOffsetX = 0,
-	transitionOffsetY = 0,
-	scaleMultiplier = 1,
+	offsetX = 0,
+	offsetY = 0,
 	blurBoost = 0
 ): void {
 	if (clipWidth <= 0 || clipHeight <= 0) return;
+	// The base filter already carries `blur(dc.blur)`, and the old code
+	// appended a second blur on top of it. Same chain here, applied to the
+	// copy instead of to a fresh full-image draw.
+	const blurPx = blurBoost > 0 ? dc.blur + blurBoost : 0;
+	// Sample beyond the tile so the blur has real neighbours to pull from;
+	// blurring a bare tile would leave a visible seam on all four edges.
+	const pad = blurPx > 0 ? Math.ceil(blurPx * 3) : 0;
 	dc.ctx.save();
 	dc.ctx.beginPath();
 	dc.ctx.rect(clipX, clipY, clipWidth, clipHeight);
 	dc.ctx.clip();
-	drawBgImage(
-		dc,
-		sourceImage,
-		snapshot,
-		alpha,
-		transitionOffsetX,
-		transitionOffsetY,
-		scaleMultiplier,
-		blurBoost
+	dc.ctx.globalAlpha = clamp(alpha * dc.layerOpacity, 0, 1);
+	dc.ctx.filter = blurPx > 0 ? `blur(${blurPx}px)` : 'none';
+	dc.ctx.drawImage(
+		source,
+		clipX - offsetX - pad,
+		clipY - offsetY - pad,
+		clipWidth + pad * 2,
+		clipHeight + pad * 2,
+		clipX - pad,
+		clipY - pad,
+		clipWidth + pad * 2,
+		clipHeight + pad * 2
 	);
 	dc.ctx.restore();
 }
@@ -157,8 +221,7 @@ function drawClippedBgImage(
 function drawBarsTransition(
 	tc: BgTransitionCtx,
 	axis: 'horizontal' | 'vertical',
-	sourceImage: HTMLImageElement,
-	sourceSnapshot: BackgroundImageSnapshot,
+	source: HTMLCanvasElement,
 	revealProgress: number
 ): void {
 	const segments = Math.max(
@@ -193,10 +256,9 @@ function drawBarsTransition(
 			(1 - local);
 
 		if (axis === 'horizontal') {
-			drawClippedBgImage(
+			blitTransitionTile(
 				tc,
-				sourceImage,
-				sourceSnapshot,
+				source,
 				0,
 				index * bandLength,
 				tc.canvasWidth,
@@ -206,10 +268,9 @@ function drawBarsTransition(
 				0
 			);
 		} else {
-			drawClippedBgImage(
+			blitTransitionTile(
 				tc,
-				sourceImage,
-				sourceSnapshot,
+				source,
 				index * bandLength,
 				0,
 				Math.ceil(bandLength + 1),
@@ -224,8 +285,7 @@ function drawBarsTransition(
 
 function drawDissolveTransition(
 	tc: BgTransitionCtx,
-	sourceImage: HTMLImageElement,
-	sourceSnapshot: BackgroundImageSnapshot,
+	source: HTMLCanvasElement,
 	revealProgress: number
 ): void {
 	const cols = Math.max(10, Math.floor(12 + tc.transitionForceNorm * 5));
@@ -258,10 +318,9 @@ function drawDissolveTransition(
 				tc.transitionForce *
 				(1 - local);
 
-			drawClippedBgImage(
+			blitTransitionTile(
 				tc,
-				sourceImage,
-				sourceSnapshot,
+				source,
 				x * tileWidth,
 				y * tileHeight,
 				Math.ceil(tileWidth + 1),
@@ -269,7 +328,6 @@ function drawDissolveTransition(
 				local,
 				warpX,
 				warpY,
-				1,
 				(1 - local) * (4 + tc.transitionForce * 2)
 			);
 		}
@@ -384,12 +442,18 @@ export function runBackgroundTransitionPass({
 			easedProgress * (4 + tc.transitionForce * 1.8)
 		);
 		if (activeImage) {
-			drawDissolveTransition(
-				tc,
+			const source = renderTransitionSource(
+				dc,
 				activeImage,
-				activeSnapshot,
-				easedProgress
+				activeSnapshot
 			);
+			if (source) {
+				drawDissolveTransition(tc, source, easedProgress);
+			} else {
+				// No offscreen canvas available (non-DOM host): a plain fade is
+				// wrong-looking but cheap, and it never drops the new image.
+				drawBgImage(dc, activeImage, activeSnapshot, easedProgress);
+			}
 		}
 		return;
 	}
@@ -402,13 +466,16 @@ export function runBackgroundTransitionPass({
 			1 - easedProgress * 0.45
 		);
 		if (activeImage) {
-			drawBarsTransition(
-				tc,
-				'horizontal',
+			const source = renderTransitionSource(
+				dc,
 				activeImage,
-				activeSnapshot,
-				easedProgress
+				activeSnapshot
 			);
+			if (source) {
+				drawBarsTransition(tc, 'horizontal', source, easedProgress);
+			} else {
+				drawBgImage(dc, activeImage, activeSnapshot, easedProgress);
+			}
 		}
 		return;
 	}
@@ -421,13 +488,16 @@ export function runBackgroundTransitionPass({
 			1 - easedProgress * 0.45
 		);
 		if (activeImage) {
-			drawBarsTransition(
-				tc,
-				'vertical',
+			const source = renderTransitionSource(
+				dc,
 				activeImage,
-				activeSnapshot,
-				easedProgress
+				activeSnapshot
 			);
+			if (source) {
+				drawBarsTransition(tc, 'vertical', source, easedProgress);
+			} else {
+				drawBgImage(dc, activeImage, activeSnapshot, easedProgress);
+			}
 		}
 		return;
 	}
@@ -505,6 +575,15 @@ export function runBackgroundTransitionPass({
 				Math.floor(14 + tc.transitionForce * 5)
 			);
 			const sliceHeight = dc.canvasHeight / segments;
+			const source = renderTransitionSource(
+				dc,
+				activeImage,
+				activeSnapshot
+			);
+			if (!source) {
+				drawBgImage(dc, activeImage, activeSnapshot, easedProgress);
+				return;
+			}
 			for (let index = 0; index < segments; index++) {
 				const wave =
 					Math.sin(tc.time * 0.01 + index * 0.85) *
@@ -512,10 +591,9 @@ export function runBackgroundTransitionPass({
 					0.05 *
 					tc.transitionForce *
 					(1 - easedProgress);
-				drawClippedBgImage(
+				blitTransitionTile(
 					dc,
-					activeImage,
-					activeSnapshot,
+					source,
 					0,
 					index * sliceHeight,
 					dc.canvasWidth,

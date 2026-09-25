@@ -17,6 +17,18 @@ the version scheme in `src/lib/version.ts`.
 
 ## [0.5.0-alpha] — 2026-09-24
 
+### Las transiciones con teselas dejan de laguear
+
+- **Dissolve** (`blur-dissolve`) redibujaba la imagen entera —filtros y un
+  `blur()` incluidos— dentro del recorte de **cada tesela**: unos 190 dibujados
+  a pantalla completa por fotograma. Ahora la imagen entrante se compone **una
+  sola vez** en un canvas fuera de pantalla y cada tesela **copia** los píxeles
+  que le tocan. Mismo aspecto, un dibujado completo por fotograma en vez de 190.
+- Lo mismo para `bars-horizontal`, `bars-vertical` y `distortion`, que sufrían
+  el mismo patrón a menor escala.
+- El desenfoque de cada tesela muestrea un margen alrededor de ella, así que no
+  aparece costura en los bordes de la rejilla.
+
 ### Un destino, un dueño (capas de efectos)
 
 - En la pestaña Looks, el chip de un destino que ya pertenece a otra capa se

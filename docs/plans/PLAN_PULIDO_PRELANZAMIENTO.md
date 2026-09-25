@@ -646,7 +646,7 @@ la patch. Y la fase no se da por cerrada sin las tres.
 | **B**  | Camera Motion por capas (`motionLayers`)                                       | bump + migración |
 | **C**  | Movimientos nuevos + clamp por tipo de capa                                    | bump + migración |
 | **D**  | Separar Spectrum 1 / 2 en la cámara (transformación en el renderer)            | —                |
-| **E1** | Dissolve y `blur-dissolve` a offscreen (el lag)                                | —                |
+| **E1** | ✅ Dissolve y compañía a offscreen (el lag)                                    | hecho            |
 | **E2** | Crossfade real por captura de frame (la calidad)                               | —                |
 | **E3** | Presets de transición con nombre; dials a Advanced; quitar el duplicado global | bump + migración |
 | **E4** | Extender el crossfade a spectrum/logo/particles/rain                           | —                |
