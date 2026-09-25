@@ -1,4 +1,4 @@
-export const APP_VERSION = '0.6.0-alpha';
+export const APP_VERSION = '0.7.0-alpha';
 
 export const SETTINGS_FORMAT = 'vibrix-settings';
 export const SETTINGS_SCHEMA_VERSION = 1;

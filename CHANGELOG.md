@@ -13,7 +13,12 @@ the version scheme in `src/lib/version.ts`.
 > - `STORE_PERSIST_VERSION` — the Zustand `localStorage` migration counter (bumped
 >   on every persisted-state shape change; **not** a product version).
 
-## [Unreleased]
+## [0.7.0-alpha] — 2026-09-25
+
+Cierre del plan de pulido de prelanzamiento: las fases A–I están todas hechas.
+Entran función nueva (presets de transición, destino de cámara Spectrum 2,
+tiempos manuales, capas de movimiento) y calidad (crossfade real en todas las
+capas), así que sube la minor de alpha.
 
 ### La cámara ya puede mover Spectrum 2 por su cuenta
 
