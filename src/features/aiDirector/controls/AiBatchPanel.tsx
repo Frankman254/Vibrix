@@ -47,6 +47,7 @@ export default function AiBatchPanel() {
 			backgroundImages: s.backgroundImages,
 			sceneSlots: s.sceneSlots,
 			sceneServiceBaseUrl: s.sceneServiceBaseUrl,
+			sceneServiceModel: s.sceneServiceModel,
 			applyAiBatch: s.applyAiBatch
 		}))
 	);
@@ -105,7 +106,8 @@ export default function AiBatchPanel() {
 			const result = await requestSceneIntent({
 				signature: cluster.representative.signature,
 				imageUrl: image?.url ?? image?.thumbnailUrl ?? null,
-				baseUrl: store.sceneServiceBaseUrl
+				baseUrl: store.sceneServiceBaseUrl,
+				model: store.sceneServiceModel
 			});
 			nextPlans.push({
 				cluster,

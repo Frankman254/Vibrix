@@ -25,7 +25,9 @@ describe('probeSceneIntentService', () => {
 			reachable: true,
 			providerReady: true,
 			provider: 'anthropic',
-			reason: null
+			reason: null,
+			models: [],
+			activeModel: null
 		});
 	});
 

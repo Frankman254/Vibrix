@@ -55,8 +55,20 @@ export function createOpenAiCompatProvider({
 			.filter(Boolean);
 	}
 
-	/** The id to send. Re-asks whenever auto mode has nothing cached yet. */
-	async function modelId() {
+	/**
+	 * The id to send. A caller's choice wins, but only if the server actually
+	 * serves it: a stale pick from the UI must not turn every request into a
+	 * 404 — falling back to the server's own model still produces a scene.
+	 */
+	async function modelId(requested) {
+		if (requested) {
+			const names = await listModels().catch(() => []);
+			if (names.length === 0 || names.includes(requested))
+				return requested;
+			logger.warn(
+				`[openai-compat] requested model ${requested} is not served; using the server's`
+			);
+		}
 		if (!autoModel) return resolved;
 		if (resolved) return resolved;
 		const names = await listModels();
@@ -71,8 +83,14 @@ export function createOpenAiCompatProvider({
 			return `openai:${resolved || (autoModel ? 'auto' : '(no model set)')}`;
 		},
 
-		async generateIntent({ system, userText, image, schema }) {
-			const activeModel = await modelId();
+		async generateIntent({
+			system,
+			userText,
+			image,
+			schema,
+			model: requested
+		}) {
+			const activeModel = await modelId(requested);
 			const content = [];
 			// Only send the image when the server was told the model takes one;
 			// a text-only model answers 400 rather than ignoring it.
@@ -133,20 +151,29 @@ export function createOpenAiCompatProvider({
 
 				const payload = await response.json();
 				const message = payload?.choices?.[0]?.message;
-				const text =
-					typeof message?.content === 'string'
-						? message.content.trim()
-						: '';
-				if (!text) {
-					// A reasoning model can spend the whole budget thinking and
-					// leave `content` empty; say so instead of a bare parse error.
-					throw new Error(
-						message?.reasoning
-							? 'model returned reasoning but no answer (raise max_tokens or disable thinking)'
-							: 'model returned empty content'
-					);
+				// `content` is where the answer belongs, but a thinking model
+				// behind LM Studio files its whole (schema-constrained) output
+				// under `reasoning_content` and leaves `content` empty. Take the
+				// first field that parses rather than failing on a right answer
+				// filed in the wrong envelope.
+				for (const field of [
+					'content',
+					'reasoning_content',
+					'reasoning'
+				]) {
+					const value = message?.[field];
+					if (typeof value !== 'string' || !value.trim()) continue;
+					try {
+						return JSON.parse(value.trim());
+					} catch {
+						// Prose, not the intent: keep looking.
+					}
 				}
-				return JSON.parse(text);
+				throw new Error(
+					message?.reasoning || message?.reasoning_content
+						? 'model returned reasoning but no answer (raise max_tokens or disable thinking)'
+						: 'model returned empty content'
+				);
 			} finally {
 				clearTimeout(timeout);
 			}

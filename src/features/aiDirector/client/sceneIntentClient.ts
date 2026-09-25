@@ -50,6 +50,9 @@ export type RequestSceneIntentOptions = {
 	/** Scene-service base URL (see `sceneServiceBaseUrl` in the store).
 	 *  '' / undefined means same-origin. */
 	baseUrl?: string;
+	/** Model to ask for, when the service offers several. '' / undefined
+	 *  leaves the choice to the server. */
+	model?: string;
 };
 
 /** Join a configured base URL with an API path; '' means same-origin. */
@@ -104,7 +107,13 @@ export async function requestSceneIntent(
 			{
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ signature, seed, guidance, image }),
+				body: JSON.stringify({
+					signature,
+					seed,
+					guidance,
+					image,
+					...(options.model ? { model: options.model } : {})
+				}),
 				signal: controller.signal
 			}
 		);
@@ -162,6 +171,10 @@ export type SceneIntentServiceStatus = {
 	provider: string | null;
 	/** Why not ready, when `providerReady` is false. */
 	reason: string | null;
+	/** Models the service offers, when it can enumerate them. */
+	models: string[];
+	/** The one it would use with no explicit choice. */
+	activeModel: string | null;
 };
 
 /**
@@ -183,7 +196,9 @@ export async function probeSceneIntentService(
 				reachable: false,
 				providerReady: false,
 				provider: null,
-				reason: `health responded ${response.status}`
+				reason: `health responded ${response.status}`,
+				models: [],
+				activeModel: null
 			};
 		}
 		const payload: unknown = await response.json();
@@ -199,7 +214,9 @@ export async function probeSceneIntentService(
 				reachable: false,
 				providerReady: false,
 				provider: null,
-				reason: 'health payload has no sceneIntent field'
+				reason: 'health payload has no sceneIntent field',
+				models: [],
+				activeModel: null
 			};
 		}
 		const scene = payload.sceneIntent;
@@ -213,6 +230,17 @@ export async function probeSceneIntentService(
 			reason:
 				'reason' in scene && typeof scene.reason === 'string'
 					? scene.reason
+					: null,
+			models:
+				'models' in scene && Array.isArray(scene.models)
+					? scene.models.filter(
+							(entry): entry is string =>
+								typeof entry === 'string'
+						)
+					: [],
+			activeModel:
+				'model' in scene && typeof scene.model === 'string'
+					? scene.model
 					: null
 		};
 	} catch {
@@ -220,7 +248,9 @@ export async function probeSceneIntentService(
 			reachable: false,
 			providerReady: false,
 			provider: null,
-			reason: 'could not reach the scene service'
+			reason: 'could not reach the scene service',
+			models: [],
+			activeModel: null
 		};
 	}
 }

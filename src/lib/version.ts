@@ -116,4 +116,7 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // v121: `globalCompositionOverride` + per-image `ignoreGlobalOverride` — the
 // global composition mode that ignores per-image configs without erasing them.
 // Migration defaults both off, so an existing project behaves exactly as before.
-export const STORE_PERSIST_VERSION = 121;
+// v122: `sceneServiceModel` — which model the scene service should use, when
+// its server offers several (LM Studio with three models loaded, say). '' keeps
+// the server's own choice, which is what every pre-v122 store meant.
+export const STORE_PERSIST_VERSION = 122;

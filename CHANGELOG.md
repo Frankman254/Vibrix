@@ -15,6 +15,20 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Elección de modelo para el AI Director (store v122)
+
+- El panel de Diagnostics muestra un selector de **modelo de escena** cuando el
+  servicio ofrece varios (por ejemplo LM Studio con tres modelos cargados). La
+  opción por defecto sigue siendo «el que elija el servidor».
+- `sceneServiceModel` se persiste; `STORE_PERSIST_VERSION` sube a **122** y la
+  migración escribe `''`, que es justo lo que significaban los stores previos.
+- El modelo pedido viaja en el cuerpo del pedido y entra en la clave de caché:
+  dos modelos no comparten respuesta. Si el servidor ya no sirve el modelo
+  elegido, el backend usa el suyo en vez de fallar.
+- El adaptador OpenAI-compatible acepta `OPENAI_MODEL=auto` (o sin definir):
+  pregunta al servidor qué sirve. Pensado para la DGX compartida, donde el
+  modelo cambia sin aviso.
+
 ## [0.6.0-alpha] — 2026-09-25
 
 ### Modo de composición global (store v121)
@@ -675,7 +689,7 @@ pliega el look Custom legacy dentro del banco normal de slots y traduce la
 selección. El campo legacy se queda en el esquema para que los proyectos
 exportados antes sigan importándose.
 
-`STORE_PERSIST_VERSION` is at **121**; `PROJECT_SCHEMA_VERSION` and `SETTINGS_SCHEMA_VERSION` remain at **1**. `APP_VERSION` / `package.json`: **0.6.0-alpha**.
+`STORE_PERSIST_VERSION` is at **122**; `PROJECT_SCHEMA_VERSION` and `SETTINGS_SCHEMA_VERSION` remain at **1**. `APP_VERSION` / `package.json`: **0.6.0-alpha**.
 
 ---
 

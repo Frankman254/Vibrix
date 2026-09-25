@@ -125,6 +125,7 @@ export function createSystemSlice(
 		setShowFps: v => set({ showFps: v }),
 		setSceneServiceBaseUrl: v =>
 			set({ sceneServiceBaseUrl: v.trim().replace(/\/+$/, '') }),
+		setSceneServiceModel: v => set({ sceneServiceModel: v.trim() }),
 		setOfflineExportResolutionId: v =>
 			set({ offlineExportResolutionId: v }),
 		setOfflineExportFps: v => set({ offlineExportFps: v }),

@@ -1405,6 +1405,10 @@ export const en = {
 	ai_service_save: 'Save',
 	ai_service_base_url_hint:
 		'Scene-service base URL. Empty = same origin (dev proxy / deployed server). Set http://localhost:8787 to use a backend running on your own machine.',
+	ai_service_model_label: 'Scene model',
+	ai_service_model_auto: "Server's choice ({model})",
+	ai_service_model_hint:
+		'Which model answers, when the service offers several. A bigger model reasons better about the image; a smaller one answers sooner.',
 	ai_service_setup_title: 'How to run the service',
 	ai_service_req_mac:
 		'Requirements: Node 18+, Homebrew, Ollama and the `qwen3:8b` model (≈5 GB). 8 GB+ free RAM. The first request can take ~20 s.',

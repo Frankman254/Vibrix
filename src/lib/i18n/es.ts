@@ -1416,6 +1416,10 @@ export const es: Record<TranslationKey, string> = {
 	ai_service_save: 'Guardar',
 	ai_service_base_url_hint:
 		'URL base del servicio de escenas. Vacío = mismo origen (proxy de dev / servidor desplegado). Ponele http://localhost:8787 para usar un backend en tu máquina.',
+	ai_service_model_label: 'Modelo de escena',
+	ai_service_model_auto: 'El que elija el servidor ({model})',
+	ai_service_model_hint:
+		'Qué modelo responde, cuando el servicio ofrece varios. Uno más grande razona mejor la imagen; uno más chico responde antes.',
 	ai_service_setup_title: 'Cómo correr el servicio',
 	ai_service_req_mac:
 		'Requisitos: Node 18+, Homebrew, Ollama y el modelo `qwen3:8b` (≈5 GB). RAM libre: 8 GB+. El primer pedido puede tardar ~20 s.',

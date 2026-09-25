@@ -111,6 +111,7 @@ const BASE_STATE: Omit<WallpaperState, 'effectLayers' | 'activeEffectLayerId'> =
 		filterTargets: ['background'],
 		filterOpacity: 1,
 		sceneServiceBaseUrl: '',
+		sceneServiceModel: '',
 		filterBrightness: 1,
 		filterContrast: 1,
 		filterSaturation: 1,

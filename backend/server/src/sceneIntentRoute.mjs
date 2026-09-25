@@ -37,7 +37,7 @@ How to decide:
 
 Write the rationale for the person using the app: one or two plain sentences on what you saw in the image and what you chose because of it. Do not restate the field values.`;
 
-function cacheKey(signature, guidance, hasImage) {
+function cacheKey(signature, guidance, hasImage, model) {
 	return createHash('sha256')
 		.update(
 			JSON.stringify({
@@ -50,7 +50,10 @@ function cacheKey(signature, guidance, hasImage) {
 				pixel: Boolean(signature?.isPixelArt),
 				palette: (signature?.palette ?? []).map(entry => entry?.hex),
 				guidance: guidance ?? '',
-				hasImage
+				hasImage,
+				// Two models answer differently: never serve one's answer for the
+				// other.
+				model: model ?? ''
 			})
 		)
 		.digest('hex');
@@ -95,13 +98,19 @@ export function createSceneIntentHandler({ provider, logger = console }) {
 	}
 
 	return async function handleSceneIntent(req, res) {
-		const { signature, seed, guidance, image } = req.body ?? {};
+		const { signature, seed, guidance, image, model } = req.body ?? {};
 		if (!signature || typeof signature !== 'object') {
 			res.status(400).json({ error: 'signature is required' });
 			return;
 		}
 
-		const key = cacheKey(signature, guidance, Boolean(image));
+		const requestedModel = typeof model === 'string' ? model.trim() : '';
+		const key = cacheKey(
+			signature,
+			guidance,
+			Boolean(image),
+			requestedModel
+		);
 		const cached = readCache(key);
 		if (cached) {
 			res.json({ intent: cached, cached: true });
@@ -124,7 +133,9 @@ export function createSceneIntentHandler({ provider, logger = console }) {
 				system: SYSTEM_PROMPT,
 				userText: promptText,
 				image,
-				schema: SCENE_INTENT_SCHEMA
+				schema: SCENE_INTENT_SCHEMA,
+				// A provider that serves one model ignores this.
+				model: requestedModel || undefined
 			});
 			writeCache(key, intent);
 			res.json({ intent, cached: false });

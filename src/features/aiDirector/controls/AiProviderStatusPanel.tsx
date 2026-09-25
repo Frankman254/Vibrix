@@ -9,6 +9,7 @@ import {
 	Button,
 	EnumButtonGroup,
 	SectionCard,
+	Select,
 	TextInput,
 	UI_COLORS,
 	FONT,
@@ -40,7 +41,9 @@ export default function AiProviderStatusPanel() {
 	const store = useWallpaperStore(
 		useShallow(s => ({
 			sceneServiceBaseUrl: s.sceneServiceBaseUrl,
-			setSceneServiceBaseUrl: s.setSceneServiceBaseUrl
+			setSceneServiceBaseUrl: s.setSceneServiceBaseUrl,
+			sceneServiceModel: s.sceneServiceModel,
+			setSceneServiceModel: s.setSceneServiceModel
 		}))
 	);
 	const [status, setStatus] = useState<SceneIntentServiceStatus | null>(null);
@@ -223,6 +226,39 @@ node src/index.mjs
 				>
 					{t.ai_service_base_url_hint}
 				</p>
+
+				{/* Which model, when the service offers more than one */}
+				{status !== null && status.models.length > 1 ? (
+					<div className="flex flex-col gap-1">
+						<Select
+							size="sm"
+							density="compact"
+							full
+							ariaLabel={t.ai_service_model_label}
+							value={store.sceneServiceModel}
+							onChange={store.setSceneServiceModel}
+							options={[
+								{
+									value: '',
+									label: t.ai_service_model_auto.replace(
+										'{model}',
+										status.activeModel ?? '?'
+									)
+								},
+								...status.models.map(id => ({
+									value: id,
+									label: id
+								}))
+							]}
+						/>
+						<p
+							className="text-[10px] leading-relaxed"
+							style={{ color: UI_COLORS.fgMute }}
+						>
+							{t.ai_service_model_hint}
+						</p>
+					</div>
+				) : null}
 
 				{!ok ? (
 					<p

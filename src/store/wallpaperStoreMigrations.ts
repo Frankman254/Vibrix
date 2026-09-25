@@ -3039,6 +3039,9 @@ export function migrateWallpaperStore(
 	if (fromVersion < 115) {
 		migratedState.sceneServiceBaseUrl ??= '';
 	}
+	if (fromVersion < 122) {
+		migratedState.sceneServiceModel ??= '';
+	}
 	if (fromVersion < 117) {
 		// Manual framing is opt-in: existing projects keep the coverage math.
 		migratedState.imageFramingManualEnabled ??= false;

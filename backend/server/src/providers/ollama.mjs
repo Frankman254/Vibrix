@@ -34,7 +34,16 @@ export function createOllamaProvider({
 	return {
 		name: `ollama:${model}`,
 
-		async generateIntent({ system, userText, image, schema }) {
+		async generateIntent({
+			system,
+			userText,
+			image,
+			schema,
+			// The UI can pick among the models Ollama has pulled; anything else
+			// falls back to the configured one.
+			model: requested
+		}) {
+			const activeModel = requested || model;
 			const message = { role: 'user', content: userText };
 			if (image?.base64 && supportsImages) {
 				// Ollama takes bare base64 strings in `images`, no data: prefix.
@@ -53,7 +62,7 @@ export function createOllamaProvider({
 					headers: { 'content-type': 'application/json' },
 					signal: controller.signal,
 					body: JSON.stringify({
-						model,
+						model: activeModel,
 						stream: false,
 						// The schema is enforced by the runtime, not requested in prose.
 						format: schema,

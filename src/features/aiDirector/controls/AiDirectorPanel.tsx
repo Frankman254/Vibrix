@@ -95,6 +95,7 @@ export default function AiDirectorPanel() {
 			activeImageId: s.activeImageId,
 			editorImagePreviewQuality: s.editorImagePreviewQuality,
 			sceneServiceBaseUrl: s.sceneServiceBaseUrl,
+			sceneServiceModel: s.sceneServiceModel,
 			aiDraft: s.aiDraft,
 			aiPreviewActive: s.aiPreviewActive,
 			previewAiDraft: s.previewAiDraft,
@@ -177,7 +178,8 @@ export default function AiDirectorPanel() {
 				imageUrl: activeImage.url ?? activeImage.thumbnailUrl,
 				guidance: guidance.trim() || undefined,
 				signal: controller.signal,
-				baseUrl: store.sceneServiceBaseUrl
+				baseUrl: store.sceneServiceBaseUrl,
+				model: store.sceneServiceModel
 			});
 			const fresh = useWallpaperStore.getState();
 			if (!shouldApplySceneIntentResult(assetIdAtRequest, fresh)) {

@@ -1742,6 +1742,9 @@ export type WallpaperState = {
 	 *  (dev proxy / deployed server). Set it to point the app at a backend on
 	 *  your own machine or LAN, e.g. http://localhost:8787. */
 	sceneServiceBaseUrl: string;
+	/** Which model the scene service should use. '' lets the server decide —
+	 *  the only sensible default, since the app cannot know what it serves. */
+	sceneServiceModel: string;
 	controlPanelAnchor: ControlPanelAnchor;
 	/** Pixel offset applied on top of the anchor — set by dragging the panel
 	 *  header. Reset to 0 via the anchor selector or a context menu. */
