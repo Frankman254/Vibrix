@@ -60,8 +60,6 @@ type SpectrumResponsiveSettings = LayoutScaleSettings &
 type HudResponsiveSettings = LayoutScaleSettings &
 	Pick<WallpaperState, 'quickActionsScale' | 'quickActionsLauncherSize'>;
 
-type EditorResponsiveSettings = LayoutScaleSettings;
-
 type ResponsiveBackgroundTransformInput = LayoutResponsiveSettings & {
 	authoredScale: number;
 	authoredPositionX: number;
@@ -277,7 +275,7 @@ export function resolveResponsiveHudLayout(
 		currentHeight
 	);
 	// Cap the responsive factor so the HUD controls don't grow enormous on
-	// large / 4K monitors.  Analogous to the [1, 1.55] clamp in the editor.
+	// large / 4K monitors.
 	const clampedFactor = clamp(factor, 0.5, 1.75);
 
 	return {
@@ -287,22 +285,6 @@ export function resolveResponsiveHudLayout(
 			clampedFactor,
 			24
 		)
-	};
-}
-
-export function resolveResponsiveEditorLayout(
-	settings: EditorResponsiveSettings,
-	currentWidth: number,
-	currentHeight: number
-): { editorScale: number } {
-	const factor = getResponsiveShortEdgeScale(
-		settings,
-		currentWidth,
-		currentHeight
-	);
-
-	return {
-		editorScale: clamp(factor, 1, 1.55)
 	};
 }
 

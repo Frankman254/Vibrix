@@ -54,11 +54,3 @@ export function randomVividColor(): string {
 	const lightness = randomInt(45, 62);
 	return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 }
-
-/** A second color that is harmonically offset from `baseHue` for gradients. */
-export function randomHarmonyColor(): string {
-	const hue = randomInt(0, 360);
-	const saturation = randomInt(65, 100);
-	const lightness = randomInt(45, 62);
-	return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-}

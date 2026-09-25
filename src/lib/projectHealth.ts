@@ -284,6 +284,42 @@ export function createProjectHealthReport(
 				`Image "${image.originalFileName ?? image.assetId}" references an empty spectrum slot.`
 			);
 		}
+		if (
+			image.particlesProfileSlotId != null &&
+			!hasSlotValue(
+				state.particlesProfileSlots,
+				image.particlesProfileSlotId
+			)
+		) {
+			addIssue(
+				issues,
+				'warning',
+				'image-particles-slot-missing',
+				`Image "${image.originalFileName ?? image.assetId}" references an empty particles slot.`
+			);
+		}
+		if (
+			image.rainProfileSlotId != null &&
+			!hasSlotValue(state.rainProfileSlots, image.rainProfileSlotId)
+		) {
+			addIssue(
+				issues,
+				'warning',
+				'image-rain-slot-missing',
+				`Image "${image.originalFileName ?? image.assetId}" references an empty rain slot.`
+			);
+		}
+		if (
+			image.looksProfileSlotId != null &&
+			!hasSlotValue(state.looksProfileSlots, image.looksProfileSlotId)
+		) {
+			addIssue(
+				issues,
+				'warning',
+				'image-looks-slot-missing',
+				`Image "${image.originalFileName ?? image.assetId}" references an empty looks slot.`
+			);
+		}
 	}
 
 	for (const scene of state.sceneSlots) {
