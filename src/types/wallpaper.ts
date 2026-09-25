@@ -488,9 +488,6 @@ export interface BackgroundImageItem {
 	logoOverride: LogoProfileSettings | null;
 	/** Inline per-image spectrum config. When set, takes priority over spectrumProfileSlotIndex. */
 	spectrumOverride: SpectrumProfileSettings | null;
-	/** Inline per-image override of ONLY Spectrum 2's look (the second instance).
-	 *  Independent of `spectrumOverride`; applied on top of it so an image can
-	 *  carry its own Spectrum 2 without re-capturing the whole spectrum. */
 	/** Inline per-image particles config. When set, takes priority over particlesProfileSlotIndex. */
 	particlesOverride:
 		| import('@/store/featureProfiles').ParticlesProfileSettings
@@ -500,6 +497,22 @@ export interface BackgroundImageItem {
 	/** Inline per-image looks config. When set, takes priority over looksProfileSlotIndex. */
 	looksOverride:
 		| import('@/store/featureProfiles').LooksProfileSettings
+		| null;
+	/**
+	 * Inline per-image Camera FX (motion stack + shake). A scene could already
+	 * carry it through `cameraFxSlotIndex`; an image could not, which is the
+	 * asymmetry this closes.
+	 */
+	cameraFxOverride:
+		| import('@/store/featureProfiles').CameraFxProfileSettings
+		| null;
+	/** Inline per-image Stage Lights + Flash Light (both live in one profile). */
+	lightsOverride:
+		| import('@/store/featureProfiles').LightsProfileSettings
+		| null;
+	/** Inline per-image Now Playing / track title treatment. */
+	trackTitleOverride:
+		| import('@/store/featureProfiles').TrackTitleProfileSettings
 		| null;
 	/**
 	 * This image keeps applying its own scene / overrides even while the

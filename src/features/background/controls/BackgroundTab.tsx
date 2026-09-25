@@ -351,26 +351,6 @@ export default function BackgroundTab({
 					slideshowManualTimestampsEnabled={
 						store.slideshowManualTimestampsEnabled
 					}
-					onCaptureLogoOverride={store.captureImageLogoOverride}
-					onClearLogoOverride={() => store.setImageLogoOverride(null)}
-					onCaptureSpectrumOverride={
-						store.captureImageSpectrumOverride
-					}
-					onClearSpectrumOverride={() =>
-						store.setImageSpectrumOverride(null)
-					}
-					onCaptureParticlesOverride={
-						store.captureImageParticlesOverride
-					}
-					onClearParticlesOverride={() =>
-						store.setImageParticlesOverride(null)
-					}
-					onCaptureRainOverride={store.captureImageRainOverride}
-					onClearRainOverride={() => store.setImageRainOverride(null)}
-					onCaptureLooksOverride={store.captureImageLooksOverride}
-					onClearLooksOverride={() =>
-						store.setImageLooksOverride(null)
-					}
 					onChangePlaybackSwitchAt={value => {
 						if (!activeImage) return;
 						store.setBackgroundImagePlaybackSwitchAt(

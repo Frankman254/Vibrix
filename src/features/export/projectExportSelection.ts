@@ -406,11 +406,18 @@ export function filterWallpaperStateForProjectExport(
 	}
 
 	if (!selection.track) {
+		nextState.backgroundImages = nextState.backgroundImages.map(image => ({
+			...image,
+			trackTitleOverride: null
+		}));
 		nextState.sceneSlots = nextState.sceneSlots.map(scene => ({
 			...scene,
 			trackTitleSlotId: null
 		}));
 	}
+	// Camera FX and Lights have no export section of their own, so — exactly
+	// like `cameraFxSlotId` / `lightsSlotId` on a scene — the per-image
+	// overrides always travel with the project.
 
 	return nextState;
 }

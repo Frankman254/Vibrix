@@ -14,9 +14,12 @@ import {
 import { getImageBaseSize, resolveImageTransform } from '@/features/background';
 import { resolveAutoZoomScale } from '@/features/background/domain/autoZoom';
 import {
+	extractCameraFxProfileSettings,
+	extractLightsProfileSettings,
 	extractLooksProfileSettings,
 	extractParticlesProfileSettings,
 	extractRainProfileSettings,
+	extractTrackTitleProfileSettings,
 	hydrateLooksProfileValues
 } from '@/store/featureProfiles';
 import {
@@ -162,6 +165,31 @@ export function buildActiveImageSelectionPatch(
 				looksSlot.values,
 				extractLooksProfileSettings(state)
 			)
+		);
+	}
+	// Camera FX, Lights and Track Title carry their own enable flags on purpose
+	// — that is how a stored composition says "and no shake here" — so unlike
+	// logo/spectrum these are applied exactly as saved. The defaults underneath
+	// fill keys a snapshot from an older build does not have.
+	if (match.cameraFxOverride) {
+		Object.assign(
+			patch,
+			extractCameraFxProfileSettings(state),
+			match.cameraFxOverride
+		);
+	}
+	if (match.lightsOverride) {
+		Object.assign(
+			patch,
+			extractLightsProfileSettings(state),
+			match.lightsOverride
+		);
+	}
+	if (match.trackTitleOverride) {
+		Object.assign(
+			patch,
+			extractTrackTitleProfileSettings(state),
+			match.trackTitleOverride
 		);
 	}
 	return { patch, appliedScene: false };

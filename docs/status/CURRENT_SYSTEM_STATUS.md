@@ -1,6 +1,6 @@
 # Current System Status
 
-**As of:** `chore/fase-0-higiene` (`main`) · App `0.6.0-alpha` · Store persist **v125**
+**As of:** `chore/fase-0-higiene` (`main`) · App `0.6.0-alpha` · Store persist **v126**
 
 This document describes the product **as implemented in code**, not aspirational roadmaps.
 
@@ -25,7 +25,7 @@ This document describes the product **as implemented in code**, not aspirational
 | -------------------------------- | ------ | ----------------------------------------------------------- |
 | Vite + React 19 SPA              | Stable | HashRouter (`#/edit`, `#/present`, `#/record`, `#/preview`) |
 | Shared `WallpaperAppProviders`   | Stable | Single `AudioDataProvider` above route shells               |
-| Zustand + `localStorage` persist | Stable | `STORE_PERSIST_VERSION = 125`                               |
+| Zustand + `localStorage` persist | Stable | `STORE_PERSIST_VERSION = 126`                               |
 | IndexedDB assets                 | Stable | Images, audio blobs                                         |
 | Vitest + GitHub Actions CI       | Stable | format, lint, types, tests, docs:check, build               |
 
@@ -172,7 +172,7 @@ See `docs/features/SPECTRUM_ENGINE.md` (ownership model) and
 | Constant                  | Value         | Location                                    |
 | ------------------------- | ------------- | ------------------------------------------- |
 | `APP_VERSION`             | `0.6.0-alpha` | `src/lib/version.ts`, `package.json`        |
-| `STORE_PERSIST_VERSION`   | **125**       | Migrations in `wallpaperStoreMigrations.ts` |
+| `STORE_PERSIST_VERSION`   | **126**       | Migrations in `wallpaperStoreMigrations.ts` |
 | `PROJECT_SCHEMA_VERSION`  | 1             |                                             |
 | `SETTINGS_SCHEMA_VERSION` | 1             |                                             |
 
@@ -205,6 +205,7 @@ Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 | v123    | `slideshowTransitionAnchor`: where a manual timestamp sits in its transition          |
 | v124    | `motionLayers` + `activeMotionLayerId`: several Camera Motion movements at once       |
 | v125    | `cameraMotionAmplitudeAudio`: audio drives the size of a movement, not only its speed |
+| v126    | Per-image `cameraFxOverride` / `lightsOverride` / `trackTitleOverride`, all `null`    |
 
 ---
 

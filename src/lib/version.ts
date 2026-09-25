@@ -128,4 +128,8 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // v125: `cameraMotionAmplitudeAudio` — audio drives the amplitude of a movement
 // and not only its speed. 0 for everything that existed, so nothing moves more
 // than it did before the key.
-export const STORE_PERSIST_VERSION = 125;
+// v126: per-image `cameraFxOverride`, `lightsOverride` and `trackTitleOverride`
+// — an image can carry Camera FX, Lights and the Now Playing treatment the way
+// it already carried its logo, spectrum, particles, rain and looks. All null,
+// so no image gains a composition it did not have.
+export const STORE_PERSIST_VERSION = 126;

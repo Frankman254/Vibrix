@@ -3155,6 +3155,21 @@ export function migrateWallpaperStore(
 		);
 	}
 
+	if (fromVersion < 126) {
+		// Three new per-image overrides. Image normalization above already
+		// fills them for every persisted load; spelling it out here keeps the
+		// "new persisted key => visible migration" contract readable and is a
+		// no-op on a save that came through that path.
+		migratedState.backgroundImages = (
+			migratedState.backgroundImages ?? []
+		).map(image => ({
+			...image,
+			cameraFxOverride: image.cameraFxOverride ?? null,
+			lightsOverride: image.lightsOverride ?? null,
+			trackTitleOverride: image.trackTitleOverride ?? null
+		}));
+	}
+
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;
 }
 

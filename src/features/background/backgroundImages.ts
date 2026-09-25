@@ -48,6 +48,9 @@ export type BackgroundImageSettings = Pick<
 	| 'particlesOverride'
 	| 'rainOverride'
 	| 'looksOverride'
+	| 'cameraFxOverride'
+	| 'lightsOverride'
+	| 'trackTitleOverride'
 	| 'playbackSwitchAt'
 	| 'sceneSlotId'
 >;
@@ -87,6 +90,9 @@ export function getDefaultBackgroundImageSettings(): BackgroundImageSettings {
 		particlesOverride: null,
 		rainOverride: null,
 		looksOverride: null,
+		cameraFxOverride: null,
+		lightsOverride: null,
+		trackTitleOverride: null,
 		playbackSwitchAt: null,
 		sceneSlotId: null
 	};
@@ -168,6 +174,11 @@ export function createBackgroundImageItem(
 			settings.particlesOverride ?? defaults.particlesOverride,
 		rainOverride: settings.rainOverride ?? defaults.rainOverride,
 		looksOverride: settings.looksOverride ?? defaults.looksOverride,
+		cameraFxOverride:
+			settings.cameraFxOverride ?? defaults.cameraFxOverride,
+		lightsOverride: settings.lightsOverride ?? defaults.lightsOverride,
+		trackTitleOverride:
+			settings.trackTitleOverride ?? defaults.trackTitleOverride,
 		playbackSwitchAt:
 			settings.playbackSwitchAt ?? defaults.playbackSwitchAt,
 		sceneSlotId: settings.sceneSlotId ?? defaults.sceneSlotId ?? null

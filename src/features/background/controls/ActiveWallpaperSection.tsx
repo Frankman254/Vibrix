@@ -13,8 +13,8 @@ import BgAudioChannelSelector from './BgAudioChannelSelector';
 import { Button, Slider, UI_COLORS, FONT } from '@/ui';
 import { CollapsibleSection } from '@/editor';
 import BackgroundCardShell from './BackgroundCardShell';
-import ImageSceneAssignment from './ImageSceneAssignment';
-import { OverrideRow, SnapToNowButton } from './activeWallpaperAtoms';
+import ImageCompositionPanel from './ImageCompositionPanel';
+import { SnapToNowButton } from './activeWallpaperAtoms';
 import { formatDecimal } from './bgFormat';
 
 type Props = {
@@ -50,16 +50,6 @@ type Props = {
 	transitionAudioChannel: AudioReactiveChannel;
 	transitionAudioSmoothing: number;
 	slideshowManualTimestampsEnabled: boolean;
-	onCaptureLogoOverride: () => void;
-	onClearLogoOverride: () => void;
-	onCaptureSpectrumOverride: () => void;
-	onClearSpectrumOverride: () => void;
-	onCaptureParticlesOverride: () => void;
-	onClearParticlesOverride: () => void;
-	onCaptureRainOverride: () => void;
-	onClearRainOverride: () => void;
-	onCaptureLooksOverride: () => void;
-	onClearLooksOverride: () => void;
 	onChangePlaybackSwitchAt: (v: number | null) => void;
 	calculatedSwitchAt?: number | null;
 	onChangeFramingManualEnabled: (value: boolean) => void;
@@ -130,16 +120,6 @@ export default function ActiveWallpaperSection({
 	transitionAudioChannel,
 	transitionAudioSmoothing,
 	slideshowManualTimestampsEnabled,
-	onCaptureLogoOverride,
-	onClearLogoOverride,
-	onCaptureSpectrumOverride,
-	onClearSpectrumOverride,
-	onCaptureParticlesOverride,
-	onClearParticlesOverride,
-	onCaptureRainOverride,
-	onClearRainOverride,
-	onCaptureLooksOverride,
-	onClearLooksOverride,
 	onChangePlaybackSwitchAt,
 	calculatedSwitchAt,
 	onChangeFramingManualEnabled,
@@ -170,11 +150,6 @@ export default function ActiveWallpaperSection({
 	onAutoFocusActiveImage
 }: Props) {
 	const { confirm } = useDialog();
-	const logoOverrideActive = activeImage?.logoOverride != null;
-	const spectrumOverrideActive = activeImage?.spectrumOverride != null;
-	const particlesOverrideActive = activeImage?.particlesOverride != null;
-	const rainOverrideActive = activeImage?.rainOverride != null;
-	const looksOverrideActive = activeImage?.looksOverride != null;
 
 	function formatTime(seconds: number): string {
 		const m = Math.floor(seconds / 60);
@@ -290,48 +265,8 @@ export default function ActiveWallpaperSection({
 			onCenterFocus={onCenterFocus}
 		>
 			<AdvancedOnly>
-				<div className="mb-2">
-					<ImageSceneAssignment />
-				</div>
-				<CollapsibleSection title={t.bg_per_image_overrides}>
-					<div className="flex flex-col gap-2">
-						<p
-							className="text-[11px] leading-snug"
-							style={{ color: 'var(--editor-accent-muted)' }}
-						>
-							{t.bg_per_image_overrides_hint}
-						</p>
-						<OverrideRow
-							label={t.bg_override_logo}
-							active={logoOverrideActive}
-							onCapture={onCaptureLogoOverride}
-							onClear={onClearLogoOverride}
-						/>
-						<OverrideRow
-							label={t.bg_override_spectrum}
-							active={spectrumOverrideActive}
-							onCapture={onCaptureSpectrumOverride}
-							onClear={onClearSpectrumOverride}
-						/>
-						<OverrideRow
-							label={t.bg_override_particles}
-							active={particlesOverrideActive}
-							onCapture={onCaptureParticlesOverride}
-							onClear={onClearParticlesOverride}
-						/>
-						<OverrideRow
-							label={t.bg_override_rain}
-							active={rainOverrideActive}
-							onCapture={onCaptureRainOverride}
-							onClear={onClearRainOverride}
-						/>
-						<OverrideRow
-							label={t.bg_override_looks}
-							active={looksOverrideActive}
-							onCapture={onCaptureLooksOverride}
-							onClear={onClearLooksOverride}
-						/>
-					</div>
+				<CollapsibleSection title={t.img_carry_title}>
+					<ImageCompositionPanel />
 
 					{activeImage && slideshowManualTimestampsEnabled && (
 						<div

@@ -15,6 +15,36 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Qué lleva esta imagen: una sola pantalla y tres overrides nuevos (store v126)
+
+- **Overrides nuevos por imagen**: `cameraFxOverride`, `lightsOverride` y
+  `trackTitleOverride`. Una imagen ya podía llevar su logo, su spectrum, sus
+  partículas, su lluvia y sus looks, pero no su Camera FX, sus luces ni su Now
+  Playing — eso solo lo podía una escena. Esa asimetría era la razón de que hubiera
+  que convertir la imagen en escena para cambiarle el movimiento.
+  A diferencia de logo/spectrum, estos tres se aplican **tal como se guardaron,
+  interruptor incluido**: así una composición guardada puede decir «y aquí sin
+  shake».
+- **Una sola pantalla «Qué lleva esta imagen»** (`ImageCompositionPanel`): antes la
+  respuesta estaba repartida entre la asignación de escena, la lista de overrides y
+  el panel PER IMG del HUD, y ninguna de las tres decía **cuál gana**. Ahora cada
+  fila nombra la fuente efectiva (modo global → escena → override de la imagen →
+  slot guardado → controles globales) y marca el caso que antes no se veía: un
+  override **guardado pero tapado** por la escena.
+- **`describeImageComposition`** (`src/store/imageCompositionSummary.ts`) deriva esa
+  precedencia en un solo sitio, leyendo el mismo orden que
+  `buildActiveImageSelectionPatch`. La UI ya no adivina.
+- **Menos cableado**: `ActiveWallpaperSection` ya no recibe los 10 callbacks de
+  capturar/limpiar override (los toma del store el panel), y el átomo `OverrideRow`
+  — que era el último sitio con texto de UI en inglés a pelo — desaparece.
+- `STORE_PERSIST_VERSION` is at **126**. La migración deja los tres campos en
+  `null` en cada imagen existente, así que ninguna imagen gana una composición que
+  no tenía.
+- **`spectrumSecondOverride` no vuelve**: se retiró a propósito en la v103 (cada
+  override guardado se convirtió en un slot con nombre de Spectrum 2) y la migración
+  lo sigue borrando de cada imagen en cada carga. Lo que quedaba pendiente era el
+  comentario huérfano en `types/wallpaper.ts`, ya borrado.
+
 ### Movimientos nuevos, tamaño reactivo y clamp por tipo de capa (store v125)
 
 - **Cuatro movimientos nuevos**: `beat-jump` (el mismo círculo en 8 pasos

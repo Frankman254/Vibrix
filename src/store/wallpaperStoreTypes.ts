@@ -138,6 +138,15 @@ export type WallpaperStore = WallpaperState & {
 	setImageLooksOverride: (
 		v: import('@/store/featureProfiles').LooksProfileSettings | null
 	) => void;
+	setImageCameraFxOverride: (
+		v: import('@/store/featureProfiles').CameraFxProfileSettings | null
+	) => void;
+	setImageLightsOverride: (
+		v: import('@/store/featureProfiles').LightsProfileSettings | null
+	) => void;
+	setImageTrackTitleOverride: (
+		v: import('@/store/featureProfiles').TrackTitleProfileSettings | null
+	) => void;
 	/** Global composition mode: the live state wins over every per-image config. */
 	setGlobalCompositionOverride: (v: boolean) => void;
 	/** The active image keeps its own composition even in global mode. */
@@ -149,6 +158,9 @@ export type WallpaperStore = WallpaperState & {
 	captureImageParticlesOverride: () => void;
 	captureImageRainOverride: () => void;
 	captureImageLooksOverride: () => void;
+	captureImageCameraFxOverride: () => void;
+	captureImageLightsOverride: () => void;
+	captureImageTrackTitleOverride: () => void;
 	setImageFitMode: (v: ImageFitMode) => void;
 	setImageFramingManualEnabled: (v: boolean) => void;
 	setImageMirror: (v: boolean) => void;

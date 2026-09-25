@@ -100,6 +100,9 @@ export const en = {
 	bg_override_particles: 'Particles Override',
 	bg_override_rain: 'Rain Override',
 	bg_override_looks: 'Looks Override',
+	bg_override_camera_fx: 'Camera FX Override',
+	bg_override_lights: 'Lights Override',
+	bg_override_track_title: 'Now Playing Override',
 	// Per-image quick actions panel (qa_pi_*)
 	qa_pi_selection: 'Selection',
 	qa_pi_selection_t: 'Per-subsystem capture/clear',
@@ -1644,6 +1647,24 @@ export const en = {
 	bg_pool_more_actions: 'More pool actions',
 	bg_pool_remove_one: 'Remove (with confirmation)',
 	bg_per_image_overrides: 'Per-image overrides',
+	img_carry_title: 'What this image carries',
+	img_carry_hint:
+		'Read top to bottom: the first line that applies is what you see. Global mode beats a scene, a scene beats a per-image override, and an override beats a saved slot.',
+	img_carry_src_global_mode: 'Global mode',
+	img_carry_src_scene: 'Scene',
+	img_carry_src_scene_off: 'Off by scene',
+	img_carry_src_override: 'This image',
+	img_carry_src_slot: 'Saved slot',
+	img_carry_src_global: 'Global controls',
+	img_carry_override_shadowed: 'stored, not winning',
+	img_carry_global_mode_banner:
+		'Global mode is on: every image shows the live controls. Nothing stored below is lost — turning the mode off brings it all back.',
+	img_carry_ignores_global_banner:
+		'This image opts out of global mode, so it keeps applying its own composition.',
+	img_carry_capture: 'Capture',
+	img_carry_clear: 'Clear',
+	img_carry_uses_global: 'Uses global settings',
+	img_carry_has_override: 'Active override',
 	bg_per_image_overrides_hint:
 		'Overrides change the captured look only — they do not turn a subsystem on or off. Spectrum 2 must already be enabled for its override to show.',
 	scene_for_image_title: 'Scene for this image',

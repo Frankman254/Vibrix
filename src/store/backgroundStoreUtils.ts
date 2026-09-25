@@ -374,6 +374,9 @@ export function normalizePersistedBackgroundImages(
 			particlesOverride: image.particlesOverride ?? null,
 			rainOverride: image.rainOverride ?? null,
 			looksOverride: image.looksOverride ?? null,
+			cameraFxOverride: image.cameraFxOverride ?? null,
+			lightsOverride: image.lightsOverride ?? null,
+			trackTitleOverride: image.trackTitleOverride ?? null,
 			playbackSwitchAt: image.playbackSwitchAt ?? null,
 			sceneSlotId:
 				typeof (image as { sceneSlotId?: unknown }).sceneSlotId ===

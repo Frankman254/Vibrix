@@ -103,6 +103,9 @@ export const es: Record<TranslationKey, string> = {
 	bg_override_particles: 'Override de Partículas',
 	bg_override_rain: 'Override de Lluvia',
 	bg_override_looks: 'Override de Looks',
+	bg_override_camera_fx: 'Override de Camera FX',
+	bg_override_lights: 'Override de Luces',
+	bg_override_track_title: 'Override de Now Playing',
 	// Panel per-image de quick actions (qa_pi_*)
 	qa_pi_selection: 'Selección',
 	qa_pi_selection_t: 'Capturar/limpiar por subsistema',
@@ -1660,6 +1663,24 @@ export const es: Record<TranslationKey, string> = {
 	bg_pool_more_actions: 'Más acciones del pool',
 	bg_pool_remove_one: 'Quitar (con confirmación)',
 	bg_per_image_overrides: 'Overrides por imagen',
+	img_carry_title: 'Qué lleva esta imagen',
+	img_carry_hint:
+		'Se lee de arriba abajo: la primera línea que aplica es lo que ves. El modo global gana a la escena, la escena gana al override por imagen, y el override gana al slot guardado.',
+	img_carry_src_global_mode: 'Modo global',
+	img_carry_src_scene: 'Escena',
+	img_carry_src_scene_off: 'Apagado por la escena',
+	img_carry_src_override: 'Esta imagen',
+	img_carry_src_slot: 'Slot guardado',
+	img_carry_src_global: 'Controles globales',
+	img_carry_override_shadowed: 'guardado, no gana',
+	img_carry_global_mode_banner:
+		'El modo global está activo: todas las imágenes muestran los controles en vivo. Nada de lo guardado se pierde — al apagar el modo vuelve todo.',
+	img_carry_ignores_global_banner:
+		'Esta imagen se sale del modo global, así que sigue aplicando su propia composición.',
+	img_carry_capture: 'Capturar',
+	img_carry_clear: 'Quitar',
+	img_carry_uses_global: 'Usa los ajustes globales',
+	img_carry_has_override: 'Override activo',
 	bg_per_image_overrides_hint:
 		'Los overrides solo cambian el aspecto capturado — no encienden ni apagan subsistemas. Spectrum 2 debe estar ya activado para que su override se vea.',
 	scene_for_image_title: 'Escena para esta imagen',

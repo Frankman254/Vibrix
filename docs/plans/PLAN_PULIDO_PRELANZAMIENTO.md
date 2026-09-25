@@ -421,7 +421,7 @@ Ordenadas por (valor visible ÷ riesgo), no por tema.
   `end` al marcar.
 - Aviso visual cuando marcar reordena el pase.
 
-### Fase G — Coherencia de "per image"
+### Fase G — Coherencia de "per image" — **HECHA** (store v126)
 
 - Documentar y aplicar las tres categorías (global / por imagen / por escena).
 - Override por imagen de Camera FX y Lights detrás de Advanced.
@@ -429,6 +429,35 @@ Ordenadas por (valor visible ÷ riesgo), no por tema.
 - Una pantalla única que muestre **qué lleva esta imagen** (hoy está repartido
   entre `ActiveWallpaperSection`, `ImageSceneAssignment` y el panel PER IMG del
   HUD).
+
+**Cómo quedó:**
+
+- Tres claves nuevas por imagen: `cameraFxOverride`, `lightsOverride`,
+  `trackTitleOverride` (`types/wallpaper.ts`), con sus `set*` / `capture*` en
+  `store/slices/backgroundSlice.ts`, incluidas en `captureCompositionToAllImages`
+  y en la migración **v126** (todas a `null`: ninguna imagen gana una composición
+  que no tenía).
+- Se aplican **tal como se guardaron, con su interruptor**, no como logo/spectrum
+  (que preservan el `*Enabled` vivo): una composición guardada tiene derecho a
+  decir «y aquí sin shake». Por eso van sobre `extract…(state)`, que rellena las
+  claves que un snapshot viejo no traía.
+- La precedencia entera vive en **una** función pura nueva,
+  `describeImageComposition` (`src/store/imageCompositionSummary.ts`), que
+  describe el orden de `buildActiveImageSelectionPatch`: modo global → escena
+  efectiva → override inline → slot de la imagen → controles globales. La UI no
+  la recalcula.
+- `ImageCompositionPanel` es esa pantalla única. Cada fila dice **qué fuente
+  gana** y marca el caso que antes era invisible: un override _guardado pero
+  tapado_ por la escena. Absorbe `ImageSceneAssignment` y sustituye la lista de
+  overrides; `ActiveWallpaperSection` pierde los 10 callbacks que le llegaban por
+  props desde `BackgroundTab`.
+- El panel PER IMG del HUD se queda como está a propósito: es un atajo de
+  captura rápida, no una pantalla de configuración.
+- `spectrumSecondOverride` **no se reintrodujo**. Estaba retirado desde la v103
+  (cada override guardado se convirtió en un slot con nombre de Spectrum 2) y la
+  migración lo borra de cada imagen en cada carga; el ítem del plan era el
+  comentario huérfano, no el campo. Reponerlo habría creado una clave que la
+  propia migración borra en el siguiente arranque.
 
 ---
 
@@ -663,7 +692,7 @@ la patch. Y la fase no se da por cerrada sin las tres.
 | **E4** | Extender el crossfade a spectrum/logo/particles/rain                           | —                |
 | **E5** | _(post-lanzamiento)_ Motor GL de transiciones estilo gl-transitions            | —                |
 | **F**  | ✅ Botón "marcar aquí" + atajo `M` + anclaje de transición                     | v123 hecho       |
-| **G**  | Coherencia per-image: añadir lo que falta (§10.2) + las tres categorías        | bump + migración |
+| **G**  | ✅ Coherencia per-image + pantalla única «qué lleva esta imagen»               | v126 hecho       |
 | **H**  | ✅ Modo global que pisa per-image sin borrarlo + "Guardar en todas"            | v121 hecho       |
 | **I**  | UI de escenas con botones de tres estados + "capturar escena actual"           | —                |
 | **J**  | _(futuro, no en este plan)_ Línea de tiempo de eventos                         | —                |

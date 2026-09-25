@@ -9,8 +9,11 @@ import {
 	buildBackgroundProfileName,
 	buildLooksProfileName,
 	extractBackgroundProfileSettings,
+	extractCameraFxProfileSettings,
+	extractLightsProfileSettings,
 	extractLogoProfileSettings,
 	extractLooksProfileSettings,
+	extractTrackTitleProfileSettings,
 	hydrateLooksProfileValues,
 	extractParticlesProfileSettings,
 	extractRainProfileSettings,
@@ -26,6 +29,7 @@ import {
 import { createBackgroundCollectionActions } from '@/store/slices/backgroundCollectionActions';
 import { createEffectLayerActions } from '@/store/slices/effectLayerActions';
 import type { WallpaperStore } from '@/store/wallpaperStoreTypes';
+import type { BackgroundImageItem } from '@/types/wallpaper';
 import { DEFAULT_STATE } from '@/store/defaultState';
 import {
 	CUSTOM_FILTER_LOOK_ID,
@@ -45,6 +49,24 @@ export function createBackgroundSlice(
 	get: WallpaperGet,
 	_api: WallpaperApi
 ) {
+	/**
+	 * Writes fields onto the ACTIVE image and nothing else.
+	 *
+	 * The per-image overrides are all the same map with one line changed, and
+	 * repeating it once per field is what hid that line. Older actions above
+	 * still spell it out; new ones go through here.
+	 */
+	const patchActiveImage = (
+		build: (state: WallpaperStore) => Partial<BackgroundImageItem>
+	) =>
+		set(state => ({
+			backgroundImages: state.backgroundImages.map(img =>
+				img.assetId === state.activeImageId
+					? { ...img, ...build(state) }
+					: img
+			)
+		}));
+
 	return {
 		setNoiseIntensity: v =>
 			set({ noiseIntensity: v, activeFilterLookId: null }),
@@ -435,7 +457,10 @@ export function createBackgroundSlice(
 					spectrumOverride: extractSpectrumProfileSettings(state),
 					particlesOverride: extractParticlesProfileSettings(state),
 					rainOverride: extractRainProfileSettings(state),
-					looksOverride: extractLooksProfileSettings(state)
+					looksOverride: extractLooksProfileSettings(state),
+					cameraFxOverride: extractCameraFxProfileSettings(state),
+					lightsOverride: extractLightsProfileSettings(state),
+					trackTitleOverride: extractTrackTitleProfileSettings(state)
 				}))
 			})),
 		captureImageLogoOverride: () =>
@@ -543,6 +568,24 @@ export function createBackgroundSlice(
 							}
 						: img
 				)
+			})),
+		setImageCameraFxOverride: v =>
+			patchActiveImage(() => ({ cameraFxOverride: v })),
+		captureImageCameraFxOverride: () =>
+			patchActiveImage(state => ({
+				cameraFxOverride: extractCameraFxProfileSettings(state)
+			})),
+		setImageLightsOverride: v =>
+			patchActiveImage(() => ({ lightsOverride: v })),
+		captureImageLightsOverride: () =>
+			patchActiveImage(state => ({
+				lightsOverride: extractLightsProfileSettings(state)
+			})),
+		setImageTrackTitleOverride: v =>
+			patchActiveImage(() => ({ trackTitleOverride: v })),
+		captureImageTrackTitleOverride: () =>
+			patchActiveImage(state => ({
+				trackTitleOverride: extractTrackTitleProfileSettings(state)
 			})),
 		setImageFitMode: v =>
 			set(state => ({

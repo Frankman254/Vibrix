@@ -80,16 +80,6 @@ export function useBackgroundStore() {
 				s.setSlideshowTransitionAudioChannel,
 			setSlideshowTransitionAudioSmoothing:
 				s.setSlideshowTransitionAudioSmoothing,
-			captureImageLogoOverride: s.captureImageLogoOverride,
-			setImageLogoOverride: s.setImageLogoOverride,
-			captureImageSpectrumOverride: s.captureImageSpectrumOverride,
-			setImageSpectrumOverride: s.setImageSpectrumOverride,
-			captureImageParticlesOverride: s.captureImageParticlesOverride,
-			setImageParticlesOverride: s.setImageParticlesOverride,
-			captureImageRainOverride: s.captureImageRainOverride,
-			setImageRainOverride: s.setImageRainOverride,
-			captureImageLooksOverride: s.captureImageLooksOverride,
-			setImageLooksOverride: s.setImageLooksOverride,
 			setBackgroundImagePlaybackSwitchAt:
 				s.setBackgroundImagePlaybackSwitchAt,
 			moveImageEntry: s.moveImageEntry,

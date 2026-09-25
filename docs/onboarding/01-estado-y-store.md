@@ -172,7 +172,7 @@ una habilidad; aquí, la de guardarse solo).
 
 Cada vez que cambias algo, `persist` escribe el estado al cajón de texto del
 navegador (**localStorage**) bajo la etiqueta **`vibrix-state`**, junto con un
-número de versión (**`STORE_PERSIST_VERSION = 125`**, definido en
+número de versión (**`STORE_PERSIST_VERSION = 126`**, definido en
 `src/lib/version.ts`). Al volver a abrir la app, lo lee y **rehidrata** el
 almacén.
 
