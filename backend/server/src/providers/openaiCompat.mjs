@@ -50,9 +50,16 @@ export function createOpenAiCompatProvider({
 		if (!response.ok)
 			throw new Error(`models list HTTP ${response.status}`);
 		const payload = await response.json();
-		return (Array.isArray(payload?.data) ? payload.data : [])
-			.map(entry => entry?.id)
-			.filter(Boolean);
+		return (
+			(Array.isArray(payload?.data) ? payload.data : [])
+				.map(entry => entry?.id)
+				.filter(Boolean)
+				// LM Studio lists its embedding models here too, with nothing in the
+				// entry to tell them apart. They cannot answer a chat completion, so
+				// offering one in the UI — or auto-selecting it — only produces a
+				// failed scene. The id is the only signal available.
+				.filter(id => !/embed/i.test(id))
+		);
 	}
 
 	/**

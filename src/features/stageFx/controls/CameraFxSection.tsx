@@ -66,6 +66,20 @@ export function CameraMotionSection() {
 		}))
 	);
 	const hasAudioDrive = s.drive === 'audio' || s.drive === 'fixed-audio';
+	// The speed dial means a different thing in each drive, so it says so: a
+	// ceiling when the music owns the speed, a floor when it only adds to it.
+	const speedLabel =
+		s.drive === 'audio'
+			? t.sfx_motion_speed_max
+			: s.drive === 'fixed-audio'
+				? t.sfx_motion_speed_base
+				: t.sfx_motion_speed;
+	const driveHint =
+		s.drive === 'audio'
+			? t.sfx_drive_hint_audio
+			: s.drive === 'fixed-audio'
+				? t.sfx_drive_hint_fixed_audio
+				: t.sfx_drive_hint_fixed;
 	const availability = {
 		hasOverlay: s.hasOverlay,
 		hasSecondSpectrum: s.hasSecondSpectrum
@@ -209,6 +223,7 @@ export function CameraMotionSection() {
 						size="sm"
 						full
 					/>
+					<Caption>{driveHint}</Caption>
 					{s.advanced ? (
 						<CollapsibleSection
 							title={t.sfx_advanced}
@@ -218,7 +233,7 @@ export function CameraMotionSection() {
 							<div className="flex flex-col gap-3">
 								<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
 									<Slider
-										label={t.sfx_motion_speed}
+										label={speedLabel}
 										value={s.speed}
 										min={0}
 										max={4}

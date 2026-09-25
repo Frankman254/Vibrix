@@ -2183,6 +2183,13 @@ export const es: Record<TranslationKey, string> = {
 	sfx_drive_fixed_audio: 'Fijo + Audio',
 	sfx_motion_speed: 'Velocidad de movimiento',
 	sfx_audio_speed_influence: 'Influencia de audio en velocidad',
+	sfx_motion_speed_max: 'Velocidad máxima (audio)',
+	sfx_motion_speed_base: 'Velocidad base',
+	sfx_drive_hint_fixed: 'Velocidad constante: el audio no cambia nada aquí.',
+	sfx_drive_hint_audio:
+		'La música es la velocidad: frena en seco cuando el canal baja.',
+	sfx_drive_hint_fixed_audio:
+		'Nunca se para: la velocidad base es el suelo y la música suma encima.',
 	sfx_dir_cw: 'Horario',
 	sfx_dir_ccw: 'Antihorario',
 	// Capas afectadas por Camera FX

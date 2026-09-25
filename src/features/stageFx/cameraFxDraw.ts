@@ -14,8 +14,14 @@ import {
 	type MotionLayerSettings
 } from './motionLayers';
 import {
+	createMotionAudioFollower,
+	resolveMotionRate,
+	stepMotionAudioFollower,
+	type MotionAudioFollower
+} from './motionAudioResponse';
+import {
 	CAMERA_FX_CAPS,
-	cameraMotionIsEdgeBound,
+	cameraMotionSlackMode,
 	cameraMotionTargetIncludes,
 	readFxChannel,
 	resolveFxThreshold,
@@ -60,6 +66,11 @@ export type CameraFxRuntime = {
 	 * others; layers that disappear simply stop being read.
 	 */
 	motionTimes: Record<string, number>;
+	/**
+	 * Per-layer audio followers. Like the clocks above they are per layer, so
+	 * two movements listening to different channels never share a brake.
+	 */
+	motionAudio: Record<string, MotionAudioFollower>;
 	shakeTime: number;
 	shakeEnergy: number;
 	lastShakeLevel: number;
@@ -70,6 +81,7 @@ export type CameraFxRuntime = {
 export function createCameraFxRuntime(): CameraFxRuntime {
 	return {
 		motionTimes: {},
+		motionAudio: {},
 		shakeTime: 0,
 		shakeEnergy: 0,
 		lastShakeLevel: 0,
@@ -230,31 +242,31 @@ function stepMotionLayer(
 				readFxChannel(snapshot, settings.cameraMotionAudioChannel)
 			)
 		: 0;
+	// The raw channel is nearly constant on mastered material; the follower is
+	// what turns it into something that accelerates and brakes.
+	const follower = (runtime.motionAudio[layerId] ??=
+		createMotionAudioFollower());
+	const shaped = paused
+		? follower.value
+		: stepMotionAudioFollower(follower, level, dtSec);
 	const baseAmp =
 		Math.min(1.5, Math.max(0, settings.cameraMotionAmount)) *
 		CAMERA_FX_CAPS.maxMotionPx;
 	// Audio → amplitude, independently of audio → speed: a movement can get
 	// bigger without getting faster, which is what a kick actually looks like.
+	// It rides the same shaped level, so the size swells on the hit instead of
+	// sitting at a constant offset the whole track.
 	const amp =
 		baseAmp *
-		(1 + Math.max(0, settings.cameraMotionAmplitudeAudio) * level);
-	const fixedRate =
-		settings.cameraMotionDrive === 'fixed' ||
-		settings.cameraMotionDrive === 'fixed-audio'
-			? 1
-			: 0;
-	const audioRate =
-		settings.cameraMotionDrive === 'audio' ||
-		settings.cameraMotionDrive === 'fixed-audio'
-			? Math.max(0, settings.cameraMotionAudioInfluence) * level
-			: 0;
+		(1 + Math.max(0, settings.cameraMotionAmplitudeAudio) * shaped);
+	const rate = resolveMotionRate(
+		settings.cameraMotionDrive,
+		settings.cameraMotionSpeed,
+		settings.cameraMotionAudioInfluence,
+		shaped
+	);
 	const previous = runtime.motionTimes[layerId] ?? 0;
-	const time = paused
-		? previous
-		: previous +
-			dtSec *
-				Math.max(0, settings.cameraMotionSpeed) *
-				(fixedRate + audioRate);
+	const time = paused ? previous : previous + dtSec * rate;
 	runtime.motionTimes[layerId] = time;
 	const direction = settings.cameraMotionDirection === 'ccw' ? -1 : 1;
 	const offset = motionOffsetForMode(
@@ -262,18 +274,28 @@ function stepMotionLayer(
 		time * direction,
 		amp
 	);
-	const edgeBound = cameraMotionIsEdgeBound(targets);
-	// The zoom that hides the exposed edge. `zoom-pulse` asks for its own zoom
-	// and moves nothing, so it never pays for slack it does not use.
+	const slackMode = cameraMotionSlackMode(targets);
+	const bounded = slackMode !== 'free';
+	// The zoom that hides the exposed edge. A frame target only has to cover
+	// what it uncovers; a full-bleed canvas has to cover the amplitude on both
+	// sides of centre, or the translation cuts its own border into view.
+	// `zoom-pulse` asks for its own zoom and moves nothing, so it never pays
+	// for slack it does not use.
+	// `zoom-pulse` never translates, so it needs no translation slack at all.
+	const translates = settings.cameraMotionMode !== 'zoom-pulse';
+	const slackAmp = !translates
+		? 0
+		: slackMode === 'full-bleed'
+			? amp * 2
+			: slackMode === 'frame'
+				? amp
+				: 0;
 	const scale = Math.min(
 		CAMERA_FX_CAPS.maxScale,
-		Math.max(
-			1,
-			1 + (edgeBound ? amp / minDim : 0) + (offset.zoom * amp) / minDim
-		)
+		Math.max(1, 1 + slackAmp / minDim + (offset.zoom * amp) / minDim)
 	);
-	const limitX = edgeBound ? ((scale - 1) * viewport.width) / 2 : amp;
-	const limitY = edgeBound ? ((scale - 1) * viewport.height) / 2 : amp;
+	const limitX = bounded ? ((scale - 1) * viewport.width) / 2 : amp;
+	const limitY = bounded ? ((scale - 1) * viewport.height) / 2 : amp;
 	return {
 		tx: clamp(offset.tx, limitX),
 		ty: clamp(offset.ty, limitY),

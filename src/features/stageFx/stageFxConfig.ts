@@ -225,22 +225,50 @@ export function shouldTriggerFxPeak({
 }
 
 /**
- * Targets that fill the frame, so translating them exposes the edge and the
- * offset has to stay inside the zoom slack. Everything else floats over the
- * composition and can use the full amplitude — a logo sliding 96px reveals
- * nothing.
+ * Targets that ARE the frame: translating them uncovers the background behind
+ * the composition, so the offset has to stay inside the zoom slack.
  */
-const EDGE_BOUND_TARGETS: readonly CameraMotionTarget[] = [
+const FRAME_TARGETS: readonly CameraMotionTarget[] = [
 	'global-background',
 	'background',
 	'selected-overlay'
 ];
 
-/** True when a layer must stay conservative because it moves the frame itself. */
-export function cameraMotionIsEdgeBound(
+/**
+ * Targets drawn on a canvas the size of the viewport whose content reaches the
+ * edges — a spectrum spans the full width, rain falls across it, lyrics sit at
+ * the bottom. Translating that canvas slides its own border into view and the
+ * content is cut off along a straight line (the bug the user caught on the
+ * right-hand side of Spectrum 2). They get the same zoom trick as the frame,
+ * only sized to keep the whole amplitude usable instead of halving it.
+ */
+const FULL_BLEED_TARGETS: readonly CameraMotionTarget[] = [
+	'spectrum',
+	'spectrum-2',
+	'particles',
+	'rain',
+	'track-title',
+	'lyrics',
+	'stage-lights',
+	'flash-light'
+];
+
+/**
+ * How much room a layer needs before it can translate.
+ *
+ * - `frame`  — zoom just enough to cover the uncovered edge, clamp hard.
+ * - `full-bleed` — zoom enough that the full amplitude never cuts the canvas.
+ * - `free`   — nothing to expose (a logo sliding 96px reveals nothing).
+ */
+export type CameraMotionSlackMode = 'frame' | 'full-bleed' | 'free';
+
+export function cameraMotionSlackMode(
 	targets: readonly CameraMotionTarget[]
-): boolean {
-	return targets.some(target => EDGE_BOUND_TARGETS.includes(target));
+): CameraMotionSlackMode {
+	if (targets.some(target => FRAME_TARGETS.includes(target))) return 'frame';
+	if (targets.some(target => FULL_BLEED_TARGETS.includes(target)))
+		return 'full-bleed';
+	return 'free';
 }
 
 export function cameraMotionTargetIncludes(

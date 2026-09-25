@@ -2156,6 +2156,13 @@ export const en = {
 	sfx_drive_fixed_audio: 'Fixed + Audio',
 	sfx_motion_speed: 'Motion speed',
 	sfx_audio_speed_influence: 'Audio speed influence',
+	sfx_motion_speed_max: 'Max speed (audio)',
+	sfx_motion_speed_base: 'Base speed',
+	sfx_drive_hint_fixed: 'Constant speed: the audio changes nothing here.',
+	sfx_drive_hint_audio:
+		'The music is the speed: it stops dead when the channel drops.',
+	sfx_drive_hint_fixed_audio:
+		'Never stops: the base speed is the floor and the music adds on top.',
 	sfx_dir_cw: 'Clockwise',
 	sfx_dir_ccw: 'Counter',
 	// Camera FX affected-layer targets

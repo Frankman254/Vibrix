@@ -13,6 +13,32 @@ the version scheme in `src/lib/version.ts`.
 > - `STORE_PERSIST_VERSION` — the Zustand `localStorage` migration counter (bumped
 >   on every persisted-state shape change; **not** a product version).
 
+## [Unreleased]
+
+### Corregido
+
+- **Camera Motion ya no recorta el Spectrum.** Trasladar un canvas del tamaño
+  exacto del viewport metía su propio borde en pantalla y el espectro salía
+  cortado en línea recta por la derecha. Ahora cada capa de movimiento tiene su
+  régimen de holgura (`cameraMotionSlackMode`): el fondo y los overlays son el
+  marco, las capas a pantalla completa (spectrum, spectrum 2, partículas,
+  lluvia, letras, título, luces) reciben zoom suficiente para todo el recorrido,
+  y el logo sigue viajando libre sin zoom.
+
+### Cambiado
+
+- **El audio por fin se siente en Camera Motion.** El canal crudo apenas se
+  mueve en material masterizado, así que el nivel se normaliza contra la propia
+  pista (seguidores de pico y suelo), se puertea (por debajo del umbral la
+  velocidad es **cero**: frenado en seco), se expande con curva y se suaviza de
+  forma asimétrica — sube liso, baja de golpe. La amplitud (`Audio → size`)
+  usa el mismo nivel tratado, así que el tamaño hincha en el golpe.
+- **Los tres modos de velocidad son de verdad distintos.** `Fijo` ignora el
+  audio; en `Audio` el dial de velocidad es el **techo** y el movimiento se
+  para cuando el canal cae; en `Fijo + Audio` es el **suelo** y la música suma
+  encima. El dial se renombra al cambiar de modo y cada modo explica en una
+  línea lo que hace.
+
 ## [0.7.0-alpha] — 2026-09-25
 
 Cierre del plan de pulido de prelanzamiento: las fases A–I están todas hechas.
