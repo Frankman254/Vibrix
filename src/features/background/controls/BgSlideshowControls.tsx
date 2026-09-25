@@ -5,6 +5,7 @@ import { useDialog } from '@/editor/DialogProvider';
 import { Button, EnumButtonGroup, Slider, ToggleSwitch, UI_COLORS } from '@/ui';
 import type { SlideshowTransitionAnchor } from '@/types/wallpaper';
 import SlideshowClipTimeline from './SlideshowClipTimeline';
+import SlideshowMarkControl from './SlideshowMarkControl';
 import {
 	filterImageIdsBySetlist,
 	getActiveSetlist
@@ -94,6 +95,9 @@ export default function BgSlideshowControls() {
 			/>
 			{store.slideshowEnabled && (
 				<div className="flex flex-col gap-2">
+					{/* Above the mode switches on purpose: pressing it turns
+					    manual timestamps on, which is how the mode is found. */}
+					<SlideshowMarkControl />
 					<div className="flex flex-col gap-2">
 						<SwitchRow
 							label={t.label_slideshow_audio_checkpoints}

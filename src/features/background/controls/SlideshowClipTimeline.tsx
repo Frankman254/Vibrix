@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAudioContext } from '@/context/useAudioContext';
 import { useT } from '@/lib/i18n';
-import { Button } from '@/ui';
 import { useWallpaperStore } from '@/store/wallpaperStore';
 import { resolveEditorImagePreviewUrl } from '@/lib/editorImagePreviews';
 import { filterImageIdsBySetlist } from '@/store/slices/setlistsSlice';
 
-const MARK_NOTICE_MS = 4000;
 const MIN_CLIP_DURATION = 0.5;
 const MIN_CLIP_WIDTH_PX = 220;
 const MIN_TIMELINE_WIDTH_PX = 960;
@@ -178,9 +176,7 @@ export default function SlideshowClipTimeline() {
 		setlists,
 		activeSetlistId,
 		setActiveImageId,
-		setBackgroundImagePlaybackSwitchAt,
-		markNextImageSwitchAt,
-		slideshowTransitionAnchor
+		setBackgroundImagePlaybackSwitchAt
 	} = useWallpaperStore();
 	const t = useT();
 	const { getDuration, getCurrentTime } = useAudioContext();
@@ -188,11 +184,6 @@ export default function SlideshowClipTimeline() {
 	const trackRef = useRef<HTMLDivElement | null>(null);
 	const rafRef = useRef(0);
 	const dragStateRef = useRef<DragState>(null);
-	// The keyboard shortcut must read the live playhead without re-registering
-	// its listener on every animation frame.
-	const playheadRef = useRef(0);
-	const markNoticeTimerRef = useRef(0);
-	const [markNotice, setMarkNotice] = useState<string | null>(null);
 	const [duration, setDuration] = useState(0);
 	const [playheadTime, setPlayheadTime] = useState(0);
 	const [viewportWidth, setViewportWidth] = useState(MIN_TIMELINE_WIDTH_PX);
@@ -223,8 +214,7 @@ export default function SlideshowClipTimeline() {
 		const tick = () => {
 			if (!alive) return;
 			setDuration(Math.max(0, getDuration()));
-			playheadRef.current = Math.max(0, getCurrentTime());
-			setPlayheadTime(playheadRef.current);
+			setPlayheadTime(Math.max(0, getCurrentTime()));
 			rafRef.current = requestAnimationFrame(tick);
 		};
 		rafRef.current = requestAnimationFrame(tick);
@@ -254,72 +244,6 @@ export default function SlideshowClipTimeline() {
 		() => hasOutOfOrderTimestamps(visibleBackgroundImages),
 		[visibleBackgroundImages]
 	);
-
-	const showMarkNotice = useCallback((message: string) => {
-		setMarkNotice(message);
-		window.clearTimeout(markNoticeTimerRef.current);
-		markNoticeTimerRef.current = window.setTimeout(
-			() => setMarkNotice(null),
-			MARK_NOTICE_MS
-		);
-	}, []);
-
-	const markHere = useCallback(() => {
-		const result = markNextImageSwitchAt(playheadRef.current);
-		if (!result.marked) {
-			showMarkNotice(t.slideshow_mark_last_image);
-			return;
-		}
-		const anchorNote =
-			slideshowTransitionAnchor === 'end'
-				? t.slideshow_marked_anchor_end
-				: slideshowTransitionAnchor === 'center'
-					? t.slideshow_marked_anchor_center
-					: '';
-		const marked = t.slideshow_marked_toast
-			.replace('{index}', String(result.poolPosition))
-			.replace('{time}', formatTime(result.markedAt))
-			.replace('{anchor}', anchorNote);
-		showMarkNotice(
-			result.enabledManualMode
-				? `${marked} · ${t.slideshow_mark_enabled_manual}`
-				: marked
-		);
-	}, [
-		markNextImageSwitchAt,
-		showMarkNotice,
-		slideshowTransitionAnchor,
-		t.slideshow_mark_enabled_manual,
-		t.slideshow_mark_last_image,
-		t.slideshow_marked_anchor_center,
-		t.slideshow_marked_anchor_end,
-		t.slideshow_marked_toast
-	]);
-
-	// Marking by hand with the mouse while the song plays is exactly the part
-	// that feels wrong, so `M` does it — unless the user is typing somewhere.
-	useEffect(() => {
-		const onKeyDown = (event: KeyboardEvent) => {
-			if (event.key !== 'm' && event.key !== 'M') return;
-			if (event.metaKey || event.ctrlKey || event.altKey) return;
-			const target = event.target as HTMLElement | null;
-			const tag = target?.tagName;
-			if (
-				tag === 'INPUT' ||
-				tag === 'TEXTAREA' ||
-				tag === 'SELECT' ||
-				target?.isContentEditable
-			) {
-				return;
-			}
-			event.preventDefault();
-			markHere();
-		};
-		window.addEventListener('keydown', onKeyDown);
-		return () => window.removeEventListener('keydown', onKeyDown);
-	}, [markHere]);
-
-	useEffect(() => () => window.clearTimeout(markNoticeTimerRef.current), []);
 
 	const timeFromClientX = useCallback(
 		(clientX: number) => {
@@ -474,39 +398,16 @@ export default function SlideshowClipTimeline() {
 
 	return (
 		<div className="flex flex-col gap-2">
-			<div className="flex items-center gap-2">
-				<Button
-					onClick={markHere}
-					size="sm"
-					density="compact"
-					variant="primary"
-					title={t.hint_slideshow_mark_here}
-				>
-					{t.label_slideshow_mark_here} · M
-				</Button>
-				<div
-					className="flex flex-1 items-center justify-between text-[10px] tabular-nums"
-					style={{ color: 'var(--editor-accent-muted)' }}
-				>
-					<span>0:00</span>
-					<span>
-						{formatTime(playheadTime)} / {formatTime(duration)}
-					</span>
-					<span>{formatTime(duration)}</span>
-				</div>
+			<div
+				className="flex items-center justify-between text-[10px] tabular-nums"
+				style={{ color: 'var(--editor-accent-muted)' }}
+			>
+				<span>0:00</span>
+				<span>
+					{formatTime(playheadTime)} / {formatTime(duration)}
+				</span>
+				<span>{formatTime(duration)}</span>
 			</div>
-			{markNotice ? (
-				<div
-					className="rounded border px-2.5 py-1.5 text-[11px]"
-					style={{
-						borderColor: 'rgba(120, 220, 160, 0.45)',
-						background: 'rgba(120, 220, 160, 0.10)',
-						color: 'var(--editor-accent-fg)'
-					}}
-				>
-					{markNotice}
-				</div>
-			) : null}
 			{outOfOrder ? (
 				<div
 					className="rounded border px-2.5 py-1.5 text-[11px] leading-snug"
