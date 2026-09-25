@@ -24,6 +24,12 @@ describe('resolveSubsystemDrawOrder', () => {
 		expect(order[order.length - 1]).toBe('hud');
 	});
 
+	it('keeps the two spectrum canvases together, instances above', () => {
+		const order = resolveSubsystemDrawOrder(state());
+		expect(order.indexOf('spectrum2')).toBe(order.indexOf('spectrum') + 1);
+		expect(order.indexOf('spectrum2')).toBeLessThan(order.indexOf('logo'));
+	});
+
 	it('follows a z-index override', () => {
 		const order = resolveSubsystemDrawOrder(
 			state({
@@ -53,6 +59,8 @@ describe('resolveTransitionAlpha', () => {
 		expect(
 			resolveTransitionAlpha(fading, 'particlesForeground', 1250)
 		).toBe(0.5);
+		// Both spectrum canvases fade with the one `spectrum` subsystem.
+		expect(resolveTransitionAlpha(fading, 'spectrum2', 1000)).toBe(0);
 		expect(resolveTransitionAlpha(fading, 'rain', 1000)).toBe(1);
 		expect(resolveTransitionAlpha(fading, 'lyrics', 1000)).toBe(1);
 	});

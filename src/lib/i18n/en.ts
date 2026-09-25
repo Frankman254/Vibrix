@@ -2164,6 +2164,7 @@ export const en = {
 	sfx_target_overlays: 'Overlays',
 	sfx_target_logo: 'Logo',
 	sfx_target_spectrum: 'Spectrum',
+	sfx_target_spectrum_2: 'Spectrum 2',
 	sfx_target_particles: 'Particles',
 	sfx_target_rain: 'Rain',
 	sfx_target_track_title: 'Track Title',

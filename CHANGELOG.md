@@ -15,6 +15,18 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### La cámara ya puede mover Spectrum 2 por su cuenta
+
+- Spectrum 1 y Spectrum 2 se dibujan en el mismo lienzo, así que Camera Motion y
+  Screen Shake solo podían moverlos juntos: un destino, los dos spectrums.
+- Nuevo destino **Spectrum 2** en Camera Motion y en Screen Shake. Aparece
+  atenuado mientras no exista un Spectrum 2 en el proyecto.
+- Por debajo, la capa se reparte en dos lienzos **solo cuando alguien apunta a
+  Spectrum 2**; el resto del tiempo se dibuja como siempre, en uno. Un lienzo a
+  pantalla completa cuesta, y no se paga si no hace falta.
+- Vale igual en vivo y en el vídeo exportado: los dos caminos leen la misma
+  función para decidir quién dibuja qué.
+
 ### El cambio de look ya no es un corte seco (fondo incluido)
 
 - El crossfade de E2 solo cubría spectrum, logo, partículas y lluvia, y solo

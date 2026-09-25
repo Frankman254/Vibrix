@@ -21,11 +21,24 @@ import {
 	transitionSubsystemsForLayerType,
 	useVisualTransitionFade
 } from '@/features/visualTransition/useVisualTransitionFade';
+import {
+	cameraTargetForSpectrumPartition,
+	partitionDrawsMainSpectrum,
+	type SpectrumDrawPartition
+} from '@/features/spectrum/domain/spectrumCameraSplit';
 
 export default function AudioLayerCanvas({
-	layer
+	layer,
+	spectrumPartition = 'all'
 }: {
 	layer: RenderableAudioLayer;
+	/**
+	 * Which spectrums this canvas draws. With `'all'` (everything but a split
+	 * spectrum) there is one canvas; while the camera targets Spectrum 2 the
+	 * viewport mounts two, `'main'` and `'instances'`, so each can be
+	 * transformed on its own.
+	 */
+	spectrumPartition?: SpectrumDrawPartition;
 }) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const fadeRef = useVisualTransitionFade(
@@ -36,6 +49,7 @@ export default function AudioLayerCanvas({
 	const lastDrawTimeRef = useRef<number>(0);
 	const layerRef = useRef<RenderableAudioLayer>(layer);
 	const frameRenderStateRef = useRef(createAudioLayerFrameRenderState());
+	const spectrumPartitionRef = useRef(spectrumPartition);
 	const cachedRawTrackTitleRef = useRef<string>('');
 	const cachedFormattedTrackTitleRef = useRef<string>('');
 	const wasVisibleRef = useRef<boolean>(false);
@@ -52,6 +66,10 @@ export default function AudioLayerCanvas({
 	useEffect(() => {
 		layerRef.current = layer;
 	}, [layer]);
+
+	useEffect(() => {
+		spectrumPartitionRef.current = spectrumPartition;
+	}, [spectrumPartition]);
 
 	useEffect(() => {
 		paletteRef.current = backgroundPalette;
@@ -146,7 +164,8 @@ export default function AudioLayerCanvas({
 				trackTitle: cachedFormattedTrackTitleRef.current,
 				trackCurrentTime,
 				trackDuration,
-				frameState: frameRenderStateRef.current
+				frameState: frameRenderStateRef.current,
+				spectrumPartition: spectrumPartitionRef.current
 			});
 
 			rafRef.current = requestAnimationFrame(frame);
@@ -171,17 +190,27 @@ export default function AudioLayerCanvas({
 	useEffect(
 		() => () => {
 			if (layer.type === 'logo') resetLogo();
-			if (layer.type === 'spectrum') {
+			// Only the canvas that owns the main spectrum resets the shared draw
+			// state: the instances canvas comes and goes with the camera split,
+			// and resetting there would clear Spectrum 1's smoothing with it.
+			if (
+				layer.type === 'spectrum' &&
+				partitionDrawsMainSpectrum(spectrumPartition)
+			) {
 				resetSpectrum();
 			}
 		},
-		[layer.type]
+		[layer.type, spectrumPartition]
 	);
 
 	return (
 		<div
 			ref={fadeRef}
-			data-camera-motion-layer={layer.type}
+			data-camera-motion-layer={
+				layer.type === 'spectrum'
+					? cameraTargetForSpectrumPartition(spectrumPartition)
+					: layer.type
+			}
 			style={{
 				position: 'fixed',
 				inset: 0,

@@ -5,6 +5,10 @@ import {
 	type AudioLayerFrameRenderState,
 	type RenderableAudioLayer
 } from '@/features/audioLayers/render';
+import {
+	resolveSpectrumPartitions,
+	type SpectrumDrawPartition
+} from '@/features/spectrum/domain/spectrumCameraSplit';
 import type { RenderFrameContext } from '../renderFrameContext';
 import type { RenderSubsystem } from '../renderSubsystem';
 
@@ -55,8 +59,17 @@ function isRenderableAudioLayer(layer: {
 }
 
 function makeAudioLayerSubsystem(
-	id: 'logo' | 'spectrum' | 'trackTitle' | 'lyrics',
-	matches: (type: string) => boolean
+	id: 'logo' | 'spectrum' | 'spectrum2' | 'trackTitle' | 'lyrics',
+	matches: (type: string) => boolean,
+	/**
+	 * Which spectrums this subsystem draws, per frame. `null` means "nothing
+	 * this frame" — that is the state of `spectrum2` while the camera is not
+	 * splitting the two, so the live viewport and the export agree on who draws
+	 * what without either of them duplicating pixels.
+	 */
+	resolvePartition: (
+		ctx: RenderFrameContext
+	) => SpectrumDrawPartition | null = () => 'all'
 ): RenderSubsystem {
 	return {
 		id,
@@ -64,6 +77,9 @@ function makeAudioLayerSubsystem(
 			if (!ctx.audio) return;
 			const target = ctx.canvas.getContext('2d');
 			if (!target) return;
+
+			const partition = resolvePartition(ctx);
+			if (partition === null) return;
 
 			const layers = buildOverlayLayers(ctx.state)
 				.filter(isRenderableAudioLayer)
@@ -97,6 +113,7 @@ function makeAudioLayerSubsystem(
 					trackCurrentTime: ctx.trackCurrentTime,
 					trackDuration: ctx.trackDuration,
 					frameState: surface.frameState,
+					spectrumPartition: partition,
 					logoScope: ctx.scope?.logo,
 					spectrumScope: ctx.scope?.spectrum,
 					flashEdge: ctx.scope?.flashEdge,
@@ -133,7 +150,19 @@ export const logoSubsystem = makeAudioLayerSubsystem(
 );
 export const spectrumSubsystem = makeAudioLayerSubsystem(
 	'spectrum',
-	type => type === 'spectrum'
+	type => type === 'spectrum',
+	ctx =>
+		resolveSpectrumPartitions(ctx.state).includes('main') ? 'main' : 'all'
+);
+
+/** The second canvas, alive only while the camera moves Spectrum 2 apart. */
+export const spectrum2Subsystem = makeAudioLayerSubsystem(
+	'spectrum2',
+	type => type === 'spectrum',
+	ctx =>
+		resolveSpectrumPartitions(ctx.state).includes('instances')
+			? 'instances'
+			: null
 );
 export const trackTitleSubsystem = makeAudioLayerSubsystem(
 	'trackTitle',

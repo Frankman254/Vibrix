@@ -28,6 +28,7 @@ export const SUBSYSTEM_CAMERA_LAYER: Partial<
 	rain: 'rain',
 	particlesForeground: 'particles',
 	spectrum: 'spectrum',
+	spectrum2: 'spectrum-2',
 	logo: 'logo',
 	trackTitle: 'track-title',
 	lyrics: 'lyrics',
@@ -43,6 +44,7 @@ const SUBSYSTEM_TRANSITION: Partial<
 	rain: 'rain',
 	particlesForeground: 'particles',
 	spectrum: 'spectrum',
+	spectrum2: 'spectrum',
 	logo: 'logo'
 };
 
@@ -80,6 +82,9 @@ export function resolveSubsystemDrawOrder(
 		rain: zOf('rain'),
 		particlesForeground: zOf('particle-foreground'),
 		spectrum: zOf('spectrum'),
+		// Same layer, two canvases: they must land next to each other, and
+		// RENDER_SUBSYSTEM_ORDER breaks the tie (instances paint above).
+		spectrum2: zOf('spectrum'),
 		logo: zOf('logo'),
 		trackTitle: zOf('track-title'),
 		lyrics: zOf('lyrics'),

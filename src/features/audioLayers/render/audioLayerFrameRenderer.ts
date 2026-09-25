@@ -16,6 +16,7 @@ import { resolveFilterStack } from '@/features/filterLooks/filterStack';
 import type { FilterLookSettings } from '@/features/filterLooks/filterLooks';
 import type { LogoScope } from '@/features/logo';
 import type { SpectrumScope } from '@/features/spectrum';
+import type { SpectrumDrawPartition } from '@/features/spectrum/domain/spectrumCameraSplit';
 import type { FlashEdgeScope } from '@/features/stageFx/flashEdgeDrive';
 import type { TrackTitleScope } from '@/features/audioLayers/render/trackTitleScope';
 import {
@@ -53,6 +54,8 @@ export type AudioLayerFrameRenderInput = {
 	spectrumScope?: SpectrumScope;
 	flashEdge?: FlashEdgeScope;
 	trackTitleScope?: TrackTitleScope;
+	/** Which spectrums this canvas draws; absent = all of them. */
+	spectrumPartition?: SpectrumDrawPartition;
 };
 
 function isRenderableAudioLayer(
@@ -143,7 +146,8 @@ export function renderAudioLayerFrame(
 		logoScope: input.logoScope,
 		spectrumScope: input.spectrumScope,
 		flashEdge: input.flashEdge,
-		trackTitleScope: input.trackTitleScope
+		trackTitleScope: input.trackTitleScope,
+		spectrumPartition: input.spectrumPartition
 	};
 	// Every renderable audio layer's type is also its filter-target id. The
 	// winning stack is not necessarily the layer the Looks tab is editing.

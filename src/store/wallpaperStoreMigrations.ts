@@ -469,6 +469,7 @@ function normalizeCameraMotionTarget(
 		value === 'selected-overlay' ||
 		value === 'logo' ||
 		value === 'spectrum' ||
+		value === 'spectrum-2' ||
 		value === 'particles' ||
 		value === 'rain' ||
 		value === 'track-title' ||
@@ -506,6 +507,7 @@ function normalizeCameraMotionTargets(
 			next.add('selected-overlay');
 			next.add('logo');
 			next.add('spectrum');
+			next.add('spectrum-2');
 			next.add('particles');
 			next.add('rain');
 			next.add('track-title');

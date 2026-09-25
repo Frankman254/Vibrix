@@ -7,6 +7,7 @@ export const CAMERA_FX_TARGETS: CameraMotionTarget[] = [
 	'selected-overlay',
 	'logo',
 	'spectrum',
+	'spectrum-2',
 	'particles',
 	'rain',
 	'track-title',
@@ -25,6 +26,7 @@ export function getCameraFxTargetLabels(
 		'selected-overlay': t.sfx_target_overlays,
 		logo: t.sfx_target_logo,
 		spectrum: t.sfx_target_spectrum,
+		'spectrum-2': t.sfx_target_spectrum_2,
 		particles: t.sfx_target_particles,
 		rain: t.sfx_target_rain,
 		'track-title': t.sfx_target_track_title,
@@ -34,10 +36,30 @@ export function getCameraFxTargetLabels(
 	};
 }
 
+/**
+ * What exists on stage right now. A target for something the project does not
+ * have is offered greyed out rather than hidden, so the chip row keeps the same
+ * shape and the user can see why it is unavailable.
+ */
+export type CameraFxTargetAvailability = {
+	hasOverlay: boolean;
+	/** `spectrumInstances[0]` exists — what the editor calls Spectrum 2. */
+	hasSecondSpectrum: boolean;
+};
+
+export function isCameraFxTargetAvailable(
+	target: CameraMotionTarget,
+	availability: CameraFxTargetAvailability
+): boolean {
+	if (target === 'selected-overlay') return availability.hasOverlay;
+	if (target === 'spectrum-2') return availability.hasSecondSpectrum;
+	return true;
+}
+
 export function resolveAvailableCameraFxTargets(
-	hasOverlay: boolean
+	availability: CameraFxTargetAvailability
 ): CameraMotionTarget[] {
-	return hasOverlay
-		? CAMERA_FX_TARGETS
-		: CAMERA_FX_TARGETS.filter(target => target !== 'selected-overlay');
+	return CAMERA_FX_TARGETS.filter(target =>
+		isCameraFxTargetAvailable(target, availability)
+	);
 }

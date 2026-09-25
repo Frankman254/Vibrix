@@ -56,7 +56,16 @@ export type CameraMotionMode =
 	| 'lissajous';
 export type CameraMotionDirection = 'cw' | 'ccw';
 export type CameraMotionDrive = 'fixed' | 'audio' | 'fixed-audio';
-export type CameraMotionTarget = FilterTarget | 'stage-lights' | 'flash-light';
+/**
+ * `spectrum-2` has no `FilterTarget` twin on purpose: the filter stack still
+ * treats both spectrums as one target, while the camera can move them apart
+ * (they are drawn on two separate canvas roots when this target is in use).
+ */
+export type CameraMotionTarget =
+	| FilterTarget
+	| 'stage-lights'
+	| 'flash-light'
+	| 'spectrum-2';
 export type CameraMotionLayer = CameraMotionTarget;
 export type ScreenShakeMode =
 	| 'horizontal'

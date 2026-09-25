@@ -13,6 +13,7 @@ import { FxBandThresholdControls } from './FxBandThresholdControls';
 import { formatDecimal } from '@/editor/motionTabUtils';
 import {
 	CAMERA_FX_TARGETS,
+	isCameraFxTargetAvailable,
 	getCameraFxTargetLabels,
 	resolveAvailableCameraFxTargets
 } from './cameraFxTargetControls';
@@ -31,6 +32,7 @@ export function ScreenShakeSection() {
 			channel: state.cameraShakeChannel,
 			targets: state.cameraShakeTargets,
 			hasOverlay: state.overlays.some(overlay => overlay.enabled),
+			hasSecondSpectrum: state.spectrumInstances.length > 0,
 			mode: state.cameraShakeMode,
 			frequency: state.cameraShakeFrequency,
 			roughness: state.cameraShakeRoughness,
@@ -52,13 +54,17 @@ export function ScreenShakeSection() {
 			roughness: state.setCameraShakeRoughness
 		}))
 	);
-	const availableTargets = resolveAvailableCameraFxTargets(s.hasOverlay);
+	const availability = {
+		hasOverlay: s.hasOverlay,
+		hasSecondSpectrum: s.hasSecondSpectrum
+	};
+	const availableTargets = resolveAvailableCameraFxTargets(availability);
 	const allTargetsEnabled = availableTargets.every(target =>
 		s.targets.includes(target)
 	);
 
 	function toggleTarget(target: CameraMotionTarget) {
-		if (target === 'selected-overlay' && !s.hasOverlay) return;
+		if (!isCameraFxTargetAvailable(target, availability)) return;
 		const next = s.targets.includes(target)
 			? s.targets.filter(item => item !== target)
 			: [...s.targets, target];
@@ -233,8 +239,10 @@ export function ScreenShakeSection() {
 									<div className="flex flex-wrap gap-1">
 										{CAMERA_FX_TARGETS.map(target => {
 											const disabled =
-												target === 'selected-overlay' &&
-												!s.hasOverlay;
+												!isCameraFxTargetAvailable(
+													target,
+													availability
+												);
 											const active =
 												s.targets.includes(target);
 											return (

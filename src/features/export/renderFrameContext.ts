@@ -37,6 +37,11 @@ export type RenderSubsystemId =
 	| 'rain'
 	| 'particlesForeground'
 	| 'spectrum'
+	/**
+	 * The extra spectrum instances ("Spectrum 2"), drawn apart from `spectrum`
+	 * only while the camera aims at them — see `spectrumCameraSplit`.
+	 */
+	| 'spectrum2'
 	| 'logo'
 	| 'trackTitle'
 	| 'lyrics'
@@ -53,6 +58,7 @@ export const RENDER_SUBSYSTEM_ORDER: readonly RenderSubsystemId[] = [
 	'rain',
 	'particlesForeground',
 	'spectrum',
+	'spectrum2',
 	'logo',
 	'trackTitle',
 	'lyrics',

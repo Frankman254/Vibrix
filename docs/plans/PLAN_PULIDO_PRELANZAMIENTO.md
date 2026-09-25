@@ -331,6 +331,11 @@ subsistema `spectrum` entero (`frameComposition.ts:30`).
 transformación por instancia, en el camino vivo y en el de export. Es la pieza
 más cara de todo este plan.
 
+> **Resuelto en la Fase D, por otro camino**: en vez de bajar la transformación
+> al renderer, la capa spectrum se dibuja en **dos raíces de canvas** (principal
+> e instancias) cuando —y solo cuando— algún destino de cámara apunta a
+> `spectrum-2`. El mecanismo de transformación no cambia; cambia a qué se aplica.
+
 ### 5.3 Faltan movimientos, y el clamp es el techo real
 
 Los 6 modos (`cameraFxDraw.ts:157`) son todos senoides continuas. Faltan:
@@ -400,10 +405,40 @@ Ordenadas por (valor visible ÷ riesgo), no por tema.
   dentro del margen de zoom (mueve el cuadro) o usa la amplitud completa (flota
   encima).
 
-### Fase D — Separar Spectrum 1 / Spectrum 2 en la cámara
+### Fase D — Separar Spectrum 1 / Spectrum 2 en la cámara — **HECHA** (sin cambio de persistencia)
 
-- Bajar la transformación al renderer, por instancia.
-- Vivo **y** export. Es la fase más invasiva; va sola.
+- Resuelta **partiendo el lienzo**, no bajando la transformación al renderer. El
+  obstáculo de §5.2 era que ambos spectrums se pintan en el mismo canvas y la
+  cámara es un `transform` sobre la raíz de ese canvas. Con dos raíces, el
+  mecanismo que ya existe (CSS vivo, transformación de canvas en export) separa
+  los dos sin tocar el interior del renderer ni duplicar el trabajo de dibujo.
+- Nuevo destino de cámara `spectrum-2`, disponible solo cuando existe un
+  Spectrum 2 (`spectrumInstances[0]`); el chip se ve atenuado si no lo hay. No
+  es un `FilterTarget`: para los filtros los dos spectrums siguen siendo uno.
+- **El reparto es a demanda**: mientras nadie apunte a `spectrum-2`, se dibuja
+  todo en un solo canvas como siempre. Ese es el punto donde la auditoría de
+  rendimiento avisaba (N canvas a pantalla completa), así que el segundo canvas
+  solo existe cuando de verdad sirve para algo.
+- La decisión vive en un módulo puro, `spectrumCameraSplit.ts`
+  (`spectrumCameraSplitActive`, `resolveSpectrumPartitions`), y lo leen **tanto
+  el viewport vivo como el export**: es imposible que discrepen sobre quién
+  dibuja qué.
+- Vivo: `WallpaperViewport` monta dos `AudioLayerCanvas` para la capa spectrum,
+  con `spectrumPartition` `'main'` / `'instances'` y
+  `data-camera-motion-layer` `spectrum` / `spectrum-2`. Solo el canvas del
+  principal llama a `resetSpectrum()` al desmontarse, para que aparecer y
+  desaparecer el segundo no borre el suavizado del primero.
+- Export: nuevo subsistema `spectrum2`, con la misma z que `spectrum` y pintado
+  justo encima; devuelve sin dibujar nada mientras el reparto está inactivo.
+- `cameraMotionTargets` acepta `'spectrum-2'` al normalizar (si no, el destino
+  se perdía al recargar) y la expansión de `'all'` lo incluye. Sin cambio de
+  forma, así que sin bump de persistencia.
+- **Pendiente de mirar con ojos humanos**: el reparto se verificó por tests y la
+  función pura se comprobó contra el store real en el navegador, pero el panel de
+  navegador de estas sesiones tiene el planificador de React sin correr (los
+  timers y `requestAnimationFrame` están suspendidos), así que **no** se pudo ver
+  el segundo canvas montarse en el DOM ni los dos spectrums moviéndose por
+  separado.
 
 ### Fase E — Transiciones
 
@@ -772,7 +807,7 @@ la patch. Y la fase no se da por cerrada sin las tres.
 | **A**  | ✅ Capas: propiedad de destino + el slot/override guarda la pila completa | v120 hecho       |
 | **B**  | ✅ Camera Motion por capas (`motionLayers`)                               | v124 hecho       |
 | **C**  | ✅ Movimientos nuevos + amplitud reactiva + clamp por tipo de capa        | v125 hecho       |
-| **D**  | Separar Spectrum 1 / 2 en la cámara (transformación en el renderer)       | —                |
+| **D**  | ✅ Separar Spectrum 1 / 2 en la cámara (dos raíces de canvas, a demanda)  | sin persistencia |
 | **E1** | ✅ Dissolve y compañía a offscreen (el lag)                               | hecho            |
 | **E2** | ✅ Crossfade real por captura de frame (la calidad)                       | sin persistencia |
 | **E3** | ✅ Presets de transición con nombre; los cinco dials a Advanced           | v127 hecho       |

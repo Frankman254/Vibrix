@@ -2191,6 +2191,7 @@ export const es: Record<TranslationKey, string> = {
 	sfx_target_overlays: 'Superposiciones',
 	sfx_target_logo: 'Logo',
 	sfx_target_spectrum: 'Espectro',
+	sfx_target_spectrum_2: 'Espectro 2',
 	sfx_target_particles: 'Partículas',
 	sfx_target_rain: 'Lluvia',
 	sfx_target_track_title: 'Título de Pista',

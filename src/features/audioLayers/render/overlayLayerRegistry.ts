@@ -62,6 +62,11 @@ import {
 import type { NowPlayingData } from '@/features/audioLayers/render/nowPlayingWidget';
 import { drawLyricsOverlay } from '@/features/lyrics';
 import { resolveActiveAudioAssetId } from '@/lib/audio/activeTrack';
+import {
+	partitionDrawsMainSpectrum,
+	partitionDrawsSpectrumInstances,
+	type SpectrumDrawPartition
+} from '@/features/spectrum/domain/spectrumCameraSplit';
 
 export interface OverlayRenderContext {
 	ctx: CanvasRenderingContext2D;
@@ -81,6 +86,11 @@ export interface OverlayRenderContext {
 	spectrumScope?: SpectrumScope;
 	flashEdge?: FlashEdgeScope;
 	trackTitleScope?: TrackTitleScope;
+	/**
+	 * Which spectrums this canvas owns. Absent = `'all'`, the single-canvas
+	 * default; the camera splits them only on demand (`spectrumCameraSplit`).
+	 */
+	spectrumPartition?: SpectrumDrawPartition;
 }
 
 const OVERLAY_IMAGE_CACHE_LIMIT = 12;
@@ -507,21 +517,28 @@ export function drawOverlayLayer(
 	if (layer.type === 'spectrum') {
 		// Main and extra instances are independently visible: any of them can
 		// render without the others. `spectrumEnabled` is the master switch.
+		// A split canvas owns only its half; the other half is another canvas's
+		// job, so it must not be drawn here NOR have its debug state cleared.
+		const partition = context.spectrumPartition ?? 'all';
+		const ownsMain = partitionDrawsMainSpectrum(partition);
+		const ownsInstances = partitionDrawsSpectrumInstances(partition);
 		const willDrawMain =
+			ownsMain &&
 			responsiveState.spectrumEnabled &&
 			responsiveState.spectrumMainVisible &&
 			responsiveState.spectrumOpacity > 0.001;
-		const activeInstances = responsiveState.spectrumEnabled
-			? responsiveState.spectrumInstances.filter(
-					instance =>
-						instance.enabled && instance.spectrumOpacity > 0.001
-				)
-			: [];
-		if (activeInstances.length === 0) {
+		const activeInstances =
+			ownsInstances && responsiveState.spectrumEnabled
+				? responsiveState.spectrumInstances.filter(
+						instance =>
+							instance.enabled && instance.spectrumOpacity > 0.001
+					)
+				: [];
+		if (ownsInstances && activeInstances.length === 0) {
 			clearDebugSpectrumClone();
 			clearSpectrumDiagnosticsClone();
 		}
-		if (!willDrawMain) {
+		if (ownsMain && !willDrawMain) {
 			clearSpectrumDiagnosticsPrimary();
 		}
 		if (!willDrawMain && activeInstances.length === 0) {

@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { buildOverlayLayers, buildSceneLayers } from '@/lib/layers';
 import { useWallpaperStore } from '@/store/wallpaperStore';
 import { SlideshowManager } from '@/features/background/ui';
+import { resolveSpectrumPartitions } from '@/features/spectrum/domain/spectrumCameraSplit';
 import {
 	CameraFxStage,
 	FlashLightCanvas,
@@ -51,6 +52,11 @@ export default function WallpaperViewport({
 }) {
 	const showEditorChrome = editorMode && !outputMode;
 	const stageLightsEnabled = useWallpaperStore(s => s.stageLightsEnabled);
+	// Spectrum 1 and 2 share a canvas unless the camera aims at Spectrum 2, in
+	// which case each gets its own root so a CSS transform can move one alone.
+	const spectrumPartitions = useWallpaperStore(
+		useShallow(state => resolveSpectrumPartitions(state))
+	);
 	const flashLightEnabled = useWallpaperStore(s => s.flashLightEnabled);
 	const sceneLayerState = useWallpaperStore(
 		useShallow(
@@ -234,9 +240,22 @@ export default function WallpaperViewport({
 							<SceneLayerCanvas key={layer.id} layer={layer} />
 						);
 					})}
-					{audioLayers.map(layer => (
-						<AudioLayerCanvas key={layer.id} layer={layer} />
-					))}
+					{audioLayers.flatMap(layer =>
+						layer.type === 'spectrum'
+							? spectrumPartitions.map(partition => (
+									<AudioLayerCanvas
+										key={`${layer.id}:${partition}`}
+										layer={layer}
+										spectrumPartition={partition}
+									/>
+								))
+							: [
+									<AudioLayerCanvas
+										key={layer.id}
+										layer={layer}
+									/>
+								]
+					)}
 					{flashLightEnabled && <FlashLightCanvas zIndex={90} />}
 				</CameraFxStage>
 
