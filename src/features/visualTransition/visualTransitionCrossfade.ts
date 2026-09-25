@@ -9,6 +9,10 @@
  * outgoing frame into a plain 2D canvas and fade that out against the live
  * layer fading in. See `freezeLayerFrame` for the DOM side.
  */
+import type {
+	VisualTransitionSnapshot,
+	VisualTransitionSubsystem
+} from '@/types/wallpaper';
 
 /**
  * Upper bound for a frozen frame's backing store (3840×2160). A full-screen
@@ -42,4 +46,40 @@ export function crossfadeOpacities(progress: number): CrossfadeOpacities {
 		? Math.max(0, Math.min(1, progress))
 		: 1;
 	return { incoming: p, outgoing: 1 - p };
+}
+
+export type CrossfadeGate = Pick<
+	VisualTransitionSnapshot,
+	'durationMs' | 'subsystems' | 'fromImageId' | 'toImageId'
+>;
+
+export type CrossfadeGateOptions = {
+	/**
+	 * `true` for the image layers: an image change is already animated by the
+	 * slideshow transition engine (`transitionType`), so crossfading the wrapper
+	 * on top of it would be two dissolves fighting each other. Those layers only
+	 * fade when the look changed without the image changing.
+	 */
+	skipOnImageChange?: boolean;
+};
+
+/** Should this layer start a crossfade for this transition? */
+export function shouldStartCrossfade(
+	transition: CrossfadeGate | null,
+	subsystems: readonly VisualTransitionSubsystem[],
+	options?: CrossfadeGateOptions
+): boolean {
+	if (!transition) return false;
+	// Reduced motion and a disabled transition both arrive as duration 0.
+	if (transition.durationMs <= 0) return false;
+	if (subsystems.length === 0) return false;
+	if (!transition.subsystems.some(id => subsystems.includes(id)))
+		return false;
+	if (
+		options?.skipOnImageChange === true &&
+		transition.fromImageId !== transition.toImageId
+	) {
+		return false;
+	}
+	return true;
 }

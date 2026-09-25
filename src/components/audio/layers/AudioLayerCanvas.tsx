@@ -18,7 +18,7 @@ import {
 	subscribeOutputRenderQuality
 } from '@/runtime/outputRenderQuality';
 import {
-	transitionSubsystemForLayerType,
+	transitionSubsystemsForLayerType,
 	useVisualTransitionFade
 } from '@/features/visualTransition/useVisualTransitionFade';
 
@@ -29,7 +29,7 @@ export default function AudioLayerCanvas({
 }) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const fadeRef = useVisualTransitionFade(
-		transitionSubsystemForLayerType(layer.type)
+		transitionSubsystemsForLayerType(layer.type)
 	);
 	const rafRef = useRef<number>(0);
 	const lastTimeRef = useRef<number>(0);

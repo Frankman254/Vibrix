@@ -13,7 +13,7 @@ import {
 	resolveSceneLayerMaxDpr
 } from '@/runtime/outputRenderQuality';
 import {
-	transitionSubsystemForLayerType,
+	transitionSubsystemsForLayerType,
 	useVisualTransitionFade
 } from '@/features/visualTransition/useVisualTransitionFade';
 
@@ -44,7 +44,7 @@ function FrameRateLimiter({ minFrameMs }: { minFrameMs: number }) {
 export default function SceneLayerCanvas({ layer }: { layer: SceneLayer }) {
 	const groupRef = useRef<Group>(null);
 	const fadeRef = useVisualTransitionFade(
-		transitionSubsystemForLayerType(layer.type)
+		transitionSubsystemsForLayerType(layer.type)
 	);
 	const outputMode = useRuntimeUiModeStore(s => s.mode);
 	const recordingRenderScale = useOutputPerformanceStore(

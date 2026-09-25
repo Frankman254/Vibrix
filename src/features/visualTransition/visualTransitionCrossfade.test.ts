@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
 	FREEZE_MAX_PIXELS,
 	canFreezeFrame,
-	crossfadeOpacities
+	crossfadeOpacities,
+	shouldStartCrossfade,
+	type CrossfadeGate
 } from '@/features/visualTransition/visualTransitionCrossfade';
 
 describe('canFreezeFrame', () => {
@@ -49,5 +51,50 @@ describe('crossfadeOpacities', () => {
 			incoming: 1,
 			outgoing: 0
 		});
+	});
+});
+
+describe('shouldStartCrossfade', () => {
+	const gate = (over: Partial<CrossfadeGate> = {}): CrossfadeGate => ({
+		durationMs: 420,
+		subsystems: ['looks'],
+		fromImageId: 'img-a',
+		toImageId: 'img-a',
+		...over
+	});
+
+	it('starts when the transition touches one of the watched subsystems', () => {
+		expect(shouldStartCrossfade(gate(), ['spectrum', 'looks'])).toBe(true);
+	});
+
+	it('does not start for a subsystem this layer does not draw', () => {
+		expect(shouldStartCrossfade(gate(), ['spectrum'])).toBe(false);
+	});
+
+	it('does not start without a transition, a duration or a subsystem', () => {
+		expect(shouldStartCrossfade(null, ['looks'])).toBe(false);
+		expect(shouldStartCrossfade(gate({ durationMs: 0 }), ['looks'])).toBe(
+			false
+		);
+		expect(shouldStartCrossfade(gate(), [])).toBe(false);
+	});
+
+	it('skips an image change for the layers that already animate it', () => {
+		const imageChange = gate({ toImageId: 'img-b' });
+		expect(
+			shouldStartCrossfade(imageChange, ['looks'], {
+				skipOnImageChange: true
+			})
+		).toBe(false);
+		// The audio and scene layers have no engine of their own: they fade.
+		expect(shouldStartCrossfade(imageChange, ['looks'])).toBe(true);
+	});
+
+	it('still fades a look change on the image layers', () => {
+		expect(
+			shouldStartCrossfade(gate(), ['looks', 'scene'], {
+				skipOnImageChange: true
+			})
+		).toBe(true);
 	});
 });

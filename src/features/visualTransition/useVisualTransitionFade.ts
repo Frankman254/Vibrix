@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useWallpaperStore } from '@/store/wallpaperStore';
 import {
-	transitionSubsystemForLayerType,
+	transitionSubsystemsForLayerType,
 	visualTransitionProgress
 } from '@/features/visualTransition/visualTransitionCoordinator';
 import {
@@ -10,10 +10,14 @@ import {
 	releaseFrozenFrame,
 	type FrozenLayerFrame
 } from '@/features/visualTransition/freezeLayerFrame';
-import { crossfadeOpacities } from '@/features/visualTransition/visualTransitionCrossfade';
+import {
+	crossfadeOpacities,
+	shouldStartCrossfade,
+	type CrossfadeGateOptions
+} from '@/features/visualTransition/visualTransitionCrossfade';
 import type { VisualTransitionSubsystem } from '@/types/wallpaper';
 
-export { transitionSubsystemForLayerType };
+export { transitionSubsystemsForLayerType };
 
 /**
  * Crossfades a layer wrapper while a `visualTransition` that touches this
@@ -41,12 +45,20 @@ export { transitionSubsystemForLayerType };
  *    duration upstream in `createVisualTransitionSnapshot`.
  */
 export function useVisualTransitionFade(
-	subsystem: VisualTransitionSubsystem | null
+	subsystems: readonly VisualTransitionSubsystem[],
+	options?: CrossfadeGateOptions
 ) {
 	const ref = useRef<HTMLDivElement>(null);
+	// The callers build the list per render, so an array would be a new
+	// dependency every time; the joined key is stable for the same layer.
+	const subsystemKey = subsystems.join('|');
+	const skipOnImageChange = options?.skipOnImageChange === true;
 
 	useEffect(() => {
-		if (!subsystem) return undefined;
+		const watched = (
+			subsystemKey ? subsystemKey.split('|') : []
+		) as VisualTransitionSubsystem[];
+		if (watched.length === 0) return undefined;
 		let raf = 0;
 		let safety = 0;
 		let activeId: string | null = null;
@@ -101,11 +113,11 @@ export function useVisualTransitionFade(
 
 		const maybeStart = () => {
 			const transition = useWallpaperStore.getState().visualTransition;
+			if (!transition || transition.id === activeId) return;
 			if (
-				!transition ||
-				transition.id === activeId ||
-				transition.durationMs <= 0 ||
-				!transition.subsystems.includes(subsystem)
+				!shouldStartCrossfade(transition, watched, {
+					skipOnImageChange
+				})
 			) {
 				return;
 			}
@@ -142,7 +154,7 @@ export function useVisualTransitionFade(
 			unsubscribe();
 			finish();
 		};
-	}, [subsystem]);
+	}, [subsystemKey, skipOnImageChange]);
 
 	return ref;
 }

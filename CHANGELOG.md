@@ -15,6 +15,19 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### El cambio de look ya no es un corte seco (fondo incluido)
+
+- El crossfade de E2 solo cubría spectrum, logo, partículas y lluvia, y solo
+  cuando cambiaba la imagen. Cambiar de **look** (un filtro, una capa de efectos)
+  seguía siendo un salto instantáneo en todas las capas a la vez, porque el stack
+  de filtros se hornea dentro del dibujado de cada capa.
+- Ahora **toda capa dibujada** funde también ante un cambio de look, y se suman
+  dos capas que antes no fundían nunca: el **fondo** y el **fondo global**.
+- El fondo no funde al cambiar de imagen: eso ya lo animaba el motor de
+  transición del slideshow, y hacer las dos cosas eran dos disolvencias
+  peleándose. Funde cuando cambia el look o cuando una escena lo recoloca.
+- Sin cambios de persistencia: nada que migrar, ningún control nuevo.
+
 ### La transición tiene nombre: presets en vez de cinco diales (store v127)
 
 - Una transición eran cinco números sin nombre por imagen, más un juego «global»

@@ -95,26 +95,35 @@ export function createVisualTransitionSnapshot(params: {
 }
 
 /**
- * Maps a renderable layer's `type` to the visual-transition subsystem whose
- * fade envelope should drive it, or `null` when the layer is not part of the
- * smooth-transition pass (e.g. track-title / lyrics / plain images). Pure so it
- * can be unit-tested without the DOM or the store.
+ * Maps a renderable layer's `type` to the visual-transition subsystems whose
+ * fade envelope should drive it, or an empty list when the layer is not part of
+ * the crossfade pass (track-title / lyrics / the slideshow controller).
+ *
+ * Every drawn layer also lists `looks`, because the filter stack is baked into
+ * its pixels (`resolveFilterStack` runs inside each draw): changing a look with
+ * no image change used to be a hard cut on every layer at once. The two image
+ * layers additionally answer to `scene`, since a scene can re-frame them.
+ *
+ * Pure so it can be unit-tested without the DOM or the store.
  */
-export function transitionSubsystemForLayerType(
+export function transitionSubsystemsForLayerType(
 	type: string
-): VisualTransitionSubsystem | null {
+): VisualTransitionSubsystem[] {
 	switch (type) {
 		case 'spectrum':
-			return 'spectrum';
+			return ['spectrum', 'looks'];
 		case 'logo':
-			return 'logo';
+			return ['logo', 'looks'];
 		case 'rain':
-			return 'rain';
+			return ['rain', 'looks'];
 		case 'particle-background':
 		case 'particle-foreground':
-			return 'particles';
+			return ['particles', 'looks'];
+		case 'background-image':
+		case 'overlay-image':
+			return ['looks', 'scene'];
 		default:
-			return null;
+			return [];
 	}
 }
 

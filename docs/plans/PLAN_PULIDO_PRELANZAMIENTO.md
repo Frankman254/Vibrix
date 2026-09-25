@@ -409,14 +409,11 @@ Ordenadas por (valor visible ÷ riesgo), no por tema.
 
 - **E1 (rendimiento)**: offscreen para Dissolve y `blur-dissolve`.
 - **E2 (calidad)**: ✅ crossfade real por captura de frame, en vez del fade desde 0.
-- **E3 (UI)**: ✅ presets de transición con nombre; los 5 dials detrás del
-  preset; el juego "global" duplicado resultó ser solo estado (espejo de la
-  imagen activa), no UI.
-- **E4**: extender el crossfade al **fondo** y a los **looks** con la misma
-  captura. Spectrum, logo, partículas y lluvia ya quedaron cubiertos en E2,
-  porque son justo las capas que usaban el fundido; el fondo y los filtros no
-  pasan por `useVisualTransitionFade`
-  (`transitionSubsystemForLayerType` devuelve `null` para ellos).
+- **E3 (UI)**: ✅ presets de transición con nombre; los cinco dials a Advanced;
+  el juego "global" duplicado resultó ser solo estado (espejo de la imagen
+  activa), no UI.
+- **E4**: ✅ extender el crossfade al **fondo** y a los **looks** con la misma
+  captura. Spectrum, logo, partículas y lluvia ya quedaron cubiertos en E2.
 
 ### Fase F — Tiempos manuales
 
@@ -461,9 +458,10 @@ Ordenadas por (valor visible ÷ riesgo), no por tema.
   = 40).
 - UI nueva: `TransitionPresetPanel.tsx`, conectado al store. Fila de presets +
   «Save as preset» con nombre libre (se desambigua solo); renombrar y borrar
-  solo para los del usuario y dentro de `<AdvancedOnly>`; borrar pasa por
-  `confirm({ tone: 'danger' })`. Los cinco dials siguen accesibles debajo
-  del preset: nadie pierde control, solo deja de necesitarlo.
+  solo para los del usuario; borrar pasa por `confirm({ tone: 'danger' })`.
+  Renombrar/borrar y **los cinco dials** viven dentro de `<AdvancedOnly>`: en
+  modo Simple solo se ve la fila de presets (un control en vez de cinco), y en
+  Advanced no se pierde nada.
 - `ActiveWallpaperSection` adelgaza en 12 props (`BackgroundTab` y
   `useBackgroundStore` ya no las bajan).
 - Los presets **no** entran en los presets de proyecto
@@ -474,6 +472,30 @@ Ordenadas por (valor visible ÷ riesgo), no por tema.
   (`getBackgroundImageStatePatch`) y lo que lee el renderer. La única UI que
   existía era la per-imagen, así que no había nada que quitar; queda documentado
   en §10 para no volver a buscarlo.
+
+### Fase E4 — Crossfade del fondo y de los looks — **HECHA** (sin cambio de persistencia)
+
+- `transitionSubsystemForLayerType` (una capa → un subsistema) pasa a
+  `transitionSubsystemsForLayerType` (una capa → **varios**). Toda capa dibujada
+  escucha además `looks`, porque el stack de filtros se hornea en sus píxeles
+  (`resolveFilterStack` corre dentro del draw): cambiar un look sin cambiar de
+  imagen era un corte seco en todas las capas a la vez.
+- Nuevas capas con crossfade: el **fondo** (`ImageLayerCanvas`, tanto
+  `background-image` como `overlay-image`, que además escuchan `scene`) y el
+  **fondo global** (`GlobalBackgroundView`, que es un target de filtros).
+- Estas tres pasan `skipOnImageChange: true`: un cambio de imagen ya lo anima el
+  motor de transición del slideshow (`transitionType`), y superponer el crossfade
+  serían dos disolvencias peleándose. Las capas de audio y de escena no tienen
+  motor propio, así que siguen fundiendo también al cambiar de imagen.
+- La decisión de arrancar sale del hook a una función pura,
+  `shouldStartCrossfade(transition, subsystems, options)`, con tests: no arranca
+  sin transición, con `durationMs <= 0` (reduced motion), sin intersección de
+  subsistemas, ni ante un cambio de imagen cuando se pide saltarlo.
+- El hook recibe ahora una lista; la dependencia del efecto es la lista unida en
+  una cadena, porque el array se construye en cada render.
+- **No verificado con ojos humanos**: el panel de navegador de estas sesiones
+  tiene `requestAnimationFrame` suspendido, así que la animación no se puede
+  mirar desde aquí. Lo que sí queda cubierto por tests es la puerta de arranque.
 
 ### Fase I — UI de escenas — **HECHA** (sin cambio de persistencia)
 
@@ -745,22 +767,22 @@ la patch. Y la fase no se da por cerrada sin las tres.
 
 ## 14. Fases (actualizado)
 
-| Fase   | Qué                                                                                       | Persistencia     |
-| ------ | ----------------------------------------------------------------------------------------- | ---------------- |
-| **A**  | ✅ Capas: propiedad de destino + el slot/override guarda la pila completa                 | v120 hecho       |
-| **B**  | ✅ Camera Motion por capas (`motionLayers`)                                               | v124 hecho       |
-| **C**  | ✅ Movimientos nuevos + amplitud reactiva + clamp por tipo de capa                        | v125 hecho       |
-| **D**  | Separar Spectrum 1 / 2 en la cámara (transformación en el renderer)                       | —                |
-| **E1** | ✅ Dissolve y compañía a offscreen (el lag)                                               | hecho            |
-| **E2** | ✅ Crossfade real por captura de frame (la calidad)                                       | sin persistencia |
-| **E3** | ✅ Presets de transición con nombre; el preset manda, los dials siguen debajo             | v127 hecho       |
-| **E4** | Extender el crossfade al fondo y a los looks (E2 ya cubre spectrum/logo/particles/lluvia) | —                |
-| **E5** | _(post-lanzamiento)_ Motor GL de transiciones estilo gl-transitions                       | —                |
-| **F**  | ✅ Botón "marcar aquí" + atajo `M` + anclaje de transición                                | v123 hecho       |
-| **G**  | ✅ Coherencia per-image + pantalla única «qué lleva esta imagen»                          | v126 hecho       |
-| **H**  | ✅ Modo global que pisa per-image sin borrarlo + "Guardar en todas"                       | v121 hecho       |
-| **I**  | ✅ UI de escenas con botones de tres estados + "capturar escena actual"                   | sin persistencia |
-| **J**  | _(futuro, no en este plan)_ Línea de tiempo de eventos                                    | —                |
+| Fase   | Qué                                                                       | Persistencia     |
+| ------ | ------------------------------------------------------------------------- | ---------------- |
+| **A**  | ✅ Capas: propiedad de destino + el slot/override guarda la pila completa | v120 hecho       |
+| **B**  | ✅ Camera Motion por capas (`motionLayers`)                               | v124 hecho       |
+| **C**  | ✅ Movimientos nuevos + amplitud reactiva + clamp por tipo de capa        | v125 hecho       |
+| **D**  | Separar Spectrum 1 / 2 en la cámara (transformación en el renderer)       | —                |
+| **E1** | ✅ Dissolve y compañía a offscreen (el lag)                               | hecho            |
+| **E2** | ✅ Crossfade real por captura de frame (la calidad)                       | sin persistencia |
+| **E3** | ✅ Presets de transición con nombre; los cinco dials a Advanced           | v127 hecho       |
+| **E4** | ✅ Crossfade en el fondo, el fondo global y ante cualquier cambio de look | sin persistencia |
+| **E5** | _(post-lanzamiento)_ Motor GL de transiciones estilo gl-transitions       | —                |
+| **F**  | ✅ Botón "marcar aquí" + atajo `M` + anclaje de transición                | v123 hecho       |
+| **G**  | ✅ Coherencia per-image + pantalla única «qué lleva esta imagen»          | v126 hecho       |
+| **H**  | ✅ Modo global que pisa per-image sin borrarlo + "Guardar en todas"       | v121 hecho       |
+| **I**  | ✅ UI de escenas con botones de tres estados + "capturar escena actual"   | sin persistencia |
+| **J**  | _(futuro, no en este plan)_ Línea de tiempo de eventos                    | —                |
 
 Orden de ejecución: **A → E1 → H → F → B → C → G → I → E2 → E3 → E4 → D**.
 E1 se adelanta porque es el arreglo más barato del síntoma más molesto, y H y F

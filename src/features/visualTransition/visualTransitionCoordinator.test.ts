@@ -3,7 +3,7 @@ import {
 	createVisualTransitionSnapshot,
 	detectVisualTransitionSubsystems,
 	isVisualTransitionActive,
-	transitionSubsystemForLayerType,
+	transitionSubsystemsForLayerType,
 	visualTransitionProgress
 } from './visualTransitionCoordinator';
 import type { WallpaperState } from '@/types/wallpaper';
@@ -77,21 +77,41 @@ describe('visualTransitionCoordinator', () => {
 		expect(isVisualTransitionActive(transition, 1220)).toBe(false);
 	});
 
-	it('maps layer types to the subsystem that drives their fade envelope', () => {
-		expect(transitionSubsystemForLayerType('spectrum')).toBe('spectrum');
-		expect(transitionSubsystemForLayerType('logo')).toBe('logo');
-		expect(transitionSubsystemForLayerType('rain')).toBe('rain');
-		expect(transitionSubsystemForLayerType('particle-background')).toBe(
-			'particles'
+	it('maps layer types to the subsystems that drive their fade envelope', () => {
+		// Every drawn layer answers to `looks`: the filter stack is baked into
+		// its pixels, so a look change with no image change was a hard cut.
+		expect(transitionSubsystemsForLayerType('spectrum')).toEqual([
+			'spectrum',
+			'looks'
+		]);
+		expect(transitionSubsystemsForLayerType('logo')).toEqual([
+			'logo',
+			'looks'
+		]);
+		expect(transitionSubsystemsForLayerType('rain')).toEqual([
+			'rain',
+			'looks'
+		]);
+		expect(transitionSubsystemsForLayerType('particle-background')).toEqual(
+			['particles', 'looks']
 		);
-		expect(transitionSubsystemForLayerType('particle-foreground')).toBe(
-			'particles'
+		expect(transitionSubsystemsForLayerType('particle-foreground')).toEqual(
+			['particles', 'looks']
 		);
-		// Layers outside the FASE 0 fade pass.
-		expect(transitionSubsystemForLayerType('track-title')).toBeNull();
-		expect(transitionSubsystemForLayerType('lyrics')).toBeNull();
-		expect(transitionSubsystemForLayerType('background-image')).toBeNull();
-		expect(transitionSubsystemForLayerType('overlay-image')).toBeNull();
+		// The image layers: looks and re-framing by a scene, never the image
+		// change itself (the slideshow engine owns that animation).
+		expect(transitionSubsystemsForLayerType('background-image')).toEqual([
+			'looks',
+			'scene'
+		]);
+		expect(transitionSubsystemsForLayerType('overlay-image')).toEqual([
+			'looks',
+			'scene'
+		]);
+		// Layers outside the crossfade pass.
+		expect(transitionSubsystemsForLayerType('track-title')).toEqual([]);
+		expect(transitionSubsystemsForLayerType('lyrics')).toEqual([]);
+		expect(transitionSubsystemsForLayerType('slideshow')).toEqual([]);
 	});
 
 	it('does not create a transition for an unrelated state patch', () => {

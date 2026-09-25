@@ -14,6 +14,10 @@ import {
 } from './imageCanvasRuntime';
 import { subscribeOutputRenderQuality } from '@/runtime/outputRenderQuality';
 import { useImageCanvasSource } from './useImageCanvasSource';
+import {
+	transitionSubsystemsForLayerType,
+	useVisualTransitionFade
+} from '@/features/visualTransition/useVisualTransitionFade';
 
 export default function ImageLayerCanvas({
 	layer,
@@ -23,6 +27,14 @@ export default function ImageLayerCanvas({
 	renderBaseImage?: boolean;
 }) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
+	// A look change repaints this canvas with no animation of its own (the
+	// filter stack is baked into the draw), so the frozen-frame crossfade is
+	// what keeps it from being a hard cut. An IMAGE change is excluded: the
+	// slideshow transition engine already animates that one.
+	const fadeRef = useVisualTransitionFade(
+		transitionSubsystemsForLayerType(layer.type),
+		{ skipOnImageChange: true }
+	);
 	const rafRef = useRef<number>(0);
 	const layerRef = useRef(layer);
 	const mouseRef = useRef({ x: 0, y: 0 });
@@ -159,6 +171,7 @@ export default function ImageLayerCanvas({
 
 	return (
 		<div
+			ref={fadeRef}
 			data-camera-motion-layer={
 				layer.type === 'background-image'
 					? 'background'

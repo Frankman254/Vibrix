@@ -12,6 +12,7 @@ import {
 	syncOutputCanvasBacking,
 	subscribeOutputRenderQuality
 } from '@/runtime/outputRenderQuality';
+import { useVisualTransitionFade } from '@/features/visualTransition/useVisualTransitionFade';
 
 const GLOBAL_BACKGROUND_CACHE_LIMIT = 6;
 const imageCache = new Map<string, HTMLImageElement>();
@@ -37,6 +38,11 @@ function getCachedImage(
 
 export default function GlobalBackgroundView() {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
+	// `global-background` is one of the filter targets, so a look change lands
+	// straight in these pixels. It never changes with the image, hence the skip.
+	const fadeRef = useVisualTransitionFade(['looks'], {
+		skipOnImageChange: true
+	});
 	const rafRef = useRef<number>(0);
 	const [image, setImage] = useState<HTMLImageElement | null>(null);
 	const { getAudioSnapshot } = useAudioData();
@@ -190,6 +196,7 @@ export default function GlobalBackgroundView() {
 
 	return (
 		<div
+			ref={fadeRef}
 			data-camera-motion-layer="global-background"
 			style={{
 				position: 'fixed',
