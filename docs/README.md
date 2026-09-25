@@ -8,6 +8,8 @@
 
 **Plan de pulido (no es lanzamiento):** [plans/PLAN_PULIDO_PRELANZAMIENTO.md](plans/PLAN_PULIDO_PRELANZAMIENTO.md) — auditoría de capas de efectos y su guardado, overrides por imagen, transiciones y tiempos manuales de cambio de imagen.
 
+**Plan de plantillas, intro/outro y dinamismo:** [plans/PLAN_DINAMISMO_PLANTILLAS_INTRO.md](plans/PLAN_DINAMISMO_PLANTILLAS_INTRO.md) — cómo bajar de 400 mandos a seis con plantillas guardadas, la intro/ending animados del propio sistema y el "script" que enciende y apaga slots guardados con el tiempo sin cambiar de imagen.
+
 1. [product/V1_ALPHA_SCOPE.md](product/V1_ALPHA_SCOPE.md) — what's in / out of alpha
 2. [status/CURRENT_SYSTEM_STATUS.md](status/CURRENT_SYSTEM_STATUS.md) — **as-built system status**
 3. [architecture/OUTPUT_MODES.md](architecture/OUTPUT_MODES.md) — Edit / Presentation / Recording

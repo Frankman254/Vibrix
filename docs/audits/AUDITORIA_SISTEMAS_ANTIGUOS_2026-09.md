@@ -131,3 +131,11 @@ entre S1 y S2. Decidir una de las dos cosas y quitar la otra.
 2. A7 (tests de `selectNextTrack`) — barato y protege lógica de producto.
 3. A6 junto con A5, mismo patrón.
 4. A8 — decisión de diseño, no trabajo mecánico.
+
+## 5. Enlace
+
+Los tres encargos de diseño de la misma noche (plantillas, intro/outro y el
+script de dinamismo) están en
+[../plans/PLAN_DINAMISMO_PLANTILLAS_INTRO.md](../plans/PLAN_DINAMISMO_PLANTILLAS_INTRO.md).
+El hallazgo A3 de aquí es una dependencia del §3.5 de ese plan: los bindings de
+un script pueden quedar colgando igual que los slots por imagen.
