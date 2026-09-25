@@ -63,6 +63,7 @@ export function extractMotionLayerSettingsFromState(
 		cameraMotionSpeed: state.cameraMotionSpeed,
 		cameraMotionDrive: state.cameraMotionDrive,
 		cameraMotionAudioInfluence: state.cameraMotionAudioInfluence,
+		cameraMotionAmplitudeAudio: state.cameraMotionAmplitudeAudio,
 		cameraMotionAudioChannel: state.cameraMotionAudioChannel,
 		cameraMotionDirection: state.cameraMotionDirection
 	};

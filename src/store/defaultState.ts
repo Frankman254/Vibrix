@@ -510,6 +510,7 @@ const BASE_STATE: Omit<
 	cameraMotionSpeed: 0.4,
 	cameraMotionDrive: 'fixed-audio',
 	cameraMotionAudioInfluence: 0.3,
+	cameraMotionAmplitudeAudio: 0,
 	cameraMotionAudioChannel: 'full',
 	cameraMotionDirection: 'cw',
 	cameraMotionTarget: 'background',

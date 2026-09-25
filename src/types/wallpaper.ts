@@ -358,6 +358,12 @@ export type MotionLayerSettings = {
 	cameraMotionSpeed: number;
 	cameraMotionDrive: import('@/features/stageFx/stageFxConfig').CameraMotionDrive;
 	cameraMotionAudioInfluence: number;
+	/**
+	 * How much the audio level scales the AMPLITUDE (0 = never, 1 = doubles it
+	 * on a peak). `cameraMotionAudioInfluence` drives the speed instead: a
+	 * movement can get faster, bigger, both or neither.
+	 */
+	cameraMotionAmplitudeAudio: number;
 	cameraMotionAudioChannel: import('@/features/stageFx/stageFxConfig').FxAudioChannel;
 	cameraMotionDirection: import('@/features/stageFx/stageFxConfig').CameraMotionDirection;
 };
@@ -1727,6 +1733,8 @@ export type WallpaperState = {
 	cameraMotionSpeed: number;
 	cameraMotionDrive: import('@/features/stageFx/stageFxConfig').CameraMotionDrive;
 	cameraMotionAudioInfluence: number;
+	/** Audio → amplitude (the flat live value of the active motion layer). */
+	cameraMotionAmplitudeAudio: number;
 	cameraMotionAudioChannel: import('@/features/stageFx/stageFxConfig').FxAudioChannel;
 	cameraMotionDirection: import('@/features/stageFx/stageFxConfig').CameraMotionDirection;
 	/** @deprecated Use `cameraMotionTargets` for multi-layer targeting. */

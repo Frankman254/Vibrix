@@ -1,6 +1,6 @@
 # Current System Status
 
-**As of:** `chore/fase-0-higiene` (`main`) · App `0.6.0-alpha` · Store persist **v124**
+**As of:** `chore/fase-0-higiene` (`main`) · App `0.6.0-alpha` · Store persist **v125**
 
 This document describes the product **as implemented in code**, not aspirational roadmaps.
 
@@ -25,7 +25,7 @@ This document describes the product **as implemented in code**, not aspirational
 | -------------------------------- | ------ | ----------------------------------------------------------- |
 | Vite + React 19 SPA              | Stable | HashRouter (`#/edit`, `#/present`, `#/record`, `#/preview`) |
 | Shared `WallpaperAppProviders`   | Stable | Single `AudioDataProvider` above route shells               |
-| Zustand + `localStorage` persist | Stable | `STORE_PERSIST_VERSION = 124`                               |
+| Zustand + `localStorage` persist | Stable | `STORE_PERSIST_VERSION = 125`                               |
 | IndexedDB assets                 | Stable | Images, audio blobs                                         |
 | Vitest + GitHub Actions CI       | Stable | format, lint, types, tests, docs:check, build               |
 
@@ -172,38 +172,39 @@ See `docs/features/SPECTRUM_ENGINE.md` (ownership model) and
 | Constant                  | Value         | Location                                    |
 | ------------------------- | ------------- | ------------------------------------------- |
 | `APP_VERSION`             | `0.6.0-alpha` | `src/lib/version.ts`, `package.json`        |
-| `STORE_PERSIST_VERSION`   | **124**       | Migrations in `wallpaperStoreMigrations.ts` |
+| `STORE_PERSIST_VERSION`   | **125**       | Migrations in `wallpaperStoreMigrations.ts` |
 | `PROJECT_SCHEMA_VERSION`  | 1             |                                             |
 | `SETTINGS_SCHEMA_VERSION` | 1             |                                             |
 
 Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 
-| Version | Adds                                                                            |
-| ------- | ------------------------------------------------------------------------------- |
-| v96     | `spectrumShape: pixel`, `spectrumPixelate`, `spectrumPixelateScale`             |
-| v97     | Spectrum 2 gets its own `spectrumSecondProfileSlots` bank                       |
-| v98     | Scene-first model — `defaultSceneSlotId`                                        |
-| v99     | Re-runs instance migration to backfill missing Spectrum 2 keys                  |
-| v100–02 | Liquid Glass toggles, per-surface tuning, then the reworked lens model          |
-| v103    | Legacy Motion bundles + per-image Spectrum 2 overrides split into slots         |
-| v104    | Scene/per-image bindings reference slots by stable `id`, never by index         |
-| v105    | Per-liquid-layer retro pixelate (`spectrumLiquidLayer{1,2,3}Pixelate`)          |
-| v106    | Radial shapes normalized + 6 retired; `spectrumRadialSharpness`                 |
-| v107–10 | Retired FX cleanup + unified Looks catalog and audio routing                    |
-| v111    | Cache-safe Vibrix factory logo URL and legacy logo migration                    |
-| v112    | Built-in logo variant mode (vector/pixel/auto)                                  |
-| v113    | Per-image `coverageFramingEdited` provenance flag                               |
-| v114    | `showAutoZoomDebug` coverage-overlay debug flag                                 |
-| v115    | `sceneServiceBaseUrl` (AI scene-intent service location)                        |
-| v116    | Keep-Covered unconditional; `imageCoverageLockEnabled` removed                  |
-| v117    | `imageFramingManualEnabled`: manual framing switch (coverage math off)          |
-| v118    | `offlineExportResolutionId` + `offlineExportFps`: persisted export profile      |
-| v119    | `effectLayers` + `activeEffectLayerId`: several Looks stacks at once            |
-| v120    | Looks slots and per-image Looks overrides carry the whole layer stack           |
-| v121    | Global composition mode (`globalCompositionOverride` + per-image opt-out)       |
-| v122    | `sceneServiceModel` — which model the scene service should use ('' = server)    |
-| v123    | `slideshowTransitionAnchor`: where a manual timestamp sits in its transition    |
-| v124    | `motionLayers` + `activeMotionLayerId`: several Camera Motion movements at once |
+| Version | Adds                                                                                  |
+| ------- | ------------------------------------------------------------------------------------- |
+| v96     | `spectrumShape: pixel`, `spectrumPixelate`, `spectrumPixelateScale`                   |
+| v97     | Spectrum 2 gets its own `spectrumSecondProfileSlots` bank                             |
+| v98     | Scene-first model — `defaultSceneSlotId`                                              |
+| v99     | Re-runs instance migration to backfill missing Spectrum 2 keys                        |
+| v100–02 | Liquid Glass toggles, per-surface tuning, then the reworked lens model                |
+| v103    | Legacy Motion bundles + per-image Spectrum 2 overrides split into slots               |
+| v104    | Scene/per-image bindings reference slots by stable `id`, never by index               |
+| v105    | Per-liquid-layer retro pixelate (`spectrumLiquidLayer{1,2,3}Pixelate`)                |
+| v106    | Radial shapes normalized + 6 retired; `spectrumRadialSharpness`                       |
+| v107–10 | Retired FX cleanup + unified Looks catalog and audio routing                          |
+| v111    | Cache-safe Vibrix factory logo URL and legacy logo migration                          |
+| v112    | Built-in logo variant mode (vector/pixel/auto)                                        |
+| v113    | Per-image `coverageFramingEdited` provenance flag                                     |
+| v114    | `showAutoZoomDebug` coverage-overlay debug flag                                       |
+| v115    | `sceneServiceBaseUrl` (AI scene-intent service location)                              |
+| v116    | Keep-Covered unconditional; `imageCoverageLockEnabled` removed                        |
+| v117    | `imageFramingManualEnabled`: manual framing switch (coverage math off)                |
+| v118    | `offlineExportResolutionId` + `offlineExportFps`: persisted export profile            |
+| v119    | `effectLayers` + `activeEffectLayerId`: several Looks stacks at once                  |
+| v120    | Looks slots and per-image Looks overrides carry the whole layer stack                 |
+| v121    | Global composition mode (`globalCompositionOverride` + per-image opt-out)             |
+| v122    | `sceneServiceModel` — which model the scene service should use ('' = server)          |
+| v123    | `slideshowTransitionAnchor`: where a manual timestamp sits in its transition          |
+| v124    | `motionLayers` + `activeMotionLayerId`: several Camera Motion movements at once       |
+| v125    | `cameraMotionAmplitudeAudio`: audio drives the size of a movement, not only its speed |
 
 ---
 

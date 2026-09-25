@@ -125,4 +125,7 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // v124: `motionLayers` + `activeMotionLayerId` — Camera Motion becomes a stack
 // of movements with their own targets, mirroring `effectLayers`. The active
 // layer's live values stay the flat `cameraMotion*` keys.
-export const STORE_PERSIST_VERSION = 124;
+// v125: `cameraMotionAmplitudeAudio` — audio drives the amplitude of a movement
+// and not only its speed. 0 for everything that existed, so nothing moves more
+// than it did before the key.
+export const STORE_PERSIST_VERSION = 125;

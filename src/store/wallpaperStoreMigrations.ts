@@ -3138,6 +3138,23 @@ export function migrateWallpaperStore(
 		];
 	}
 
+	if (fromVersion < 125) {
+		// Audio → amplitude is new and opt-in: 0 keeps every existing movement
+		// exactly as loud as it was, reacting only in speed. The layers written
+		// by the v124 migration need the key too, or the slider reads undefined.
+		migratedState.cameraMotionAmplitudeAudio ??= 0;
+		migratedState.motionLayers = (migratedState.motionLayers ?? []).map(
+			layer => ({
+				...layer,
+				settings: {
+					...layer.settings,
+					cameraMotionAmplitudeAudio:
+						layer.settings?.cameraMotionAmplitudeAudio ?? 0
+				}
+			})
+		);
+	}
+
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;
 }
 

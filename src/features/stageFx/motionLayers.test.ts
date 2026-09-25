@@ -242,3 +242,111 @@ describe('stepCameraFx — one movement per layer', () => {
 		expect(resolveCameraLayerOffset(frame, s, 'background')).toBeNull();
 	});
 });
+
+describe('Fase C — new movements, reactive amplitude, clamp per layer type', () => {
+	function offsetAfter(
+		s: WallpaperState,
+		frames: number,
+		target: 'background' | 'logo',
+		audio: AudioSnapshot = silence
+	) {
+		const runtime = createCameraFxRuntime();
+		let frame = stepCameraFx(runtime, s, () => audio, 0, 1 / 30, {
+			width: 1920,
+			height: 1080
+		});
+		for (let i = 1; i < frames; i++) {
+			frame = stepCameraFx(runtime, s, () => audio, i * 33, 1 / 30, {
+				width: 1920,
+				height: 1080
+			});
+		}
+		return resolveCameraLayerOffset(frame, s, target);
+	}
+
+	function single(
+		targets: MotionLayer['targets'],
+		settings: Partial<MotionLayer['settings']>
+	) {
+		return state({
+			cameraMotionTargets: targets,
+			activeMotionLayerId: 'a',
+			motionLayers: [layer({ id: 'a', targets })],
+			...settings
+		});
+	}
+
+	it('lets an overlay layer use the whole amplitude, and keeps the frame inside its slack', () => {
+		const overlay = offsetAfter(
+			single(['logo'], { cameraMotionMode: 'circle' }),
+			1,
+			'logo'
+		)!;
+		const frame = offsetAfter(
+			single(['background'], { cameraMotionMode: 'circle' }),
+			1,
+			'background'
+		)!;
+		// Near phase 0 a circle sits at the extreme of tx: the overlay reaches
+		// the full 96px, the background stops at the zoom slack that hides its
+		// edge. (One frame of clock has already run, hence the loose places.)
+		expect(overlay.tx).toBeCloseTo(96, 0);
+		expect(frame.tx).toBeLessThan(overlay.tx);
+		expect(frame.tx).toBeCloseTo(((frame.scale - 1) * 1920) / 2, 3);
+	});
+
+	it('zoom-pulse breathes without translating', () => {
+		const s = single(['logo'], { cameraMotionMode: 'zoom-pulse' });
+		const quarter = offsetAfter(s, 24, 'logo')!;
+		expect(quarter.tx).toBe(0);
+		expect(quarter.ty).toBe(0);
+		expect(quarter.scale).toBeGreaterThan(1);
+	});
+
+	it('beat-jump holds still between steps and then snaps', () => {
+		const s = single(['logo'], {
+			cameraMotionMode: 'beat-jump',
+			cameraMotionSpeed: 1
+		});
+		const early = offsetAfter(s, 2, 'logo')!;
+		const stillEarly = offsetAfter(s, 3, 'logo')!;
+		const later = offsetAfter(s, 30, 'logo')!;
+		expect(stillEarly.tx).toBeCloseTo(early.tx, 6);
+		expect(later.tx).not.toBeCloseTo(early.tx, 3);
+	});
+
+	it('path-trace stays on the perimeter of the frame', () => {
+		const s = single(['logo'], { cameraMotionMode: 'path-trace' });
+		for (const frames of [2, 10, 20, 30, 40]) {
+			const offset = offsetAfter(s, frames, 'logo')!;
+			// One of the two axes is always pinned to the edge.
+			const onEdge =
+				Math.abs(Math.abs(offset.tx) - 96) < 0.5 ||
+				Math.abs(Math.abs(offset.ty) - 96) < 0.5;
+			expect(onEdge).toBe(true);
+		}
+	});
+
+	it('audio scales the amplitude on top of the speed drive', () => {
+		const loud: AudioSnapshot = {
+			...silence,
+			bins: new Uint8Array(8).fill(255),
+			amplitude: 1,
+			peak: 1
+		};
+		const quiet = single(['logo'], {
+			cameraMotionMode: 'circle',
+			cameraMotionAmount: 0.2,
+			cameraMotionAmplitudeAudio: 0
+		});
+		const reactive = single(['logo'], {
+			cameraMotionMode: 'circle',
+			cameraMotionAmount: 0.2,
+			cameraMotionAmplitudeAudio: 1
+		});
+		const flat = offsetAfter(quiet, 1, 'logo')!;
+		const pumped = offsetAfter(reactive, 1, 'logo', loud)!;
+		expect(flat.tx).toBeCloseTo(19.2, 1);
+		expect(pumped.tx).toBeGreaterThan(flat.tx);
+	});
+});

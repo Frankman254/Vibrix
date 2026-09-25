@@ -46,7 +46,14 @@ export type CameraMotionMode =
 	| 'semicircle'
 	| 'figure-eight'
 	| 'orbit'
-	| 'pendulum';
+	| 'pendulum'
+	/** The same circle in 8 discrete steps: it snaps instead of gliding. */
+	| 'beat-jump'
+	/** Travels the perimeter of the frame instead of orbiting its centre. */
+	| 'path-trace'
+	/** No translation at all — the zoom breathes. */
+	| 'zoom-pulse'
+	| 'lissajous';
 export type CameraMotionDirection = 'cw' | 'ccw';
 export type CameraMotionDrive = 'fixed' | 'audio' | 'fixed-audio';
 export type CameraMotionTarget = FilterTarget | 'stage-lights' | 'flash-light';
@@ -206,6 +213,25 @@ export function shouldTriggerFxPeak({
 		nowMs - lastTriggerMs >= retriggerMs &&
 		(previousLevel <= threshold || level - previousLevel >= minRise)
 	);
+}
+
+/**
+ * Targets that fill the frame, so translating them exposes the edge and the
+ * offset has to stay inside the zoom slack. Everything else floats over the
+ * composition and can use the full amplitude — a logo sliding 96px reveals
+ * nothing.
+ */
+const EDGE_BOUND_TARGETS: readonly CameraMotionTarget[] = [
+	'global-background',
+	'background',
+	'selected-overlay'
+];
+
+/** True when a layer must stay conservative because it moves the frame itself. */
+export function cameraMotionIsEdgeBound(
+	targets: readonly CameraMotionTarget[]
+): boolean {
+	return targets.some(target => EDGE_BOUND_TARGETS.includes(target));
 }
 
 export function cameraMotionTargetIncludes(

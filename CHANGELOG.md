@@ -15,6 +15,23 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Movimientos nuevos, tamaño reactivo y clamp por tipo de capa (store v125)
+
+- **Cuatro movimientos nuevos**: `beat-jump` (el mismo círculo en 8 pasos
+  discretos: se queda quieto y salta, que es lo que se lee como «al golpe»
+  cuando la velocidad la manda el audio), `path-trace` (recorre el perímetro del
+  cuadro en vez de orbitar su centro), `zoom-pulse` (no traslada nada, respira el
+  zoom) y `lissajous` (trama 3:2).
+- **`cameraMotionAmplitudeAudio`**: el audio mueve el **tamaño** del movimiento,
+  no solo su velocidad. Un kick puede hacerlo más grande sin hacerlo más rápido,
+  que es como se ve un kick de verdad. Por defecto 0 en todo lo que ya existía.
+- **Clamp por tipo de capa**: una capa que mueve el cuadro entero
+  (`global-background`, `background`, overlay seleccionado) sigue encerrada en el
+  margen de zoom, porque trasladarla deja ver el borde; una capa que solo mueve
+  algo que flota encima (logo, spectrum, letras, lluvia, luces…) usa la amplitud
+  completa, porque no hay borde que enseñar. Antes todas pagaban el precio del
+  fondo, que es por lo que el logo «casi no se movía».
+
 ### Capas de movimiento en Camera Motion (store v124)
 
 - **`motionLayers` + `activeMotionLayerId`**: Camera Motion deja de ser un único
@@ -36,7 +53,8 @@ the version scheme in `src/lib/version.ts`.
 - **Los slots de Camera FX guardan la pila completa** desde el primer día
   (`motionLayers` + `activeMotionLayerId` en `CAMERA_FX_PROFILE_KEYS`), para que
   un slot restaure la composición y no la capa que estaba seleccionada.
-- El esquema de estado persistido: `STORE_PERSIST_VERSION` is at **124**; la
+- El esquema de estado persistido de esta tanda: la migración v124 convierte el
+  movimiento único en la primera capa. `STORE_PERSIST_VERSION` is at **125**; la
   migración convierte el movimiento único en la primera capa, así que un proyecto
   existente abre exactamente como se dejó.
 

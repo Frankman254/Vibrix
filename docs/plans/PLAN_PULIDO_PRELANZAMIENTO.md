@@ -391,11 +391,14 @@ Ordenadas por (valor visible ÷ riesgo), no por tema.
 - UI: `MotionLayerStack` (solo Advanced) + chips de destino con dueño y robo,
   igual que en Looks.
 
-### Fase C — Movimientos nuevos y reactividad
+### Fase C — Movimientos nuevos y reactividad — **HECHA** (store v125)
 
-- `beat-jump`, `path-trace`, `zoom-pulse`, `lissajous`.
-- Amplitud reactiva al audio, no solo velocidad.
-- Clamp por tipo de capa (fondo conservador, overlays libres).
+- `beat-jump`, `path-trace`, `zoom-pulse`, `lissajous` en `motionOffsetForMode`.
+- Amplitud reactiva al audio (`cameraMotionAmplitudeAudio`), independiente de la
+  velocidad reactiva que ya existía.
+- Clamp por tipo de capa: `cameraMotionIsEdgeBound` decide si la capa se queda
+  dentro del margen de zoom (mueve el cuadro) o usa la amplitud completa (flota
+  encima).
 
 ### Fase D — Separar Spectrum 1 / Spectrum 2 en la cámara
 
@@ -652,7 +655,7 @@ la patch. Y la fase no se da por cerrada sin las tres.
 | ------ | ------------------------------------------------------------------------------ | ---------------- |
 | **A**  | ✅ Capas: propiedad de destino + el slot/override guarda la pila completa      | v120 hecho       |
 | **B**  | ✅ Camera Motion por capas (`motionLayers`)                                    | v124 hecho       |
-| **C**  | Movimientos nuevos + clamp por tipo de capa                                    | bump + migración |
+| **C**  | ✅ Movimientos nuevos + amplitud reactiva + clamp por tipo de capa             | v125 hecho       |
 | **D**  | Separar Spectrum 1 / 2 en la cámara (transformación en el renderer)            | —                |
 | **E1** | ✅ Dissolve y compañía a offscreen (el lag)                                    | hecho            |
 | **E2** | Crossfade real por captura de frame (la calidad)                               | —                |

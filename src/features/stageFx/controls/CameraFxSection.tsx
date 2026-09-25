@@ -38,6 +38,7 @@ export function CameraMotionSection() {
 			speed: state.cameraMotionSpeed,
 			drive: state.cameraMotionDrive,
 			audioInfluence: state.cameraMotionAudioInfluence,
+			amplitudeAudio: state.cameraMotionAmplitudeAudio,
 			audioChannel: state.cameraMotionAudioChannel,
 			direction: state.cameraMotionDirection,
 			targets: state.cameraMotionTargets,
@@ -55,6 +56,7 @@ export function CameraMotionSection() {
 			speed: state.setCameraMotionSpeed,
 			drive: state.setCameraMotionDrive,
 			audioInfluence: state.setCameraMotionAudioInfluence,
+			amplitudeAudio: state.setCameraMotionAmplitudeAudio,
 			audioChannel: state.setCameraMotionAudioChannel,
 			direction: state.setCameraMotionDirection,
 			targets: state.setCameraMotionTargets,
@@ -142,6 +144,22 @@ export function CameraMotionSection() {
 							{
 								value: 'pendulum',
 								label: t.sfx_cam_mode_pendulum
+							},
+							{
+								value: 'beat-jump',
+								label: t.sfx_cam_mode_beat_jump
+							},
+							{
+								value: 'path-trace',
+								label: t.sfx_cam_mode_path_trace
+							},
+							{
+								value: 'zoom-pulse',
+								label: t.sfx_cam_mode_zoom_pulse
+							},
+							{
+								value: 'lissajous',
+								label: t.sfx_cam_mode_lissajous
 							}
 						]}
 						size="sm"
@@ -156,6 +174,19 @@ export function CameraMotionSection() {
 						onChange={set.amount}
 						defaultValue={FACTORY_DEFAULT_STATE.cameraMotionAmount}
 						variant="macro"
+						formatValue={formatDecimal}
+					/>
+					<Slider
+						label={t.sfx_motion_amount_audio}
+						value={s.amplitudeAudio}
+						min={0}
+						max={2}
+						step={0.01}
+						onChange={set.amplitudeAudio}
+						defaultValue={
+							FACTORY_DEFAULT_STATE.cameraMotionAmplitudeAudio
+						}
+						variant="compact"
 						formatValue={formatDecimal}
 					/>
 					<SegmentedControl<CameraMotionDrive>

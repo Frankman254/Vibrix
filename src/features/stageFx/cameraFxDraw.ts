@@ -15,6 +15,7 @@ import {
 } from './motionLayers';
 import {
 	CAMERA_FX_CAPS,
+	cameraMotionIsEdgeBound,
 	cameraMotionTargetIncludes,
 	readFxChannel,
 	resolveFxThreshold,
@@ -32,6 +33,7 @@ export type CameraFxSettings = Pick<
 	| 'cameraMotionDirection'
 	| 'cameraMotionAudioChannel'
 	| 'cameraMotionAudioInfluence'
+	| 'cameraMotionAmplitudeAudio'
 	| 'cameraMotionTargets'
 	| 'motionLayers'
 	| 'activeMotionLayerId'
@@ -112,75 +114,130 @@ export function isCameraFxActive(settings: CameraFxSettings): boolean {
 	return settings.cameraMotionEnabled || settings.cameraShakeEnabled;
 }
 
-/** The path shape, as an offset in pixels for a phase and amplitude. */
+/** How many discrete stops `beat-jump` snaps between on its way round. */
+const BEAT_JUMP_STEPS = 8;
+
+/**
+ * The path shape for a phase and amplitude.
+ *
+ * `zoom` is a 0..1 extra zoom request on top of the base scale: only
+ * `zoom-pulse` uses it, and it is the reason the shapes return scale at all
+ * instead of the stepper deciding it alone.
+ */
 function motionOffsetForMode(
 	mode: MotionLayerSettings['cameraMotionMode'],
 	phase: number,
 	amp: number
-): { tx: number; ty: number } {
+): { tx: number; ty: number; zoom: number } {
 	switch (mode) {
 		case 'drift':
 			return {
 				tx: Math.sin(phase) * amp,
-				ty: Math.cos(phase * 0.7) * amp
+				ty: Math.cos(phase * 0.7) * amp,
+				zoom: 0
 			};
 		case 'circle':
-			return { tx: Math.cos(phase) * amp, ty: Math.sin(phase) * amp };
+			return {
+				tx: Math.cos(phase) * amp,
+				ty: Math.sin(phase) * amp,
+				zoom: 0
+			};
 		case 'semicircle':
 			return {
 				tx: Math.cos(phase) * amp,
-				ty: -Math.abs(Math.sin(phase)) * amp
+				ty: -Math.abs(Math.sin(phase)) * amp,
+				zoom: 0
 			};
 		case 'figure-eight':
 			return {
 				tx: Math.sin(phase) * amp,
-				ty: Math.sin(phase * 2) * amp * 0.5
+				ty: Math.sin(phase * 2) * amp * 0.5,
+				zoom: 0
 			};
 		case 'orbit':
 			return {
 				tx: Math.cos(phase) * amp,
-				ty: Math.sin(phase) * amp * 0.58
+				ty: Math.sin(phase) * amp * 0.58,
+				zoom: 0
 			};
 		case 'pendulum':
 			return {
 				tx: Math.sin(phase) * amp,
-				ty: Math.abs(Math.cos(phase)) * amp * 0.22
+				ty: Math.abs(Math.cos(phase)) * amp * 0.22,
+				zoom: 0
+			};
+		case 'beat-jump': {
+			// Quantised circle: the position holds still and then snaps, which
+			// is what reads as "on the beat" when the speed is audio-driven.
+			const step =
+				(Math.floor((phase / (Math.PI * 2)) * BEAT_JUMP_STEPS) *
+					(Math.PI * 2)) /
+				BEAT_JUMP_STEPS;
+			return {
+				tx: Math.cos(step) * amp,
+				ty: Math.sin(step) * amp,
+				zoom: 0
+			};
+		}
+		case 'path-trace': {
+			// Around the frame instead of around its centre: the phase is a
+			// position along a square perimeter, corners included.
+			const u = (phase / (Math.PI * 2)) % 1;
+			const p = (u < 0 ? u + 1 : u) * 4;
+			if (p < 1) return { tx: (p * 2 - 1) * amp, ty: -amp, zoom: 0 };
+			if (p < 2) return { tx: amp, ty: ((p - 1) * 2 - 1) * amp, zoom: 0 };
+			if (p < 3) return { tx: (1 - (p - 2) * 2) * amp, ty: amp, zoom: 0 };
+			return { tx: -amp, ty: (1 - (p - 3) * 2) * amp, zoom: 0 };
+		}
+		case 'zoom-pulse':
+			// No translation on purpose: this is the one movement that does not
+			// need the zoom slack, because it IS the zoom.
+			return { tx: 0, ty: 0, zoom: 0.5 + 0.5 * Math.sin(phase) };
+		case 'lissajous':
+			return {
+				tx: Math.sin(phase * 3) * amp,
+				ty: Math.sin(phase * 2) * amp,
+				zoom: 0
 			};
 		default:
-			return { tx: 0, ty: 0 };
+			return { tx: 0, ty: 0, zoom: 0 };
 	}
 }
 
 /**
  * One motion layer stepped and turned into an offset.
  *
- * The zoom slack is per layer because the amplitude is: a layer that moves 96px
- * needs the scale that hides the edge it would otherwise expose, and a quieter
- * layer must not pay for it.
+ * Two things are deliberately per layer, not global:
+ *   • the clock, so adding a layer never jumps the others;
+ *   • the clamp. A layer that moves the frame itself has to stay inside the
+ *     zoom slack or it exposes the edge; a layer that only moves an overlay has
+ *     no edge to expose and gets the full amplitude.
  */
 function stepMotionLayer(
 	runtime: CameraFxRuntime,
 	settings: MotionLayerSettings,
 	layerId: string,
+	targets: readonly CameraMotionLayer[],
 	snapshot: AudioSnapshot | null,
 	dtSec: number,
 	paused: boolean,
 	viewport: { width: number; height: number }
 ): CameraOffset {
 	const minDim = Math.max(1, Math.min(viewport.width, viewport.height));
-	const amp =
-		Math.min(1.5, Math.max(0, settings.cameraMotionAmount)) *
-		CAMERA_FX_CAPS.maxMotionPx;
-	const scale = Math.min(
-		CAMERA_FX_CAPS.maxScale,
-		Math.max(1, 1 + amp / minDim)
-	);
 	const level = snapshot
 		? Math.max(
 				0,
 				readFxChannel(snapshot, settings.cameraMotionAudioChannel)
 			)
 		: 0;
+	const baseAmp =
+		Math.min(1.5, Math.max(0, settings.cameraMotionAmount)) *
+		CAMERA_FX_CAPS.maxMotionPx;
+	// Audio → amplitude, independently of audio → speed: a movement can get
+	// bigger without getting faster, which is what a kick actually looks like.
+	const amp =
+		baseAmp *
+		(1 + Math.max(0, settings.cameraMotionAmplitudeAudio) * level);
 	const fixedRate =
 		settings.cameraMotionDrive === 'fixed' ||
 		settings.cameraMotionDrive === 'fixed-audio'
@@ -205,11 +262,21 @@ function stepMotionLayer(
 		time * direction,
 		amp
 	);
-	const slackX = ((scale - 1) * viewport.width) / 2;
-	const slackY = ((scale - 1) * viewport.height) / 2;
+	const edgeBound = cameraMotionIsEdgeBound(targets);
+	// The zoom that hides the exposed edge. `zoom-pulse` asks for its own zoom
+	// and moves nothing, so it never pays for slack it does not use.
+	const scale = Math.min(
+		CAMERA_FX_CAPS.maxScale,
+		Math.max(
+			1,
+			1 + (edgeBound ? amp / minDim : 0) + (offset.zoom * amp) / minDim
+		)
+	);
+	const limitX = edgeBound ? ((scale - 1) * viewport.width) / 2 : amp;
+	const limitY = edgeBound ? ((scale - 1) * viewport.height) / 2 : amp;
 	return {
-		tx: clamp(offset.tx, slackX),
-		ty: clamp(offset.ty, slackY),
+		tx: clamp(offset.tx, limitX),
+		ty: clamp(offset.ty, limitY),
 		scale
 	};
 }
@@ -234,7 +301,8 @@ export function stepCameraFx(
 	const motionNeedsAudio = stack.some(
 		layer =>
 			layer.settings.cameraMotionDrive === 'audio' ||
-			layer.settings.cameraMotionDrive === 'fixed-audio'
+			layer.settings.cameraMotionDrive === 'fixed-audio' ||
+			layer.settings.cameraMotionAmplitudeAudio > 0
 	);
 	const snapshot =
 		motionNeedsAudio || state.cameraShakeEnabled ? readAudio() : null;
@@ -258,6 +326,7 @@ export function stepCameraFx(
 			runtime,
 			layer.settings,
 			layer.id,
+			layer.targets,
 			snapshot,
 			dtSec,
 			state.motionPaused,
