@@ -328,6 +328,15 @@ export type EffectLayer = {
 	lookId: string | null;
 	settings: import('@/features/filterLooks/filterLooks').FilterLookSettings;
 };
+/**
+ * Where a manual timestamp sits inside its transition.
+ *   • `start`  — the transition begins at the timestamp (legacy behaviour).
+ *   • `center` — the timestamp is the middle of the transition.
+ *   • `end`    — the transition ENDS at the timestamp, so the incoming image is
+ *                fully on screen exactly on the beat. This is the one that
+ *                needs look-ahead in the resolver, not a UI offset.
+ */
+export type SlideshowTransitionAnchor = 'start' | 'center' | 'end';
 export type SlideshowTransitionType =
 	| 'fade'
 	| 'slide-left'
@@ -1703,6 +1712,8 @@ export type WallpaperState = {
 	slideshowTransitionAudioDrive: number;
 	slideshowTransitionAudioChannel: AudioReactiveChannel;
 	slideshowTransitionAudioSmoothing: number;
+	/** Where a manual timestamp sits inside its transition (manual mode only). */
+	slideshowTransitionAnchor: SlideshowTransitionAnchor;
 	slideshowResetPosition: boolean;
 	slideshowAudioCheckpointsEnabled: boolean;
 	slideshowTrackChangeSyncEnabled: boolean;

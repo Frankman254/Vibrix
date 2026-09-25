@@ -3112,6 +3112,13 @@ export function migrateWallpaperStore(
 		);
 	}
 
+	if (fromVersion < 123) {
+		// `end` is a behaviour change, not just a new key: a manual timestamp
+		// now marks where the incoming image is fully ON, which is what the
+		// marking gesture always meant. `start` stays available in the UI.
+		migratedState.slideshowTransitionAnchor = 'end';
+	}
+
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;
 }
 

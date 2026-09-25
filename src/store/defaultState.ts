@@ -538,6 +538,9 @@ const BASE_STATE: Omit<WallpaperState, 'effectLayers' | 'activeEffectLayerId'> =
 		slideshowTransitionAudioDrive: 0,
 		slideshowTransitionAudioChannel: 'instrumental',
 		slideshowTransitionAudioSmoothing: 0,
+		// `end` by design: marking a timestamp is a sync gesture, so the new
+		// image must be fully there ON the beat, not a transition later.
+		slideshowTransitionAnchor: 'end' as const,
 		slideshowResetPosition: false,
 		slideshowAudioCheckpointsEnabled: false,
 		slideshowTrackChangeSyncEnabled: false,

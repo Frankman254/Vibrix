@@ -364,6 +364,24 @@ export const en = {
 	label_theme: 'Theme',
 	label_slideshow_audio_checkpoints: 'Audio Checkpoints',
 	label_slideshow_track_change_sync: 'Track Change Sync',
+	label_slideshow_mark_here: 'Mark here',
+	hint_slideshow_mark_here:
+		'Writes the current playback time as the start of the NEXT image, closing the current one. Press M with the timeline open.',
+	slideshow_marked_toast: 'IMG {index} starts at {time}{anchor}',
+	slideshow_marked_anchor_end: ' — the transition ends there',
+	slideshow_marked_anchor_center: ' — the timestamp is mid-transition',
+	slideshow_mark_last_image:
+		'The last image of the pool is on screen: there is nothing after it to mark.',
+	slideshow_mark_enabled_manual:
+		'Manual timestamps turned on so the mark takes effect.',
+	slideshow_order_warning:
+		'The saved times no longer follow the pool order, so the pass plays the images in a different order than the list. Drag the clips or clear the timings to line them up again.',
+	label_slideshow_transition_anchor: 'Timestamp anchor',
+	hint_slideshow_transition_anchor:
+		'Where a marked timestamp sits inside its transition. End = the new image is fully there ON the mark (for drops); Start = the transition begins there (the old behaviour).',
+	slideshow_anchor_start: 'Start',
+	slideshow_anchor_center: 'Center',
+	slideshow_anchor_end: 'End',
 	hint_slideshow_audio_checkpoints:
 		'For long mixes, map the current playback progress across the loaded image count and jump images by checkpoints instead of a timer.',
 	hint_slideshow_track_change_sync:

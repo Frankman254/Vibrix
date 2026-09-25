@@ -366,6 +366,25 @@ export const es: Record<TranslationKey, string> = {
 	label_theme: 'Tema',
 	label_slideshow_audio_checkpoints: 'Checkpoints por Audio',
 	label_slideshow_track_change_sync: 'Sincronizar Cambio de Pista',
+	label_slideshow_mark_here: 'Marcar aquí',
+	hint_slideshow_mark_here:
+		'Escribe el tiempo de reproducción actual como inicio de la imagen SIGUIENTE, cerrando la actual. Pulsa M con la línea de tiempo abierta.',
+	slideshow_marked_toast: 'IMG {index} empieza en {time}{anchor}',
+	slideshow_marked_anchor_end: ' — la transición termina ahí',
+	slideshow_marked_anchor_center:
+		' — el tiempo queda en mitad de la transición',
+	slideshow_mark_last_image:
+		'En pantalla está la última imagen del pool: no hay ninguna después que marcar.',
+	slideshow_mark_enabled_manual:
+		'Se activaron los tiempos manuales para que la marca tenga efecto.',
+	slideshow_order_warning:
+		'Los tiempos guardados ya no siguen el orden del pool, así que el pase reproduce las imágenes en otro orden que la lista. Arrastra los clips o borra los tiempos para volver a alinearlos.',
+	label_slideshow_transition_anchor: 'Anclaje del tiempo',
+	hint_slideshow_transition_anchor:
+		'Dónde queda el tiempo marcado dentro de su transición. Final = la imagen nueva está puesta del todo EN la marca (para los drops); Inicio = la transición empieza ahí (el comportamiento anterior).',
+	slideshow_anchor_start: 'Inicio',
+	slideshow_anchor_center: 'Centro',
+	slideshow_anchor_end: 'Final',
 	hint_slideshow_audio_checkpoints:
 		'Para mixes largos, reparte la canción actual sobre la cantidad de imágenes cargadas y cambia por checkpoints en vez de usar temporizador.',
 	hint_slideshow_track_change_sync:

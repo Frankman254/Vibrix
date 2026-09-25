@@ -37,6 +37,7 @@ import type {
 	RainParticleType,
 	ResolvedAudioReactiveChannel,
 	ScanlineMode,
+	SlideshowTransitionAnchor,
 	SlideshowTransitionType,
 	SpectrumBandMode,
 	SpectrumColorMode,
@@ -52,6 +53,21 @@ import type {
 	EditorImagePreviewQuality,
 	WallpaperState
 } from '@/types/wallpaper';
+
+/** Outcome of the "mark here" gesture — see `markNextImageSwitchAt`. */
+export type MarkNextSwitchResult = {
+	/** False when there is no image after the active one to mark. */
+	marked: boolean;
+	/** The image whose start was moved, if any. */
+	imageId: string | null;
+	markedAt: number;
+	/** 1-based position of that image in the pool, for the UI message. */
+	poolPosition: number;
+	/** The stored timestamps no longer ascend with the pool order. */
+	reordered: boolean;
+	/** The gesture had to turn manual timestamps on first. */
+	enabledManualMode: boolean;
+};
 
 export type WallpaperStore = WallpaperState & {
 	// FX
@@ -672,6 +688,7 @@ export type WallpaperStore = WallpaperState & {
 	setSlideshowTransitionAudioDrive: (v: number) => void;
 	setSlideshowTransitionAudioChannel: (v: AudioReactiveChannel) => void;
 	setSlideshowTransitionAudioSmoothing: (v: number) => void;
+	setSlideshowTransitionAnchor: (v: SlideshowTransitionAnchor) => void;
 	setSlideshowResetPosition: (v: boolean) => void;
 	setSlideshowAudioCheckpointsEnabled: (v: boolean) => void;
 	setSlideshowTrackChangeSyncEnabled: (v: boolean) => void;
@@ -682,6 +699,13 @@ export type WallpaperStore = WallpaperState & {
 		v: number | null
 	) => void;
 	resetAllManualTimestamps: () => void;
+	/**
+	 * Writes `timeSec` as the switch timestamp of the image AFTER the active
+	 * one — the "mark here" gesture: the end of a clip is the start of the next.
+	 * Turns manual mode on when it is off, and reports whether the mark left the
+	 * slideshow playing images out of pool order.
+	 */
+	markNextImageSwitchAt: (timeSec: number) => MarkNextSwitchResult;
 	setActiveImageId: (id: string | null) => void;
 	applyActiveImageConfigToDefaultImages: () => void;
 	moveImageEntry: (id: string, direction: -1 | 1) => void;

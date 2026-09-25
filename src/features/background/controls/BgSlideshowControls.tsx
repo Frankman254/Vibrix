@@ -2,12 +2,19 @@ import { useMemo, useState } from 'react';
 import { useT } from '@/lib/i18n';
 import { useWallpaperStore } from '@/store/wallpaperStore';
 import { useDialog } from '@/editor/DialogProvider';
-import { Button, Slider, ToggleSwitch, UI_COLORS } from '@/ui';
+import { Button, EnumButtonGroup, Slider, ToggleSwitch, UI_COLORS } from '@/ui';
+import type { SlideshowTransitionAnchor } from '@/types/wallpaper';
 import SlideshowClipTimeline from './SlideshowClipTimeline';
 import {
 	filterImageIdsBySetlist,
 	getActiveSetlist
 } from '@/store/slices/setlistsSlice';
+
+const ANCHOR_OPTIONS: readonly SlideshowTransitionAnchor[] = [
+	'start',
+	'center',
+	'end'
+];
 
 function SwitchRow({
 	label,
@@ -157,6 +164,34 @@ export default function BgSlideshowControls() {
 								>
 									{resetButtonLabel}
 								</Button>
+							</div>
+							<div className="flex flex-col gap-1">
+								<span
+									className="text-[11px] font-medium"
+									style={{ color: UI_COLORS.fg }}
+								>
+									{t.label_slideshow_transition_anchor}
+								</span>
+								<EnumButtonGroup<SlideshowTransitionAnchor>
+									options={ANCHOR_OPTIONS}
+									value={store.slideshowTransitionAnchor}
+									onChange={
+										store.setSlideshowTransitionAnchor
+									}
+									labels={{
+										start: t.slideshow_anchor_start,
+										center: t.slideshow_anchor_center,
+										end: t.slideshow_anchor_end
+									}}
+								/>
+								<span
+									className="text-[10px] leading-snug"
+									style={{
+										color: 'var(--editor-accent-muted)'
+									}}
+								>
+									{t.hint_slideshow_transition_anchor}
+								</span>
 							</div>
 							<SlideshowClipTimeline />
 						</div>

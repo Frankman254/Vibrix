@@ -707,6 +707,8 @@ export function createBackgroundSlice(
 			})),
 		setSlideshowTransitionAudioSmoothing: v =>
 			set({ slideshowTransitionAudioSmoothing: v }),
+		setSlideshowTransitionAnchor: v =>
+			set({ slideshowTransitionAnchor: v }),
 		setSlideshowResetPosition: v => set({ slideshowResetPosition: v }),
 		setSlideshowAudioCheckpointsEnabled: v =>
 			set({ slideshowAudioCheckpointsEnabled: v }),

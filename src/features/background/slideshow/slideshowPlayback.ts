@@ -5,6 +5,7 @@
 import type {
 	BackgroundImageItem,
 	Setlist,
+	SlideshowTransitionAnchor,
 	WallpaperState
 } from '@/types/wallpaper';
 import { filterImageIdsBySetlist } from '@/store/slices/setlistsSlice';
@@ -30,6 +31,69 @@ export function resolveSlideshowPool(
 		setlists,
 		activeSetlistId
 	);
+}
+
+/**
+ * Fraction of the transition that must already have run when the timestamp is
+ * reached: `end` needs the whole thing (so it starts a full duration early),
+ * `center` half of it, `start` none — which is the legacy behaviour.
+ */
+export function transitionAnchorLead(
+	anchor: SlideshowTransitionAnchor
+): number {
+	if (anchor === 'end') return 1;
+	if (anchor === 'center') return 0.5;
+	return 0;
+}
+
+export interface ManualSwitchEntry {
+	image: BackgroundImageItem;
+	/** The timestamp the user marked (or the automatic share of the track). */
+	markedAt: number;
+	/** When the switch actually fires, i.e. when the transition must start. */
+	switchAt: number;
+}
+
+/**
+ * The manual-timestamp schedule, ordered by the moment each switch fires.
+ *
+ * A marked timestamp says "the new image belongs HERE". With anchor `end` the
+ * transition has to start `transitionDuration` earlier so it has finished by
+ * then — look-ahead, which is why this lives in the resolver and not in the UI.
+ * Images without a timestamp keep their automatic share of the track.
+ *
+ * Shared by the resolver and by the poller that decides when to wake up next,
+ * so both agree on the same instants.
+ */
+export function buildManualSwitchSchedule(params: {
+	pool: BackgroundImageItem[];
+	duration: number;
+	anchor?: SlideshowTransitionAnchor;
+	/** Global fallback for images with no `transitionDuration` of their own. */
+	defaultTransitionDuration?: number;
+}): ManualSwitchEntry[] {
+	const anchor = params.anchor ?? 'start';
+	const lead = transitionAnchorLead(anchor);
+	const effectiveDuration = Math.max(0.1, params.duration);
+	return params.pool
+		.map((image, index, arr) => {
+			const markedAt =
+				image.playbackSwitchAt != null
+					? image.playbackSwitchAt
+					: (effectiveDuration / arr.length) * index;
+			const transition =
+				image.transitionDuration ??
+				params.defaultTransitionDuration ??
+				0;
+			// The first image has nothing to transition from, so it never gets
+			// pulled below zero by the lead.
+			const switchAt =
+				index === 0
+					? markedAt
+					: Math.max(0, markedAt - transition * lead);
+			return { image, markedAt, switchAt };
+		})
+		.sort((a, b) => a.switchAt - b.switchAt);
 }
 
 export interface PlaybackImageResolution {
@@ -59,6 +123,9 @@ export function resolveEffectivePlaybackImageId(params: {
 	slideshowEnabled: boolean;
 	manualTimestampsEnabled: boolean;
 	currentActiveImageId: string | null;
+	/** Manual mode only; omitted means `start` (no look-ahead). */
+	transitionAnchor?: SlideshowTransitionAnchor;
+	defaultTransitionDuration?: number;
 }): PlaybackImageResolution {
 	const {
 		pool,
@@ -88,25 +155,21 @@ export function resolveEffectivePlaybackImageId(params: {
 	}
 
 	if (manualTimestampsEnabled) {
-		const effectiveDuration = Math.max(0.1, duration);
-		const scheduled = pool
-			.map((img, i, arr) => ({
-				img,
-				switchAt:
-					img.playbackSwitchAt != null
-						? img.playbackSwitchAt
-						: (effectiveDuration / arr.length) * i
-			}))
-			.sort((a, b) => a.switchAt - b.switchAt);
+		const scheduled = buildManualSwitchSchedule({
+			pool,
+			duration,
+			anchor: params.transitionAnchor,
+			defaultTransitionDuration: params.defaultTransitionDuration
+		});
 
 		let best = scheduled[0];
 		for (const entry of scheduled) {
 			if (entry.switchAt <= currentTime) best = entry;
 			else break;
 		}
-		const idx = pool.findIndex(img => img.assetId === best.img.assetId);
+		const idx = pool.findIndex(img => img.assetId === best.image.assetId);
 		return {
-			resolvedId: best.img.assetId,
+			resolvedId: best.image.assetId,
 			index: idx,
 			poolSize: pool.length
 		};
@@ -181,6 +244,8 @@ export function resolveEffectiveImageForPlayback(params: {
 	slideshowEnabled: boolean;
 	manualTimestampsEnabled: boolean;
 	lastAutoTargetId: string | null;
+	transitionAnchor?: SlideshowTransitionAnchor;
+	defaultTransitionDuration?: number;
 }): EffectiveImageResolution {
 	const pool = resolveSlideshowPool(
 		params.images,
@@ -205,7 +270,9 @@ export function resolveEffectiveImageForPlayback(params: {
 		duration: params.duration,
 		slideshowEnabled: params.slideshowEnabled,
 		manualTimestampsEnabled: params.manualTimestampsEnabled,
-		currentActiveImageId: params.lastAutoTargetId
+		currentActiveImageId: params.lastAutoTargetId,
+		transitionAnchor: params.transitionAnchor,
+		defaultTransitionDuration: params.defaultTransitionDuration
 	});
 
 	const forceApply =
@@ -247,6 +314,8 @@ export type SlideshowTimelineSettings = Pick<
 	| 'slideshowAudioCheckpointsEnabled'
 	| 'slideshowManualTimestampsEnabled'
 	| 'slideshowTrackChangeSyncEnabled'
+	| 'slideshowTransitionAnchor'
+	| 'slideshowTransitionDuration'
 >;
 
 /**
@@ -284,7 +353,9 @@ export function resolveSlideshowImageIdAtTime(
 			duration: durationSec,
 			slideshowEnabled: true,
 			manualTimestampsEnabled: settings.slideshowManualTimestampsEnabled,
-			currentActiveImageId: settings.activeImageId
+			currentActiveImageId: settings.activeImageId,
+			transitionAnchor: settings.slideshowTransitionAnchor,
+			defaultTransitionDuration: settings.slideshowTransitionDuration
 		}).resolvedId;
 	}
 

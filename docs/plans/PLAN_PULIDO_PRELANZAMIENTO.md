@@ -254,7 +254,7 @@ ningún sitio y lleva a que el usuario edite la imagen equivocada.
 
 ---
 
-## 4. Tiempos manuales de cambio de imagen
+## 4. Tiempos manuales de cambio de imagen — **HECHA** (store v123)
 
 ### 4.1 Lo que ya existe (más de lo que parece)
 
@@ -651,7 +651,7 @@ la patch. Y la fase no se da por cerrada sin las tres.
 | **E3** | Presets de transición con nombre; dials a Advanced; quitar el duplicado global | bump + migración |
 | **E4** | Extender el crossfade a spectrum/logo/particles/rain                           | —                |
 | **E5** | _(post-lanzamiento)_ Motor GL de transiciones estilo gl-transitions            | —                |
-| **F**  | Botón "marcar aquí" + atajo + anclaje de transición                            | bump + migración |
+| **F**  | ✅ Botón "marcar aquí" + atajo `M` + anclaje de transición                     | v123 hecho       |
 | **G**  | Coherencia per-image: añadir lo que falta (§10.2) + las tres categorías        | bump + migración |
 | **H**  | ✅ Modo global que pisa per-image sin borrarlo + "Guardar en todas"            | v121 hecho       |
 | **I**  | UI de escenas con botones de tres estados + "capturar escena actual"           | —                |

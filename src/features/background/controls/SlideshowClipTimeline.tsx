@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAudioContext } from '@/context/useAudioContext';
+import { useT } from '@/lib/i18n';
+import { Button } from '@/ui';
 import { useWallpaperStore } from '@/store/wallpaperStore';
 import { resolveEditorImagePreviewUrl } from '@/lib/editorImagePreviews';
 import { filterImageIdsBySetlist } from '@/store/slices/setlistsSlice';
 
+const MARK_NOTICE_MS = 4000;
 const MIN_CLIP_DURATION = 0.5;
 const MIN_CLIP_WIDTH_PX = 220;
 const MIN_TIMELINE_WIDTH_PX = 960;
@@ -113,6 +116,24 @@ function buildTimelineTicks(
 	return ticks;
 }
 
+/**
+ * True when the explicit marks stop ascending with the pool order. The resolver
+ * sorts by time, so the pass then plays the images in an order the list does not
+ * show — worth saying out loud instead of letting the clips silently clamp.
+ */
+function hasOutOfOrderTimestamps(
+	images: ReturnType<typeof useWallpaperStore.getState>['backgroundImages']
+): boolean {
+	let previousMark = Number.NEGATIVE_INFINITY;
+	for (const image of images) {
+		const mark = image.playbackSwitchAt;
+		if (mark == null) continue;
+		if (mark < previousMark) return true;
+		previousMark = mark;
+	}
+	return false;
+}
+
 function buildTimelineClips(
 	images: ReturnType<typeof useWallpaperStore.getState>['backgroundImages'],
 	duration: number
@@ -157,13 +178,21 @@ export default function SlideshowClipTimeline() {
 		setlists,
 		activeSetlistId,
 		setActiveImageId,
-		setBackgroundImagePlaybackSwitchAt
+		setBackgroundImagePlaybackSwitchAt,
+		markNextImageSwitchAt,
+		slideshowTransitionAnchor
 	} = useWallpaperStore();
+	const t = useT();
 	const { getDuration, getCurrentTime } = useAudioContext();
 	const viewportRef = useRef<HTMLDivElement | null>(null);
 	const trackRef = useRef<HTMLDivElement | null>(null);
 	const rafRef = useRef(0);
 	const dragStateRef = useRef<DragState>(null);
+	// The keyboard shortcut must read the live playhead without re-registering
+	// its listener on every animation frame.
+	const playheadRef = useRef(0);
+	const markNoticeTimerRef = useRef(0);
+	const [markNotice, setMarkNotice] = useState<string | null>(null);
 	const [duration, setDuration] = useState(0);
 	const [playheadTime, setPlayheadTime] = useState(0);
 	const [viewportWidth, setViewportWidth] = useState(MIN_TIMELINE_WIDTH_PX);
@@ -194,7 +223,8 @@ export default function SlideshowClipTimeline() {
 		const tick = () => {
 			if (!alive) return;
 			setDuration(Math.max(0, getDuration()));
-			setPlayheadTime(Math.max(0, getCurrentTime()));
+			playheadRef.current = Math.max(0, getCurrentTime());
+			setPlayheadTime(playheadRef.current);
 			rafRef.current = requestAnimationFrame(tick);
 		};
 		rafRef.current = requestAnimationFrame(tick);
@@ -219,6 +249,77 @@ export default function SlideshowClipTimeline() {
 		observer.observe(element);
 		return () => observer.disconnect();
 	}, []);
+
+	const outOfOrder = useMemo(
+		() => hasOutOfOrderTimestamps(visibleBackgroundImages),
+		[visibleBackgroundImages]
+	);
+
+	const showMarkNotice = useCallback((message: string) => {
+		setMarkNotice(message);
+		window.clearTimeout(markNoticeTimerRef.current);
+		markNoticeTimerRef.current = window.setTimeout(
+			() => setMarkNotice(null),
+			MARK_NOTICE_MS
+		);
+	}, []);
+
+	const markHere = useCallback(() => {
+		const result = markNextImageSwitchAt(playheadRef.current);
+		if (!result.marked) {
+			showMarkNotice(t.slideshow_mark_last_image);
+			return;
+		}
+		const anchorNote =
+			slideshowTransitionAnchor === 'end'
+				? t.slideshow_marked_anchor_end
+				: slideshowTransitionAnchor === 'center'
+					? t.slideshow_marked_anchor_center
+					: '';
+		const marked = t.slideshow_marked_toast
+			.replace('{index}', String(result.poolPosition))
+			.replace('{time}', formatTime(result.markedAt))
+			.replace('{anchor}', anchorNote);
+		showMarkNotice(
+			result.enabledManualMode
+				? `${marked} · ${t.slideshow_mark_enabled_manual}`
+				: marked
+		);
+	}, [
+		markNextImageSwitchAt,
+		showMarkNotice,
+		slideshowTransitionAnchor,
+		t.slideshow_mark_enabled_manual,
+		t.slideshow_mark_last_image,
+		t.slideshow_marked_anchor_center,
+		t.slideshow_marked_anchor_end,
+		t.slideshow_marked_toast
+	]);
+
+	// Marking by hand with the mouse while the song plays is exactly the part
+	// that feels wrong, so `M` does it — unless the user is typing somewhere.
+	useEffect(() => {
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key !== 'm' && event.key !== 'M') return;
+			if (event.metaKey || event.ctrlKey || event.altKey) return;
+			const target = event.target as HTMLElement | null;
+			const tag = target?.tagName;
+			if (
+				tag === 'INPUT' ||
+				tag === 'TEXTAREA' ||
+				tag === 'SELECT' ||
+				target?.isContentEditable
+			) {
+				return;
+			}
+			event.preventDefault();
+			markHere();
+		};
+		window.addEventListener('keydown', onKeyDown);
+		return () => window.removeEventListener('keydown', onKeyDown);
+	}, [markHere]);
+
+	useEffect(() => () => window.clearTimeout(markNoticeTimerRef.current), []);
 
 	const timeFromClientX = useCallback(
 		(clientX: number) => {
@@ -373,16 +474,51 @@ export default function SlideshowClipTimeline() {
 
 	return (
 		<div className="flex flex-col gap-2">
-			<div
-				className="flex items-center justify-between text-[10px] tabular-nums"
-				style={{ color: 'var(--editor-accent-muted)' }}
-			>
-				<span>0:00</span>
-				<span>
-					{formatTime(playheadTime)} / {formatTime(duration)}
-				</span>
-				<span>{formatTime(duration)}</span>
+			<div className="flex items-center gap-2">
+				<Button
+					onClick={markHere}
+					size="sm"
+					density="compact"
+					variant="primary"
+					title={t.hint_slideshow_mark_here}
+				>
+					{t.label_slideshow_mark_here} · M
+				</Button>
+				<div
+					className="flex flex-1 items-center justify-between text-[10px] tabular-nums"
+					style={{ color: 'var(--editor-accent-muted)' }}
+				>
+					<span>0:00</span>
+					<span>
+						{formatTime(playheadTime)} / {formatTime(duration)}
+					</span>
+					<span>{formatTime(duration)}</span>
+				</div>
 			</div>
+			{markNotice ? (
+				<div
+					className="rounded border px-2.5 py-1.5 text-[11px]"
+					style={{
+						borderColor: 'rgba(120, 220, 160, 0.45)',
+						background: 'rgba(120, 220, 160, 0.10)',
+						color: 'var(--editor-accent-fg)'
+					}}
+				>
+					{markNotice}
+				</div>
+			) : null}
+			{outOfOrder ? (
+				<div
+					className="rounded border px-2.5 py-1.5 text-[11px] leading-snug"
+					style={{
+						borderColor: 'rgba(251, 191, 36, 0.55)',
+						background: 'rgba(251, 191, 36, 0.12)',
+						color: 'var(--editor-accent-fg)'
+					}}
+				>
+					{t.slideshow_order_warning}
+				</div>
+			) : null}
 			<div
 				ref={viewportRef}
 				className="timeline-scroll overflow-x-auto overflow-y-hidden rounded border pb-2"

@@ -6,7 +6,11 @@ import {
 	filterImageIdsBySetlist,
 	getActiveSetlist
 } from '@/store/slices/setlistsSlice';
-import { resolveEffectiveImageForPlayback } from './slideshowPlayback';
+import {
+	buildManualSwitchSchedule,
+	resolveEffectiveImageForPlayback,
+	resolveSlideshowPool
+} from './slideshowPlayback';
 
 // Set window.__SLIDESHOW_DEBUG__ = true in the browser console to enable.
 const isDebug = () =>
@@ -28,6 +32,8 @@ export default function SlideshowManager() {
 		slideshowAudioCheckpointsEnabled,
 		slideshowTrackChangeSyncEnabled,
 		slideshowManualTimestampsEnabled,
+		slideshowTransitionAnchor,
+		slideshowTransitionDuration,
 		audioTracks,
 		activeAudioTrackId,
 		motionPaused,
@@ -45,6 +51,8 @@ export default function SlideshowManager() {
 			slideshowTrackChangeSyncEnabled: s.slideshowTrackChangeSyncEnabled,
 			slideshowManualTimestampsEnabled:
 				s.slideshowManualTimestampsEnabled,
+			slideshowTransitionAnchor: s.slideshowTransitionAnchor,
+			slideshowTransitionDuration: s.slideshowTransitionDuration,
 			audioTracks: s.audioTracks,
 			activeAudioTrackId: s.activeAudioTrackId,
 			motionPaused: s.motionPaused,
@@ -310,7 +318,9 @@ export default function SlideshowManager() {
 				duration,
 				slideshowEnabled: true,
 				manualTimestampsEnabled: true,
-				lastAutoTargetId: lastTimestampAssetIdRef.current
+				lastAutoTargetId: lastTimestampAssetIdRef.current,
+				transitionAnchor: state.slideshowTransitionAnchor,
+				defaultTransitionDuration: state.slideshowTransitionDuration
 			});
 
 			if (resolution.shouldApply && resolution.targetImageId) {
@@ -325,31 +335,19 @@ export default function SlideshowManager() {
 				}
 			}
 
-			// Schedule next tick: find the next switch boundary from the
-			// effective images list (needed for precision timing regardless of
-			// whether we applied a change this tick).
-			const effectiveImages = filterImageIdsBySetlist(
-				backgroundImages.filter(img => img.url && img.enabled),
-				setlists,
-				activeSetlistId
-			)
-				.map((img, index, arr) => {
-					const effectiveDuration = Math.max(0.1, duration);
-					const calculated =
-						(effectiveDuration / Math.max(arr.length, 1)) * index;
-					return {
-						assetId: img.assetId,
-						switchAt:
-							img.playbackSwitchAt != null
-								? img.playbackSwitchAt
-								: calculated
-					};
-				})
-				.sort((a, b) => a.switchAt - b.switchAt);
-
-			const nextSwitch = effectiveImages.find(
-				img => img.switchAt > currentTime
-			);
+			// Schedule next tick: find the next switch boundary from the very
+			// same schedule the resolver uses, anchor included — otherwise the
+			// poller sleeps through an anchored switch that fires early.
+			const nextSwitch = buildManualSwitchSchedule({
+				pool: resolveSlideshowPool(
+					backgroundImages,
+					setlists,
+					activeSetlistId
+				),
+				duration,
+				anchor: slideshowTransitionAnchor,
+				defaultTransitionDuration: slideshowTransitionDuration
+			}).find(entry => entry.switchAt > currentTime);
 			const timeToNext = nextSwitch
 				? nextSwitch.switchAt - currentTime
 				: 2;
@@ -371,6 +369,8 @@ export default function SlideshowManager() {
 		backgroundImages,
 		setlists,
 		activeSetlistId,
+		slideshowTransitionAnchor,
+		slideshowTransitionDuration,
 		useManualTimestamps
 	]);
 

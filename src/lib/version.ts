@@ -119,4 +119,7 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // v122: `sceneServiceModel` — which model the scene service should use, when
 // its server offers several (LM Studio with three models loaded, say). '' keeps
 // the server's own choice, which is what every pre-v122 store meant.
-export const STORE_PERSIST_VERSION = 122;
+// v123: `slideshowTransitionAnchor` — where a manual timestamp sits inside its
+// transition. Defaults to `end` (the transition finishes on the mark), which is
+// a deliberate behaviour change for existing projects: marking is a sync gesture.
+export const STORE_PERSIST_VERSION = 123;

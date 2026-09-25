@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+	buildManualSwitchSchedule,
 	resolveEffectivePlaybackImageId,
 	resolveEffectiveImageForPlayback,
 	resolveSlideshowImageIdAtTime,
@@ -14,7 +15,10 @@ import type { BackgroundImageItem, Setlist } from '@/types/wallpaper';
 function img(
 	id: string,
 	opts: Partial<
-		Pick<BackgroundImageItem, 'enabled' | 'url' | 'playbackSwitchAt'>
+		Pick<
+			BackgroundImageItem,
+			'enabled' | 'url' | 'playbackSwitchAt' | 'transitionDuration'
+		>
 	> = {}
 ): BackgroundImageItem {
 	return {
@@ -23,6 +27,7 @@ function img(
 		enabled: opts.enabled ?? true,
 		name: id,
 		playbackSwitchAt: opts.playbackSwitchAt ?? null,
+		transitionDuration: opts.transitionDuration ?? 1,
 		sceneSlotId: null
 		// The remaining fields are not needed by the resolver.
 	} as unknown as BackgroundImageItem;
@@ -743,6 +748,8 @@ describe('resolveSlideshowImageIdAtTime', () => {
 			slideshowAudioCheckpointsEnabled: false,
 			slideshowManualTimestampsEnabled: false,
 			slideshowTrackChangeSyncEnabled: false,
+			slideshowTransitionAnchor: 'start',
+			slideshowTransitionDuration: 1,
 			...overrides
 		};
 	}
@@ -809,5 +816,118 @@ describe('resolveSlideshowImageIdAtTime', () => {
 		expect(resolveSlideshowImageIdAtTime(filtered, 0, 60)).toBe('c');
 		expect(resolveSlideshowImageIdAtTime(filtered, 10, 60)).toBe('a');
 		expect(resolveSlideshowImageIdAtTime(filtered, 20, 60)).toBe('c');
+	});
+});
+
+// ── Transition anchor (look-ahead) ─────────────────────────────────────────
+
+describe('buildManualSwitchSchedule — anchors', () => {
+	const images = [
+		img('a'),
+		img('b', { playbackSwitchAt: 60, transitionDuration: 2 }),
+		img('c', { playbackSwitchAt: 120, transitionDuration: 4 })
+	];
+
+	it('start keeps the legacy behaviour: the switch fires on the mark', () => {
+		const schedule = buildManualSwitchSchedule({
+			pool: images,
+			duration: 180,
+			anchor: 'start'
+		});
+		expect(schedule.map(entry => entry.switchAt)).toEqual([0, 60, 120]);
+	});
+
+	it('end starts the transition a full duration early', () => {
+		const schedule = buildManualSwitchSchedule({
+			pool: images,
+			duration: 180,
+			anchor: 'end'
+		});
+		expect(schedule.map(entry => entry.switchAt)).toEqual([0, 58, 116]);
+		// The marked time is preserved — only the firing instant moves.
+		expect(schedule.map(entry => entry.markedAt)).toEqual([0, 60, 120]);
+	});
+
+	it('center splits the transition around the mark', () => {
+		const schedule = buildManualSwitchSchedule({
+			pool: images,
+			duration: 180,
+			anchor: 'center'
+		});
+		expect(schedule.map(entry => entry.switchAt)).toEqual([0, 59, 118]);
+	});
+
+	// Legacy persisted images can arrive without their own duration.
+	it('falls back to the global duration for images without one', () => {
+		const schedule = buildManualSwitchSchedule({
+			pool: [
+				img('a'),
+				{
+					...img('b', { playbackSwitchAt: 30 }),
+					transitionDuration: undefined
+				} as unknown as BackgroundImageItem
+			],
+			duration: 60,
+			anchor: 'end',
+			defaultTransitionDuration: 3
+		});
+		expect(schedule[1]!.switchAt).toBe(27);
+	});
+
+	it('never pulls a switch below zero', () => {
+		const schedule = buildManualSwitchSchedule({
+			pool: [
+				img('a'),
+				img('b', { playbackSwitchAt: 0.5, transitionDuration: 4 })
+			],
+			duration: 60,
+			anchor: 'end'
+		});
+		expect(schedule.every(entry => entry.switchAt >= 0)).toBe(true);
+	});
+});
+
+describe('resolveEffectivePlaybackImageId — anchored manual timestamps', () => {
+	const images = [
+		img('a'),
+		img('b', { playbackSwitchAt: 60, transitionDuration: 2 })
+	];
+
+	it('with end, the new image is already resolved before the mark', () => {
+		const res = resolveEffectivePlaybackImageId({
+			pool: images,
+			currentTime: 58.5,
+			duration: 180,
+			slideshowEnabled: true,
+			manualTimestampsEnabled: true,
+			currentActiveImageId: 'a',
+			transitionAnchor: 'end'
+		});
+		expect(res.resolvedId).toBe('b');
+	});
+
+	it('with start, the same instant still shows the old image', () => {
+		const res = resolveEffectivePlaybackImageId({
+			pool: images,
+			currentTime: 58.5,
+			duration: 180,
+			slideshowEnabled: true,
+			manualTimestampsEnabled: true,
+			currentActiveImageId: 'a',
+			transitionAnchor: 'start'
+		});
+		expect(res.resolvedId).toBe('a');
+	});
+
+	it('omitting the anchor keeps the pre-anchor behaviour', () => {
+		const res = resolveEffectivePlaybackImageId({
+			pool: images,
+			currentTime: 59,
+			duration: 180,
+			slideshowEnabled: true,
+			manualTimestampsEnabled: true,
+			currentActiveImageId: 'a'
+		});
+		expect(res.resolvedId).toBe('a');
 	});
 });

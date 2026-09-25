@@ -37,7 +37,11 @@ import {
 	buildCoverFitAllImagesPatch,
 	buildCoverFitPatch
 } from '@/store/activeImageSelection';
-import type { WallpaperStore } from '@/store/wallpaperStoreTypes';
+import type {
+	MarkNextSwitchResult,
+	WallpaperStore
+} from '@/store/wallpaperStoreTypes';
+import { resolveSlideshowPool } from '@/features/background/slideshow/slideshowPlayback';
 import type { StateCreator } from 'zustand';
 
 type WallpaperSet = Parameters<StateCreator<WallpaperStore>>[0];
@@ -270,6 +274,76 @@ export function createBackgroundCollectionActions(
 						: img
 				)
 			})),
+		// The "mark here" gesture. The end of a clip IS the start of the next
+		// one, so marking writes the NEXT image's timestamp — no `end` field
+		// anywhere in the model. Returns what happened because the UI has to
+		// say which image moved and whether the pool order survived it.
+		markNextImageSwitchAt: (timeSec): MarkNextSwitchResult => {
+			const state = get();
+			const pool = resolveSlideshowPool(
+				state.backgroundImages,
+				state.setlists,
+				state.activeSetlistId
+			);
+			const activeIndex = pool.findIndex(
+				img => img.assetId === state.activeImageId
+			);
+			const next = activeIndex >= 0 ? pool[activeIndex + 1] : pool[1];
+			const markedAt = Math.max(0, timeSec);
+			if (!next) {
+				return {
+					marked: false,
+					imageId: null,
+					markedAt,
+					poolPosition: 0,
+					reordered: false,
+					enabledManualMode: false
+				};
+			}
+
+			const enabledManualMode = !state.slideshowManualTimestampsEnabled;
+			const nextIndex = pool.findIndex(
+				img => img.assetId === next.assetId
+			);
+			// Marking out of order is allowed — the resolver sorts by time, so
+			// the pass simply plays the pool in a different order. That is a
+			// legitimate edit, but the UI must say it happened.
+			const marks = pool.map((img, index) =>
+				img.assetId === next.assetId
+					? markedAt
+					: (img.playbackSwitchAt ?? null) !== null
+						? img.playbackSwitchAt!
+						: index === 0
+							? 0
+							: Number.NaN
+			);
+			const reordered = marks.some((value, index) => {
+				if (index === 0 || Number.isNaN(value)) return false;
+				for (let before = 0; before < index; before += 1) {
+					const earlier = marks[before]!;
+					if (!Number.isNaN(earlier) && earlier > value) return true;
+				}
+				return false;
+			});
+
+			set(current => ({
+				slideshowManualTimestampsEnabled: true,
+				backgroundImages: current.backgroundImages.map(img =>
+					img.assetId === next.assetId
+						? { ...img, playbackSwitchAt: markedAt }
+						: img
+				)
+			}));
+
+			return {
+				marked: true,
+				imageId: next.assetId,
+				markedAt,
+				poolPosition: nextIndex + 1,
+				reordered,
+				enabledManualMode
+			};
+		},
 		resetAllManualTimestamps: () =>
 			set(state => ({
 				backgroundImages: state.backgroundImages.map(img => ({

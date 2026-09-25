@@ -15,6 +15,27 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Marcar el cambio de imagen a mano (store v123)
+
+- **Botón «marcar aquí» + atajo `M`** en la línea de tiempo del pase: escribe el
+  tiempo de reproducción actual como inicio de la imagen **siguiente** (el final
+  de un clip es el inicio del otro, no hay campo `end` en ningún sitio). Activa
+  los tiempos manuales solo por usarlo y avisa de lo que acaba de hacer.
+- **Anclaje del tiempo** (`slideshowTransitionAnchor`, nuevo, por defecto
+  `end`): dice dónde cae la marca dentro de su transición. Con `end` la
+  transición **arranca antes** para terminar justo en la marca, así que la imagen
+  nueva está puesta del todo en el golpe. Esto es look-ahead real en
+  `resolveEffectivePlaybackImageId`, no un offset de la UI, y lo comparte el
+  poller de `SlideshowManager` para no dormirse un cambio que se adelanta.
+  `center` parte la transición por la mitad; `start` es el comportamiento de
+  antes.
+- **Cambio de comportamiento deliberado** para proyectos existentes: la
+  migración escribe `end`, porque marcar un tiempo siempre quiso decir «aquí ya
+  se ve la imagen nueva». Se puede volver a `start` en la misma sección.
+- **Aviso de orden**: si los tiempos guardados dejan de subir con el orden del
+  pool, la línea de tiempo lo dice, porque el resolutor ordena por tiempo y el
+  pase reproduce en un orden que la lista no muestra.
+
 ### Elección de modelo para el AI Director (store v122)
 
 - El panel de Diagnostics muestra un selector de **modelo de escena** cuando el
@@ -689,7 +710,7 @@ pliega el look Custom legacy dentro del banco normal de slots y traduce la
 selección. El campo legacy se queda en el esquema para que los proyectos
 exportados antes sigan importándose.
 
-`STORE_PERSIST_VERSION` is at **122**; `PROJECT_SCHEMA_VERSION` and `SETTINGS_SCHEMA_VERSION` remain at **1**. `APP_VERSION` / `package.json`: **0.6.0-alpha**.
+`STORE_PERSIST_VERSION` is at **123**; `PROJECT_SCHEMA_VERSION` and `SETTINGS_SCHEMA_VERSION` remain at **1**. `APP_VERSION` / `package.json`: **0.6.0-alpha**.
 
 ---
 
