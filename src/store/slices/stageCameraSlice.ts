@@ -10,6 +10,7 @@ import {
 	MAX_LIGHTS_SLOT_COUNT
 } from '@/store/featureProfiles';
 import { DEFAULT_STATE } from '@/store/defaultState';
+import { createMotionLayerActions } from '@/store/slices/motionLayerActions';
 
 type WallpaperSet = Parameters<StateCreator<WallpaperStore>>[0];
 type WallpaperGet = Parameters<StateCreator<WallpaperStore>>[1];
@@ -26,6 +27,8 @@ export function createStageCameraSlice(
 	_api: WallpaperApi
 ) {
 	return {
+		...createMotionLayerActions(set),
+
 		// Radial spectrum rotation
 		setSpectrumRotationDrive: v => set({ spectrumRotationDrive: v }),
 		setSpectrumRotationAudioAmount: v =>

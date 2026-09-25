@@ -1,5 +1,11 @@
 import { useShallow } from 'zustand/react/shallow';
-import { Button, SectionCard, SegmentedControl, ToggleSwitch } from '@/ui';
+import {
+	Button,
+	Caption,
+	SectionCard,
+	SegmentedControl,
+	ToggleSwitch
+} from '@/ui';
 import { CollapsibleSection } from '@/editor';
 import { useWallpaperStore } from '@/store/wallpaperStore';
 import { useT } from '@/lib/i18n';
@@ -17,6 +23,8 @@ import {
 	getCameraFxTargetLabels,
 	resolveAvailableCameraFxTargets
 } from './cameraFxTargetControls';
+import MotionLayerStack from './MotionLayerStack';
+import { findMotionLayerForTarget } from '@/features/stageFx/motionLayers';
 
 /** Continuous camera movement. Peak vibration lives in `ScreenShakeSection`. */
 export function CameraMotionSection() {
@@ -33,6 +41,8 @@ export function CameraMotionSection() {
 			audioChannel: state.cameraMotionAudioChannel,
 			direction: state.cameraMotionDirection,
 			targets: state.cameraMotionTargets,
+			motionLayers: state.motionLayers,
+			activeMotionLayerId: state.activeMotionLayerId,
 			hasOverlay: state.overlays.some(overlay => overlay.enabled),
 			advanced: state.uiMode === 'advanced'
 		}))
@@ -47,7 +57,8 @@ export function CameraMotionSection() {
 			audioInfluence: state.setCameraMotionAudioInfluence,
 			audioChannel: state.setCameraMotionAudioChannel,
 			direction: state.setCameraMotionDirection,
-			targets: state.setCameraMotionTargets
+			targets: state.setCameraMotionTargets,
+			claim: state.claimMotionTarget
 		}))
 	);
 	const hasAudioDrive = s.drive === 'audio' || s.drive === 'fixed-audio';
@@ -62,6 +73,32 @@ export function CameraMotionSection() {
 			? s.targets.filter(item => item !== target)
 			: [...s.targets, target];
 		set.targets(next.length > 0 ? next : ['background']);
+	}
+
+	/**
+	 * The layer that would win this target if it is not the one being edited.
+	 * Includes the case where the active layer also names it: a layer above
+	 * still wins, and saying so is the whole point of the dimmed chip.
+	 */
+	function targetOwner(target: CameraMotionTarget) {
+		const owner = findMotionLayerForTarget(
+			{
+				motionLayers: s.motionLayers,
+				activeMotionLayerId: s.activeMotionLayerId,
+				cameraMotionTargets: s.targets
+			},
+			target
+		);
+		if (!owner || owner.id === s.activeMotionLayerId) return null;
+		const index = s.motionLayers.findIndex(layer => layer.id === owner.id);
+		return {
+			name:
+				owner.name.trim() ||
+				t.motion_layers_default_name.replace(
+					'{index}',
+					String(index + 1)
+				)
+		};
 	}
 
 	function toggleAllTargets() {
@@ -84,6 +121,11 @@ export function CameraMotionSection() {
 		>
 			{s.enabled ? (
 				<div className="flex flex-col gap-3">
+					{/* Above the dials because the dials belong to whichever
+					    layer is selected here. */}
+					{s.advanced ? (
+						<MotionLayerStack targetLabels={targetLabels} />
+					) : null}
 					<SegmentedControl<CameraMotionMode>
 						value={s.mode}
 						onChange={set.mode}
@@ -223,16 +265,36 @@ export function CameraMotionSection() {
 											const disabled =
 												target === 'selected-overlay' &&
 												!s.hasOverlay;
+											const owner = disabled
+												? null
+												: targetOwner(target);
 											const active =
-												s.targets.includes(target);
+												s.targets.includes(target) &&
+												!owner;
 											return (
 												<Button
 													key={target}
 													type="button"
+													// Never a hard block:
+													// pressing a taken chip
+													// steals the target instead
+													// of doing nothing.
 													onClick={() =>
-														toggleTarget(target)
+														owner
+															? set.claim(target)
+															: toggleTarget(
+																	target
+																)
 													}
 													disabled={disabled}
+													title={
+														owner
+															? t.motion_target_claim.replace(
+																	'{name}',
+																	owner.name
+																)
+															: undefined
+													}
 													variant={
 														active
 															? 'primary'
@@ -241,12 +303,22 @@ export function CameraMotionSection() {
 													size="sm"
 													density="compact"
 													active={active}
+													style={
+														owner
+															? { opacity: 0.55 }
+															: undefined
+													}
 												>
-													{targetLabels[target]}
+													{owner
+														? `${targetLabels[target]} · ${t.motion_target_owner.replace('{name}', owner.name)}`
+														: targetLabels[target]}
 												</Button>
 											);
 										})}
 									</div>
+									<Caption>
+										{t.motion_targets_owner_hint}
+									</Caption>
 								</div>
 							</div>
 						</CollapsibleSection>

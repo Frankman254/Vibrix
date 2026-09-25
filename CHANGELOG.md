@@ -15,6 +15,31 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Capas de movimiento en Camera Motion (store v124)
+
+- **`motionLayers` + `activeMotionLayerId`**: Camera Motion deja de ser un único
+  movimiento con una lista de destinos y pasa a ser una pila de movimientos, cada
+  uno con sus propios valores y sus propios destinos. Es el modelo de las capas
+  de efectos de Looks aplicado al movimiento, con el mismo invariante: **los
+  valores vivos de la capa activa son las claves planas `cameraMotion*`**, y su
+  entrada en el array es una foto que se refresca con `syncActiveMotionLayer`.
+- **Gana la de arriba, nunca se mezclan**: la primera capa activa que nombra un
+  destino lo mueve. Apagar una capa deja ver la de debajo, como esconder una capa
+  en un editor de imagen. Dos movimientos multiplicados en una sola transformada
+  no es algo que se pueda predecir, así que no se hace.
+- **Un reloj por capa** (`CameraFxRuntime.motionTimes`): cada capa avanza con su
+  propia velocidad e influencia de audio, así que añadir una no salta las otras.
+  El margen de zoom que tapa el borde también se calcula por capa, porque la
+  amplitud es por capa.
+- **Chips de destino con dueño** (igual que en Looks): un destino atenuado dice
+  qué movimiento lo tiene y pulsarlo se lo quita, en vez de no hacer nada.
+- **Los slots de Camera FX guardan la pila completa** desde el primer día
+  (`motionLayers` + `activeMotionLayerId` en `CAMERA_FX_PROFILE_KEYS`), para que
+  un slot restaure la composición y no la capa que estaba seleccionada.
+- El esquema de estado persistido: `STORE_PERSIST_VERSION` is at **124**; la
+  migración convierte el movimiento único en la primera capa, así que un proyecto
+  existente abre exactamente como se dejó.
+
 ### Marcar el cambio de imagen a mano (store v123)
 
 - **Botón «marcar aquí» + atajo `M`** en la línea de tiempo del pase: escribe el

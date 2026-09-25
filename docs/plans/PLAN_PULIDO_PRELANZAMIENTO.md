@@ -377,11 +377,19 @@ Ordenadas por (valor visible ÷ riesgo), no por tema.
 - El override por imagen de Looks guarda y restaura la pila.
 - **Bump de `STORE_PERSIST_VERSION` + migración. Obligatorio.**
 
-### Fase B — Camera Motion por capas
+### Fase B — Camera Motion por capas — **HECHA** (store v124)
 
 - `motionLayers` calcado de `effectLayers` (mismo invariante: los valores vivos
-  de la capa activa son las claves planas).
-- Slot de Camera FX guarda el array completo desde el día uno.
+  de la capa activa son las claves planas). Modelo en
+  `src/features/stageFx/motionLayers.ts`, acciones en
+  `src/store/slices/motionLayerActions.ts`.
+- `stepCameraFx` resuelve **una capa por destino** (gana la de arriba, nunca se
+  mezclan) y lleva un reloj por capa en `CameraFxRuntime.motionTimes`; el margen
+  de zoom se calcula por capa porque la amplitud es por capa.
+- Slot de Camera FX guarda el array completo desde el día uno
+  (`motionLayers` + `activeMotionLayerId` en `CAMERA_FX_PROFILE_KEYS`).
+- UI: `MotionLayerStack` (solo Advanced) + chips de destino con dueño y robo,
+  igual que en Looks.
 
 ### Fase C — Movimientos nuevos y reactividad
 
@@ -643,7 +651,7 @@ la patch. Y la fase no se da por cerrada sin las tres.
 | Fase   | Qué                                                                            | Persistencia     |
 | ------ | ------------------------------------------------------------------------------ | ---------------- |
 | **A**  | ✅ Capas: propiedad de destino + el slot/override guarda la pila completa      | v120 hecho       |
-| **B**  | Camera Motion por capas (`motionLayers`)                                       | bump + migración |
+| **B**  | ✅ Camera Motion por capas (`motionLayers`)                                    | v124 hecho       |
 | **C**  | Movimientos nuevos + clamp por tipo de capa                                    | bump + migración |
 | **D**  | Separar Spectrum 1 / 2 en la cámara (transformación en el renderer)            | —                |
 | **E1** | ✅ Dissolve y compañía a offscreen (el lag)                                    | hecho            |

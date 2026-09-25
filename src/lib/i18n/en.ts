@@ -401,6 +401,25 @@ export const en = {
 	label_audio_channel: 'Audio Channel',
 	label_transition_audio_channel: 'Transition Audio Channel',
 	// Effect layers (Looks stack)
+	motion_layers_section: 'Motion Layers',
+	motion_layers_hint:
+		'Each layer is one movement with its own targets. The top layer that names a target moves it; movements never blend.',
+	motion_layers_add: 'Add layer',
+	motion_layers_default_name: 'Movement {index}',
+	motion_layers_no_targets: 'No targets yet',
+	motion_layers_enable: 'Enable layer',
+	motion_layers_disable: 'Disable layer',
+	motion_layers_move_up: 'Move layer up',
+	motion_layers_move_down: 'Move layer down',
+	motion_layers_duplicate: 'Duplicate layer',
+	motion_layers_remove: 'Delete layer',
+	motion_target_owner: 'in {name}',
+	motion_target_claim: 'Take this layer from {name}',
+	motion_targets_owner_hint:
+		'A dimmed target already belongs to another movement. Press it to take it.',
+	confirm_delete_motion_layer_title: 'Delete motion layer',
+	confirm_delete_motion_layer_message:
+		'"{name}" and its movement will be removed. This cannot be undone.',
 	looks_layers_section: 'Effect Layers',
 	looks_layers_hint:
 		'Each layer has its own values and its own targets. When two layers name the same target, the higher one wins — layers never blend.',

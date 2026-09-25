@@ -404,6 +404,25 @@ export const es: Record<TranslationKey, string> = {
 	label_audio_channel: 'Canal de Audio',
 	label_transition_audio_channel: 'Canal de Audio de la Transición',
 	// Capas de efectos (pila de Looks)
+	motion_layers_section: 'Capas de movimiento',
+	motion_layers_hint:
+		'Cada capa es un movimiento con sus propios destinos. La capa de arriba que nombra un destino lo mueve; los movimientos no se mezclan.',
+	motion_layers_add: 'Añadir capa',
+	motion_layers_default_name: 'Movimiento {index}',
+	motion_layers_no_targets: 'Sin destinos todavía',
+	motion_layers_enable: 'Activar capa',
+	motion_layers_disable: 'Desactivar capa',
+	motion_layers_move_up: 'Subir capa',
+	motion_layers_move_down: 'Bajar capa',
+	motion_layers_duplicate: 'Duplicar capa',
+	motion_layers_remove: 'Eliminar capa',
+	motion_target_owner: 'en {name}',
+	motion_target_claim: 'Quitarle esta capa a {name}',
+	motion_targets_owner_hint:
+		'Un destino atenuado ya pertenece a otro movimiento. Púlsalo para quedártelo.',
+	confirm_delete_motion_layer_title: 'Eliminar capa de movimiento',
+	confirm_delete_motion_layer_message:
+		'Se eliminará «{name}» y su movimiento. No se puede deshacer.',
 	looks_layers_section: 'Capas de Efectos',
 	looks_layers_hint:
 		'Cada capa tiene sus propios valores y sus propios destinos. Cuando dos capas apuntan a lo mismo, gana la de arriba: las capas no se mezclan.',

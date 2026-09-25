@@ -328,6 +328,39 @@ export type EffectLayer = {
 	lookId: string | null;
 	settings: import('@/features/filterLooks/filterLooks').FilterLookSettings;
 };
+
+/**
+ * One Camera Motion movement with its own values and its own target layers.
+ *
+ * Same shape and same rules as `EffectLayer`: order is top-down and decides
+ * who wins, values are never blended, and the ACTIVE layer's live values are
+ * the flat `cameraMotion*` keys rather than `settings` here. See
+ * `features/stageFx/motionLayers.ts`.
+ */
+export type MotionLayer = {
+	id: string;
+	name: string;
+	enabled: boolean;
+	targets: import('@/features/stageFx/stageFxConfig').CameraMotionTarget[];
+	settings: MotionLayerSettings;
+};
+
+/**
+ * The per-layer Camera Motion values. Lives here rather than beside its helpers
+ * in `features/stageFx/motionLayers.ts` so `types/` does not have to reach into
+ * a feature for the shape it already owns — the flat keys below ARE these.
+ * The master `cameraMotionEnabled` is deliberately not one of them: it gates
+ * the whole subsystem, not a single movement.
+ */
+export type MotionLayerSettings = {
+	cameraMotionMode: import('@/features/stageFx/stageFxConfig').CameraMotionMode;
+	cameraMotionAmount: number;
+	cameraMotionSpeed: number;
+	cameraMotionDrive: import('@/features/stageFx/stageFxConfig').CameraMotionDrive;
+	cameraMotionAudioInfluence: number;
+	cameraMotionAudioChannel: import('@/features/stageFx/stageFxConfig').FxAudioChannel;
+	cameraMotionDirection: import('@/features/stageFx/stageFxConfig').CameraMotionDirection;
+};
 /**
  * Where a manual timestamp sits inside its transition.
  *   • `start`  — the transition begins at the timestamp (legacy behaviour).
@@ -1680,6 +1713,15 @@ export type WallpaperState = {
 	/** @deprecated Compatibility source for pre-split Camera FX settings. */
 	cameraFxEnabled: boolean;
 	cameraMotionEnabled: boolean;
+	/**
+	 * Every motion layer, top-down. The ACTIVE layer's live values are the
+	 * flat `cameraMotion*` keys below — its entry here is a snapshot that goes
+	 * stale while it is selected, which is why readers go through
+	 * `features/stageFx/motionLayers` instead of indexing this array.
+	 */
+	motionLayers: MotionLayer[];
+	/** Which motion layer the Motion tab is editing. */
+	activeMotionLayerId: string;
 	cameraMotionMode: import('@/features/stageFx/stageFxConfig').CameraMotionMode;
 	cameraMotionAmount: number;
 	cameraMotionSpeed: number;

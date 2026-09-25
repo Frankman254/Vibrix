@@ -45,6 +45,11 @@ import {
 	createDefaultEffectLayer,
 	DEFAULT_EFFECT_LAYER_ID
 } from '@/features/filterLooks/effectLayers';
+import {
+	createDefaultMotionLayer,
+	DEFAULT_MOTION_LAYER_ID,
+	extractMotionLayerSettingsFromState
+} from '@/features/stageFx/motionLayers';
 import { getCurrentViewportResolution } from '@/features/layout/viewportMetrics';
 import { normalizeSpectrumSettings } from '@/features/spectrum';
 import {
@@ -3117,6 +3122,20 @@ export function migrateWallpaperStore(
 		// now marks where the incoming image is fully ON, which is what the
 		// marking gesture always meant. `start` stays available in the UI.
 		migratedState.slideshowTransitionAnchor = 'end';
+	}
+
+	if (fromVersion < 124) {
+		// The single Camera Motion movement becomes the first motion layer. Its
+		// values are still the flat `cameraMotion*` keys — the entry is the
+		// snapshot — so the editor opens exactly as the user left it, with an
+		// "add layer" button it did not have before.
+		migratedState.activeMotionLayerId ??= DEFAULT_MOTION_LAYER_ID;
+		migratedState.motionLayers ??= [
+			createDefaultMotionLayer(
+				extractMotionLayerSettingsFromState(migratedState),
+				migratedState.cameraMotionTargets ?? ['background']
+			)
+		];
 	}
 
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;

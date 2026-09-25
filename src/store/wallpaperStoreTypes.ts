@@ -185,6 +185,19 @@ export type WallpaperStore = WallpaperState & {
 	moveEffectLayer: (id: string, direction: 'up' | 'down') => void;
 	/** Takes `v` away from whichever layer owns it and gives it to the active one. */
 	claimFilterTarget: (v: FilterTarget) => void;
+
+	// Motion layers (Camera Motion stack — mirrors the effect layers above).
+	addMotionLayer: () => void;
+	duplicateMotionLayer: (id: string) => void;
+	removeMotionLayer: (id: string) => void;
+	selectMotionLayer: (id: string) => void;
+	setMotionLayerEnabled: (id: string, enabled: boolean) => void;
+	renameMotionLayer: (id: string, name: string) => void;
+	moveMotionLayer: (id: string, direction: 'up' | 'down') => void;
+	/** Point the active motion layer at `target`, taking it off whoever had it. */
+	claimMotionTarget: (
+		v: import('@/features/stageFx/stageFxConfig').CameraMotionTarget
+	) => void;
 	setFilterTargets: (v: FilterTarget[]) => void;
 	toggleFilterTarget: (v: FilterTarget) => void;
 	setFilterOpacity: (v: number) => void;

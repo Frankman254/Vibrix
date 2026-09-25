@@ -122,4 +122,7 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // v123: `slideshowTransitionAnchor` — where a manual timestamp sits inside its
 // transition. Defaults to `end` (the transition finishes on the mark), which is
 // a deliberate behaviour change for existing projects: marking is a sync gesture.
-export const STORE_PERSIST_VERSION = 123;
+// v124: `motionLayers` + `activeMotionLayerId` — Camera Motion becomes a stack
+// of movements with their own targets, mirroring `effectLayers`. The active
+// layer's live values stay the flat `cameraMotion*` keys.
+export const STORE_PERSIST_VERSION = 124;
