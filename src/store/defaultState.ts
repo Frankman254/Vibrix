@@ -29,6 +29,7 @@ import { extractFilterLookSettingsFromState } from '@/features/filterLooks/filte
 // Re-exported so existing importers keep working; the constant itself lives
 // in `config/` because the renderer (a feature) may not import the store.
 import { APP_LOGO_URL } from '@/config/appLogo';
+import { createDefaultTransitionPresets } from '@/features/background/transitionPresets';
 export { APP_LOGO_URL };
 
 /**
@@ -549,6 +550,7 @@ const BASE_STATE: Omit<
 	slideshowTransitionAudioDrive: 0,
 	slideshowTransitionAudioChannel: 'instrumental',
 	slideshowTransitionAudioSmoothing: 0,
+	transitionPresets: createDefaultTransitionPresets(),
 	// `end` by design: marking a timestamp is a sync gesture, so the new
 	// image must be fully there ON the beat, not a transition later.
 	slideshowTransitionAnchor: 'end' as const,

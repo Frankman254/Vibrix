@@ -39,6 +39,11 @@ import {
 	type FilterLookPreset
 } from '@/features/filterLooks/filterLooks';
 import { generateRandomLooksProfile } from '@/features/filterLooks/looksRandomizer';
+import {
+	MAX_TRANSITION_PRESETS,
+	createTransitionPresetId,
+	uniqueTransitionPresetName
+} from '@/features/background/transitionPresets';
 
 type WallpaperSet = Parameters<StateCreator<WallpaperStore>>[0];
 type WallpaperGet = Parameters<StateCreator<WallpaperStore>>[1];
@@ -724,34 +729,144 @@ export function createBackgroundSlice(
 		setSlideshowTransitionDuration: v =>
 			set(state => ({
 				slideshowTransitionDuration: v,
-				...syncActiveBackgroundImage(state, { transitionDuration: v })
+				// Moving a dial means "this image is special now", so it
+				// stops claiming the preset it no longer matches.
+				...syncActiveBackgroundImage(state, {
+					transitionDuration: v,
+					transitionPresetId: null
+				})
 			})),
 		setSlideshowTransitionType: v =>
 			set(state => ({
 				slideshowTransitionType: v,
-				...syncActiveBackgroundImage(state, { transitionType: v })
+				// Moving a dial means "this image is special now", so it
+				// stops claiming the preset it no longer matches.
+				...syncActiveBackgroundImage(state, {
+					transitionType: v,
+					transitionPresetId: null
+				})
 			})),
 		setSlideshowTransitionIntensity: v =>
 			set(state => ({
 				slideshowTransitionIntensity: v,
-				...syncActiveBackgroundImage(state, { transitionIntensity: v })
+				// Moving a dial means "this image is special now", so it
+				// stops claiming the preset it no longer matches.
+				...syncActiveBackgroundImage(state, {
+					transitionIntensity: v,
+					transitionPresetId: null
+				})
 			})),
 		setSlideshowTransitionAudioDrive: v =>
 			set(state => ({
 				slideshowTransitionAudioDrive: v,
-				...syncActiveBackgroundImage(state, { transitionAudioDrive: v })
+				// Moving a dial means "this image is special now", so it
+				// stops claiming the preset it no longer matches.
+				...syncActiveBackgroundImage(state, {
+					transitionAudioDrive: v,
+					transitionPresetId: null
+				})
 			})),
 		setSlideshowTransitionAudioChannel: v =>
 			set(state => ({
 				slideshowTransitionAudioChannel: v,
 				...syncActiveBackgroundImage(state, {
-					transitionAudioChannel: v
+					transitionAudioChannel: v,
+					transitionPresetId: null
 				})
 			})),
 		setSlideshowTransitionAudioSmoothing: v =>
 			set({ slideshowTransitionAudioSmoothing: v }),
 		setSlideshowTransitionAnchor: v =>
 			set({ slideshowTransitionAnchor: v }),
+		applyTransitionPreset: id =>
+			set(state => {
+				const preset = state.transitionPresets.find(
+					item => item.id === id
+				);
+				if (!preset) return {};
+				// The five values are what the renderer reads; the id is the
+				// label. Writing both keeps a deleted preset from changing
+				// how anything looks.
+				return {
+					slideshowTransitionType: preset.settings.transitionType,
+					slideshowTransitionDuration:
+						preset.settings.transitionDuration,
+					slideshowTransitionIntensity:
+						preset.settings.transitionIntensity,
+					slideshowTransitionAudioDrive:
+						preset.settings.transitionAudioDrive,
+					slideshowTransitionAudioChannel:
+						preset.settings.transitionAudioChannel,
+					...syncActiveBackgroundImage(state, {
+						...preset.settings,
+						transitionPresetId: preset.id
+					})
+				};
+			}),
+		saveTransitionPreset: name =>
+			set(state => {
+				if (state.transitionPresets.length >= MAX_TRANSITION_PRESETS) {
+					return {};
+				}
+				const preset = {
+					id: createTransitionPresetId(),
+					name: uniqueTransitionPresetName(
+						name,
+						state.transitionPresets
+					),
+					builtIn: false,
+					settings: {
+						transitionType: state.slideshowTransitionType,
+						transitionDuration: state.slideshowTransitionDuration,
+						transitionIntensity: state.slideshowTransitionIntensity,
+						transitionAudioDrive:
+							state.slideshowTransitionAudioDrive,
+						transitionAudioChannel:
+							state.slideshowTransitionAudioChannel
+					}
+				};
+				return {
+					transitionPresets: [...state.transitionPresets, preset],
+					// The image already has these values; now it has the name.
+					...syncActiveBackgroundImage(state, {
+						transitionPresetId: preset.id
+					})
+				};
+			}),
+		renameTransitionPreset: (id, name) =>
+			set(state => ({
+				transitionPresets: state.transitionPresets.map(preset =>
+					preset.id === id
+						? {
+								...preset,
+								name: uniqueTransitionPresetName(
+									name,
+									state.transitionPresets.filter(
+										item => item.id !== id
+									)
+								)
+							}
+						: preset
+				)
+			})),
+		deleteTransitionPreset: id =>
+			set(state => {
+				const preset = state.transitionPresets.find(
+					item => item.id === id
+				);
+				if (!preset || preset.builtIn) return {};
+				return {
+					transitionPresets: state.transitionPresets.filter(
+						item => item.id !== id
+					),
+					// Images keep their values and fall back to "Custom".
+					backgroundImages: state.backgroundImages.map(image =>
+						image.transitionPresetId === id
+							? { ...image, transitionPresetId: null }
+							: image
+					)
+				};
+			}),
 		setSlideshowResetPosition: v => set({ slideshowResetPosition: v }),
 		setSlideshowAudioCheckpointsEnabled: v =>
 			set({ slideshowAudioCheckpointsEnabled: v }),

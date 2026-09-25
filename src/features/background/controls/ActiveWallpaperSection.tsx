@@ -1,21 +1,14 @@
 import { AdvancedOnly } from '@/editor/UIMode';
 import { useDialog } from '@/editor/DialogProvider';
-import { AUDIO_ROUTING_RANGES, SLIDESHOW_RANGES } from '@/config/ranges';
-import type {
-	AudioReactiveChannel,
-	BackgroundImageItem,
-	SlideshowTransitionType
-} from '@/types/wallpaper';
+import type { BackgroundImageItem } from '@/types/wallpaper';
 import type { SliderRange } from '@/types/controls';
 import BgFitModeSelector from './BgFitModeSelector';
-import { TRANSITION_LABELS, TRANSITION_TYPES } from './constants';
-import BgAudioChannelSelector from './BgAudioChannelSelector';
-import { Button, Slider, UI_COLORS, FONT } from '@/ui';
+import { Button, UI_COLORS } from '@/ui';
 import { CollapsibleSection } from '@/editor';
 import BackgroundCardShell from './BackgroundCardShell';
 import ImageCompositionPanel from './ImageCompositionPanel';
+import TransitionPresetPanel from './TransitionPresetPanel';
 import { SnapToNowButton } from './activeWallpaperAtoms';
-import { formatDecimal } from './bgFormat';
 
 type Props = {
 	t: Record<string, string>;
@@ -43,12 +36,6 @@ type Props = {
 	layoutReferenceWidth: number;
 	layoutReferenceHeight: number;
 	imageMinScale: number;
-	transitionType: SlideshowTransitionType;
-	transitionDuration: number;
-	transitionIntensity: number;
-	transitionAudioDrive: number;
-	transitionAudioChannel: AudioReactiveChannel;
-	transitionAudioSmoothing: number;
 	slideshowManualTimestampsEnabled: boolean;
 	onChangePlaybackSwitchAt: (v: number | null) => void;
 	calculatedSwitchAt?: number | null;
@@ -79,12 +66,6 @@ type Props = {
 	onChangeMirrorFill: (value: boolean) => void;
 	onChangeMirrorFillInvert: (value: boolean) => void;
 	onChangeMirrorFillCount: (value: number) => void;
-	onChangeTransitionType: (value: SlideshowTransitionType) => void;
-	onChangeTransitionDuration: (value: number) => void;
-	onChangeTransitionIntensity: (value: number) => void;
-	onChangeTransitionAudioDrive: (value: number) => void;
-	onChangeTransitionAudioChannel: (value: AudioReactiveChannel) => void;
-	onChangeTransitionAudioSmoothing: (value: number) => void;
 };
 
 export default function ActiveWallpaperSection({
@@ -113,12 +94,6 @@ export default function ActiveWallpaperSection({
 	layoutReferenceWidth,
 	layoutReferenceHeight,
 	imageMinScale,
-	transitionType,
-	transitionDuration,
-	transitionIntensity,
-	transitionAudioDrive,
-	transitionAudioChannel,
-	transitionAudioSmoothing,
 	slideshowManualTimestampsEnabled,
 	onChangePlaybackSwitchAt,
 	calculatedSwitchAt,
@@ -141,12 +116,6 @@ export default function ActiveWallpaperSection({
 	onChangeMirrorFill,
 	onChangeMirrorFillInvert,
 	onChangeMirrorFillCount,
-	onChangeTransitionType,
-	onChangeTransitionDuration,
-	onChangeTransitionIntensity,
-	onChangeTransitionAudioDrive,
-	onChangeTransitionAudioChannel,
-	onChangeTransitionAudioSmoothing,
 	onAutoFocusActiveImage
 }: Props) {
 	const { confirm } = useDialog();
@@ -362,95 +331,11 @@ export default function ActiveWallpaperSection({
 					)}
 				</CollapsibleSection>
 			</AdvancedOnly>
-			<AdvancedOnly>
-				{activeImage ? (
-					<CollapsibleSection title={t.section_transition_next}>
-						<span
-							className="text-[11px]"
-							style={{ color: UI_COLORS.fgMute }}
-						>
-							{t.hint_transition_next}
-						</span>
-
-						<div className="flex flex-col gap-1">
-							<span
-								className="uppercase"
-								style={{
-									color: UI_COLORS.fgMute,
-									fontFamily: FONT.mono,
-									fontSize: 10,
-									fontWeight: 650,
-									letterSpacing: '0.1em'
-								}}
-							>
-								Transition Style
-							</span>
-							<div className="flex flex-wrap gap-1.5">
-								{TRANSITION_TYPES.map(type => (
-									<Button
-										key={type}
-										size="sm"
-										density="compact"
-										variant={
-											transitionType === type
-												? 'primary'
-												: 'secondary'
-										}
-										active={transitionType === type}
-										onClick={() =>
-											onChangeTransitionType(type)
-										}
-									>
-										{TRANSITION_LABELS[type]}
-									</Button>
-								))}
-							</div>
-						</div>
-
-						<div className="grid grid-cols-2 gap-2">
-							<Slider
-								label={t.label_transition_duration}
-								value={transitionDuration}
-								{...SLIDESHOW_RANGES.transitionDuration}
-								unit="s"
-								onChange={onChangeTransitionDuration}
-								variant="compact"
-								formatValue={formatDecimal}
-							/>
-							<Slider
-								label={t.label_transition_intensity}
-								value={transitionIntensity}
-								{...SLIDESHOW_RANGES.transitionIntensity}
-								onChange={onChangeTransitionIntensity}
-								variant="compact"
-								formatValue={formatDecimal}
-							/>
-						</div>
-
-						<Slider
-							label={t.label_transition_audio_drive}
-							value={transitionAudioDrive}
-							{...SLIDESHOW_RANGES.transitionAudioDrive}
-							onChange={onChangeTransitionAudioDrive}
-							variant="compact"
-							formatValue={formatDecimal}
-						/>
-						<BgAudioChannelSelector
-							value={transitionAudioChannel}
-							onChange={onChangeTransitionAudioChannel}
-							label={t.label_transition_audio_channel}
-						/>
-						<Slider
-							label={t.label_smoothing}
-							value={transitionAudioSmoothing}
-							{...AUDIO_ROUTING_RANGES.selectedChannelSmoothing}
-							onChange={onChangeTransitionAudioSmoothing}
-							variant="compact"
-							formatValue={formatDecimal}
-						/>
-					</CollapsibleSection>
-				) : null}
-			</AdvancedOnly>
+			{activeImage ? (
+				<CollapsibleSection title={t.section_transition_next}>
+					<TransitionPresetPanel />
+				</CollapsibleSection>
+			) : null}
 		</BackgroundCardShell>
 	);
 }

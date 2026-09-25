@@ -186,6 +186,14 @@ export const en = {
 	section_transition_next: 'Transition To Next',
 	hint_transition_next:
 		'These transition settings are saved on the active image and are used when leaving it for the next one.',
+	transition_preset_custom: 'Custom',
+	transition_preset_save: 'Save as preset',
+	transition_preset_name_placeholder: 'Preset name',
+	transition_preset_limit: 'No room for more presets. Delete one first.',
+	transition_preset_delete_title: 'Delete transition preset',
+	transition_preset_delete_message:
+		'the images using it keep their transition and go back to Custom.',
+	label_transition_style: 'Transition Style',
 	label_mirror_image: 'Mirror',
 	section_layers: 'Layer Inspector',
 	section_overlays: 'Overlays',

@@ -132,4 +132,7 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // — an image can carry Camera FX, Lights and the Now Playing treatment the way
 // it already carried its logo, spectrum, particles, rain and looks. All null,
 // so no image gains a composition it did not have.
-export const STORE_PERSIST_VERSION = 126;
+// v127: `transitionPresets` + per-image `transitionPresetId` — a transition
+// look gets a name instead of being five anonymous dials. Existing images keep
+// their values with no preset attached, so nothing changes on screen.
+export const STORE_PERSIST_VERSION = 127;

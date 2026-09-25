@@ -93,6 +93,7 @@ import type { WallpaperStore } from '@/store/wallpaperStoreTypes';
 import type { ProfileSlot } from '@/types/wallpaper';
 import type { LyricsLayerColorMode } from '@/features/lyrics';
 import type { ColorSourceMode } from '@/types/wallpaper';
+import { mergeTransitionPresets } from '@/features/background/transitionPresets';
 
 function normalizeParticleColorMode(
 	raw: unknown,
@@ -3167,6 +3168,22 @@ export function migrateWallpaperStore(
 			cameraFxOverride: image.cameraFxOverride ?? null,
 			lightsOverride: image.lightsOverride ?? null,
 			trackTitleOverride: image.trackTitleOverride ?? null
+		}));
+	}
+
+	if (fromVersion < 127) {
+		// Named transition presets. The factory ones are seeded here (and any
+		// later build's new ones by `mergeTransitionPresets`). Images keep
+		// their five values and simply have no preset name yet:
+		// `transitionPresetId` null reads as "Custom", which is what they are.
+		migratedState.transitionPresets = mergeTransitionPresets(
+			migratedState.transitionPresets
+		);
+		migratedState.backgroundImages = (
+			migratedState.backgroundImages ?? []
+		).map(image => ({
+			...image,
+			transitionPresetId: image.transitionPresetId ?? null
 		}));
 	}
 

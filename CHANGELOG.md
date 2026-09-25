@@ -15,6 +15,31 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### La transición tiene nombre: presets en vez de cinco diales (store v127)
+
+- Una transición eran cinco números sin nombre por imagen, más un juego «global»
+  que en realidad es el espejo de la imagen activa. Pedir «la misma transición
+  que aquella otra imagen» significaba copiar cinco valores a ojo.
+- Ahora hay **presets de transición con nombre** (`transitionPresets`), con
+  cuatro de fábrica —**Clean cut**, **Soft fade**, **Beat hit**, **Glitch**— y
+  los que guarde el usuario. La imagen apunta a uno con `transitionPresetId`.
+- **El preset es solo la etiqueta**: los cinco valores se siguen escribiendo en
+  la imagen, así que borrar o editar un preset nunca cambia cómo se ve nada; la
+  imagen simplemente vuelve a leerse como **Personalizada**.
+- Mover un dial también devuelve la imagen a Personalizada: a partir de ahí ya
+  no es lo que el preset dice. Guardar es explícito («Guardar como preset»),
+  igual que todos los slots de la app.
+- Los cinco diales pasan a **Advanced**. En modo Simple solo se ve la fila de
+  presets, que es el objetivo: un control en vez de cinco.
+- Los presets de fábrica se pueden renombrar pero no borrar. Borrar uno propio
+  pide confirmación y deja intactas las imágenes que lo usaban.
+- El bloque de transición sale de `ActiveWallpaperSection` a
+  `TransitionPresetPanel.tsx`, conectado al store (12 props menos que bajaban
+  desde `BackgroundTab`).
+- `STORE_PERSIST_VERSION` is at **127**. La migración siembra los presets de
+  fábrica y pone `transitionPresetId` a `null` en cada imagen: nadie estrena un
+  nombre que no eligió.
+
 ### Transiciones: crossfade de verdad, no un fade desde cero (Fase E2)
 
 - Hasta ahora, al cambiar de imagen las capas afectadas (spectrum, logo,

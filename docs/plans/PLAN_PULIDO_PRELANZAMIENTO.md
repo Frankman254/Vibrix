@@ -409,8 +409,9 @@ Ordenadas por (valor visible ÷ riesgo), no por tema.
 
 - **E1 (rendimiento)**: offscreen para Dissolve y `blur-dissolve`.
 - **E2 (calidad)**: ✅ crossfade real por captura de frame, en vez del fade desde 0.
-- **E3 (UI)**: presets de transición con nombre; los 5 dials a Advanced;
-  eliminar el juego "global" duplicado.
+- **E3 (UI)**: ✅ presets de transición con nombre; los 5 dials detrás del
+  preset; el juego "global" duplicado resultó ser solo estado (espejo de la
+  imagen activa), no UI.
 - **E4**: extender el crossfade al **fondo** y a los **looks** con la misma
   captura. Spectrum, logo, partículas y lluvia ya quedaron cubiertos en E2,
   porque son justo las capas que usaban el fundido; el fondo y los filtros no
@@ -442,6 +443,37 @@ Ordenadas por (valor visible ÷ riesgo), no por tema.
   completarse: el panel de navegador de esta sesión tenía `requestAnimationFrame`
   y los timers suspendidos (0 ticks en 1 s), así que la app estaba congelada.
   Queda pendiente mirarlo con ojos humanos.
+
+### Fase E3 — Presets de transición — **HECHA** (store v127)
+
+- **El preset es una etiqueta, no una fuente de verdad.** Los cinco valores
+  (`transitionType`, `transitionDuration`, `transitionIntensity`,
+  `transitionAudioDrive`, `transitionAudioChannel`) siguen viviendo en la imagen;
+  el preset solo los escribe al aplicarlo y guarda su `id` en
+  `transitionPresetId`. Consecuencia buscada: borrar o renombrar un preset no
+  cambia cómo se ve nada, nunca.
+- Mover cualquier dial pone `transitionPresetId` a `null` y la imagen pasa a
+  «Custom» (`· Custom` en la UI). Al volver a coincidir con un preset el nombre
+  se reconoce solo (`resolveImageTransitionPresetId` compara valores).
+- Cuatro presets de fábrica sembrados por la migración: **Clean cut**,
+  **Soft fade**, **Beat hit**, **Glitch**. `mergeTransitionPresets` los vuelve a
+  sembrar si faltan y conserva los del usuario (tope `MAX_TRANSITION_PRESETS`
+  = 40).
+- UI nueva: `TransitionPresetPanel.tsx`, conectado al store. Fila de presets +
+  «Save as preset» con nombre libre (se desambigua solo); renombrar y borrar
+  solo para los del usuario y dentro de `<AdvancedOnly>`; borrar pasa por
+  `confirm({ tone: 'danger' })`. Los cinco dials siguen accesibles debajo
+  del preset: nadie pierde control, solo deja de necesitarlo.
+- `ActiveWallpaperSection` adelgaza en 12 props (`BackgroundTab` y
+  `useBackgroundStore` ya no las bajan).
+- Los presets **no** entran en los presets de proyecto
+  (`PRESET_EXCLUDED_KEYS`): son biblioteca del usuario, como los slots. Sí entran
+  en el export de proyecto, bajo la sección `backgrounds`.
+- Sobre "eliminar el juego global duplicado": los cinco `slideshowTransition*`
+  del nivel raíz **no son un segundo panel**, son el espejo de la imagen activa
+  (`getBackgroundImageStatePatch`) y lo que lee el renderer. La única UI que
+  existía era la per-imagen, así que no había nada que quitar; queda documentado
+  en §10 para no volver a buscarlo.
 
 ### Fase I — UI de escenas — **HECHA** (sin cambio de persistencia)
 
@@ -721,7 +753,7 @@ la patch. Y la fase no se da por cerrada sin las tres.
 | **D**  | Separar Spectrum 1 / 2 en la cámara (transformación en el renderer)                       | —                |
 | **E1** | ✅ Dissolve y compañía a offscreen (el lag)                                               | hecho            |
 | **E2** | ✅ Crossfade real por captura de frame (la calidad)                                       | sin persistencia |
-| **E3** | Presets de transición con nombre; dials a Advanced; quitar el duplicado global            | bump + migración |
+| **E3** | ✅ Presets de transición con nombre; el preset manda, los dials siguen debajo             | v127 hecho       |
 | **E4** | Extender el crossfade al fondo y a los looks (E2 ya cubre spectrum/logo/particles/lluvia) | —                |
 | **E5** | _(post-lanzamiento)_ Motor GL de transiciones estilo gl-transitions                       | —                |
 | **F**  | ✅ Botón "marcar aquí" + atajo `M` + anclaje de transición                                | v123 hecho       |

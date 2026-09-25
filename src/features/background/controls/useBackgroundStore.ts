@@ -22,13 +22,6 @@ export function useBackgroundStore() {
 			imageMirrorFillInvert: s.imageMirrorFillInvert,
 			imageMirrorFillCount: s.imageMirrorFillCount,
 			imageRotation: s.imageRotation,
-			slideshowTransitionType: s.slideshowTransitionType,
-			slideshowTransitionDuration: s.slideshowTransitionDuration,
-			slideshowTransitionIntensity: s.slideshowTransitionIntensity,
-			slideshowTransitionAudioDrive: s.slideshowTransitionAudioDrive,
-			slideshowTransitionAudioChannel: s.slideshowTransitionAudioChannel,
-			slideshowTransitionAudioSmoothing:
-				s.slideshowTransitionAudioSmoothing,
 			slideshowManualTimestampsEnabled:
 				s.slideshowManualTimestampsEnabled,
 			globalBackgroundId: s.globalBackgroundId,
@@ -71,15 +64,6 @@ export function useBackgroundStore() {
 			setImageMirrorFill: s.setImageMirrorFill,
 			setImageMirrorFillInvert: s.setImageMirrorFillInvert,
 			setImageMirrorFillCount: s.setImageMirrorFillCount,
-			setSlideshowTransitionType: s.setSlideshowTransitionType,
-			setSlideshowTransitionDuration: s.setSlideshowTransitionDuration,
-			setSlideshowTransitionIntensity: s.setSlideshowTransitionIntensity,
-			setSlideshowTransitionAudioDrive:
-				s.setSlideshowTransitionAudioDrive,
-			setSlideshowTransitionAudioChannel:
-				s.setSlideshowTransitionAudioChannel,
-			setSlideshowTransitionAudioSmoothing:
-				s.setSlideshowTransitionAudioSmoothing,
 			setBackgroundImagePlaybackSwitchAt:
 				s.setBackgroundImagePlaybackSwitchAt,
 			moveImageEntry: s.moveImageEntry,

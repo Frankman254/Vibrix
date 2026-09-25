@@ -386,6 +386,24 @@ export type SlideshowTransitionType =
 	| 'bars-vertical'
 	| 'rgb-shift'
 	| 'distortion';
+/** The five dials that make a transition look the way it looks. */
+export interface TransitionPresetSettings {
+	transitionType: SlideshowTransitionType;
+	transitionDuration: number;
+	transitionIntensity: number;
+	transitionAudioDrive: number;
+	transitionAudioChannel: AudioReactiveChannel;
+}
+
+/** A transition look with a name, pointed at by any number of images. */
+export interface TransitionPreset {
+	id: string;
+	name: string;
+	/** Shipped with the app. Can be renamed and edited, but never deleted. */
+	builtIn: boolean;
+	settings: TransitionPresetSettings;
+}
+
 export type VisualTransitionSubsystem =
 	| 'spectrum'
 	| 'particles'
@@ -479,6 +497,12 @@ export interface BackgroundImageItem {
 	transitionIntensity: number;
 	transitionAudioDrive: number;
 	transitionAudioChannel: AudioReactiveChannel;
+	/**
+	 * The named preset this image's transition came from, or null when the
+	 * dials were moved by hand. Only a label: the five values above are what
+	 * the renderer reads, so a deleted or edited preset never breaks a look.
+	 */
+	transitionPresetId: string | null;
 	logoProfileSlotId: string | null;
 	spectrumProfileSlotId: string | null;
 	particlesProfileSlotId: string | null;
@@ -1775,6 +1799,8 @@ export type WallpaperState = {
 	slideshowTransitionAudioDrive: number;
 	slideshowTransitionAudioChannel: AudioReactiveChannel;
 	slideshowTransitionAudioSmoothing: number;
+	/** Named transition looks, factory ones included. */
+	transitionPresets: TransitionPreset[];
 	/** Where a manual timestamp sits inside its transition (manual mode only). */
 	slideshowTransitionAnchor: SlideshowTransitionAnchor;
 	slideshowResetPosition: boolean;

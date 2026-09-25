@@ -295,16 +295,6 @@ export default function BackgroundTab({
 						store.editorImagePreviewQuality,
 						true
 					)}
-					transitionType={store.slideshowTransitionType}
-					transitionDuration={store.slideshowTransitionDuration}
-					transitionIntensity={store.slideshowTransitionIntensity}
-					transitionAudioDrive={store.slideshowTransitionAudioDrive}
-					transitionAudioChannel={
-						store.slideshowTransitionAudioChannel
-					}
-					transitionAudioSmoothing={
-						store.slideshowTransitionAudioSmoothing
-					}
 					onUploadClick={() => multiRef.current?.click()}
 					onPreviousImage={() => cycleActiveImage(-1)}
 					onNextImage={() => cycleActiveImage(1)}
@@ -332,22 +322,6 @@ export default function BackgroundTab({
 					onChangeMirrorFillInvert={store.setImageMirrorFillInvert}
 					onChangeMirrorFillCount={store.setImageMirrorFillCount}
 					imageMinScale={activeImagePositionRanges.minScale}
-					onChangeTransitionType={store.setSlideshowTransitionType}
-					onChangeTransitionDuration={
-						store.setSlideshowTransitionDuration
-					}
-					onChangeTransitionIntensity={
-						store.setSlideshowTransitionIntensity
-					}
-					onChangeTransitionAudioDrive={
-						store.setSlideshowTransitionAudioDrive
-					}
-					onChangeTransitionAudioChannel={
-						store.setSlideshowTransitionAudioChannel
-					}
-					onChangeTransitionAudioSmoothing={
-						store.setSlideshowTransitionAudioSmoothing
-					}
 					slideshowManualTimestampsEnabled={
 						store.slideshowManualTimestampsEnabled
 					}

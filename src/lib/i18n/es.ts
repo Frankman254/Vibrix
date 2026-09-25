@@ -189,6 +189,14 @@ export const es: Record<TranslationKey, string> = {
 	section_transition_next: 'Transición a la Siguiente',
 	hint_transition_next:
 		'Estos ajustes de transición se guardan en la imagen activa y se usan al salir de ella hacia la siguiente.',
+	transition_preset_custom: 'Personalizada',
+	transition_preset_save: 'Guardar como preset',
+	transition_preset_name_placeholder: 'Nombre del preset',
+	transition_preset_limit: 'No caben más presets. Borra uno primero.',
+	transition_preset_delete_title: 'Borrar preset de transición',
+	transition_preset_delete_message:
+		'las imágenes que lo usan conservan su transición y vuelven a Personalizada.',
+	label_transition_style: 'Estilo de Transición',
 	label_mirror_image: 'Espejo',
 	section_layers: 'Inspector de Capas',
 	section_overlays: 'Overlays',

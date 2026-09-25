@@ -714,6 +714,13 @@ export type WallpaperStore = WallpaperState & {
 	setSlideshowTransitionAudioChannel: (v: AudioReactiveChannel) => void;
 	setSlideshowTransitionAudioSmoothing: (v: number) => void;
 	setSlideshowTransitionAnchor: (v: SlideshowTransitionAnchor) => void;
+	/** Point the active image at a named transition look. */
+	applyTransitionPreset: (id: string) => void;
+	/** Snapshot the active image's five dials as a new named preset. */
+	saveTransitionPreset: (name: string) => void;
+	renameTransitionPreset: (id: string, name: string) => void;
+	/** Factory presets are kept; user presets are removed. */
+	deleteTransitionPreset: (id: string) => void;
 	setSlideshowResetPosition: (v: boolean) => void;
 	setSlideshowAudioCheckpointsEnabled: (v: boolean) => void;
 	setSlideshowTrackChangeSyncEnabled: (v: boolean) => void;

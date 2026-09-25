@@ -49,6 +49,8 @@ export type BackgroundImageLayoutPatch = Partial<BackgroundImageLayout> & {
 	transitionIntensity?: number;
 	transitionAudioDrive?: number;
 	transitionAudioChannel?: WallpaperState['slideshowTransitionAudioChannel'];
+	/** Null means "the dials were moved by hand": no named preset any more. */
+	transitionPresetId?: string | null;
 };
 
 export function buildBackgroundImageCollectionPatch(
@@ -364,6 +366,7 @@ export function normalizePersistedBackgroundImages(
 			transitionAudioChannel:
 				image.transitionAudioChannel ??
 				fallbackImageConfig.slideshowTransitionAudioChannel,
+			transitionPresetId: image.transitionPresetId ?? null,
 			logoProfileSlotId: image.logoProfileSlotId ?? null,
 			spectrumProfileSlotId: image.spectrumProfileSlotId ?? null,
 			particlesProfileSlotId: image.particlesProfileSlotId ?? null,
