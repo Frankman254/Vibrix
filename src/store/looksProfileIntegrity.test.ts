@@ -214,3 +214,89 @@ describe('migration to v109 + v110', () => {
 		expect(noRoom.customFilterLookSettings?.rgbShift).toBe(0.004);
 	});
 });
+
+describe('Looks slots carry the whole effect-layer stack', () => {
+	beforeEach(() => {
+		useWallpaperStore.setState({
+			...DEFAULT_STATE,
+			effectLayers: DEFAULT_STATE.effectLayers.map(layer => ({
+				...layer,
+				targets: [...layer.targets],
+				settings: { ...layer.settings }
+			})),
+			filterTargets: [...DEFAULT_STATE.filterTargets],
+			looksProfileSlots: []
+		});
+	});
+
+	it('brings every layer back, not just the one being edited', () => {
+		// Layer 1 treats the background; layer 2 treats the spectrum. This is
+		// the composition a slot used to lose.
+		useWallpaperStore.setState({ filterBrightness: 1.6 });
+		store().addEffectLayer();
+		store().setFilterTargets(['spectrum']);
+		useWallpaperStore.setState({ filterBrightness: 0.4 });
+		const index = store().saveCurrentLooksAsNewSlot();
+		expect(index).toBe(0);
+		const savedLayerCount = store().effectLayers.length;
+		expect(savedLayerCount).toBe(2);
+
+		// Tear the composition down to a single layer, then restore it.
+		store().removeEffectLayer(store().effectLayers[1]!.id);
+		useWallpaperStore.setState({ filterBrightness: 1 });
+		expect(store().effectLayers).toHaveLength(1);
+
+		store().loadLooksProfileSlot(0);
+		const after = store();
+		expect(after.effectLayers).toHaveLength(2);
+		expect(after.effectLayers[0]!.settings.filterBrightness).toBeCloseTo(
+			1.6
+		);
+		expect(after.effectLayers[1]!.targets).toEqual(['spectrum']);
+	});
+
+	it('saves the active layer as it is now, not as its stale snapshot', () => {
+		// The active layer's array entry is only refreshed when the user
+		// switches away; saving must fold the live values in first.
+		useWallpaperStore.setState({ filterBrightness: 1.9 });
+		store().saveCurrentLooksAsNewSlot();
+		const saved = store().looksProfileSlots[0]!.values!;
+		const activeId = store().activeEffectLayerId;
+		const savedActive = saved.effectLayers.find(
+			layer => layer.id === activeId
+		);
+		expect(savedActive?.settings.filterBrightness).toBeCloseTo(1.9);
+	});
+
+	it('turns a slot saved before layers existed into a single layer', () => {
+		// A pre-v120 slot: flat keys only, no stack.
+		useWallpaperStore.setState({
+			looksProfileSlots: [
+				{
+					id: 'legacy-slot',
+					name: 'Legacy',
+					values: {
+						filterTargets: ['logo'],
+						filterBrightness: 1.75
+					} as unknown as NonNullable<
+						ReturnType<typeof store>['looksProfileSlots'][number]
+					>['values']
+				}
+			]
+		});
+		// Two layers live, so a wrong hydration would leave the second one
+		// holding the legacy values.
+		store().addEffectLayer();
+		store().loadLooksProfileSlot(0);
+
+		const after = store();
+		expect(after.effectLayers).toHaveLength(1);
+		expect(after.effectLayers[0]!.targets).toEqual(['logo']);
+		expect(after.filterBrightness).toBeCloseTo(1.75);
+	});
+
+	it('keeps every LOOKS_PROFILE_KEYS entry addressable', () => {
+		expect(LOOKS_PROFILE_KEYS).toContain('effectLayers');
+		expect(LOOKS_PROFILE_KEYS).toContain('activeEffectLayerId');
+	});
+});

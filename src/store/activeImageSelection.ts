@@ -16,7 +16,8 @@ import { resolveAutoZoomScale } from '@/features/background/domain/autoZoom';
 import {
 	extractLooksProfileSettings,
 	extractParticlesProfileSettings,
-	extractRainProfileSettings
+	extractRainProfileSettings,
+	hydrateLooksProfileValues
 } from '@/store/featureProfiles';
 import {
 	buildBackgroundImageCollectionPatch,
@@ -134,13 +135,25 @@ export function buildActiveImageSelectionPatch(
 		state.looksProfileSlots,
 		match.looksProfileSlotId
 	);
+	// Both paths hydrate: an override or slot saved before effect layers
+	// existed holds only the flat `filter*` keys, and writing those raw would
+	// land them on whichever layer happens to be active — which is how a
+	// per-image look could end up masked by a layer above it.
 	if (match.looksOverride) {
-		Object.assign(patch, match.looksOverride);
+		Object.assign(
+			patch,
+			hydrateLooksProfileValues(
+				match.looksOverride,
+				extractLooksProfileSettings(state)
+			)
+		);
 	} else if (looksSlot?.values) {
 		Object.assign(
 			patch,
-			extractLooksProfileSettings(state),
-			looksSlot.values
+			hydrateLooksProfileValues(
+				looksSlot.values,
+				extractLooksProfileSettings(state)
+			)
 		);
 	}
 	return { patch, appliedScene: false };

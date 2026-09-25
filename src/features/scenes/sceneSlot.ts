@@ -13,6 +13,7 @@
  */
 import {
 	extractLooksProfileSettings,
+	hydrateLooksProfileValues,
 	extractParticlesProfileSettings,
 	hydrateParticlesProfileValues,
 	extractRainProfileSettings,
@@ -211,10 +212,15 @@ export function buildSceneSlotActivationPatch(
 	if (slot.looksSlotId !== null && slot.looksSlotId !== 'off') {
 		const ref = findSlotByRef(state.looksProfileSlots, slot.looksSlotId);
 		if (ref?.values) {
+			// Hydrate rather than spread: a slot saved before effect layers
+			// existed carries only the flat keys, and must become one layer
+			// holding them instead of borrowing the live stack.
 			Object.assign(
 				patch,
-				extractLooksProfileSettings(defaults),
-				ref.values
+				hydrateLooksProfileValues(
+					ref.values,
+					extractLooksProfileSettings(defaults)
+				)
 			);
 		}
 	}

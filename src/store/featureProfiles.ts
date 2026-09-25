@@ -13,6 +13,10 @@ import {
 	normalizeSpectrumShape
 } from '@/features/spectrum';
 import { FILTER_LOOK_PRESET_KEYS } from '@/features/filterLooks/filterLooks';
+import {
+	createDefaultEffectLayer,
+	syncActiveEffectLayer
+} from '@/features/filterLooks/effectLayers';
 
 export const BACKGROUND_PROFILE_SLOT_COUNT = 3;
 export const LOGO_PROFILE_SLOT_COUNT = 3;
@@ -227,6 +231,8 @@ export type CameraFxProfileSettings = Pick<
  */
 export const LOOKS_PROFILE_KEYS = [
 	'filterTargets',
+	'effectLayers',
+	'activeEffectLayerId',
 	...FILTER_LOOK_PRESET_KEYS
 ] as const satisfies ReadonlyArray<keyof WallpaperState>;
 
@@ -784,20 +790,78 @@ export function extractRainProfileSettings(
 	return pickState(state, RAIN_PROFILE_KEYS);
 }
 
+/**
+ * A Looks slot is the WHOLE effect-layer stack, not the layer being edited.
+ *
+ * Saving only the active layer is what made slots feel like they forgot half
+ * the composition: the other layers stayed as they were, so a slot saved while
+ * editing the spectrum layer never brought the background treatment back. The
+ * active layer's array entry is a stale snapshot by design, so it is refreshed
+ * here before the array is copied — without that, the slot stores whatever the
+ * layer looked like the last time the user switched away from it.
+ */
 export function extractLooksProfileSettings(
 	state: WallpaperState
 ): LooksProfileSettings {
-	return pickState(state, LOOKS_PROFILE_KEYS);
+	return {
+		...pickState(state, LOOKS_PROFILE_KEYS),
+		effectLayers: syncActiveEffectLayer(state)
+	};
 }
 
+/**
+ * Slots saved before the stack existed carry only the flat `filter*` keys.
+ * Those become a single layer holding exactly those values, which is what they
+ * always meant — one treatment aimed at one set of targets.
+ */
 export function hydrateLooksProfileValues(
 	values: Partial<LooksProfileSettings>,
 	defaults: LooksProfileSettings
 ): LooksProfileSettings {
-	return pickState(
+	const merged = pickState(
 		{ ...defaults, ...values } as WallpaperState,
 		LOOKS_PROFILE_KEYS
 	);
+	// Judge the SAVED values, not the merge: a pre-stack slot would otherwise
+	// inherit whatever stack is on screen and apply its flat values to the
+	// wrong layer — the exact bug this is here to close.
+	const saved =
+		Array.isArray(values.effectLayers) && values.effectLayers.length > 0
+			? values.effectLayers
+			: [];
+	return normalizeLooksProfileStack({ ...merged, effectLayers: saved });
+}
+
+/**
+ * Guarantees the invariant every consumer relies on: at least one layer, and
+ * `activeEffectLayerId` naming one of them. A stack whose active id points
+ * nowhere would leave `resolveFilterStack` reading the flat keys for a layer
+ * that no longer exists.
+ */
+export function normalizeLooksProfileStack(
+	values: LooksProfileSettings
+): LooksProfileSettings {
+	const layers =
+		Array.isArray(values.effectLayers) && values.effectLayers.length > 0
+			? values.effectLayers
+			: [
+					createDefaultEffectLayer(
+						pickState(
+							values as unknown as WallpaperState,
+							FILTER_LOOK_PRESET_KEYS
+						),
+						values.filterTargets ?? [],
+						// A pre-stack slot never recorded which factory look it
+						// came from; loading it selects the slot itself.
+						null
+					)
+				];
+	const activeId = layers.some(
+		layer => layer.id === values.activeEffectLayerId
+	)
+		? values.activeEffectLayerId
+		: layers[0]!.id;
+	return { ...values, effectLayers: layers, activeEffectLayerId: activeId };
 }
 
 export function extractLightsProfileSettings(

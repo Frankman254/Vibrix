@@ -15,6 +15,31 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+## [0.5.0-alpha] — 2026-09-24
+
+### Los slots y los overrides de Looks guardan la pila completa (store v120)
+
+- Un slot de Looks guardaba **solo la capa que estabas editando**. Al cargarlo,
+  las demás capas se quedaban como estaban, así que un slot guardado desde la
+  capa del spectrum nunca devolvía el tratamiento del fondo. Ahora
+  `LOOKS_PROFILE_KEYS` incluye `effectLayers` y `activeEffectLayerId`: **un slot
+  es la composición entera**, no un juego de filtros.
+- `extractLooksProfileSettings` refresca el snapshot de la capa activa antes de
+  copiar el array. Sin eso el slot habría guardado la capa tal y como estaba la
+  última vez que cambiaste de capa, no como está ahora.
+- Se cierra un agujero silencioso: un `looksOverride` por imagen escribía las
+  claves planas, o sea **la capa activa**. Si otra capa por encima reclamaba ese
+  destino, el override no se veía y nada lo avisaba. Los tres caminos que
+  aplican Looks (slot, override por imagen, escena) pasan ahora por
+  `hydrateLooksProfileValues`.
+- Un slot o un override guardado **antes** de que existieran las capas se
+  convierte en una capa única con esos valores, que es lo que siempre significó.
+  La decisión se toma mirando los valores guardados, no la mezcla con el estado
+  vivo: si no, un slot antiguo heredaba la pila que hubiera en pantalla y
+  aplicaba sus valores a la capa equivocada.
+- Migración a v120: reescribe los slots y los overrides ya guardados con esa
+  forma, para que en disco no convivan dos formatos.
+
 ### Capas de efectos: varios Looks vivos a la vez (store v119)
 
 - Antes había **un solo** juego de valores de Looks y una lista de destinos
@@ -613,7 +638,7 @@ pliega el look Custom legacy dentro del banco normal de slots y traduce la
 selección. El campo legacy se queda en el esquema para que los proyectos
 exportados antes sigan importándose.
 
-`STORE_PERSIST_VERSION` is at **119**; `PROJECT_SCHEMA_VERSION` and `SETTINGS_SCHEMA_VERSION` remain at **1**. `APP_VERSION` / `package.json`: **0.3.0-alpha.1**.
+`STORE_PERSIST_VERSION` is at **120**; `PROJECT_SCHEMA_VERSION` and `SETTINGS_SCHEMA_VERSION` remain at **1**. `APP_VERSION` / `package.json`: **0.5.0-alpha**.
 
 ---
 

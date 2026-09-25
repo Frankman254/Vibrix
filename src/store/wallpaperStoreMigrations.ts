@@ -64,6 +64,7 @@ import {
 	createDefaultSpectrumSecondProfileSlots,
 	createDefaultTrackTitleProfileSlots,
 	extractLooksProfileSettings,
+	hydrateLooksProfileValues,
 	normalizeProfileSlots,
 	BACKGROUND_PROFILE_SLOT_COUNT,
 	MAX_CAMERA_FX_SLOT_COUNT,
@@ -3061,6 +3062,40 @@ export function migrateWallpaperStore(
 				migratedState.activeFilterLookId ?? null
 			)
 		];
+	}
+	if (fromVersion < 120) {
+		// Looks slots and per-image Looks overrides used to hold only the flat
+		// `filter*` keys, which meant they restored the layer being edited
+		// instead of the composition. Rewriting them as a one-layer stack makes
+		// what is on disk say what it always meant, so the apply paths no longer
+		// have to guess which shape they are reading.
+		const looksDefaults = extractLooksProfileSettings(DEFAULT_STATE);
+		migratedState.looksProfileSlots = (
+			migratedState.looksProfileSlots ?? []
+		).map(slot =>
+			slot?.values
+				? {
+						...slot,
+						values: hydrateLooksProfileValues(
+							slot.values,
+							looksDefaults
+						)
+					}
+				: slot
+		);
+		migratedState.backgroundImages = (
+			migratedState.backgroundImages ?? []
+		).map(image =>
+			image?.looksOverride
+				? {
+						...image,
+						looksOverride: hydrateLooksProfileValues(
+							image.looksOverride,
+							looksDefaults
+						)
+					}
+				: image
+		);
 	}
 
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;
