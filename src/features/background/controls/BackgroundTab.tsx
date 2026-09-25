@@ -5,6 +5,7 @@ import { useAudioContext } from '@/context/useAudioContext';
 import { UI_COLORS } from '@/ui';
 import ActiveWallpaperSection from './ActiveWallpaperSection';
 import GlobalBackgroundSection from './GlobalBackgroundSection';
+import GlobalCompositionSection from './GlobalCompositionSection';
 import SlideshowPoolSection from './SlideshowPoolSection';
 import BgZoomAudioSection from './BgZoomAudioSection';
 import { FlashEdgeSection } from '@/features/flashEdge/controls/FlashEdgeSection';
@@ -261,6 +262,7 @@ export default function BackgroundTab({
 					/>
 				</div>
 			)}
+			{view === 'active' ? <GlobalCompositionSection /> : null}
 			{view === 'active' ? (
 				<ActiveWallpaperSection
 					t={t}

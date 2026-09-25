@@ -15,6 +15,22 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+## [0.6.0-alpha] — 2026-09-25
+
+### Modo de composición global (store v121)
+
+- Nuevo interruptor **Composición global** (pestaña Fondo → Activa). Con él
+  puesto, cambiar de imagen **solo cambia la imagen**: no se aplica ni la
+  escena, ni el override por imagen, ni el slot asignado. **Ignorar no es
+  borrar** — al apagarlo cada imagen vuelve a mandar exactamente como estaba.
+- Cada imagen tiene su escape: **«Esta imagen manda igual»** (`ignoreGlobalOverride`)
+  hace que esa imagen siga aplicando lo suyo aunque el modo global esté activo.
+- Botón **«Guardar en las N imágenes»**: el único que escribe. Es destructivo,
+  así que pide confirmación diciendo cuántas imágenes va a sobrescribir.
+- Indicador **permanente** en el HUD mientras el modo está activo, con botón
+  para salir. No tiene interruptor para ocultarlo: un modo global invisible que
+  ignora lo que guardaste es una trampa.
+
 ## [0.5.0-alpha] — 2026-09-24
 
 ### Las transiciones con teselas dejan de laguear
@@ -659,7 +675,7 @@ pliega el look Custom legacy dentro del banco normal de slots y traduce la
 selección. El campo legacy se queda en el esquema para que los proyectos
 exportados antes sigan importándose.
 
-`STORE_PERSIST_VERSION` is at **120**; `PROJECT_SCHEMA_VERSION` and `SETTINGS_SCHEMA_VERSION` remain at **1**. `APP_VERSION` / `package.json`: **0.5.0-alpha**.
+`STORE_PERSIST_VERSION` is at **121**; `PROJECT_SCHEMA_VERSION` and `SETTINGS_SCHEMA_VERSION` remain at **1**. `APP_VERSION` / `package.json`: **0.6.0-alpha**.
 
 ---
 

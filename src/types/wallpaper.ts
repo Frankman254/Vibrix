@@ -453,6 +453,11 @@ export interface BackgroundImageItem {
 	looksOverride:
 		| import('@/store/featureProfiles').LooksProfileSettings
 		| null;
+	/**
+	 * This image keeps applying its own scene / overrides even while the
+	 * global composition mode is on. Per-image opt-out, not a second global.
+	 */
+	ignoreGlobalOverride?: boolean;
 	/** Seconds into the audio track at which this image becomes active (manual timestamps mode). */
 	playbackSwitchAt: number | null;
 	/**
@@ -1532,6 +1537,18 @@ export type WallpaperState = {
 	 * current/base visual state and their legacy per-image overrides).
 	 */
 	defaultSceneSlotId: string | null;
+
+	/**
+	 * Global composition mode: the state on screen wins and switching image
+	 * applies neither the scene nor the per-image overrides nor the slot
+	 * bindings — it only changes the picture.
+	 *
+	 * Nothing saved is erased: turning the mode off brings every image's own
+	 * composition straight back. An image can opt out with
+	 * `ignoreGlobalOverride`, and "save to all" is the explicit, destructive
+	 * way to write the current composition into every image.
+	 */
+	globalCompositionOverride: boolean;
 
 	/**
 	 * Named bookmarks that curate which images and audio tracks are active

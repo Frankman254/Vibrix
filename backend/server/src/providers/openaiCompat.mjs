@@ -35,10 +35,44 @@ export function createOpenAiCompatProvider({
 	const headers = { 'content-type': 'application/json' };
 	if (apiKey) headers.authorization = `Bearer ${apiKey}`;
 
+	// A shared single-model server (a DGX Spark whose operator swaps what it
+	// serves) breaks every pinned id the day it changes. Leaving OPENAI_MODEL
+	// unset — or 'auto' — asks the server what it is serving instead. Pin an id
+	// when the server hosts several and the choice matters.
+	const autoModel = !model || model === 'auto';
+	let resolved = autoModel ? '' : model;
+
+	async function listModels() {
+		const response = await fetch(`${base}/models`, {
+			headers,
+			signal: AbortSignal.timeout(5000)
+		});
+		if (!response.ok)
+			throw new Error(`models list HTTP ${response.status}`);
+		const payload = await response.json();
+		return (Array.isArray(payload?.data) ? payload.data : [])
+			.map(entry => entry?.id)
+			.filter(Boolean);
+	}
+
+	/** The id to send. Re-asks whenever auto mode has nothing cached yet. */
+	async function modelId() {
+		if (!autoModel) return resolved;
+		if (resolved) return resolved;
+		const names = await listModels();
+		if (names.length === 0) throw new Error('server serves no models');
+		resolved = names[0];
+		logger.log(`[openai-compat] auto-selected model ${resolved}`);
+		return resolved;
+	}
+
 	return {
-		name: `openai:${model || '(no model set)'}`,
+		get name() {
+			return `openai:${resolved || (autoModel ? 'auto' : '(no model set)')}`;
+		},
 
 		async generateIntent({ system, userText, image, schema }) {
+			const activeModel = await modelId();
 			const content = [];
 			// Only send the image when the server was told the model takes one;
 			// a text-only model answers 400 rather than ignoring it.
@@ -64,7 +98,7 @@ export function createOpenAiCompatProvider({
 					headers,
 					signal: controller.signal,
 					body: JSON.stringify({
-						model,
+						model: activeModel,
 						stream: false,
 						response_format: {
 							type: 'json_schema',
@@ -89,6 +123,9 @@ export function createOpenAiCompatProvider({
 				});
 
 				if (!response.ok) {
+					// The operator swapped the model out from under us: forget the
+					// cached id so the next call asks the server again.
+					if (response.status === 404 && autoModel) resolved = '';
 					throw new Error(
 						`${response.status}: ${(await response.text()).slice(0, 300)}`
 					);
@@ -117,19 +154,19 @@ export function createOpenAiCompatProvider({
 
 		/** Whether the server answers and actually serves the configured model. */
 		async health() {
-			if (!model) {
-				return { ok: false, reason: 'OPENAI_MODEL not set' };
-			}
 			try {
-				const response = await fetch(`${base}/models`, {
-					headers,
-					signal: AbortSignal.timeout(5000)
-				});
-				if (!response.ok) return { ok: false, reason: 'unreachable' };
-				const payload = await response.json();
-				const names = (Array.isArray(payload?.data) ? payload.data : [])
-					.map(entry => entry?.id)
-					.filter(Boolean);
+				const names = await listModels();
+				if (autoModel) {
+					// Auto mode follows the server, so it is healthy whenever the
+					// server serves anything at all.
+					if (names.length === 0) {
+						return { ok: false, reason: 'server serves no models' };
+					}
+					if (!resolved || !names.includes(resolved)) {
+						resolved = names[0];
+					}
+					return { ok: true, model: resolved, models: names };
+				}
 				return names.includes(model)
 					? { ok: true, model, models: names }
 					: {

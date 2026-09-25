@@ -395,6 +395,25 @@ export const en = {
 	looks_layers_move_down: 'Move layer down',
 	looks_layers_duplicate: 'Duplicate layer',
 	looks_layers_remove: 'Delete layer',
+	// Global composition mode (wins over per-image without erasing it)
+	global_composition_title: 'Global Composition',
+	global_composition_hint:
+		'While this is on, changing image only changes the picture: scenes, per-image overrides and slot bindings are ignored — never erased.',
+	global_composition_toggle: 'Global composition wins',
+	global_composition_tooltip:
+		'Turn it off and every image goes back to applying its own composition, exactly as it was saved.',
+	global_composition_image_opt_out: 'This image keeps its own',
+	global_composition_image_opt_out_tooltip:
+		'This image still applies its scene and its overrides while the global mode is on.',
+	global_composition_save_all: 'Save into all {count} images',
+	global_composition_save_all_hint:
+		'This one does write: it replaces the stored composition of every image with what is on screen.',
+	global_composition_hud_title: 'Global composition',
+	global_composition_hud_note: 'per-image ignored',
+	global_composition_hud_exit: 'Turn the global composition mode off',
+	confirm_save_composition_all_title: 'Save into every image',
+	confirm_save_composition_all_message:
+		'The current composition (logo, spectrum, particles, rain and looks) will be written into {count} images, replacing what they had saved.',
 	looks_target_owner: 'Taken by {name}',
 	looks_target_claim: 'Taken by {name}. Click to move it to this layer.',
 	looks_targets_owner_hint:

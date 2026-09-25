@@ -46,6 +46,14 @@ export function buildActiveImageSelectionPatch(
 		: undefined;
 	if (!match) return { patch, appliedScene: false };
 
+	// Global composition mode: what is on screen wins. Switching image only
+	// changes the picture — no scene, no override, no slot binding — and
+	// nothing stored is touched, so turning the mode off restores everything.
+	// An image can opt out of the mode with `ignoreGlobalOverride`.
+	if (state.globalCompositionOverride && !match.ignoreGlobalOverride) {
+		return { patch, appliedScene: false };
+	}
+
 	// Scene-first precedence: the image's explicit scene, else the global
 	// default scene, else legacy per-image overrides.
 	const { sceneSlotId: effectiveSceneSlotId } = resolveEffectiveSceneSlotId(

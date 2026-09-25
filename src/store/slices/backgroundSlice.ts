@@ -414,6 +414,30 @@ export function createBackgroundSlice(
 						: img
 				)
 			})),
+		setGlobalCompositionOverride: v =>
+			set({ globalCompositionOverride: v }),
+		setImageIgnoreGlobalOverride: v =>
+			set(state => ({
+				backgroundImages: state.backgroundImages.map(img =>
+					img.assetId === state.activeImageId
+						? { ...img, ignoreGlobalOverride: v }
+						: img
+				)
+			})),
+		captureCompositionToAllImages: () =>
+			set(state => ({
+				// Destructive on purpose and confirmed by the caller: every
+				// image's stored composition is replaced by what is on screen.
+				// This is the only action in the global mode that writes.
+				backgroundImages: state.backgroundImages.map(img => ({
+					...img,
+					logoOverride: extractLogoProfileSettings(state),
+					spectrumOverride: extractSpectrumProfileSettings(state),
+					particlesOverride: extractParticlesProfileSettings(state),
+					rainOverride: extractRainProfileSettings(state),
+					looksOverride: extractLooksProfileSettings(state)
+				}))
+			})),
 		captureImageLogoOverride: () =>
 			set(state => ({
 				backgroundImages: state.backgroundImages.map(img =>

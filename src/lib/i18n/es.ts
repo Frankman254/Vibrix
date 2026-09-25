@@ -397,6 +397,25 @@ export const es: Record<TranslationKey, string> = {
 	looks_layers_move_down: 'Bajar capa',
 	looks_layers_duplicate: 'Duplicar capa',
 	looks_layers_remove: 'Eliminar capa',
+	// Modo de composición global (pisa a per-imagen sin borrarlo)
+	global_composition_title: 'Composición global',
+	global_composition_hint:
+		'Con esto activo, cambiar de imagen solo cambia la imagen: se ignoran las escenas, los overrides por imagen y los slots asignados. Ignorar no es borrar.',
+	global_composition_toggle: 'La composición global manda',
+	global_composition_tooltip:
+		'Al desactivarlo cada imagen vuelve a aplicar su composición tal y como estaba guardada.',
+	global_composition_image_opt_out: 'Esta imagen manda igual',
+	global_composition_image_opt_out_tooltip:
+		'Esta imagen sigue aplicando su escena y sus overrides aunque el modo global esté activo.',
+	global_composition_save_all: 'Guardar en las {count} imágenes',
+	global_composition_save_all_hint:
+		'Este sí escribe: sustituye la composición guardada de cada imagen por la que hay en pantalla.',
+	global_composition_hud_title: 'Composición global',
+	global_composition_hud_note: 'per-imagen ignorado',
+	global_composition_hud_exit: 'Desactivar el modo de composición global',
+	confirm_save_composition_all_title: 'Guardar en todas las imágenes',
+	confirm_save_composition_all_message:
+		'La composición actual (logo, spectrum, partículas, lluvia y looks) se escribirá en {count} imágenes y sustituirá lo que tuvieran guardado.',
 	looks_target_owner: 'Lo tiene {name}',
 	looks_target_claim: 'Lo tiene {name}. Pulsa para traerlo a esta capa.',
 	looks_targets_owner_hint:

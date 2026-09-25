@@ -1,4 +1,4 @@
-export const APP_VERSION = '0.5.0-alpha';
+export const APP_VERSION = '0.6.0-alpha';
 
 export const SETTINGS_FORMAT = 'vibrix-settings';
 export const SETTINGS_SCHEMA_VERSION = 1;
@@ -107,4 +107,13 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // export profile is now a standing preference instead of component state, so
 // leaving the Export tab (or reloading) keeps the chosen output. Pre-v118
 // payloads lack both keys; migration writes the historical defaults (1080p/30).
-export const STORE_PERSIST_VERSION = 120;
+// v119: effect layers — `effectLayers` + `activeEffectLayerId`. The active
+// layer's live values are the legacy `filter*` keys; its entry in the array is
+// a snapshot. Pre-v119 stores become a single layer holding what they had.
+// v120: Looks slots and per-image Looks overrides carry the whole layer stack
+// instead of only the layer being edited. Stored flat values migrate into a
+// one-layer stack, which is what they always meant.
+// v121: `globalCompositionOverride` + per-image `ignoreGlobalOverride` — the
+// global composition mode that ignores per-image configs without erasing them.
+// Migration defaults both off, so an existing project behaves exactly as before.
+export const STORE_PERSIST_VERSION = 121;

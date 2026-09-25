@@ -136,7 +136,9 @@ function selectProvider() {
 	}
 	// A configured OpenAI-compatible server (vLLM on a DGx, LM Studio) wins
 	// over Ollama because pointing one at the server IS the intent to use it.
-	if (process.env.OPENAI_BASE_URL && process.env.OPENAI_MODEL) {
+	// OPENAI_MODEL is optional: without it the adapter asks the server which
+	// model it serves, which is what a single-model box wants.
+	if (process.env.OPENAI_BASE_URL) {
 		return createOpenAiCompatProvider();
 	}
 	return createOllamaProvider();

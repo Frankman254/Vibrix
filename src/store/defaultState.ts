@@ -420,6 +420,7 @@ const BASE_STATE: Omit<WallpaperState, 'effectLayers' | 'activeEffectLayerId'> =
 		sceneSlots: [],
 		activeSceneSlotId: null,
 		defaultSceneSlotId: null,
+		globalCompositionOverride: false,
 		setlists: [],
 		activeSetlistId: null,
 		showSetlistHud: true,

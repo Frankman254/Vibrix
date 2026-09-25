@@ -122,6 +122,12 @@ export type WallpaperStore = WallpaperState & {
 	setImageLooksOverride: (
 		v: import('@/store/featureProfiles').LooksProfileSettings | null
 	) => void;
+	/** Global composition mode: the live state wins over every per-image config. */
+	setGlobalCompositionOverride: (v: boolean) => void;
+	/** The active image keeps its own composition even in global mode. */
+	setImageIgnoreGlobalOverride: (v: boolean) => void;
+	/** Destructive: writes the current composition into EVERY image. Confirm first. */
+	captureCompositionToAllImages: () => void;
 	captureImageLogoOverride: () => void;
 	captureImageSpectrumOverride: () => void;
 	captureImageParticlesOverride: () => void;

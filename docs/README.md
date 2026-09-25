@@ -1,6 +1,6 @@
 # Project Documentation
 
-**Current product version:** `0.5.0-alpha` · **Store persist:** v120 · **HEAD:** see `git rev-parse HEAD`
+**Current product version:** `0.6.0-alpha` · **Store persist:** v121 · **HEAD:** see `git rev-parse HEAD`
 
 ## Start here
 
@@ -43,7 +43,7 @@
 
 ## Onboarding (developer)
 
-`onboarding/` — deep dives; verify `STORE_PERSIST_VERSION` against `src/lib/version.ts` (currently **120**).
+`onboarding/` — deep dives; verify `STORE_PERSIST_VERSION` against `src/lib/version.ts` (currently **121**).
 
 ## Archive
 

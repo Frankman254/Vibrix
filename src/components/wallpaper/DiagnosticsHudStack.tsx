@@ -4,6 +4,7 @@ import { SpectrumDiagnosticsHud } from '@/features/spectrum/ui';
 import { SpectrumManualHud } from '@/features/spectrum/ui';
 import { LogoDiagnosticsHud } from '@/features/logo/ui';
 import SetlistHud from '@/components/wallpaper/SetlistHud';
+import GlobalCompositionHud from '@/components/wallpaper/GlobalCompositionHud';
 import { useBackgroundPalette } from '@/hooks/useBackgroundPalette';
 import {
 	getEditorRadiusVars,
@@ -25,6 +26,11 @@ export default function DiagnosticsHudStack() {
 	const activeSetlistId = useWallpaperStore(s => s.activeSetlistId);
 	const showSetlistHud = useWallpaperStore(s => s.showSetlistHud);
 	const setlistActive = activeSetlistId !== null && showSetlistHud;
+	// No toggle for this one: while the global mode ignores every per-image
+	// composition, the user has to be able to see that it is on.
+	const globalCompositionOverride = useWallpaperStore(
+		s => s.globalCompositionOverride
+	);
 	const editorTheme = useWallpaperStore(s => s.editorTheme);
 	const editorCornerRadius = useWallpaperStore(s => s.editorCornerRadius);
 	const editorControlCornerRadius = useWallpaperStore(
@@ -93,7 +99,8 @@ export default function DiagnosticsHudStack() {
 		!showSpectrum &&
 		!showLogo &&
 		!manualActive &&
-		!setlistActive
+		!setlistActive &&
+		!globalCompositionOverride
 	) {
 		return null;
 	}
@@ -108,6 +115,7 @@ export default function DiagnosticsHudStack() {
 				...radiusVars
 			}}
 		>
+			{globalCompositionOverride ? <GlobalCompositionHud /> : null}
 			{setlistActive ? <SetlistHud /> : null}
 			{showBg ? <BackgroundScaleMeter /> : null}
 			{showSpectrum ? <SpectrumDiagnosticsHud /> : null}

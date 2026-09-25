@@ -3098,6 +3098,17 @@ export function migrateWallpaperStore(
 		);
 	}
 
+	if (fromVersion < 121) {
+		// The global composition mode starts off: an existing project must keep
+		// applying its per-image compositions exactly as it did yesterday.
+		migratedState.globalCompositionOverride = false;
+		migratedState.backgroundImages = (
+			migratedState.backgroundImages ?? []
+		).map(image =>
+			image ? { ...image, ignoreGlobalOverride: false } : image
+		);
+	}
+
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;
 }
 

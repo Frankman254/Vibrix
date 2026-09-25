@@ -653,7 +653,7 @@ la patch. Y la fase no se da por cerrada sin las tres.
 | **E5** | _(post-lanzamiento)_ Motor GL de transiciones estilo gl-transitions            | —                |
 | **F**  | Botón "marcar aquí" + atajo + anclaje de transición                            | bump + migración |
 | **G**  | Coherencia per-image: añadir lo que falta (§10.2) + las tres categorías        | bump + migración |
-| **H**  | Modo global que pisa per-image sin borrarlo + "Guardar en todas"               | bump + migración |
+| **H**  | ✅ Modo global que pisa per-image sin borrarlo + "Guardar en todas"            | v121 hecho       |
 | **I**  | UI de escenas con botones de tres estados + "capturar escena actual"           | —                |
 | **J**  | _(futuro, no en este plan)_ Línea de tiempo de eventos                         | —                |
 
