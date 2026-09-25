@@ -15,21 +15,25 @@ Cada hallazgo lleva la evidencia en el código. Lo que no verifiqué lo digo.
 
 ## 0. Resumen: lo que está roto o a medias
 
-| #   | Síntoma que ve el usuario                                                           | Causa real                                                                | Fase |
-| --- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ---- |
-| 1   | Al guardar un slot de Looks y recargarlo, las otras capas de efectos no vuelven     | El slot solo guarda la capa activa                                        | A    |
-| 2   | Dos capas pueden pelear por el mismo destino y la de abajo no hace nada, sin avisar | No hay UI de propiedad de destino                                         | A    |
-| 3   | Un override por imagen de Looks puede quedar invisible                              | Escribe la capa activa, pero otra capa por encima puede tener ese destino | A    |
-| 4   | Camera Motion "se olvidó": un solo juego de valores para todo                       | Igual que Looks antes de v119: un stack compartido                        | B    |
-| 5   | Camera Motion no distingue Spectrum 1 de Spectrum 2                                 | Los dos se pintan en el **mismo canvas**                                  | D    |
-| 6   | Faltan movimientos y reactividad (saltos por beat, trazos por intensidad)           | Solo hay 6 caminos senoidales continuos                                   | C    |
-| 7   | Las transiciones se ven poco profesionales                                          | El subsistema no hace crossfade: parpadea a 0 y vuelve                    | E    |
-| 8   | Las transiciones laguean la UI                                                      | Dissolve dibuja ~190 veces la imagen completa por frame                   | E    |
-| 9   | Los controles de transición son demasiados y están repartidos                       | 6 dials globales + 5 por imagen, misma cosa en dos sitios                 | E    |
-| 10  | Poner a mano el tiempo de cambio de imagen es incómodo                              | Falta el botón "marcar aquí"; solo se puede arrastrar el clip             | F    |
-| 11  | Las transiciones no se tienen en cuenta al marcar el tiempo                         | La imagen cambia _en_ el timestamp y la transición empieza ahí            | F    |
-| 12  | Las transiciones solo afectan a la imagen, no al spectrum/logo que también cambian  | El fade de subsistema existe pero es de baja calidad (ver #7)             | E    |
-| 13  | Unas cosas se pueden poner por imagen y otras no, sin lógica aparente               | El modelo por imagen y el de escena cubren conjuntos distintos            | G    |
+| #   | Síntoma que ve el usuario                                                           | Causa real                                                                   | Fase |
+| --- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ---- |
+| 1   | Al guardar un slot de Looks y recargarlo, las otras capas de efectos no vuelven     | El slot solo guarda la capa activa                                           | A    |
+| 2   | Dos capas pueden pelear por el mismo destino y la de abajo no hace nada, sin avisar | No hay UI de propiedad de destino                                            | A    |
+| 3   | Un override por imagen de Looks puede quedar invisible                              | Escribe la capa activa, pero otra capa por encima puede tener ese destino    | A    |
+| 4   | Camera Motion "se olvidó": un solo juego de valores para todo                       | Igual que Looks antes de v119: un stack compartido                           | B    |
+| 5   | Camera Motion no distingue Spectrum 1 de Spectrum 2                                 | Los dos se pintan en el **mismo canvas**                                     | D    |
+| 6   | Faltan movimientos y reactividad (saltos por beat, trazos por intensidad)           | Solo hay 6 caminos senoidales continuos                                      | C    |
+| 7   | Las transiciones se ven poco profesionales                                          | El subsistema no hace crossfade: parpadea a 0 y vuelve                       | E    |
+| 8   | Las transiciones laguean la UI                                                      | Dissolve dibuja ~190 veces la imagen completa por frame                      | E    |
+| 9   | Los controles de transición son demasiados y están repartidos                       | 6 dials globales + 5 por imagen, misma cosa en dos sitios                    | E    |
+| 10  | Poner a mano el tiempo de cambio de imagen es incómodo                              | Falta el botón "marcar aquí"; solo se puede arrastrar el clip                | F    |
+| 11  | Las transiciones no se tienen en cuenta al marcar el tiempo                         | La imagen cambia _en_ el timestamp y la transición empieza ahí               | F    |
+| 12  | Las transiciones solo afectan a la imagen, no al spectrum/logo que también cambian  | El fade de subsistema existe pero es de baja calidad (ver #7)                | E    |
+| 13  | Unas cosas se pueden poner por imagen y otras no, sin lógica aparente               | El modelo por imagen y el de escena cubren conjuntos distintos               | G    |
+| 14  | Un override por imagen no se aplica y no se entiende por qué                        | Si la imagen tiene escena, el código **vuelve antes** de mirar los overrides | H    |
+| 15  | No se puede ajustar la composición de todo el vídeo sin pisar lo guardado           | No existe un modo global que ignore per-image sin borrarlo                   | H    |
+| 16  | Las escenas no las usa nadie                                                        | 9 desplegables de tres estados y sin «capturar la escena actual»             | I    |
+| 17  | La versión del sistema lleva congelada varias funciones                             | Solo se sube `STORE_PERSIST_VERSION`, nunca `APP_VERSION`                    | 13   |
 
 ---
 
@@ -448,3 +452,211 @@ archivos citados, a fecha **2026-09-24**, sobre `main`.
   barato, pero se suscribe una vez por capa visual montada.
 - Si hay algún camino, además de `activeImageSelection.ts`, que escriba las
   claves planas de Looks sin pasar por las capas.
+
+---
+
+## 9. Dissolve: decisión tomada
+
+Hay dos caminos y no son excluyentes, pero conviene decir cuál se hace primero.
+
+**Se optimiza, no se borra.** Razón: el arreglo es pequeño y acotado — dibujar
+la imagen **una vez** a un offscreen al empezar la transición y que las celdas
+hagan `drawImage` de ese offscreen. Pasa de ~190 composiciones completas por
+frame a 1 composición + 190 blits, que es lo que un navegador hace sin
+despeinarse. Borrar un modo que el usuario ya usó en vídeos publicados rompe
+proyectos guardados; optimizarlo no rompe nada.
+
+**Después** se cura el catálogo. Los 9 modos actuales se escribieron a mano y
+se nota: unos son sólidos (`fade`, `slide-*`, `zoom-in`) y otros son de relleno.
+La referencia obvia para reemplazarlos por transiciones de calidad es el
+catálogo **gl-transitions** (MIT, ~80 transiciones escritas como shaders GLSL
+de un solo `transition(vec2 uv)`), que es el estándar de facto en editores web.
+El proyecto ya tiene Three.js/R3F, así que hay ruta técnica para portarlas como
+paso GL en vez de como matemática de Canvas2D.
+
+Eso es un cambio de motor de transiciones, no un pulido — **va en su propia
+fase (E5) y después del lanzamiento si hace falta**. Lo que no puede quedarse
+como está es el coste de Dissolve.
+
+---
+
+## 10. Los tres sitios donde se guarda lo mismo
+
+Hoy una composición puede vivir en tres capas de guardado y **nadie ha escrito
+la jerarquía**. Leída del código (`src/store/activeImageSelection.ts:48-63`),
+la real es ésta, y tiene una sorpresa:
+
+1. **Escena** de la imagen, o la escena por defecto global
+   (`resolveEffectiveSceneSlotId`, `sceneSlot.ts:45`).
+   → **Si hay escena, la función devuelve ahí mismo.**
+2. Override inline por imagen (`logoOverride`, `spectrumOverride`, …).
+3. Referencia a slot por imagen (`spectrumProfileSlotId`, …).
+4. Lo que hubiera en el estado (heredado de la imagen anterior).
+
+**La sorpresa: los pasos 2 y 3 no se ejecutan nunca si la imagen tiene escena**
+— ni siquiera si el override existe. El código los llama literalmente
+_"legacy back-compat fallback"_. O sea: el codebase ya decidió que el modelo
+bueno es la escena y que per-image es lo viejo, pero la UI de escenas es tan
+incómoda que el usuario vive en el camino "viejo" sin saberlo.
+
+Hay que elegir una de las dos y decirlo:
+
+- **Opción 1 — escena primero de verdad**: arreglar la UI de escenas (§11) y
+  dejar per-image como atajo.
+- **Opción 2 — per-image primero**: la escena es una plantilla que _rellena_ la
+  imagen al asignarla, y a partir de ahí la imagen manda.
+
+**Recomiendo la 2.** Es la que coincide con cómo el usuario ya trabaja, no
+tiene cortocircuito invisible, y convierte las escenas en algo opcional en vez
+de en un modo paralelo. Además hace que "guardar" signifique siempre lo mismo:
+se guarda en la imagen.
+
+### 10.1 El modo global que pisa (sin borrar)
+
+Falta un modo que el usuario pidió explícitamente y que hoy no existe:
+
+> Un interruptor global que **ignore** los overrides por imagen sin
+> sobreescribirlos, para poder ajustar la composición entera de un vídeo de una
+> sola vez; y un botón **"Guardar en todas"** que sí los escriba, a propósito.
+
+Diseño propuesto:
+
+- `globalCompositionOverride: boolean` (nuevo, persistido → bump + migración).
+- Con él activo, `buildActiveImageSelectionPatch` **no aplica** escena ni
+  override ni slot: el estado actual manda y cambiar de imagen solo cambia la
+  imagen. Nada se borra.
+- Por imagen, un `ignoreGlobalOverride: boolean` para que una imagen concreta
+  pueda seguir mandando aun en modo global (es lo que pidió: _"que la propia
+  imagen tenga en su configuración si ese modo global está activo"_).
+- Botón **"Guardar en todas"**, destructivo → `useDialog().confirm()` con
+  recuento explícito ("se escribirán 34 imágenes").
+- Indicador permanente en el HUD mientras el modo está activo. Un modo global
+  invisible que ignora lo guardado es una trampa; tiene que verse siempre.
+
+### 10.2 Lo que falta añadir a per-image
+
+Con la Opción 2, una imagen debe poder llevar todo lo que lleva una escena:
+
+| Añadir                          | Tipo                                                          | Nota                                                                                      |
+| ------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `cameraFxOverride`              | `CameraFxProfileSettings` (o la pila de capas tras la Fase B) | El que el usuario pidió primero                                                           |
+| `lightsOverride`                | `LightsProfileSettings`                                       | Ya existe el slot y la escena                                                             |
+| `trackTitleOverride`            | `TrackTitleProfileSettings`                                   | Ya existe el slot y la escena                                                             |
+| `flashLightOverride`            | pendiente de definir sus claves de perfil                     | Hoy no está ni en escena                                                                  |
+| `looksOverride` → pila completa | `effectLayers` + activa                                       | Fase A                                                                                    |
+| `spectrumSecondOverride`        | Spectrum 2                                                    | El campo **se borró**; la escena sí lo tiene (`spectrumSecondSlotId`). Asimetría a cerrar |
+
+Cada uno es una clave persistida nueva dentro de `BackgroundImageItem` → **un
+bump por fase, con su migración**. No agrupar.
+
+---
+
+## 11. Escenas: por qué nadie las usa
+
+Dato del propio usuario: en el proyecto exportado real solo usó **setlist de
+imágenes y audios**; ninguna escena por imagen. La causa que da es la interfaz:
+desplegables.
+
+Y tiene razón estructural: una escena es una fila de **9 referencias**
+(`spectrumSlotId`, `spectrumSecondSlotId`, `looksSlotId`, `particlesSlotId`,
+`rainSlotId`, `lightsSlotId`, `cameraFxSlotId`, `logoSlotId`,
+`trackTitleSlotId`), y **cada una tiene tres estados** (`null` = no tocar,
+`'off'` = apagar, id = aplicar ese slot). Eso son 9 desplegables con semántica
+de tres valores que no es evidente en un `<select>`. Es una hoja de cálculo
+disfrazada de panel.
+
+Rediseño propuesto — **una rejilla de subsistemas, no una lista de campos**:
+
+- Una tarjeta por subsistema, con su icono.
+- Tres estados en un botón de ciclo con color propio:
+  **gris = no tocar · tachado = apagar · el nombre del slot = aplicar**.
+- El slot se elige pulsando la tarjeta (popover con los slots y su miniatura),
+  no con un desplegable.
+- Arriba, lo que hoy falta del todo: **"Capturar la composición actual como
+  escena"**. Hoy `captureSceneSlotFromCurrent` es un stub, así que crear una
+  escena obliga a montarla campo a campo. Es probablemente **la razón número
+  uno** de que nadie las use, más que los desplegables.
+
+---
+
+## 12. El futuro: línea de tiempo de eventos (el guion)
+
+La dirección a la que apunta todo esto, y que conviene escribir ahora para no
+tomar decisiones que la impidan:
+
+> Un nivel **por encima** del global: una línea de tiempo donde el usuario
+> declara **eventos del sistema** con un tiempo — _"en el segundo 84, aplicar el
+> slot 3 de partículas"_ —, de modo que cambiar algo deje de depender de que
+> cambie la imagen. Un guion determinista del vídeo.
+
+Por qué encaja con lo que ya hay:
+
+- **Ya existe el vocabulario**: un evento es "aplicar el slot X del subsistema
+  Y", y los slots ya tienen id estable (`ProfileSlot.id`, backfilled en v104).
+  Una escena **ya es** un conjunto de esas referencias. Un evento de timeline es
+  una escena con un tiempo pegado.
+- **Ya existe el determinismo**: el export offline aplica la selección de imagen
+  con la misma función que el preview (`buildActiveImageSelectionPatch`), y el
+  `playbackSwitchAt` ya es un evento con tiempo. La línea de tiempo generaliza
+  eso.
+- **Ya existe la superficie**: `SlideshowClipTimeline` dibuja tiempo, clips y
+  playhead. Le faltan pistas.
+
+Condiciones para que esto sea posible, que **hay que respetar en las fases
+A–G**:
+
+1. **Todo lo aplicable debe ser un slot con id**, nunca un puñado de claves
+   sueltas. Por eso la regla de §1.4 (los slots guardan la pila completa) no es
+   solo higiene: es el requisito del guion.
+2. **Aplicar un evento debe ser una función pura `(state, evento) → patch`**,
+   como ya lo es la selección de imagen. Sin tocar el store desde la UI.
+3. **Los eventos se ordenan por tiempo y se resuelven "el último que pasó
+   manda"**, igual que `slideshowPlayback` ya hace con `playbackSwitchAt`.
+4. Las transiciones necesitan el anclaje de §4.3 antes de esto, o los eventos
+   caerán fuera de tiempo igual que hoy.
+
+Esto **no se implementa en este plan**. Se apunta para que ninguna fase cierre
+la puerta.
+
+---
+
+## 13. Higiene de versión (esto se nos olvida)
+
+Cada fase que toque estado persistido tiene que mover **tres cosas a la vez**, y
+hasta ahora se ha movido solo una:
+
+1. `STORE_PERSIST_VERSION` en `src/lib/version.ts` + su migración.
+2. `APP_VERSION` / `package.json` — **hoy congelado en `0.4.1-alpha`** aunque
+   han entrado funciones enteras (capas de efectos, entre otras). `docs:check`
+   verifica que `APP_VERSION` y `package.json` coincidan, pero **no** que la
+   versión suba cuando entra una función: eso es disciplina humana.
+3. `CHANGELOG.md` con la sección de esa versión.
+
+**Regla a aplicar desde la Fase A**: una fase que añade función de usuario sube
+la **minor** de alpha (`0.4.1-alpha` → `0.5.0-alpha`); una que solo corrige,
+la patch. Y la fase no se da por cerrada sin las tres.
+
+---
+
+## 14. Fases (actualizado)
+
+| Fase   | Qué                                                                            | Persistencia     |
+| ------ | ------------------------------------------------------------------------------ | ---------------- |
+| **A**  | Capas: propiedad de destino + el slot/override guarda la pila completa         | bump + migración |
+| **B**  | Camera Motion por capas (`motionLayers`)                                       | bump + migración |
+| **C**  | Movimientos nuevos + clamp por tipo de capa                                    | bump + migración |
+| **D**  | Separar Spectrum 1 / 2 en la cámara (transformación en el renderer)            | —                |
+| **E1** | Dissolve y `blur-dissolve` a offscreen (el lag)                                | —                |
+| **E2** | Crossfade real por captura de frame (la calidad)                               | —                |
+| **E3** | Presets de transición con nombre; dials a Advanced; quitar el duplicado global | bump + migración |
+| **E4** | Extender el crossfade a spectrum/logo/particles/rain                           | —                |
+| **E5** | _(post-lanzamiento)_ Motor GL de transiciones estilo gl-transitions            | —                |
+| **F**  | Botón "marcar aquí" + atajo + anclaje de transición                            | bump + migración |
+| **G**  | Coherencia per-image: añadir lo que falta (§10.2) + las tres categorías        | bump + migración |
+| **H**  | Modo global que pisa per-image sin borrarlo + "Guardar en todas"               | bump + migración |
+| **I**  | UI de escenas con botones de tres estados + "capturar escena actual"           | —                |
+| **J**  | _(futuro, no en este plan)_ Línea de tiempo de eventos                         | —                |
+
+Orden de ejecución: **A → E1 → H → F → B → C → G → I → E2 → E3 → E4 → D**.
+E1 se adelanta porque es el arreglo más barato del síntoma más molesto, y H y F
+se adelantan porque son los que cambian el día a día del usuario.
