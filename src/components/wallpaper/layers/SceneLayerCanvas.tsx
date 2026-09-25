@@ -118,7 +118,15 @@ export default function SceneLayerCanvas({ layer }: { layer: SceneLayer }) {
 					height: '100%',
 					pointerEvents: 'none'
 				}}
-				gl={{ antialias: false, alpha: true }}
+				// `preserveDrawingBuffer` is what makes the visual-transition
+				// crossfade possible: without it the drawing buffer is already
+				// cleared when `freezeLayerFrame` reads this canvas and the frozen
+				// copy comes out empty (a hard cut again).
+				gl={{
+					antialias: false,
+					alpha: true,
+					preserveDrawingBuffer: true
+				}}
 				onCreated={({ gl }) => {
 					gl.setClearColor(0x000000, 0);
 				}}

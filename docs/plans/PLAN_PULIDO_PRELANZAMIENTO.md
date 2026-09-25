@@ -408,11 +408,14 @@ Ordenadas por (valor visible ÷ riesgo), no por tema.
 ### Fase E — Transiciones
 
 - **E1 (rendimiento)**: offscreen para Dissolve y `blur-dissolve`.
-- **E2 (calidad)**: crossfade real por captura de frame, en vez del fade desde 0.
+- **E2 (calidad)**: ✅ crossfade real por captura de frame, en vez del fade desde 0.
 - **E3 (UI)**: presets de transición con nombre; los 5 dials a Advanced;
   eliminar el juego "global" duplicado.
-- **E4**: extender el crossfade a spectrum/logo/particles/rain con la misma
-  captura.
+- **E4**: extender el crossfade al **fondo** y a los **looks** con la misma
+  captura. Spectrum, logo, partículas y lluvia ya quedaron cubiertos en E2,
+  porque son justo las capas que usaban el fundido; el fondo y los filtros no
+  pasan por `useVisualTransitionFade`
+  (`transitionSubsystemForLayerType` devuelve `null` para ellos).
 
 ### Fase F — Tiempos manuales
 
@@ -420,6 +423,25 @@ Ordenadas por (valor visible ÷ riesgo), no por tema.
 - Política de anclaje de transición (`start` / `center` / `end`), por defecto
   `end` al marcar.
 - Aviso visual cuando marcar reordena el pase.
+
+### Fase E2 — Crossfade real — **HECHA** (sin cambio de persistencia)
+
+- `freezeLayerFrame(wrapper)` copia el canvas vivo de la capa a un canvas 2D
+  hermano, colocado encima con el mismo `position:absolute; inset:0`. La copia se
+  hace **síncrona** dentro de la suscripción al store: un frame más tarde el
+  contenido viejo ya no existe.
+- `useVisualTransitionFade` funde los dos (`crossfadeOpacities`: viejo `1-p`,
+  nuevo `p`) en vez de subir el wrapper de 0 a 1.
+- `SceneLayerCanvas` necesita `preserveDrawingBuffer: true`; es la condición
+  para poder leer un canvas WebGL después de pintarlo.
+- Fallbacks: sin canvas o por encima de 3840×2160 no se congela y se usa el
+  fundido antiguo; un `setTimeout` a `durationMs + 250 ms` cierra la transición
+  si `requestAnimationFrame` no corre (ventana oculta o minimizada).
+- Verificado en vivo que el congelado se instala en la capa correcta, con píxeles
+  reales, y que arranca en viejo=1 / nuevo=0. **No** se pudo ver la animación
+  completarse: el panel de navegador de esta sesión tenía `requestAnimationFrame`
+  y los timers suspendidos (0 ticks en 1 s), así que la app estaba congelada.
+  Queda pendiente mirarlo con ojos humanos.
 
 ### Fase I — UI de escenas — **HECHA** (sin cambio de persistencia)
 
@@ -691,22 +713,22 @@ la patch. Y la fase no se da por cerrada sin las tres.
 
 ## 14. Fases (actualizado)
 
-| Fase   | Qué                                                                            | Persistencia     |
-| ------ | ------------------------------------------------------------------------------ | ---------------- |
-| **A**  | ✅ Capas: propiedad de destino + el slot/override guarda la pila completa      | v120 hecho       |
-| **B**  | ✅ Camera Motion por capas (`motionLayers`)                                    | v124 hecho       |
-| **C**  | ✅ Movimientos nuevos + amplitud reactiva + clamp por tipo de capa             | v125 hecho       |
-| **D**  | Separar Spectrum 1 / 2 en la cámara (transformación en el renderer)            | —                |
-| **E1** | ✅ Dissolve y compañía a offscreen (el lag)                                    | hecho            |
-| **E2** | Crossfade real por captura de frame (la calidad)                               | —                |
-| **E3** | Presets de transición con nombre; dials a Advanced; quitar el duplicado global | bump + migración |
-| **E4** | Extender el crossfade a spectrum/logo/particles/rain                           | —                |
-| **E5** | _(post-lanzamiento)_ Motor GL de transiciones estilo gl-transitions            | —                |
-| **F**  | ✅ Botón "marcar aquí" + atajo `M` + anclaje de transición                     | v123 hecho       |
-| **G**  | ✅ Coherencia per-image + pantalla única «qué lleva esta imagen»               | v126 hecho       |
-| **H**  | ✅ Modo global que pisa per-image sin borrarlo + "Guardar en todas"            | v121 hecho       |
-| **I**  | ✅ UI de escenas con botones de tres estados + "capturar escena actual"        | sin persistencia |
-| **J**  | _(futuro, no en este plan)_ Línea de tiempo de eventos                         | —                |
+| Fase   | Qué                                                                                       | Persistencia     |
+| ------ | ----------------------------------------------------------------------------------------- | ---------------- |
+| **A**  | ✅ Capas: propiedad de destino + el slot/override guarda la pila completa                 | v120 hecho       |
+| **B**  | ✅ Camera Motion por capas (`motionLayers`)                                               | v124 hecho       |
+| **C**  | ✅ Movimientos nuevos + amplitud reactiva + clamp por tipo de capa                        | v125 hecho       |
+| **D**  | Separar Spectrum 1 / 2 en la cámara (transformación en el renderer)                       | —                |
+| **E1** | ✅ Dissolve y compañía a offscreen (el lag)                                               | hecho            |
+| **E2** | ✅ Crossfade real por captura de frame (la calidad)                                       | sin persistencia |
+| **E3** | Presets de transición con nombre; dials a Advanced; quitar el duplicado global            | bump + migración |
+| **E4** | Extender el crossfade al fondo y a los looks (E2 ya cubre spectrum/logo/particles/lluvia) | —                |
+| **E5** | _(post-lanzamiento)_ Motor GL de transiciones estilo gl-transitions                       | —                |
+| **F**  | ✅ Botón "marcar aquí" + atajo `M` + anclaje de transición                                | v123 hecho       |
+| **G**  | ✅ Coherencia per-image + pantalla única «qué lleva esta imagen»                          | v126 hecho       |
+| **H**  | ✅ Modo global que pisa per-image sin borrarlo + "Guardar en todas"                       | v121 hecho       |
+| **I**  | ✅ UI de escenas con botones de tres estados + "capturar escena actual"                   | sin persistencia |
+| **J**  | _(futuro, no en este plan)_ Línea de tiempo de eventos                                    | —                |
 
 Orden de ejecución: **A → E1 → H → F → B → C → G → I → E2 → E3 → E4 → D**.
 E1 se adelanta porque es el arreglo más barato del síntoma más molesto, y H y F

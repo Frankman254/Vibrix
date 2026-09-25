@@ -15,6 +15,31 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Transiciones: crossfade de verdad, no un fade desde cero (Fase E2)
+
+- Hasta ahora, al cambiar de imagen las capas afectadas (spectrum, logo,
+  partículas, lluvia) se fundían **desde opacidad 0**. Pero el store ya tenía los
+  valores nuevos cuando empezaba el fundido, así que lo viejo no se fundía con
+  nada: desaparecía en el primer frame y lo nuevo crecía encima. De ahí el
+  «el spectrum desaparece y reaparece».
+- Ahora, en el instante exacto en que se publica la transición —de forma
+  **síncrona**, dentro de la notificación del store, cuando el canvas todavía
+  tiene el frame que se va— se copia ese frame a un canvas 2D encima de la capa
+  (`freezeLayerFrame`). Durante la transición se funden los dos: el congelado de
+  1 → 0 y el vivo de 0 → 1. Renderizar dos spectrums vivos a la vez costaría el
+  doble; congelar un frame cuesta una copia.
+- `SceneLayerCanvas` pasa a crear su contexto WebGL con
+  `preserveDrawingBuffer: true`. Sin eso el buffer ya está borrado cuando se lee
+  y la copia sale vacía (es decir, corte seco otra vez).
+- Red de seguridad: si la ventana está oculta o minimizada, `requestAnimationFrame`
+  no corre y la capa se quedaría invisible debajo del frame congelado. Un
+  `setTimeout` a `durationMs + 250 ms` cierra la transición igualmente.
+- Si no se puede congelar (todavía no hay canvas, o una resolución absurda por
+  encima de 3840×2160) se cae al fundido de antes, que sigue siendo mejor que un
+  corte.
+- La aritmética y los límites viven en `visualTransitionCrossfade.ts`, puro y con
+  tests (el runner no tiene DOM).
+
 ### Escenas: tres estados visibles en vez de un desplegable
 
 - Cada subsistema de una escena tiene tres estados — **No change** (la escena no
