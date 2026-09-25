@@ -369,7 +369,7 @@ bloqueo los rompería en silencio.
 
 Ordenadas por (valor visible ÷ riesgo), no por tema.
 
-### Fase A — Capas: propiedad de destino y guardado completo
+### Fase A — Capas: propiedad de destino y guardado completo — **HECHA** (store v120)
 
 - Chips de destino con dueño + "robar" (Looks).
 - `effectLayers` dentro de `LOOKS_PROFILE_KEYS` → slot = pila completa.
@@ -642,7 +642,7 @@ la patch. Y la fase no se da por cerrada sin las tres.
 
 | Fase   | Qué                                                                            | Persistencia     |
 | ------ | ------------------------------------------------------------------------------ | ---------------- |
-| **A**  | Capas: propiedad de destino + el slot/override guarda la pila completa         | bump + migración |
+| **A**  | ✅ Capas: propiedad de destino + el slot/override guarda la pila completa      | v120 hecho       |
 | **B**  | Camera Motion por capas (`motionLayers`)                                       | bump + migración |
 | **C**  | Movimientos nuevos + clamp por tipo de capa                                    | bump + migración |
 | **D**  | Separar Spectrum 1 / 2 en la cámara (transformación en el renderer)            | —                |

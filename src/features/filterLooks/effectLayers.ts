@@ -27,6 +27,18 @@ export const MAX_EFFECT_LAYER_COUNT = 6;
 
 export type EffectLayerStateSource = WallpaperState;
 
+/**
+ * The minimum a caller needs to answer "who paints this target?".
+ *
+ * The Looks tab reads ownership from its own shallow slice of the store, so
+ * asking for the whole state here would force the UI to subscribe to
+ * everything.
+ */
+export type EffectLayerTargetSource = Pick<
+	WallpaperState,
+	'effectLayers' | 'activeEffectLayerId' | 'filterTargets'
+>;
+
 export function createEffectLayerId(): string {
 	return `effect-layer-${Math.random().toString(36).slice(2, 10)}`;
 }
@@ -91,7 +103,7 @@ export function effectLayerToStatePatch(
  * until the user switched layers.
  */
 function layerTargets(
-	state: EffectLayerStateSource,
+	state: EffectLayerTargetSource,
 	layer: EffectLayer
 ): EffectLayer['targets'] {
 	return layer.id === state.activeEffectLayerId
@@ -107,7 +119,7 @@ function layerTargets(
  * hiding a layer in an image editor reveals what is under it.
  */
 export function findEffectLayerForTarget(
-	state: EffectLayerStateSource,
+	state: EffectLayerTargetSource,
 	target: EffectLayer['targets'][number]
 ): EffectLayer | null {
 	for (const layer of state.effectLayers) {

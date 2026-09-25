@@ -161,6 +161,8 @@ export type WallpaperStore = WallpaperState & {
 	setEffectLayerEnabled: (id: string, enabled: boolean) => void;
 	renameEffectLayer: (id: string, name: string) => void;
 	moveEffectLayer: (id: string, direction: 'up' | 'down') => void;
+	/** Takes `v` away from whichever layer owns it and gives it to the active one. */
+	claimFilterTarget: (v: FilterTarget) => void;
 	setFilterTargets: (v: FilterTarget[]) => void;
 	toggleFilterTarget: (v: FilterTarget) => void;
 	setFilterOpacity: (v: number) => void;

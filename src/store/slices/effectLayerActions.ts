@@ -117,6 +117,32 @@ export function createEffectLayerActions(set: WallpaperSet) {
 					layer.id === id ? { ...layer, name } : layer
 				)
 			})),
+		claimFilterTarget: target =>
+			set(state => {
+				const layers = syncActiveEffectLayer(state);
+				// One target, one owner. The chip the user pressed belongs to
+				// another layer, so hand it over instead of letting both name
+				// it and having the top one silently mask the other.
+				const targets = state.filterTargets.includes(target)
+					? state.filterTargets
+					: [...state.filterTargets, target];
+				return {
+					effectLayers: layers.map(layer =>
+						layer.id === state.activeEffectLayerId
+							? { ...layer, targets, lookId: null }
+							: {
+									...layer,
+									targets: layer.targets.filter(
+										item => item !== target
+									)
+								}
+					),
+					filterTargets: targets,
+					// The dials no longer match the factory look they came
+					// from once the target list changes, same as toggling.
+					activeFilterLookId: null
+				};
+			}),
 		moveEffectLayer: (id, direction) =>
 			set(state => {
 				const layers = syncActiveEffectLayer(state);

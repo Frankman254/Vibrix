@@ -397,6 +397,10 @@ export const es: Record<TranslationKey, string> = {
 	looks_layers_move_down: 'Bajar capa',
 	looks_layers_duplicate: 'Duplicar capa',
 	looks_layers_remove: 'Eliminar capa',
+	looks_target_owner: 'Lo tiene {name}',
+	looks_target_claim: 'Lo tiene {name}. Pulsa para traerlo a esta capa.',
+	looks_targets_owner_hint:
+		'Un destino atenuado pertenece a otra capa. Al pulsarlo se lo quitas: un destino, un dueño.',
 	confirm_delete_effect_layer_title: 'Eliminar capa de efectos',
 	confirm_delete_effect_layer_message:
 		'Se borrará «{name}» y sus valores. Las capas de debajo se quedan con sus destinos.',

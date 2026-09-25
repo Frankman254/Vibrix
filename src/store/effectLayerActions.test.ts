@@ -141,6 +141,36 @@ describe('effect layer actions', () => {
 		expect(store().effectLayers).toHaveLength(MAX_EFFECT_LAYER_COUNT);
 	});
 
+	it('steals a target from the layer that owned it', () => {
+		store().setFilterTargets(['background', 'logo']);
+		store().setFilterBlur(4);
+		store().addEffectLayer();
+		store().setFilterBlur(20);
+
+		store().claimFilterTarget('logo');
+
+		expect(store().filterTargets).toEqual(['logo']);
+		expect(store().effectLayers[0].targets).toEqual(['background']);
+		// The steal is what the renderers see, not just the chip.
+		expect(resolveFilterStack(store(), 'logo')?.filterBlur).toBe(20);
+		expect(resolveFilterStack(store(), 'background')?.filterBlur).toBe(4);
+	});
+
+	it('claims a target the active layer already lists but a higher layer wins', () => {
+		store().setFilterTargets(['background']);
+		store().setFilterBlur(4);
+		store().addEffectLayer();
+		store().setFilterTargets(['background']);
+		store().setFilterBlur(20);
+		// The new layer sits above, so the first one is masked.
+		store().selectEffectLayer(store().effectLayers[0].id);
+
+		store().claimFilterTarget('background');
+
+		expect(store().effectLayers[1].targets).toEqual([]);
+		expect(resolveFilterStack(store(), 'background')?.filterBlur).toBe(4);
+	});
+
 	it('renames a layer without touching its values', () => {
 		const id = store().effectLayers[0].id;
 		store().setFilterBlur(7);

@@ -17,6 +17,15 @@ the version scheme in `src/lib/version.ts`.
 
 ## [0.5.0-alpha] — 2026-09-24
 
+### Un destino, un dueño (capas de efectos)
+
+- En la pestaña Looks, el chip de un destino que ya pertenece a otra capa se
+  muestra **atenuado con el nombre de su dueño** («Background Set · Lo tiene
+  Capa 1»). Antes las dos capas podían nombrar el mismo destino, ganaba la de
+  arriba y la de abajo no hacía nada sin avisar.
+- Pulsar ese chip **se lo quita** a la otra capa en vez de bloquearse: nueva
+  acción `claimFilterTarget`. No hay bloqueo duro en ningún caso.
+
 ### Los slots y los overrides de Looks guardan la pila completa (store v120)
 
 - Un slot de Looks guardaba **solo la capa que estabas editando**. Al cargarlo,

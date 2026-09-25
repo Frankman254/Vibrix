@@ -395,6 +395,10 @@ export const en = {
 	looks_layers_move_down: 'Move layer down',
 	looks_layers_duplicate: 'Duplicate layer',
 	looks_layers_remove: 'Delete layer',
+	looks_target_owner: 'Taken by {name}',
+	looks_target_claim: 'Taken by {name}. Click to move it to this layer.',
+	looks_targets_owner_hint:
+		'A dimmed target belongs to another layer. Clicking it moves it here — one target, one owner.',
 	confirm_delete_effect_layer_title: 'Delete effect layer',
 	confirm_delete_effect_layer_message:
 		'"{name}" and its values will be deleted. The layers under it take over its targets.',

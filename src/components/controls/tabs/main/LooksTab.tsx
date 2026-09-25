@@ -43,6 +43,7 @@ import AudioChannelSelector from '@/editor/AudioChannelSelector';
 import { AdvancedOnly, useIsSimple } from '@/editor/UIMode';
 import { useDialog } from '@/editor/DialogProvider';
 import { confirmResetFiltersDefaults } from '@/editor/confirmCritical';
+import { findEffectLayerForTarget } from '@/features/filterLooks/effectLayers';
 import EffectLayerStack from '@/components/controls/tabs/main/looks/EffectLayerStack';
 
 const FILTER_TARGETS: FilterTarget[] = [
@@ -131,7 +132,10 @@ export default function LooksTab({ onReset }: { onReset: () => void }) {
 			scanlineSpacing: s.scanlineSpacing,
 			scanlineThickness: s.scanlineThickness,
 			looksProfileSlots: s.looksProfileSlots,
+			effectLayers: s.effectLayers,
+			activeEffectLayerId: s.activeEffectLayerId,
 			toggleFilterTarget: s.toggleFilterTarget,
+			claimFilterTarget: s.claimFilterTarget,
 			setFilterTargets: s.setFilterTargets,
 			resetFiltersToDefaults: s.resetFiltersToDefaults,
 			saveCurrentLooksAsNewSlot: s.saveCurrentLooksAsNewSlot,
@@ -191,6 +195,28 @@ export default function LooksTab({ onReset }: { onReset: () => void }) {
 	function toggleTarget(target: FilterTarget) {
 		if (target === 'selected-overlay' && !selectedOverlay) return;
 		store.toggleFilterTarget(target);
+	}
+
+	/**
+	 * The layer that would win this target if it is not the one being edited.
+	 *
+	 * Includes the case where the active layer also names it: another layer
+	 * above still wins, and saying so is the whole point of the dimmed chip.
+	 */
+	function targetOwner(target: FilterTarget) {
+		const owner = findEffectLayerForTarget(store, target);
+		if (!owner || owner.id === store.activeEffectLayerId) return null;
+		const index = store.effectLayers.findIndex(
+			layer => layer.id === owner.id
+		);
+		return {
+			name:
+				owner.name.trim() ||
+				t.looks_layers_default_name.replace(
+					'{index}',
+					String(index + 1)
+				)
+		};
 	}
 
 	function toggleAllTargets() {
@@ -497,27 +523,61 @@ export default function LooksTab({ onReset }: { onReset: () => void }) {
 						</Button>
 					}
 				>
-					<div className="flex flex-wrap gap-1">
-						{FILTER_TARGETS.map(target => {
-							const disabled =
-								target === 'selected-overlay' &&
-								!selectedOverlay;
-							const active = store.filterTargets.includes(target);
-							return (
-								<Button
-									key={target}
-									type="button"
-									onClick={() => toggleTarget(target)}
-									disabled={disabled}
-									variant={active ? 'primary' : 'secondary'}
-									size="sm"
-									density="compact"
-									active={active}
-								>
-									{filterTargetLabels[target]}
-								</Button>
-							);
-						})}
+					<div className="flex flex-col gap-1">
+						<div className="flex flex-wrap gap-1">
+							{FILTER_TARGETS.map(target => {
+								const disabled =
+									target === 'selected-overlay' &&
+									!selectedOverlay;
+								const owner = disabled
+									? null
+									: targetOwner(target);
+								const active =
+									store.filterTargets.includes(target) &&
+									!owner;
+								return (
+									<Button
+										key={target}
+										type="button"
+										// Never a hard block: pressing a taken
+										// chip steals the target instead of
+										// doing nothing.
+										onClick={() =>
+											owner
+												? store.claimFilterTarget(
+														target
+													)
+												: toggleTarget(target)
+										}
+										disabled={disabled}
+										title={
+											owner
+												? t.looks_target_claim.replace(
+														'{name}',
+														owner.name
+													)
+												: undefined
+										}
+										variant={
+											active ? 'primary' : 'secondary'
+										}
+										size="sm"
+										density="compact"
+										active={active}
+										style={
+											owner
+												? { opacity: 0.55 }
+												: undefined
+										}
+									>
+										{owner
+											? `${filterTargetLabels[target]} · ${t.looks_target_owner.replace('{name}', owner.name)}`
+											: filterTargetLabels[target]}
+									</Button>
+								);
+							})}
+						</div>
+						<Caption>{t.looks_targets_owner_hint}</Caption>
 					</div>
 				</SectionCard>
 			</AdvancedOnly>
