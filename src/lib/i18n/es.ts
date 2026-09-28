@@ -456,15 +456,20 @@ export const es: Record<TranslationKey, string> = {
 	global_composition_image_opt_out: 'Esta imagen manda igual',
 	global_composition_image_opt_out_tooltip:
 		'Esta imagen sigue aplicando su escena y sus overrides aunque el modo global esté activo.',
-	global_composition_save_all: 'Guardar en las {count} imágenes',
-	global_composition_save_all_hint:
-		'Este sí escribe: sustituye la composición guardada de cada imagen por la que hay en pantalla.',
+	global_composition_slots_title: 'Slots globales',
+	global_composition_slots_hint:
+		'Captura en un slot lo que hay en pantalla. El modo aplica el slot elegido por encima de todas las imágenes, y no escribe en ninguna imagen: en ninguna.',
+	global_composition_slot_label: 'Global',
+	global_composition_slot_empty: 'Vacío',
+	global_composition_slot_active: 'Aplicado',
+	global_composition_slot_save: 'Capturar aquí lo que hay en pantalla',
+	global_composition_slot_load: 'Aplicar esta composición global',
+	global_composition_slot_none: 'Sin slot: congelar la pantalla',
+	global_composition_slot_none_hint:
+		'Sin slot elegido el modo se comporta como antes: se queda lo que hay en pantalla y cambiar de imagen solo cambia la imagen.',
 	global_composition_hud_title: 'Composición global',
 	global_composition_hud_note: 'per-imagen ignorado',
 	global_composition_hud_exit: 'Desactivar el modo de composición global',
-	confirm_save_composition_all_title: 'Guardar en todas las imágenes',
-	confirm_save_composition_all_message:
-		'La composición actual (logo, spectrum, partículas, lluvia y looks) se escribirá en {count} imágenes y sustituirá lo que tuvieran guardado.',
 	looks_target_owner: 'Lo tiene {name}',
 	looks_target_claim: 'Lo tiene {name}. Pulsa para traerlo a esta capa.',
 	looks_targets_owner_hint:

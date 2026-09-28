@@ -64,6 +64,7 @@ import {
 	createDefaultLogoProfileSlots,
 	createDefaultLooksProfileSlots,
 	createDefaultParticlesProfileSlots,
+	createDefaultGlobalCompositionSlots,
 	createDefaultRainProfileSlots,
 	createDefaultSpectrumProfileSlots,
 	createDefaultSpectrumSecondProfileSlots,
@@ -3187,6 +3188,17 @@ export function migrateWallpaperStore(
 			...image,
 			transitionPresetId: image.transitionPresetId ?? null
 		}));
+	}
+
+	if (fromVersion < 128) {
+		// Global composition slots. Nothing is selected, which is the pre-v128
+		// behaviour of the mode (freeze the screen), and the slots start empty:
+		// a migration must not invent a composition the user never captured.
+		migratedState.globalCompositionSlots =
+			migratedState.globalCompositionSlots ??
+			createDefaultGlobalCompositionSlots();
+		migratedState.activeGlobalCompositionSlotId =
+			migratedState.activeGlobalCompositionSlotId ?? null;
 	}
 
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;

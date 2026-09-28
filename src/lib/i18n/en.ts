@@ -453,15 +453,20 @@ export const en = {
 	global_composition_image_opt_out: 'This image keeps its own',
 	global_composition_image_opt_out_tooltip:
 		'This image still applies its scene and its overrides while the global mode is on.',
-	global_composition_save_all: 'Save into all {count} images',
-	global_composition_save_all_hint:
-		'This one does write: it replaces the stored composition of every image with what is on screen.',
+	global_composition_slots_title: 'Global slots',
+	global_composition_slots_hint:
+		'Capture what is on screen into a slot. The mode applies the selected slot over every image, and no image is written to — not one.',
+	global_composition_slot_label: 'Global',
+	global_composition_slot_empty: 'Empty',
+	global_composition_slot_active: 'Applied',
+	global_composition_slot_save: 'Capture what is on screen here',
+	global_composition_slot_load: 'Apply this global composition',
+	global_composition_slot_none: 'No slot: freeze the screen',
+	global_composition_slot_none_hint:
+		'With no slot selected the mode keeps its original behaviour: whatever is on screen stays, and changing image only changes the picture.',
 	global_composition_hud_title: 'Global composition',
 	global_composition_hud_note: 'per-image ignored',
 	global_composition_hud_exit: 'Turn the global composition mode off',
-	confirm_save_composition_all_title: 'Save into every image',
-	confirm_save_composition_all_message:
-		'The current composition (logo, spectrum, particles, rain and looks) will be written into {count} images, replacing what they had saved.',
 	looks_target_owner: 'Taken by {name}',
 	looks_target_claim: 'Taken by {name}. Click to move it to this layer.',
 	looks_targets_owner_hint:

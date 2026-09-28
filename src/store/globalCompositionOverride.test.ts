@@ -12,6 +12,8 @@ const { useWallpaperStore } = await import('@/store/wallpaperStore');
 const { createBackgroundImageItem } =
 	await import('@/features/background/backgroundImages');
 const { createEmptySceneSlot } = await import('@/features/scenes/sceneSlot');
+const { createDefaultGlobalCompositionSlots } =
+	await import('@/store/featureProfiles');
 import type { SpectrumProfileSettings } from '@/types/wallpaper';
 
 const store = () => useWallpaperStore.getState();
@@ -33,6 +35,8 @@ function setup() {
 		sceneSlots: [],
 		defaultSceneSlotId: null,
 		globalCompositionOverride: false,
+		globalCompositionSlots: createDefaultGlobalCompositionSlots(),
+		activeGlobalCompositionSlotId: null,
 		backgroundImages: [first, second],
 		activeImageId: null
 	});
@@ -86,19 +90,55 @@ describe('global composition mode', () => {
 		expect(store().activeSceneSlotId).not.toBe(scene.id);
 	});
 
-	it('writes the current composition into every image on demand', () => {
+	it('applies the selected global slot over every image', () => {
 		store().setActiveImageId('first');
-		store().setGlobalCompositionOverride(true);
 		store().setSpectrumBarCount(31);
-		store().captureCompositionToAllImages();
-
-		for (const image of store().backgroundImages) {
-			expect(image.spectrumOverride?.spectrumBarCount).toBe(31);
-			expect(image.looksOverride).toBeTruthy();
-		}
-		// And now every image really does agree with the screen.
-		store().setGlobalCompositionOverride(false);
+		store().captureGlobalCompositionSlot(0);
+		store().setGlobalCompositionOverride(true);
+		// Back to a value neither image has stored, to prove the slot is what
+		// gets applied and not simply whatever was on screen.
+		store().setSpectrumBarCount(12);
 		store().setActiveImageId('second');
 		expect(store().spectrumBarCount).toBe(31);
+	});
+
+	it('never touches what an image has saved', () => {
+		store().setActiveImageId('first');
+		store().setSpectrumBarCount(31);
+		store().captureGlobalCompositionSlot(0);
+		store().setGlobalCompositionOverride(true);
+		store().setActiveImageId('second');
+		expect(store().backgroundImages[0].spectrumOverride).toMatchObject({
+			spectrumBarCount: 48
+		});
+		expect(store().backgroundImages[1].spectrumOverride).toMatchObject({
+			spectrumBarCount: 96
+		});
+		// And turning the mode off brings each image's own composition back.
+		store().setGlobalCompositionOverride(false);
+		store().setActiveImageId('first');
+		expect(store().spectrumBarCount).toBe(48);
+		store().setActiveImageId('second');
+		expect(store().spectrumBarCount).toBe(96);
+	});
+
+	it('falls back to freezing the screen when no slot is selected', () => {
+		store().setActiveImageId('first');
+		store().captureGlobalCompositionSlot(0);
+		store().setActiveGlobalCompositionSlotId(null);
+		store().setGlobalCompositionOverride(true);
+		store().setSpectrumBarCount(12);
+		store().setActiveImageId('second');
+		expect(store().spectrumBarCount).toBe(12);
+	});
+
+	it('deleting a global slot deletes only the slot', () => {
+		store().setActiveImageId('first');
+		store().captureGlobalCompositionSlot(0);
+		store().deleteGlobalCompositionSlot(0);
+		expect(store().activeGlobalCompositionSlotId).toBeNull();
+		expect(store().backgroundImages[0].spectrumOverride).toMatchObject({
+			spectrumBarCount: 48
+		});
 	});
 });

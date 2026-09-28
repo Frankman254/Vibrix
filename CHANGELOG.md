@@ -15,6 +15,26 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Añadido
+
+- **Slots de composición global.** La sección Composición global ya no tiene el
+  botón que escribía la composición actual en las 229 imágenes: ahora se captura
+  en un **slot global** (`globalCompositionSlots`, 6 de fábrica, hasta 24) y el
+  switch aplica el slot elegido por encima de todas las imágenes. Capturar,
+  aplicar o borrar un slot **no escribe en ninguna imagen**: lo que cada imagen
+  tenga guardado sigue intacto y apagar el switch lo devuelve tal cual. Sin slot
+  elegido el modo se comporta como antes (congela lo que hay en pantalla).
+  `STORE_PERSIST_VERSION` is at **128**. La migración siembra los slots vacíos y
+  no selecciona ninguno, así que un proyecto existente se comporta igual que
+  ayer.
+
+### Eliminado
+
+- **`captureCompositionToAllImages`** y su botón «Guardar en las {count}
+  imágenes». Pedía confirmación, pero confirmar no es lo mismo que poder
+  deshacer: un clic sustituía la composición guardada de todo el pool y no hay
+  historial del que volver. Los slots globales cubren el caso sin escribir.
+
 ### Corregido
 
 - **Camera Motion ya no recorta el Spectrum.** Trasladar un canvas del tamaño

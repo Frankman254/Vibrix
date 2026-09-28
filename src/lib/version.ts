@@ -135,4 +135,9 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // v127: `transitionPresets` + per-image `transitionPresetId` — a transition
 // look gets a name instead of being five anonymous dials. Existing images keep
 // their values with no preset attached, so nothing changes on screen.
-export const STORE_PERSIST_VERSION = 127;
+// v128: `globalCompositionSlots` + `activeGlobalCompositionSlotId` — the global
+// composition mode gets capturable slots and loses the button that wrote the
+// current composition into every image (it destroyed per-image work in one
+// click). Migration seeds empty slots and selects none, so the mode behaves
+// exactly as before: with no slot selected it still freezes what is on screen.
+export const STORE_PERSIST_VERSION = 128;

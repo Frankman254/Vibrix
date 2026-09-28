@@ -23,6 +23,10 @@ import {
 	hydrateLooksProfileValues
 } from '@/store/featureProfiles';
 import {
+	buildGlobalCompositionPatch,
+	resolveActiveGlobalCompositionSlot
+} from '@/store/globalComposition';
+import {
 	buildBackgroundImageCollectionPatch,
 	syncStateWithActiveBackgroundImage
 } from '@/store/backgroundStoreUtils';
@@ -49,11 +53,21 @@ export function buildActiveImageSelectionPatch(
 		: undefined;
 	if (!match) return { patch, appliedScene: false };
 
-	// Global composition mode: what is on screen wins. Switching image only
+	// Global composition mode: the global layer wins. Switching image only
 	// changes the picture — no scene, no override, no slot binding — and
 	// nothing stored is touched, so turning the mode off restores everything.
 	// An image can opt out of the mode with `ignoreGlobalOverride`.
 	if (state.globalCompositionOverride && !match.ignoreGlobalOverride) {
+		// With a captured slot selected, the mode APPLIES that slot on every
+		// image; with none, it keeps its original behaviour of freezing what is
+		// already on screen. Either way no image is written to.
+		const globalSlot = resolveActiveGlobalCompositionSlot(state);
+		if (globalSlot?.values) {
+			Object.assign(
+				patch,
+				buildGlobalCompositionPatch(state, globalSlot.values)
+			);
+		}
 		return { patch, appliedScene: false };
 	}
 

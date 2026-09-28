@@ -1,5 +1,6 @@
 import type {
 	BackgroundProfileSettings,
+	GlobalCompositionValues,
 	LogoProfileSettings,
 	ProfileSlot,
 	SpectrumProfileSettings,
@@ -39,6 +40,10 @@ export const MAX_TRACK_TITLE_SLOT_COUNT = 60;
 export const LIGHTS_PROFILE_SLOT_COUNT = 3;
 export const MAX_LIGHTS_SLOT_COUNT = 60;
 export const CAMERA_FX_PROFILE_SLOT_COUNT = 3;
+/** How many global composition slots a fresh project starts with. */
+export const GLOBAL_COMPOSITION_SLOT_COUNT = 6;
+/** Ceiling for the global composition slot list. */
+export const MAX_GLOBAL_COMPOSITION_SLOT_COUNT = 24;
 export const MAX_CAMERA_FX_SLOT_COUNT = 60;
 
 export const PARTICLES_PROFILE_KEYS = [
@@ -711,6 +716,37 @@ export function createDefaultTrackTitleProfileSlots(): Array<
 		'Track Title',
 		TRACK_TITLE_PROFILE_SLOT_COUNT
 	);
+}
+
+export function createDefaultGlobalCompositionSlots(): Array<
+	ProfileSlot<GlobalCompositionValues>
+> {
+	return createEmptySlots<GlobalCompositionValues>(
+		'Global',
+		GLOBAL_COMPOSITION_SLOT_COUNT
+	);
+}
+
+/**
+ * Snapshot the eight composition families out of the live state.
+ *
+ * Same extractors the per-image overrides use, so a global slot and a per-image
+ * override are the same shape of data and apply through the same code path.
+ */
+export function extractGlobalCompositionValues(
+	state: WallpaperState
+): GlobalCompositionValues {
+	return {
+		logo: extractLogoProfileSettings(state),
+		spectrum: extractSpectrumProfileSettings(state),
+		particles: extractParticlesProfileSettings(state),
+		rain: extractRainProfileSettings(state),
+		looks: extractLooksProfileSettings(state),
+		cameraFx: extractCameraFxProfileSettings(state),
+		lights: extractLightsProfileSettings(state),
+		trackTitle: extractTrackTitleProfileSettings(state),
+		capturedAt: Date.now()
+	};
 }
 
 export function extractBackgroundProfileSettings(

@@ -147,12 +147,19 @@ export type WallpaperStore = WallpaperState & {
 	setImageTrackTitleOverride: (
 		v: import('@/store/featureProfiles').TrackTitleProfileSettings | null
 	) => void;
-	/** Global composition mode: the live state wins over every per-image config. */
+	/** Global composition mode: the global layer wins over every per-image config. */
 	setGlobalCompositionOverride: (v: boolean) => void;
 	/** The active image keeps its own composition even in global mode. */
 	setImageIgnoreGlobalOverride: (v: boolean) => void;
-	/** Destructive: writes the current composition into EVERY image. Confirm first. */
-	captureCompositionToAllImages: () => void;
+	/** Which captured global composition the mode applies (`null` = freeze the screen). */
+	setActiveGlobalCompositionSlotId: (id: string | null) => void;
+	/** Snapshot what is on screen into a global slot, and select it. */
+	captureGlobalCompositionSlot: (index: number) => void;
+	/** Apply a captured global slot to the live state, and select it. */
+	applyGlobalCompositionSlot: (index: number) => void;
+	addGlobalCompositionSlot: () => void;
+	/** Deletes the SLOT. No image's own composition is ever touched. */
+	deleteGlobalCompositionSlot: (index: number) => void;
 	captureImageLogoOverride: () => void;
 	captureImageSpectrumOverride: () => void;
 	captureImageParticlesOverride: () => void;

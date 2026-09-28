@@ -18,9 +18,16 @@ import {
 	extractParticlesProfileSettings,
 	extractRainProfileSettings,
 	extractSpectrumProfileSettings,
+	extractGlobalCompositionValues,
+	createDefaultGlobalCompositionSlots,
+	MAX_GLOBAL_COMPOSITION_SLOT_COUNT,
 	MAX_LOOKS_SLOT_COUNT,
 	MAX_PROFILE_SLOT_COUNT
 } from '@/store/featureProfiles';
+import {
+	buildGlobalCompositionPatch,
+	resolveActiveGlobalCompositionSlot
+} from '@/store/globalComposition';
 import {
 	buildBackgroundImageCollectionPatch,
 	setActiveImageFramingEditedPatch,
@@ -442,7 +449,93 @@ export function createBackgroundSlice(
 				)
 			})),
 		setGlobalCompositionOverride: v =>
-			set({ globalCompositionOverride: v }),
+			set(state => {
+				const next = { ...state, globalCompositionOverride: v };
+				const slot = resolveActiveGlobalCompositionSlot(next);
+				// Turning the mode on with a slot selected applies it right
+				// away; without one the mode still just freezes the screen.
+				return slot?.values
+					? {
+							globalCompositionOverride: v,
+							...buildGlobalCompositionPatch(state, slot.values)
+						}
+					: { globalCompositionOverride: v };
+			}),
+		setActiveGlobalCompositionSlotId: id =>
+			set(state => {
+				const next = { ...state, activeGlobalCompositionSlotId: id };
+				const slot = resolveActiveGlobalCompositionSlot(next);
+				return slot?.values
+					? {
+							activeGlobalCompositionSlotId: id,
+							...buildGlobalCompositionPatch(state, slot.values)
+						}
+					: { activeGlobalCompositionSlotId: id };
+			}),
+		captureGlobalCompositionSlot: index =>
+			set(state => {
+				const slots = [...state.globalCompositionSlots];
+				const slot = slots[index];
+				if (!slot) return {};
+				slots[index] = {
+					...slot,
+					values: extractGlobalCompositionValues(state)
+				};
+				// Capturing selects the slot: the mode has to apply something,
+				// and the thing just captured is what is already on screen.
+				return {
+					globalCompositionSlots: slots,
+					activeGlobalCompositionSlotId: slot.id
+				};
+			}),
+		applyGlobalCompositionSlot: index =>
+			set(state => {
+				const slot = state.globalCompositionSlots[index];
+				if (!slot?.values) return {};
+				return {
+					activeGlobalCompositionSlotId: slot.id,
+					...buildGlobalCompositionPatch(state, slot.values)
+				};
+			}),
+		addGlobalCompositionSlot: () =>
+			set(state => {
+				if (
+					state.globalCompositionSlots.length >=
+					MAX_GLOBAL_COMPOSITION_SLOT_COUNT
+				) {
+					return {};
+				}
+				return {
+					globalCompositionSlots: [
+						...state.globalCompositionSlots,
+						{
+							id: createProfileSlotId(),
+							name: `Global ${state.globalCompositionSlots.length + 1}`,
+							values: null
+						}
+					]
+				};
+			}),
+		deleteGlobalCompositionSlot: index =>
+			set(state => {
+				const slot = state.globalCompositionSlots[index];
+				if (!slot) return {};
+				const slots = state.globalCompositionSlots.filter(
+					(_, i) => i !== index
+				);
+				// Deleting a slot only deletes the slot. No image is touched,
+				// and the mode falls back to freezing the screen.
+				return {
+					globalCompositionSlots:
+						slots.length > 0
+							? slots
+							: createDefaultGlobalCompositionSlots(),
+					activeGlobalCompositionSlotId:
+						state.activeGlobalCompositionSlotId === slot.id
+							? null
+							: state.activeGlobalCompositionSlotId
+				};
+			}),
 		setImageIgnoreGlobalOverride: v =>
 			set(state => ({
 				backgroundImages: state.backgroundImages.map(img =>
@@ -450,23 +543,6 @@ export function createBackgroundSlice(
 						? { ...img, ignoreGlobalOverride: v }
 						: img
 				)
-			})),
-		captureCompositionToAllImages: () =>
-			set(state => ({
-				// Destructive on purpose and confirmed by the caller: every
-				// image's stored composition is replaced by what is on screen.
-				// This is the only action in the global mode that writes.
-				backgroundImages: state.backgroundImages.map(img => ({
-					...img,
-					logoOverride: extractLogoProfileSettings(state),
-					spectrumOverride: extractSpectrumProfileSettings(state),
-					particlesOverride: extractParticlesProfileSettings(state),
-					rainOverride: extractRainProfileSettings(state),
-					looksOverride: extractLooksProfileSettings(state),
-					cameraFxOverride: extractCameraFxProfileSettings(state),
-					lightsOverride: extractLightsProfileSettings(state),
-					trackTitleOverride: extractTrackTitleProfileSettings(state)
-				}))
 			})),
 		captureImageLogoOverride: () =>
 			set(state => ({

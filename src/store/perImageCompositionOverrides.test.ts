@@ -104,12 +104,16 @@ describe('per-image Camera FX / Lights / Track Title overrides', () => {
 		expect(active().cameraFxOverride?.cameraMotionAmount).toBe(0.9);
 	});
 
-	it('captureCompositionToAllImages includes the three new subsystems', () => {
-		useWallpaperStore.getState().captureCompositionToAllImages();
+	it('a global slot capture includes the three new subsystems', () => {
+		useWallpaperStore.getState().captureGlobalCompositionSlot(0);
+		const slot = useWallpaperStore.getState().globalCompositionSlots[0];
+		expect(slot.values?.cameraFx).toBeTruthy();
+		expect(slot.values?.lights).toBeTruthy();
+		expect(slot.values?.trackTitle).toBeTruthy();
+		// And capturing wrote into the SLOT, not into the images.
 		for (const img of useWallpaperStore.getState().backgroundImages) {
-			expect(img.cameraFxOverride).not.toBeNull();
-			expect(img.lightsOverride).not.toBeNull();
-			expect(img.trackTitleOverride).not.toBeNull();
+			expect(img.lightsOverride).toBeNull();
+			expect(img.trackTitleOverride).toBeNull();
 		}
 	});
 });

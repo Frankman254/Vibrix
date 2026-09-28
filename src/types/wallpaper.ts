@@ -564,6 +564,28 @@ export interface ProfileSlot<T> {
 }
 
 /**
+ * One captured global composition: the eight families an image can override,
+ * grouped exactly as a `BackgroundImageItem` groups them.
+ *
+ * Grouping matters. Applying a group keeps the family's own `*Enabled` flag
+ * from the live state, so a snapshot taken while the spectrum was hidden can
+ * never silently hide it again somewhere else. A flat bag of state keys could
+ * not promise that.
+ */
+export interface GlobalCompositionValues {
+	logo: LogoProfileSettings;
+	spectrum: SpectrumProfileSettings;
+	particles: import('@/store/featureProfiles').ParticlesProfileSettings;
+	rain: import('@/store/featureProfiles').RainProfileSettings;
+	looks: import('@/store/featureProfiles').LooksProfileSettings;
+	cameraFx: import('@/store/featureProfiles').CameraFxProfileSettings;
+	lights: import('@/store/featureProfiles').LightsProfileSettings;
+	trackTitle: import('@/store/featureProfiles').TrackTitleProfileSettings;
+	/** Epoch ms of the capture — the panel shows it so a slot is identifiable. */
+	capturedAt: number;
+}
+
+/**
  * A Scene slot stores only REFERENCES to feature slots. It never flattens raw
  * feature configuration. `null` for a reference means "do not apply this
  * subsystem"; the feature's current state is preserved.
@@ -1630,10 +1652,29 @@ export type WallpaperState = {
 	 *
 	 * Nothing saved is erased: turning the mode off brings every image's own
 	 * composition straight back. An image can opt out with
-	 * `ignoreGlobalOverride`, and "save to all" is the explicit, destructive
-	 * way to write the current composition into every image.
+	 * `ignoreGlobalOverride`.
+	 *
+	 * What the mode applies is `activeGlobalCompositionSlotId`: a captured
+	 * global slot, or — when nothing is selected — whatever is on screen,
+	 * frozen. There is deliberately no way from here to write into the images.
 	 */
 	globalCompositionOverride: boolean;
+
+	/**
+	 * Capturable global compositions. A slot holds one snapshot of the eight
+	 * composition families (logo, spectrum, particles, rain, looks, camera fx,
+	 * lights, track title) — the same groups an image can store per-image, so
+	 * the global mode and a per-image override apply through identical code.
+	 *
+	 * These are a LAYER ON TOP, never a write: capturing, loading or deleting a
+	 * slot leaves every image's own composition exactly as it is.
+	 */
+	globalCompositionSlots: ProfileSlot<GlobalCompositionValues>[];
+	/**
+	 * Which global slot the mode applies. `null` = no slot: the mode keeps its
+	 * original behaviour of freezing whatever is on screen.
+	 */
+	activeGlobalCompositionSlotId: string | null;
 
 	/**
 	 * Named bookmarks that curate which images and audio tracks are active
