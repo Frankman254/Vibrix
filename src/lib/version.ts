@@ -140,4 +140,7 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // current composition into every image (it destroyed per-image work in one
 // click). Migration seeds empty slots and selects none, so the mode behaves
 // exactly as before: with no slot selected it still freezes what is on screen.
-export const STORE_PERSIST_VERSION = 128;
+// v129: `introStinger` + `outroStinger` — the generated video intro and ending,
+// built from the selected setlist's images. Both disabled by default, so an
+// existing project exports exactly the same video until they are turned on.
+export const STORE_PERSIST_VERSION = 129;

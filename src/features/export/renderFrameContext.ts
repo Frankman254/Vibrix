@@ -47,6 +47,11 @@ export type RenderSubsystemId =
 	| 'lyrics'
 	| 'overlays'
 	| 'flashLight'
+	/**
+	 * The generated intro / ending. Last before the HUD on purpose: the montage
+	 * covers the whole composition, and the camera never moves it.
+	 */
+	| 'stinger'
 	| 'hud';
 
 export const RENDER_SUBSYSTEM_ORDER: readonly RenderSubsystemId[] = [
@@ -64,5 +69,6 @@ export const RENDER_SUBSYSTEM_ORDER: readonly RenderSubsystemId[] = [
 	'lyrics',
 	'overlays',
 	'flashLight',
+	'stinger',
 	'hud'
 ] as const;

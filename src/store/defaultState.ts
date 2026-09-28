@@ -14,6 +14,7 @@ import {
 } from '@/store/featureProfiles';
 import { IMAGE_BASS_ZOOM_CLASSIC } from '@/features/presets/imageBassZoomProfiles';
 import { createDefaultCalibrationProfileSlots } from '@/features/calibration';
+import { createDefaultStinger } from '@/features/stinger/stingerPlan';
 import { getCurrentViewportResolution } from '@/features/layout/viewportMetrics';
 import { DEFAULT_SPECTRUM_STATE } from '@/features/spectrum';
 import {
@@ -436,6 +437,8 @@ const BASE_STATE: Omit<
 	globalCompositionOverride: false,
 	globalCompositionSlots: createDefaultGlobalCompositionSlots(),
 	activeGlobalCompositionSlotId: null,
+	introStinger: createDefaultStinger('intro'),
+	outroStinger: createDefaultStinger('outro'),
 	setlists: [],
 	activeSetlistId: null,
 	showSetlistHud: true,

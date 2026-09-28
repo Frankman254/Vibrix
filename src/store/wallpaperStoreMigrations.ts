@@ -95,6 +95,7 @@ import type { ProfileSlot } from '@/types/wallpaper';
 import type { LyricsLayerColorMode } from '@/features/lyrics';
 import type { ColorSourceMode } from '@/types/wallpaper';
 import { mergeTransitionPresets } from '@/features/background/transitionPresets';
+import { createDefaultStinger } from '@/features/stinger/stingerPlan';
 
 function normalizeParticleColorMode(
 	raw: unknown,
@@ -3199,6 +3200,16 @@ export function migrateWallpaperStore(
 			createDefaultGlobalCompositionSlots();
 		migratedState.activeGlobalCompositionSlotId =
 			migratedState.activeGlobalCompositionSlotId ?? null;
+	}
+
+	if (fromVersion < 129) {
+		// The generated intro and ending arrive off: turning them on is a
+		// decision about the video, and a migration must not change what an
+		// existing project exports.
+		migratedState.introStinger =
+			migratedState.introStinger ?? createDefaultStinger('intro');
+		migratedState.outroStinger =
+			migratedState.outroStinger ?? createDefaultStinger('outro');
 	}
 
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;

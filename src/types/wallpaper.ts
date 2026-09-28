@@ -554,6 +554,37 @@ export interface BackgroundImageItem {
 	sceneSlotId: string | null;
 }
 
+/**
+ * The generated video intro / ending.
+ *
+ * The system builds both out of the images of the selected setlist — in the
+ * setlist's own order — and renders them as a montage over the head and the
+ * tail of the timeline. Neither adds time to the video: the intro covers its
+ * first seconds and the ending its last, so the audio stays in sync.
+ */
+export type StingerKind = 'intro' | 'outro';
+
+/**
+ * How the montage arranges its cards.
+ *  - `fade-stack`  one image at a time, centred, cross-fading.
+ *  - `slide-strip` a filmstrip crossing the screen, one card per image.
+ *  - `grid-reveal` a grid that fills in card by card.
+ */
+export type StingerStyle = 'fade-stack' | 'slide-strip' | 'grid-reveal';
+
+/** Which end of the setlist the cards come from, and in which direction. */
+export type StingerOrder = 'setlist' | 'setlist-reverse';
+
+export interface StingerSettings {
+	enabled: boolean;
+	/** Seconds the window lasts. Never more than half the video. */
+	durationSec: number;
+	style: StingerStyle;
+	/** How many setlist images the montage composes. */
+	imageCount: number;
+	order: StingerOrder;
+}
+
 export interface ProfileSlot<T> {
 	/** Stable identity — scenes and per-image bindings reference slots by this
 	 *  id (never by array position), so reordering/deleting other slots can't
@@ -1675,6 +1706,15 @@ export type WallpaperState = {
 	 * original behaviour of freezing whatever is on screen.
 	 */
 	activeGlobalCompositionSlotId: string | null;
+
+	/**
+	 * The generated intro: a montage of the selected setlist's images over the
+	 * first `durationSec` seconds of the video. Disabled by default; nothing
+	 * about the project's own timing changes when it is on.
+	 */
+	introStinger: StingerSettings;
+	/** The generated ending, over the last `durationSec` seconds. */
+	outroStinger: StingerSettings;
 
 	/**
 	 * Named bookmarks that curate which images and audio tracks are active

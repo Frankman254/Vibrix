@@ -5,7 +5,7 @@ Este documento ordena tres ideas que el usuario dejó pedidas la misma noche:
 1. **Menos controles**: _"propon alguna manera de configurar las cosas ya que son
    demasiados controles para el usuario, puedes crear plantillas guardadas en el
    propio sistema para luego usarlas"_.
-2. **Intro y ending animados** del propio sistema (logo Vibrix).
+2. **Intro y ending animados** del propio sistema (§2, ya construido: los genera con las imágenes del setlist).
 3. **Dinamismo total**: _"cambiar el spectrum o filtros o lo que sea sin cambiar
    de imagen, configurable… al final va a ser como un script activando y
    desactivando slots guardados del sistema o las mismas configuraciones"_.
@@ -123,48 +123,73 @@ mantener): `Neon Tokyo`, `Vinyl Warm`, `Minimal Mono`, `Rave Strobe`,
 
 ---
 
-## 2. Intro y outro animados
+## 2. Intro y ending generados — HECHO (store v129)
 
-Recordatorio del encargo: módulo **aparte**, 2–3 s, con el logo de Vibrix, al
-principio y al final del vídeo.
+Lo que se pidió al final no fue el logo de Vibrix: fue que **el sistema los
+genere con las imágenes del setlist seleccionado**, que el ending se arme con una
+duración determinada, que se rendericen **como si fueran imágenes** y que el
+orden sea el del setlist. Eso es lo que está construido.
 
-### 2.1 Modelo
+### 2.1 Modelo (`src/types/wallpaper.ts`)
 
 ```ts
-type StingerConfig = {
+type StingerStyle = 'fade-stack' | 'film-strip' | 'grid-reveal';
+type StingerOrder = 'setlist' | 'setlist-reverse';
+
+interface StingerSettings {
 	enabled: boolean;
-	/** 'intro' | 'outro' comparten forma; se configuran por separado. */
-	durationMs: number; // 1500–4000
-	style: 'logo-bloom' | 'bars-build' | 'glitch-in' | 'fade-black';
-	logoSource: 'vibrix' | 'project-logo' | 'none';
-	text: string | null; // título del proyecto, opcional
-	audioDucking: boolean; // baja la música bajo la intro
-};
+	durationSec: number; // 0.5–20
+	style: StingerStyle;
+	imageCount: number; // 1–12
+	order: StingerOrder;
+}
 ```
 
-### 2.2 Cómo se dibuja
+Dos claves persistidas: `introStinger` y `outroStinger`, ambas **apagadas** por
+defecto, así que un proyecto que ya existía exporta exactamente el mismo vídeo.
 
-Un **subsistema de render propio** (`stinger`) al final de
-`RENDER_SUBSYSTEM_ORDER`, encima de todo, que recibe `timeMs` como los demás y
-pinta según un progreso `0→1`. Así:
+### 2.2 Ventanas, no tiempo extra
 
-- **Se exporta solo**: el planificador de exportación alarga el vídeo
-  `introMs + outroMs` y el subsistema se ocupa del resto. La regla de
-  "exportación = calidad máxima" se cumple gratis porque no depende del reloj de
-  pared, igual que el resto de subsistemas.
-- **Se ve en vivo** como preview con un botón "Probar intro" que arranca un
-  reloj local; no se reproduce cada vez que uno abre la app.
+La decisión de diseño que importa: la intro y el ending **no alargan el vídeo**.
+Son una ventana sobre la propia línea de tiempo — la intro es dueña de
+`[0, introSec)`, el ending de `[max(introSec, total - outroSec), total]`, y cada
+una se recorta a la mitad del tema para que nunca se solapen. Así el audio no se
+desfasa ni un fotograma y nada más abajo (planificador de exportación, recorder,
+HUD) tiene que aprender un reloj nuevo.
 
-La animación se escribe como funciones puras de progreso
-(`src/features/stinger/domain/stingerTimeline.ts`: `resolveStingerFrame(progress,
-style) → { logoScale, logoAlpha, barsHeight[], flashAlpha, textAlpha }`), lo que
-permite testearla sin DOM, que es la única manera en este repo.
+`resolveStingerWindow(state, timeSec, totalSec)` en
+`src/features/stinger/stingerPlan.ts` devuelve la ventana activa con su progreso
+`0→1`, o `null` cuando el tiempo cae fuera de las dos.
 
-### 2.3 Qué NO hacer
+### 2.3 Cómo se dibuja
 
-No una línea de tiempo con keyframes editables. El usuario pidió una intro, no un
-After Effects; cuatro estilos con duración y logo cubren el caso y se pueden
-ampliar después sin romper datos.
+Todo el reparto es **puro**: `pickStingerImages` (las primeras N del pool del
+setlist, o las últimas N invertidas), `resolveStingerCards(kind, style, progress,
+count, viewport)` → cajas con alfa, y `resolveStingerBackdropAlpha`. El pool es
+`resolveSlideshowPool(...)`, es decir el setlist ya filtrado y en orden.
+
+Un solo pintor, `paintStinger(...)` en `stingerPaint.ts`, consume ese plan, y lo
+comparten los dos caminos:
+
+- **En vivo**: `StingerLayer` (rAF sobre canvas propio, zIndex 95) leyendo el
+  reloj del tema de `useAudioContext()`.
+- **En el vídeo**: el subsistema `stinger` de `RENDER_SUBSYSTEM_ORDER`, justo
+  antes del HUD y **fuera** de `SUBSYSTEM_CAMERA_LAYER` — el montaje cubre la
+  composición entera, la cámara no lo mueve.
+
+Por eso la previsualización y el archivo coinciden fotograma a fotograma, y por
+eso las 15 pruebas de `stingerPlan.test.ts` cubren la función sin DOM.
+
+### 2.4 Mandos
+
+Export → «Intro y ending»: dos tarjetas (intro / ending) con interruptor,
+duración, estilo, número de imágenes y de qué punta del setlist se toman, más un
+pie que dice cuántas usa de cuántas hay en el pool.
+
+### 2.5 Qué NO se hizo
+
+No hay línea de tiempo con keyframes. Tres montajes con duración, número de
+imágenes y orden cubren el encargo y se amplían después sin romper datos.
 
 ---
 

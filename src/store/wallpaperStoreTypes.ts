@@ -160,6 +160,11 @@ export type WallpaperStore = WallpaperState & {
 	addGlobalCompositionSlot: () => void;
 	/** Deletes the SLOT. No image's own composition is ever touched. */
 	deleteGlobalCompositionSlot: (index: number) => void;
+	/** Patch the generated intro or ending (duration, style, image count, order). */
+	setStinger: (
+		kind: import('@/types/wallpaper').StingerKind,
+		patch: Partial<import('@/types/wallpaper').StingerSettings>
+	) => void;
 	captureImageLogoOverride: () => void;
 	captureImageSpectrumOverride: () => void;
 	captureImageParticlesOverride: () => void;

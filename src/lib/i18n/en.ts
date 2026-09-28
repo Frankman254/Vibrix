@@ -464,6 +464,26 @@ export const en = {
 	global_composition_slot_none: 'No slot: freeze the screen',
 	global_composition_slot_none_hint:
 		'With no slot selected the mode keeps its original behaviour: whatever is on screen stays, and changing image only changes the picture.',
+	section_stinger: 'Intro & ending',
+	stinger_intro_title: 'Generated intro',
+	stinger_intro_hint:
+		"Built from the selected setlist's images, in setlist order, over the first seconds of the video.",
+	stinger_outro_title: 'Generated ending',
+	stinger_outro_hint:
+		'The same montage over the last seconds, by default closing on the images the set ends with.',
+	stinger_enabled: 'Generate it',
+	stinger_enabled_tooltip:
+		'It covers the head (or the tail) of the timeline — it does not add time, so the audio stays in sync.',
+	stinger_duration: 'Duration (s)',
+	stinger_style_fade: 'Fade stack',
+	stinger_style_strip: 'Filmstrip',
+	stinger_style_grid: 'Grid',
+	stinger_image_count: 'Images',
+	stinger_order_first: 'First of the setlist',
+	stinger_order_last: 'Last of the setlist',
+	stinger_uses_images: 'Uses {used} of the {pool} images in play.',
+	stinger_no_images:
+		'No image in play: add images (or pick a setlist) and the montage builds itself.',
 	global_composition_hud_title: 'Global composition',
 	global_composition_hud_note: 'per-image ignored',
 	global_composition_hud_exit: 'Turn the global composition mode off',

@@ -17,6 +17,18 @@ the version scheme in `src/lib/version.ts`.
 
 ### Añadido
 
+- **Intro y ending generados por el sistema.** El sistema arma los dos con las
+  imágenes del **setlist seleccionado**, en el orden del setlist, y los renderiza
+  como un montaje de imágenes: la intro cubre los primeros segundos del vídeo y
+  el ending los últimos, con la duración que se le ponga. **No añaden duración**
+  — son una ventana sobre la propia línea de tiempo — así que el audio no se
+  desfasa y nada más abajo tiene que aprender un reloj nuevo. Tres montajes
+  (encadenado, tira de film, rejilla), número de imágenes configurable y de qué
+  punta del setlist se toman (la intro abre con las primeras, el ending cierra
+  con las últimas). Mandos en Export → «Intro y ending». Todo el reparto es puro
+  (`stingerPlan`), así que la previsualización y el vídeo exportado coinciden
+  fotograma a fotograma. `STORE_PERSIST_VERSION` is at **129**; ambos llegan
+  apagados, así que un proyecto existente exporta exactamente el mismo vídeo.
 - **Slots de composición global.** La sección Composición global ya no tiene el
   botón que escribía la composición actual en las 229 imágenes: ahora se captura
   en un **slot global** (`globalCompositionSlots`, 6 de fábrica, hasta 24) y el
@@ -24,7 +36,7 @@ the version scheme in `src/lib/version.ts`.
   aplicar o borrar un slot **no escribe en ninguna imagen**: lo que cada imagen
   tenga guardado sigue intacto y apagar el switch lo devuelve tal cual. Sin slot
   elegido el modo se comporta como antes (congela lo que hay en pantalla).
-  `STORE_PERSIST_VERSION` is at **128**. La migración siembra los slots vacíos y
+  La migración siembra los slots vacíos y
   no selecciona ninguno, así que un proyecto existente se comporta igual que
   ayer.
 

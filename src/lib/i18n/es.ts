@@ -467,6 +467,26 @@ export const es: Record<TranslationKey, string> = {
 	global_composition_slot_none: 'Sin slot: congelar la pantalla',
 	global_composition_slot_none_hint:
 		'Sin slot elegido el modo se comporta como antes: se queda lo que hay en pantalla y cambiar de imagen solo cambia la imagen.',
+	section_stinger: 'Intro y ending',
+	stinger_intro_title: 'Intro generada',
+	stinger_intro_hint:
+		'La arma el sistema con las imágenes del setlist seleccionado, en el orden del setlist, sobre los primeros segundos del vídeo.',
+	stinger_outro_title: 'Ending generado',
+	stinger_outro_hint:
+		'El mismo montaje sobre los últimos segundos; por defecto cierra con las imágenes con las que termina el set.',
+	stinger_enabled: 'Generarlo',
+	stinger_enabled_tooltip:
+		'Cubre el principio (o el final) de la línea de tiempo: no añade duración, así que el audio no se desfasa.',
+	stinger_duration: 'Duración (s)',
+	stinger_style_fade: 'Encadenado',
+	stinger_style_strip: 'Tira de film',
+	stinger_style_grid: 'Rejilla',
+	stinger_image_count: 'Imágenes',
+	stinger_order_first: 'Las primeras del setlist',
+	stinger_order_last: 'Las últimas del setlist',
+	stinger_uses_images: 'Usa {used} de las {pool} imágenes en juego.',
+	stinger_no_images:
+		'No hay imágenes en juego: añade imágenes (o elige un setlist) y el montaje se arma solo.',
 	global_composition_hud_title: 'Composición global',
 	global_composition_hud_note: 'per-imagen ignorado',
 	global_composition_hud_exit: 'Desactivar el modo de composición global',
