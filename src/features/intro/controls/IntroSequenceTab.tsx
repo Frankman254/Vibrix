@@ -9,7 +9,7 @@
  * The two windows are configured separately and share every control, so
  * whatever is learned on the intro applies to the ending.
  */
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import {
 	Caption,
@@ -77,18 +77,23 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 				).length
 		)
 	);
+	// The slot ARRAY is selected as-is (a stable reference) and mapped in a
+	// memo. Mapping inside the selector — even with `useShallow` — rebuilds the
+	// option objects on every call, so the snapshot never compares equal and the
+	// store re-renders for ever: React #185, black screen.
+	const spectrumProfileSlots = useWallpaperStore(s => s.spectrumProfileSlots);
 	// Only slots that actually hold a saved figure: an empty slot would draw
 	// nothing and look like a bug.
-	const slotOptions = useWallpaperStore(
-		useShallow(s =>
-			s.spectrumProfileSlots
+	const slotOptions = useMemo(
+		() =>
+			spectrumProfileSlots
 				.map((slot, index) => ({ slot, index }))
 				.filter(entry => entry.slot.values !== null)
 				.map(entry => ({
 					value: String(entry.index),
 					label: entry.slot.name || `#${entry.index + 1}`
-				}))
-		)
+				})),
+		[spectrumProfileSlots]
 	);
 	const factory = createDefaultIntroSequence(kind);
 	const patch = (next: Parameters<typeof setIntroSequence>[1]) =>

@@ -428,12 +428,16 @@ export function resolveIntroCards(options: {
 			return cards;
 		}
 		case 'film-strip': {
-			// A strip that crosses the screen for the whole window; mounting
+			// A big carousel crossing the screen for the whole window; mounting
 			// only fades it in, because a filmstrip does not dissolve.
-			const across = Math.max(2, Math.min(total, 5));
-			const cardW = (width * 0.92) / across;
-			const cardH = (cardW * 9) / 16;
-			const pitch = cardW * 1.04;
+			//
+			// The cards are sized from the HEIGHT, not from "fit N of them
+			// across". Fitting five across turned the montage into a contact
+			// sheet of thumbnails — the images have to be big enough to actually
+			// look at, so barely two are on screen at a time and they travel.
+			const cardH = height * 0.62;
+			const cardW = Math.min((cardH * 16) / 9, width * 0.72);
+			const pitch = cardW * 1.06;
 			const drift = (0.5 - p) * pitch * total * 0.55;
 			for (let index = 0; index < total; index += 1) {
 				const t = easeInOut(staggered(m, index, total));

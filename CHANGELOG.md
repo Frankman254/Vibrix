@@ -48,6 +48,16 @@ the version scheme in `src/lib/version.ts`.
       ventana que pedía figura sigue pidiéndola, con el slot 0 y centrada. Ambas
       ventanas siguen llegando apagadas.
 
+- **Arreglado: pantalla negra al abrir Intro y ending.** El selector del slot de
+  spectrum construía los objetos de opción **dentro** del selector del store, así
+  que la comparación nunca daba igual y el componente se re-renderizaba en bucle
+  (React #185). Ahora se selecciona el array tal cual y el mapeo va en un memo.
+
+- **El carrusel (tira de film) ahora se ve grande.** Se dimensionaba para meter
+  cinco tarjetas de ancho, lo que lo convertía en una hoja de contactos de
+  miniaturas. Las tarjetas se miden desde el **alto** (62% de la pantalla), así
+  que apenas caben dos en pantalla y la tira viaja: se ven las imágenes.
+
 - **HUD al día con las features nuevas.** Se añadieron los atajos que faltaban y
   se quitó una segmentación molesta:
     - **Capas**: cada **capa de efectos** (Looks) y cada **overlay** se enciende

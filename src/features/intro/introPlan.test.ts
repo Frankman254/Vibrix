@@ -157,6 +157,30 @@ describe('resolveIntroCards', () => {
 		expect(cards[0]?.alpha).toBeGreaterThan(0);
 	});
 
+	it('makes the film strip a BIG carousel, not a contact sheet', () => {
+		const cards = resolveIntroCards({
+			montage: 'film-strip',
+			count: 9,
+			viewport: VIEWPORT,
+			mount: 1,
+			progress: 0.5
+		});
+		expect(cards).toHaveLength(9);
+		// Each card fills most of the height, so barely two are on screen.
+		expect(cards[0]?.height).toBeGreaterThan(VIEWPORT.height * 0.5);
+		expect(cards[0]?.width).toBeGreaterThan(VIEWPORT.width * 0.4);
+		// And the strip travels: the middle card is centred at the halfway
+		// point and somewhere else earlier.
+		const later = resolveIntroCards({
+			montage: 'film-strip',
+			count: 9,
+			viewport: VIEWPORT,
+			mount: 1,
+			progress: 0.9
+		});
+		expect(later[4]?.x).not.toBeCloseTo(cards[4]?.x ?? 0);
+	});
+
 	it('lands the burst from the centre outwards', () => {
 		const cards = resolveIntroCards({
 			montage: 'mosaic-burst',
