@@ -587,6 +587,16 @@ export type WallpaperStore = WallpaperState & {
 
 	// Logo
 	setLogoEnabled: (v: boolean) => void;
+	/**
+	 * "The mark follows the picture": the logo's base position is taken from
+	 * the active image's stored logo focus. Turning it on applies it at once.
+	 */
+	setLogoFollowImageFocus: (v: boolean) => void;
+	/**
+	 * Move the logo to that image's stored logo focus. Needs the image's real
+	 * dimensions, hence async; a no-op when the image has no stored focus.
+	 */
+	applyImageLogoFocus: (assetId: string | null) => Promise<void>;
 	setLogoUrl: (v: string | null) => void;
 	setLogoId: (v: string | null) => void;
 	setLogoVariantMode: (
@@ -760,6 +770,32 @@ export type WallpaperStore = WallpaperState & {
 	autoCoverFitActiveImage: () => Promise<void>;
 	autoCoverFitAllImages: () => Promise<void>;
 	autoFitCoveredActiveImage: () => Promise<void>;
+	/**
+	 * The two focus annotations of one image, placed by hand. Writing either
+	 * marks it `manual`, which is what protects it from a later re-scan.
+	 */
+	setBackgroundImageFaceFocus: (
+		assetId: string,
+		x: number,
+		y: number
+	) => void;
+	setBackgroundImageLogoFocus: (
+		assetId: string,
+		x: number,
+		y: number
+	) => void;
+	/** Forget both annotations so the estimator owns the image again. */
+	clearBackgroundImageFocus: (assetId: string) => void;
+	/** Estimate them from the pixels. Hand-placed points survive by default. */
+	analyzeBackgroundImageFocus: (
+		assetId: string,
+		options?: { overwriteManual?: boolean }
+	) => Promise<void>;
+	/** The same over the whole pool; by default only images never measured. */
+	analyzeAllBackgroundImageFocus: (options?: {
+		missingOnly?: boolean;
+		overwriteManual?: boolean;
+	}) => Promise<void>;
 	autoFocusActiveImage: () => Promise<void>;
 	autoPlaceLogoForActiveImage: () => Promise<void>;
 	setActiveImageFramingEdited: (edited: boolean) => void;

@@ -458,6 +458,9 @@ export interface OverlayImageItem {
 	audioOpacityChannel: AudioReactiveChannel;
 }
 
+/** Who decided a focus point: the estimator, or the user by hand. */
+export type ImageFocusSource = 'auto' | 'manual';
+
 export interface BackgroundImageItem {
 	assetId: string;
 	url: string | null;
@@ -476,6 +479,28 @@ export interface BackgroundImageItem {
 	positionY: number;
 	focusX: number | null;
 	focusY: number | null;
+	/**
+	 * Where the subject's FACE is, normalised 0..1 over the image, or `null`
+	 * for "nobody has measured it yet".
+	 *
+	 * This is an annotation, not a framing: `focusX/focusY` above is the user's
+	 * framing decision and stays untouched. Anything that has to crop or centre
+	 * this image — the intro's panels, a shutter montage — reads THIS so a face
+	 * stops being sliced in half. `faceFocusSource` says whether the numbers
+	 * came from the estimator or from the user, so a re-scan never overwrites a
+	 * hand-placed point.
+	 */
+	faceFocusX: number | null;
+	faceFocusY: number | null;
+	faceFocusSource: ImageFocusSource;
+	/**
+	 * Where a mark can sit without covering anything that matters. Consumed
+	 * when the global "logo follows the image" switch is on, so the logo and
+	 * its spectrum start from a place this particular image can spare.
+	 */
+	logoFocusX: number | null;
+	logoFocusY: number | null;
+	logoFocusSource: ImageFocusSource;
 	rotation: number;
 	fitMode: ImageFitMode;
 	/** True once the user hand-tuned this framing; Keep-Covered auto-fit
@@ -1598,6 +1623,13 @@ export type WallpaperState = {
 	// Logo
 	logoEnabled: boolean;
 	logoUrl: string | null;
+	/**
+	 * When on, the logo's BASE position comes from the active image's stored
+	 * logo focus, so the mark (and the spectrum, when it follows the logo)
+	 * starts somewhere the picture can spare instead of on top of a face. The
+	 * camera's offsets still apply on top of it — this only moves the base.
+	 */
+	logoFollowImageFocus: boolean;
 	/** Variant used by the built-in Vibrix mark. Custom uploads are untouched. */
 	logoVariantMode: LogoVariantMode;
 	logoBaseSize: number;

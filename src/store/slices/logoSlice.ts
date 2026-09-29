@@ -15,12 +15,18 @@ type WallpaperApi = Parameters<StateCreator<WallpaperStore>>[2];
 
 export function createLogoSlice(
 	set: WallpaperSet,
-	_get: WallpaperGet,
+	get: WallpaperGet,
 	_api: WallpaperApi
 ) {
 	return {
 		setShowLogoDiagnosticsHud: v => set({ showLogoDiagnosticsHud: v }),
 		setLogoEnabled: v => set({ logoEnabled: v }),
+		setLogoFollowImageFocus: v => {
+			set({ logoFollowImageFocus: v });
+			// Turning it ON must move the mark right now: waiting for the next
+			// image switch would make the switch look broken.
+			if (v) void get().applyImageLogoFocus(get().activeImageId);
+		},
 		setLogoUrl: v => set({ logoUrl: v }),
 		setLogoId: v => set({ logoId: v }),
 		setLogoVariantMode: v => set({ logoVariantMode: v }),

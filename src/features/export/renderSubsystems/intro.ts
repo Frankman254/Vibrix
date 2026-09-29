@@ -13,6 +13,7 @@ import {
 	paintIntro,
 	pickIntroImages,
 	resolveIntroColors,
+	resolveIntroFocusMap,
 	resolveIntroFrame,
 	resolveIntroLogoUrl,
 	resolveIntroThemePalette,
@@ -38,6 +39,8 @@ async function loadImage(url: string): Promise<HTMLImageElement | null> {
 /** Everything one window needs on disk before the first frame is drawn. */
 type WindowAssets = {
 	images: Map<number, HTMLImageElement>;
+	/** Card index → the point of that image to keep in frame while cropping. */
+	focus: Map<number, { x: number; y: number }>;
 	logo: HTMLImageElement | null;
 };
 
@@ -46,7 +49,11 @@ async function loadWindowAssets(
 	kind: IntroSequenceKind
 ): Promise<WindowAssets> {
 	const settings = selectIntroSequence(state, kind);
-	const assets: WindowAssets = { images: new Map(), logo: null };
+	const assets: WindowAssets = {
+		images: new Map(),
+		focus: new Map(),
+		logo: null
+	};
 	if (!settings.enabled) return assets;
 	const pool = resolveSlideshowPool(
 		state.backgroundImages,
@@ -54,6 +61,7 @@ async function loadWindowAssets(
 		state.activeSetlistId
 	);
 	const ids = pickIntroImages(pool, settings);
+	assets.focus = resolveIntroFocusMap(pool, ids);
 	const logoUrl = resolveIntroLogoUrl(settings, state);
 	await Promise.all([
 		...ids.map(async (assetId, index) => {
@@ -71,8 +79,13 @@ async function loadWindowAssets(
 }
 
 export function createIntroSubsystem(): RenderSubsystem {
-	let intro: WindowAssets = { images: new Map(), logo: null };
-	let outro: WindowAssets = { images: new Map(), logo: null };
+	const empty = (): WindowAssets => ({
+		images: new Map(),
+		focus: new Map(),
+		logo: null
+	});
+	let intro: WindowAssets = empty();
+	let outro: WindowAssets = empty();
 
 	return {
 		id: 'introSequence',
@@ -99,9 +112,11 @@ export function createIntroSubsystem(): RenderSubsystem {
 					settings,
 					progress: window_.progress,
 					viewport: ctx.resolution,
-					cardCount: Math.max(1, assets.images.size)
+					cardCount: Math.max(1, assets.images.size),
+					durationSec: window_.durationSec
 				}),
 				images: assets.images,
+				focus: assets.focus,
 				logo: assets.logo,
 				colors: resolveIntroColors(
 					settings,
@@ -122,8 +137,8 @@ export function createIntroSubsystem(): RenderSubsystem {
 			});
 		},
 		dispose() {
-			intro = { images: new Map(), logo: null };
-			outro = { images: new Map(), logo: null };
+			intro = empty();
+			outro = empty();
 		}
 	};
 }

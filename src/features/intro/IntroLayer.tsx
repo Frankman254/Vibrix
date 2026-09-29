@@ -22,6 +22,7 @@ import {
 import { paintIntro } from './introPaint';
 import {
 	resolveIntroColors,
+	resolveIntroFocusMap,
 	resolveIntroLogoUrl,
 	resolveIntroThemePalette,
 	selectIntroSequence
@@ -124,9 +125,11 @@ export default function IntroLayer({ zIndex = 95 }: { zIndex?: number }) {
 					settings,
 					progress: window_.progress,
 					viewport,
-					cardCount: Math.max(1, ids.length)
+					cardCount: Math.max(1, ids.length),
+					durationSec: window_.durationSec
 				}),
 				images,
+				focus: resolveIntroFocusMap(pool, ids),
 				logo,
 				colors: resolveIntroColors(
 					settings,

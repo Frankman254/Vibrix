@@ -1,9 +1,11 @@
 import { DEFAULT_STATE } from '@/store/defaultState';
 import {
+	analyzeImageUrlFocus,
 	analyzeImageUrlSaliency,
 	loadImageDimensions
 } from '@/features/background';
 import {
+	imagePointToLogoPosition,
 	lowMassBoxToLogoPosition,
 	logoBoxSizeForViewport,
 	spectrumAnnulusInImageSpace
@@ -374,6 +376,12 @@ export function createBackgroundCollectionActions(
 			});
 			// Keep Covered: the stored composition may not cover this viewport.
 			void autoFitCoveredActiveImage();
+			// And the mark follows the picture when asked to, so the logo (with
+			// the spectrum, when it follows the logo) lands where THIS image can
+			// spare the room instead of on the face.
+			if (get().logoFollowImageFocus) {
+				void get().applyImageLogoFocus(get().activeImageId);
+			}
 		},
 		applyActiveImageConfigToDefaultImages: () =>
 			set(state => applyActiveImageConfigToDefaultImages(state)),
@@ -519,6 +527,167 @@ export function createBackgroundCollectionActions(
 			if (patch) set(patch);
 		},
 		autoFitCoveredActiveImage,
+		applyImageLogoFocus: async assetId => {
+			if (!assetId) return;
+			const state = get();
+			const image = state.backgroundImages.find(
+				item => item.assetId === assetId
+			);
+			if (!image?.url) return;
+			const { logoFocusX: x, logoFocusY: y } = image;
+			if (typeof x !== 'number' || typeof y !== 'number') return;
+			const viewport = stageViewport();
+			try {
+				const dimensions = await loadImageDimensions(image.url);
+				// The stored point is in IMAGE space, so it has to travel
+				// through the image's own draw rect: the same point means a
+				// different place on screen once the picture is zoomed or panned.
+				const primary = resolveImageTransform({
+					viewportWidth: viewport.width,
+					viewportHeight: viewport.height,
+					imageWidth: dimensions.width,
+					imageHeight: dimensions.height,
+					fitMode: image.fitMode,
+					scale: image.scale,
+					positionX: image.positionX,
+					positionY: image.positionY,
+					rotation: image.rotation,
+					mirror: image.mirror,
+					keepCovered: true,
+					focusX: image.focusX,
+					focusY: image.focusY,
+					mirrorFill: image.mirrorFill,
+					mirrorFillInvert: image.mirrorFillInvert,
+					mirrorFillCount: image.mirrorFillCount,
+					layout: state
+				}).drawRects[0];
+				if (!primary) return;
+				const position = imagePointToLogoPosition({
+					point: { x, y },
+					imageRect: primary,
+					viewportWidth: viewport.width,
+					viewportHeight: viewport.height
+				});
+				set(current =>
+					// Still the same image? A slideshow can have moved on while
+					// the dimensions were loading.
+					current.activeImageId === assetId ||
+					current.activeImageId === null
+						? {
+								logoPositionX: position.x,
+								logoPositionY: position.y
+							}
+						: {}
+				);
+			} catch {
+				// Image unloadable: leave the mark where the user had it.
+			}
+		},
+		setBackgroundImageFaceFocus: (assetId, x, y) =>
+			set(state => ({
+				backgroundImages: state.backgroundImages.map(image =>
+					image.assetId === assetId
+						? {
+								...image,
+								faceFocusX: x,
+								faceFocusY: y,
+								// Placed by hand: a later re-scan leaves it be.
+								faceFocusSource: 'manual' as const
+							}
+						: image
+				)
+			})),
+		setBackgroundImageLogoFocus: (assetId, x, y) =>
+			set(state => ({
+				backgroundImages: state.backgroundImages.map(image =>
+					image.assetId === assetId
+						? {
+								...image,
+								logoFocusX: x,
+								logoFocusY: y,
+								logoFocusSource: 'manual' as const
+							}
+						: image
+				)
+			})),
+		clearBackgroundImageFocus: assetId =>
+			set(state => ({
+				backgroundImages: state.backgroundImages.map(image =>
+					image.assetId === assetId
+						? {
+								...image,
+								faceFocusX: null,
+								faceFocusY: null,
+								faceFocusSource: 'auto' as const,
+								logoFocusX: null,
+								logoFocusY: null,
+								logoFocusSource: 'auto' as const
+							}
+						: image
+				)
+			})),
+		analyzeBackgroundImageFocus: async (assetId, options) => {
+			const image = get().backgroundImages.find(
+				item => item.assetId === assetId
+			);
+			if (!image?.url) return;
+			try {
+				const estimate = await analyzeImageUrlFocus(image.url);
+				set(state => ({
+					backgroundImages: state.backgroundImages.map(item => {
+						if (item.assetId !== assetId) return item;
+						// A hand-placed point is never overwritten by a scan
+						// unless the caller says so explicitly.
+						const keepFace =
+							item.faceFocusSource === 'manual' &&
+							!options?.overwriteManual;
+						const keepLogo =
+							item.logoFocusSource === 'manual' &&
+							!options?.overwriteManual;
+						return {
+							...item,
+							faceFocusX: keepFace
+								? item.faceFocusX
+								: estimate.face.x,
+							faceFocusY: keepFace
+								? item.faceFocusY
+								: estimate.face.y,
+							faceFocusSource: keepFace
+								? item.faceFocusSource
+								: ('auto' as const),
+							logoFocusX: keepLogo
+								? item.logoFocusX
+								: estimate.logo.x,
+							logoFocusY: keepLogo
+								? item.logoFocusY
+								: estimate.logo.y,
+							logoFocusSource: keepLogo
+								? item.logoFocusSource
+								: ('auto' as const)
+						};
+					})
+				}));
+			} catch {
+				// Image unloadable: keep whatever the user already had.
+			}
+		},
+		analyzeAllBackgroundImageFocus: async options => {
+			const targets = get()
+				.backgroundImages.filter(
+					image =>
+						image.url &&
+						(options?.missingOnly === false ||
+							image.faceFocusX === null ||
+							image.faceFocusY === null)
+				)
+				.map(image => image.assetId);
+			// Sequential on purpose: each analysis is a decode plus a small
+			// canvas read, and firing fifty at once stalls the frame that the
+			// user is looking at.
+			for (const assetId of targets) {
+				await get().analyzeBackgroundImageFocus(assetId, options);
+			}
+		},
 		autoFocusActiveImage: async () => {
 			const state = get();
 			const activeId = state.activeImageId;

@@ -482,6 +482,26 @@ export const es: Record<TranslationKey, string> = {
 	intro_enabled_tooltip:
 		'Cubre el principio (o el final) de la línea de tiempo: no añade duración, así que el audio no se desfasa.',
 	intro_section_timing: 'Tiempos',
+	focus_points_title: 'Foco de cara y de logo',
+	focus_points_hint:
+		'Dónde está la cara y dónde puede ir el logo, medido en esta imagen. Lo que tenga que recortarla —los paneles de la intro— mantiene la cara en cuadro, y el logo arranca en la zona tranquila. Se estima de los píxeles; si mueves un slider el punto pasa a ser tuyo.',
+	focus_points_scan: 'Analizar esta imagen',
+	focus_points_scan_t:
+		'Vuelve a estimar los dos puntos de los píxeles, reemplazando lo que haya.',
+	focus_points_scan_all: 'Analizar las que falten',
+	focus_points_scan_all_t:
+		'Estima los puntos de todas las imágenes que nunca se han medido.',
+	focus_points_face_x: 'Cara X',
+	focus_points_face_y: 'Cara Y',
+	focus_points_logo_x: 'Logo X',
+	focus_points_logo_y: 'Logo Y',
+	focus_points_unmeasured: 'Sin medir',
+	focus_points_manual: 'Puesto a mano',
+	focus_points_auto: 'Estimado',
+	focus_points_clear: 'Olvidar',
+	logo_follow_image_focus: 'El logo sigue a la imagen',
+	logo_follow_image_focus_t:
+		'Toma la posición base del logo del foco de logo de cada imagen, así deja de caer sobre las caras. Los desplazamientos de la cámara se siguen aplicando encima.',
 	intro_duration: 'Duración (s)',
 	intro_build_sec: 'Montaje (s)',
 	intro_release_sec: 'Desmontaje (s)',

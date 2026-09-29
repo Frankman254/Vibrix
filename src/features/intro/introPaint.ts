@@ -32,6 +32,9 @@ export type PaintIntroSpectrum = (
 	windowAlpha: number
 ) => void;
 
+/** A normalised point on an image that should stay in frame when cropping. */
+export type IntroFocusPoint = { x: number; y: number };
+
 /** What a card is drawn from — an `<img>` live, the same offline. */
 export type IntroImageSource = CanvasImageSource & {
 	width: number;
@@ -51,6 +54,11 @@ export type PaintIntroOptions = {
 	frame: IntroFrame;
 	/** Card index → its loaded image. A missing entry simply is not drawn. */
 	images: ReadonlyMap<number, IntroImageSource>;
+	/**
+	 * Card index → the point of that image to keep in frame. Missing entries
+	 * simply crop from the centre.
+	 */
+	focus?: ReadonlyMap<number, IntroFocusPoint>;
 	logo: IntroImageSource | null;
 	colors: IntroPaintColors;
 	titleFontStyle: TrackTitleFontStyle;
@@ -60,32 +68,46 @@ export type PaintIntroOptions = {
 };
 
 /**
- * Draw `source` filling `width`×`height` centred on the origin, cropping the
+ * Draw `source` filling `width`×`height` around the origin, cropping the
  * overflow instead of squashing it: a montage card must never distort a frame.
+ *
+ * `focus` is a normalised point on the image that should end up in the middle
+ * of the card — the face focus, when the image has one. It is CLAMPED so the
+ * card stays covered, which is why a face near an edge still moves the crop as
+ * far as it can without letting the backdrop show through. That is the whole
+ * fix for "no se ve la cara de las chicas": a tall panel of a 16:9 picture used
+ * to crop dead centre and cut the head off.
  */
 function drawCovered(
 	ctx: CanvasRenderingContext2D,
 	source: IntroImageSource,
 	width: number,
-	height: number
+	height: number,
+	focus?: IntroFocusPoint
 ): void {
 	const sw = source.width;
 	const sh = source.height;
 	if (!(sw > 0 && sh > 0 && width > 0 && height > 0)) return;
 	const scale = Math.max(width / sw, height / sh);
-	ctx.drawImage(
-		source,
-		(-sw * scale) / 2,
-		(-sh * scale) / 2,
-		sw * scale,
-		sh * scale
+	const drawW = sw * scale;
+	const drawH = sh * scale;
+	const fx = focus ? Math.min(1, Math.max(0, focus.x)) : 0.5;
+	const fy = focus ? Math.min(1, Math.max(0, focus.y)) : 0.5;
+	// Where the focus point wants the image's left/top edge, then clamped to
+	// the range that still covers the card.
+	const left = Math.min(-width / 2, Math.max(width / 2 - drawW, -fx * drawW));
+	const top = Math.min(
+		-height / 2,
+		Math.max(height / 2 - drawH, -fy * drawH)
 	);
+	ctx.drawImage(source, left, top, drawW, drawH);
 }
 
 function paintCards(
 	ctx: CanvasRenderingContext2D,
 	cards: readonly IntroCard[],
 	images: ReadonlyMap<number, IntroImageSource>,
+	focus: ReadonlyMap<number, IntroFocusPoint> | undefined,
 	windowAlpha: number
 ): void {
 	for (const card of cards) {
@@ -104,7 +126,7 @@ function paintCards(
 		ctx.beginPath();
 		ctx.rect(-card.width / 2, -card.height / 2, card.width, card.height);
 		ctx.clip();
-		drawCovered(ctx, source, cardW, cardH);
+		drawCovered(ctx, source, cardW, cardH, focus?.get(card.index));
 		ctx.restore();
 	}
 }
@@ -229,6 +251,7 @@ export function paintIntro({
 	viewport,
 	frame,
 	images,
+	focus,
 	logo,
 	colors,
 	titleFontStyle,
@@ -246,7 +269,7 @@ export function paintIntro({
 	ctx.fillRect(0, 0, width, height);
 	ctx.restore();
 
-	paintCards(ctx, frame.cards, images, windowAlpha);
+	paintCards(ctx, frame.cards, images, focus, windowAlpha);
 
 	if (frame.imageDim > 0.001) {
 		ctx.save();

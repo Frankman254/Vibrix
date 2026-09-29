@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+	imagePointToLogoPosition,
 	lowMassBoxToLogoPosition,
 	logoBoxSizeForViewport
 } from './autoLogoPlacement';
@@ -54,5 +55,42 @@ describe('logoBoxSizeForViewport', () => {
 		expect(box.width).toBeLessThanOrEqual(1);
 		expect(box.height).toBeGreaterThan(0);
 		expect(box.height).toBeLessThanOrEqual(1);
+	});
+});
+
+describe('imagePointToLogoPosition', () => {
+	const viewport = { viewportWidth: 1000, viewportHeight: 500 };
+
+	it('maps the middle of a full-screen image to the middle of the screen', () => {
+		expect(
+			imagePointToLogoPosition({
+				point: { x: 0.5, y: 0.5 },
+				imageRect: { cx: 500, cy: 250, width: 1000, height: 500 },
+				...viewport
+			})
+		).toEqual({ x: 0, y: 0 });
+	});
+
+	it('follows the image when the image is zoomed and panned', () => {
+		// A 2× image whose centre sits left of the screen centre: the same
+		// image point now lands somewhere else entirely.
+		const placed = imagePointToLogoPosition({
+			point: { x: 0.75, y: 0.25 },
+			imageRect: { cx: 300, cy: 250, width: 2000, height: 1000 },
+			...viewport
+		});
+		expect(placed.x).toBeCloseTo(0.6, 5);
+		// Clamped to the logo's own position range, which stops short of 1.
+		expect(placed.y).toBeCloseTo(0.9, 5);
+	});
+
+	it('clamps a focus point that falls off the screen', () => {
+		const placed = imagePointToLogoPosition({
+			point: { x: 1, y: 1 },
+			imageRect: { cx: 500, cy: 250, width: 6000, height: 3000 },
+			...viewport
+		});
+		expect(placed.x).toBeLessThanOrEqual(0.9);
+		expect(placed.y).toBeGreaterThanOrEqual(-0.9);
 	});
 });

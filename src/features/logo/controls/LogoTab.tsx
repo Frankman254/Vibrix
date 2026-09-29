@@ -32,7 +32,7 @@ import {
 	UI_COLORS,
 	ICON_SIZE
 } from '@/ui';
-import { CollapsibleSection } from '@/editor';
+import { CollapsibleSection, ToggleControl } from '@/editor';
 import { ProfileSlotsEditor } from '@/editor';
 import {
 	ColorSourceField,
@@ -139,6 +139,8 @@ export default function LogoTab({ onReset }: { onReset: () => void }) {
 			setLogoPositionX: s.setLogoPositionX,
 			setLogoPositionY: s.setLogoPositionY,
 			autoPlaceLogoForActiveImage: s.autoPlaceLogoForActiveImage,
+			logoFollowImageFocus: s.logoFollowImageFocus,
+			setLogoFollowImageFocus: s.setLogoFollowImageFocus,
 			setLogoCircularCrop: s.setLogoCircularCrop,
 			setLogoCropRadius: s.setLogoCropRadius,
 			setLogoBandMode: s.setLogoBandMode,
@@ -531,6 +533,12 @@ export default function LogoTab({ onReset }: { onReset: () => void }) {
 										formatValue={formatDecimal}
 									/>
 								</div>
+								<ToggleControl
+									label={t.logo_follow_image_focus}
+									value={store.logoFollowImageFocus}
+									onChange={store.setLogoFollowImageFocus}
+									tooltip={t.logo_follow_image_focus_t}
+								/>
 								<Button
 									onClick={() =>
 										void store.autoPlaceLogoForActiveImage()

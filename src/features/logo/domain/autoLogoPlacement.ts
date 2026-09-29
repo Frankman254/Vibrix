@@ -98,3 +98,46 @@ export function spectrumAnnulusInImageSpace(params: {
 		}
 	};
 }
+
+/**
+ * A point on the IMAGE turned into a logo position.
+ *
+ * The inverse of `spectrumAnnulusInImageSpace`: a stored per-image logo focus
+ * lives in image space (0..1 over the picture), so it has to be pushed through
+ * the image's own draw rect before it means anything on screen. That is what
+ * makes "the logo goes where THIS image can spare the room" survive a zoom, a
+ * pan or a different aspect ratio.
+ *
+ * The result is clamped to the logo's position range, so a focus point on an
+ * off-screen part of the image still yields a usable placement.
+ */
+export function imagePointToLogoPosition(params: {
+	point: { x: number; y: number };
+	/** Primary draw rect in canvas px, from `resolveImageTransform`. */
+	imageRect: { cx: number; cy: number; width: number; height: number };
+	viewportWidth: number;
+	viewportHeight: number;
+}): { x: number; y: number } {
+	const { point, imageRect, viewportWidth, viewportHeight } = params;
+	if (
+		!(
+			imageRect.width > 0 &&
+			imageRect.height > 0 &&
+			viewportWidth > 0 &&
+			viewportHeight > 0
+		)
+	) {
+		return { x: 0, y: 0 };
+	}
+	const sx = imageRect.cx - imageRect.width / 2 + point.x * imageRect.width;
+	const sy = imageRect.cy - imageRect.height / 2 + point.y * imageRect.height;
+	const clamp = (value: number) =>
+		Math.min(
+			LOGO_RANGES.positionX.max,
+			Math.max(LOGO_RANGES.positionX.min, value)
+		);
+	return {
+		x: clamp((sx / viewportWidth - 0.5) * 2),
+		y: clamp((0.5 - sy / viewportHeight) * 2)
+	};
+}

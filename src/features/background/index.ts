@@ -62,6 +62,7 @@ export { loadImageDimensions } from './domain/backgroundAutoFit';
 
 // ── domain: auto-composition (saliency-driven focus/logo placement) ────────
 export {
+	analyzeImageUrlFocus,
 	analyzeImageUrlSaliency,
 	loadImageElement
 } from './domain/autoComposition';

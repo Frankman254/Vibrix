@@ -479,6 +479,26 @@ export const en = {
 	intro_enabled_tooltip:
 		'It covers the head (or the tail) of the timeline — it does not add time, so the audio stays in sync.',
 	intro_section_timing: 'Timing',
+	focus_points_title: 'Face and mark focus',
+	focus_points_hint:
+		'Where the face is and where a mark can sit, measured on this image. Anything that has to crop it — the intro panels — keeps the face in frame, and the logo starts on the calm spot. Estimated from the pixels; move a slider and the point becomes yours.',
+	focus_points_scan: 'Scan this image',
+	focus_points_scan_t:
+		'Estimate both points again from the pixels, replacing what is there.',
+	focus_points_scan_all: 'Scan the missing ones',
+	focus_points_scan_all_t:
+		'Estimate the points of every image that has never been measured.',
+	focus_points_face_x: 'Face X',
+	focus_points_face_y: 'Face Y',
+	focus_points_logo_x: 'Mark X',
+	focus_points_logo_y: 'Mark Y',
+	focus_points_unmeasured: 'Not measured yet',
+	focus_points_manual: 'Placed by hand',
+	focus_points_auto: 'Estimated',
+	focus_points_clear: 'Forget',
+	logo_follow_image_focus: 'The mark follows the picture',
+	logo_follow_image_focus_t:
+		'Takes the base position of the logo from each image own mark focus, so it stops landing on faces. The camera offsets still apply on top.',
 	intro_duration: 'Duration (s)',
 	intro_build_sec: 'Mounting (s)',
 	intro_release_sec: 'Dismounting (s)',

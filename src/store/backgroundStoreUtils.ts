@@ -330,6 +330,20 @@ export function normalizePersistedBackgroundImages(
 				typeof image.focusY === 'number'
 					? image.focusY
 					: fallbackImageConfig.imageFocusY,
+			// Focus annotations: `null` simply means "not measured yet", so a
+			// hydrated image gets its estimate the next time it is analysed.
+			faceFocusX:
+				typeof image.faceFocusX === 'number' ? image.faceFocusX : null,
+			faceFocusY:
+				typeof image.faceFocusY === 'number' ? image.faceFocusY : null,
+			faceFocusSource:
+				image.faceFocusSource === 'manual' ? 'manual' : 'auto',
+			logoFocusX:
+				typeof image.logoFocusX === 'number' ? image.logoFocusX : null,
+			logoFocusY:
+				typeof image.logoFocusY === 'number' ? image.logoFocusY : null,
+			logoFocusSource:
+				image.logoFocusSource === 'manual' ? 'manual' : 'auto',
 			rotation: image.rotation ?? fallbackImageConfig.imageRotation,
 			fitMode: image.fitMode ?? fallbackImageConfig.imageFitMode,
 			mirror: image.mirror ?? fallbackImageConfig.imageMirror,

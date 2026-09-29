@@ -4,6 +4,7 @@
  * turns an image URL into a saliency summary. Store actions depend on it
  * through `@/features/background` so tests can swap the loader wholesale.
  */
+import { estimateImageFocus, type ImageFocusEstimate } from '@/lib/imageFocus';
 import { analyzeImageSaliency, type SaliencySummary } from '@/lib/saliency';
 
 export function loadImageElement(url: string): Promise<HTMLImageElement> {
@@ -27,4 +28,19 @@ export async function analyzeImageUrlSaliency(
 ): Promise<SaliencySummary> {
 	const image = await loadImageElement(url);
 	return analyzeImageSaliency(image);
+}
+
+/**
+ * The face and logo focus of an image at `url`, estimated from its pixels.
+ *
+ * Deliberately separate from the saliency summary above: saliency answers
+ * "where is the subject", which is not the same question as "where is the
+ * face". A shutter panel needs the face. Rejects when the image cannot be
+ * loaded, so callers keep whatever the user already had.
+ */
+export async function analyzeImageUrlFocus(
+	url: string
+): Promise<ImageFocusEstimate> {
+	const image = await loadImageElement(url);
+	return estimateImageFocus(image);
 }

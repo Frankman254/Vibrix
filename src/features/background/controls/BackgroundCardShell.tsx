@@ -6,6 +6,7 @@ import BgFitModeSelector from './BgFitModeSelector';
 import BgSectionCard from './BgSectionCard';
 import BackgroundQuickControls from './BackgroundQuickControls';
 import FocusQuickControls from './FocusQuickControls';
+import ImageFocusPointsSection from './ImageFocusPointsSection';
 import InteractiveImagePreview from './InteractiveImagePreview';
 
 export default function BackgroundCardShell({
@@ -224,6 +225,8 @@ export default function BackgroundCardShell({
 						}}
 					/>
 				) : null}
+
+				{activeImage?.url ? <ImageFocusPointsSection /> : null}
 
 				{activeImage?.url ? (
 					<BackgroundQuickControls

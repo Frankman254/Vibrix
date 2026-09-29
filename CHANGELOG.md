@@ -40,13 +40,30 @@ the version scheme in `src/lib/version.ts`.
       configurables. Así la animación es idéntica en cada render y es fluida
       aunque la pista empiece en silencio o con fade-in.
       Las ventanas siguen sin añadir duración al vídeo.
-      `STORE_PERSIST_VERSION` is at **132**; la migración traslada lo que hubiera
+      `STORE_PERSIST_VERSION` is at **133**; la migración traslada lo que hubiera
       en v129, y la de v131 cambia las claves viejas del spectrum del intro
       (`spectrumShape` / `spectrumSizePct` / `spectrumColorSource` /
       `spectrumColor`) por las nuevas (`spectrumSource`, `spectrumSlotIndex`,
       `spectrumCentered`, `spectrumWaveSpeed`, `spectrumWaveIntensity`): una
       ventana que pedía figura sigue pidiéndola, con el slot 0 y centrada. Ambas
       ventanas siguen llegando apagadas.
+
+- **Foco de cara y foco de logo por imagen.** Cada imagen guarda dos puntos
+  nuevos (`faceFocusX/Y`, `logoFocusX/Y`), medidos de sus propios píxeles y
+  editables a mano; el que tocas a mano queda marcado y un re-análisis no lo
+  pisa. El estimador es una heurística de color + detalle pensada para arte
+  anime (`src/lib/imageFocus.ts`, con tests): no hay modelo de IA, y por eso el
+  punto es corregible.
+    - Lo consume el montaje de la intro: un panel vertical de persiana recorta
+      **alrededor de la cara** en vez de por el medio, que era el motivo de que
+      no se vieran las caras.
+    - Lo consume el logo con el interruptor nuevo **«El logo sigue a la
+      imagen»** (`logoFollowImageFocus`): la posición BASE del logo sale del
+      foco de logo de la imagen activa, así el logo —y el spectrum, cuando sigue
+      al logo— deja de caer sobre la cara. Los desplazamientos de la cámara se
+      siguen aplicando encima. El punto guardado está en espacio de imagen, así
+      que pasa por la geometría real de la imagen antes de convertirse en
+      posición de pantalla: sobrevive al zoom y al paneo.
 
 - **Arreglado: pantalla negra al abrir Intro y ending.** El selector del slot de
   spectrum construía los objetos de opción **dentro** del selector del store, así

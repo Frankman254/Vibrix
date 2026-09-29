@@ -311,6 +311,7 @@ const BASE_STATE: Omit<
 	logoEnabled: true,
 	logoUrl: APP_LOGO_URL,
 	logoVariantMode: 'auto',
+	logoFollowImageFocus: false,
 	logoBaseSize: 80,
 	logoPositionX: 0,
 	logoPositionY: 0,

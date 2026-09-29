@@ -3339,6 +3339,32 @@ export function migrateWallpaperStore(
 		migrateWindowPhases(migratedState.outroSequence);
 	}
 
+	if (fromVersion < 133) {
+		// The two focus annotations start empty on purpose: `null` means "nobody
+		// has measured this image", which is exactly what is true, and the
+		// estimator fills it in the first time the user asks.
+		migratedState.backgroundImages = (
+			migratedState.backgroundImages ?? []
+		).map(image => ({
+			...image,
+			faceFocusX:
+				typeof image.faceFocusX === 'number' ? image.faceFocusX : null,
+			faceFocusY:
+				typeof image.faceFocusY === 'number' ? image.faceFocusY : null,
+			faceFocusSource:
+				image.faceFocusSource === 'manual' ? 'manual' : 'auto',
+			logoFocusX:
+				typeof image.logoFocusX === 'number' ? image.logoFocusX : null,
+			logoFocusY:
+				typeof image.logoFocusY === 'number' ? image.logoFocusY : null,
+			logoFocusSource:
+				image.logoFocusSource === 'manual' ? 'manual' : 'auto'
+		}));
+		if (typeof migratedState.logoFollowImageFocus !== 'boolean') {
+			migratedState.logoFollowImageFocus = false;
+		}
+	}
+
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;
 }
 

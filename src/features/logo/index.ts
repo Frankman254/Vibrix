@@ -39,6 +39,7 @@ export type {
 	LogoNudgeDirection
 } from './domain/logoPositionGrid';
 export {
+	imagePointToLogoPosition,
 	lowMassBoxToLogoPosition,
 	logoBoxSizeForViewport,
 	spectrumAnnulusInImageSpace

@@ -12,8 +12,12 @@ import {
 	resolveThemeColor,
 	type BackgroundPalette
 } from '@/lib/backgroundPalette';
-import type { IntroSequenceSettings, WallpaperState } from '@/types/wallpaper';
-import type { IntroPaintColors } from './introPaint';
+import type {
+	BackgroundImageItem,
+	IntroSequenceSettings,
+	WallpaperState
+} from '@/types/wallpaper';
+import type { IntroFocusPoint, IntroPaintColors } from './introPaint';
 
 export function resolveIntroColors(
 	settings: IntroSequenceSettings,
@@ -59,6 +63,31 @@ export function resolveIntroLogoUrl(
 	if (settings.logoSource === 'vibrix') return APP_LOGO_URL;
 	if (settings.logoSource === 'project') return state.logoUrl ?? null;
 	return null;
+}
+
+/**
+ * Card index → the point of that image the montage must keep in frame.
+ *
+ * The face focus the pool already carries per image, so a tall shutter panel
+ * crops around the face instead of through it. An image nobody has measured
+ * simply is not in the map, and the painter crops from the centre.
+ */
+export function resolveIntroFocusMap(
+	pool: readonly Pick<
+		BackgroundImageItem,
+		'assetId' | 'faceFocusX' | 'faceFocusY'
+	>[],
+	ids: readonly string[]
+): Map<number, IntroFocusPoint> {
+	const focus = new Map<number, IntroFocusPoint>();
+	ids.forEach((assetId, index) => {
+		const item = pool.find(entry => entry.assetId === assetId);
+		if (!item) return;
+		const { faceFocusX: x, faceFocusY: y } = item;
+		if (typeof x !== 'number' || typeof y !== 'number') return;
+		focus.set(index, { x, y });
+	});
+	return focus;
 }
 
 /** The settings of one window, whichever it is. */

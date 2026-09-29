@@ -22,6 +22,12 @@ export type BackgroundImageSettings = Pick<
 	| 'positionY'
 	| 'focusX'
 	| 'focusY'
+	| 'faceFocusX'
+	| 'faceFocusY'
+	| 'faceFocusSource'
+	| 'logoFocusX'
+	| 'logoFocusY'
+	| 'logoFocusSource'
 	| 'rotation'
 	| 'fitMode'
 	| 'mirror'
@@ -65,6 +71,14 @@ export function getDefaultBackgroundImageSettings(): BackgroundImageSettings {
 		positionY: DEFAULT_STATE.imagePositionY,
 		focusX: DEFAULT_STATE.imageFocusX,
 		focusY: DEFAULT_STATE.imageFocusY,
+		// Unmeasured: the estimator fills these in the first time the image is
+		// seen, and the user can overwrite them by hand at any point.
+		faceFocusX: null,
+		faceFocusY: null,
+		faceFocusSource: 'auto',
+		logoFocusX: null,
+		logoFocusY: null,
+		logoFocusSource: 'auto',
 		rotation: 0,
 		fitMode: DEFAULT_STATE.imageFitMode,
 		mirror: DEFAULT_STATE.imageMirror,
@@ -134,6 +148,12 @@ export function createBackgroundImageItem(
 		positionY: settings.positionY ?? defaults.positionY,
 		focusX: settings.focusX ?? defaults.focusX,
 		focusY: settings.focusY ?? defaults.focusY,
+		faceFocusX: settings.faceFocusX ?? defaults.faceFocusX,
+		faceFocusY: settings.faceFocusY ?? defaults.faceFocusY,
+		faceFocusSource: settings.faceFocusSource ?? defaults.faceFocusSource,
+		logoFocusX: settings.logoFocusX ?? defaults.logoFocusX,
+		logoFocusY: settings.logoFocusY ?? defaults.logoFocusY,
+		logoFocusSource: settings.logoFocusSource ?? defaults.logoFocusSource,
 		rotation: settings.rotation ?? defaults.rotation,
 		fitMode: settings.fitMode ?? defaults.fitMode,
 		// Never hand-framed; provenance flag, deliberately not part of

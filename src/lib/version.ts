@@ -160,4 +160,8 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // duration is edited — and the montage read as a flash. The backdrop also gained
 // a colour source (`backdropColorSource`). Migration turns the old percentages
 // into seconds against the stored duration.
-export const STORE_PERSIST_VERSION = 132;
+// v133: per-image focus ANNOTATIONS — `faceFocusX/Y` + `faceFocusSource` and
+// `logoFocusX/Y` + `logoFocusSource`, seeded as "not measured yet" so the
+// estimator owns them — plus the global `logoFollowImageFocus`, which takes the
+// logo's base position from the active image's own mark focus.
+export const STORE_PERSIST_VERSION = 133;
