@@ -82,6 +82,19 @@ the version scheme in `src/lib/version.ts`.
       dentro de la celda** en vez de mover la celda: una celda que se desplaza
       se lleva su recorte y deja ver el fondo por el hueco.
 
+- **Variantes de animación por montaje.** «Si selecciono mosaic burst, deberían
+  haber también tipos de animación para ese modo»: cada montaje tiene ahora dos
+  variantes independientes de su forma.
+    - **Orden de llegada** (montajes teselados): la del montaje, todas a la vez,
+      de izquierda a derecha, del centro hacia fuera, de los bordes hacia dentro
+      o desordenadas (determinista, misma mezcla en la previsualización y en el
+      vídeo). Es solo una permutación: la geometría no se mueve, hay test.
+    - **Movimiento de la imagen** (todos los montajes): el del montaje, quieta,
+      acercar, alejar, desplazar o latido. El desplazamiento mueve la imagen
+      DENTRO de su celda, nunca la celda, y la escala siempre paga el margen que
+      el desplazamiento gasta — hay un test de esa invariante, que es lo que
+      impide que un paneo destape el fondo.
+
 - **Sub-modos de color en la intro: sólido, degradado y arcoíris.** El fondo de
   la ventana tenía fuente de color (manual / imagen actual / tema) pero solo
   sabía pintar un color plano. Ahora la fuente decide QUÉ colores y el sub-modo

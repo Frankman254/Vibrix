@@ -213,7 +213,7 @@ Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 | v131    | El spectrum del intro pasa a ser un slot guardado + onda fija generada                                                                                                                                              |
 | v132    | El tiempo del intro en segundos (`buildSec`/`releaseSec`) + `backdropColorSource`                                                                                                                                   |
 | v133    | Foco de cara y de logo por imagen (`faceFocus*`, `logoFocus*`) + `logoFollowImageFocus`                                                                                                                             |
-| v134    | Divisiones del montaje (`divisionPattern`, `divisionAngleDeg`) + imágenes a mano (`imageSourceMode`, `imageAssetIds`) + rellenos (`backdropFillMode`) + marco del título (`titleFrameShape/Style/Animation/Color*`) |
+| v134    | Divisiones del montaje (`divisionPattern`, `divisionAngleDeg`) + variantes (`montageArrival`, `montageMove`) + imágenes a mano (`imageSourceMode`, `imageAssetIds`) + rellenos (`backdropFillMode`) + marco del título (`titleFrameShape/Style/Animation/Color*`) |
 
 ---
 

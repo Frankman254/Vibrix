@@ -678,6 +678,33 @@ export type IntroTitleFrameShape =
 	| 'diamond'
 	| 'hexagon';
 
+/**
+ * In which ORDER the cells of a tiled montage arrive. `auto` is the montage's
+ * own: all at once for the mosaic, from the centre out for the burst, left to
+ * right for the shutter.
+ */
+export type IntroMontageArrival =
+	| 'auto'
+	| 'together'
+	| 'reading'
+	| 'centre-out'
+	| 'edges-in'
+	| 'random';
+
+/**
+ * How each image MOVES while it is on screen — the animation variant the user
+ * asked for per montage. `auto` keeps each montage's own movement (the mosaic's
+ * slow push, Ken Burns' long zoom). Every variant keeps a tiled card at least as
+ * big as its cell, so a pan can never uncover the backdrop.
+ */
+export type IntroMontageMove =
+	| 'auto'
+	| 'still'
+	| 'zoom-in'
+	| 'zoom-out'
+	| 'pan'
+	| 'pulse';
+
 /** Whether the box is drawn, filled, or both. `brackets` is never filled. */
 export type IntroTitleFrameStyle = 'outline' | 'filled' | 'both';
 
@@ -725,6 +752,9 @@ export interface IntroSequenceSettings {
 	 */
 	divisionPattern: IntroDivisionPattern;
 	divisionAngleDeg: number;
+	/** The animation variants of the chosen montage. */
+	montageArrival: IntroMontageArrival;
+	montageMove: IntroMontageMove;
 	/**
 	 * `manual` draws exactly `imageAssetIds`, in the order they were picked, and
 	 * ignores both `imageCount` and `order`: "no las saque automáticamente".

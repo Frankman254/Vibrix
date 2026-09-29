@@ -216,6 +216,10 @@ function paintCards(
 			);
 			ctx.clip();
 		}
+		// The image moves INSIDE the clip; the card itself never does.
+		if (card.shiftX || card.shiftY) {
+			ctx.translate(card.shiftX ?? 0, card.shiftY ?? 0);
+		}
 		drawCovered(ctx, source, cardW, cardH, focus?.get(card.index));
 		ctx.restore();
 	}

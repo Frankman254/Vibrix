@@ -19,7 +19,9 @@
 import type {
 	IntroDivisionPattern,
 	IntroLogoSource,
+	IntroMontageArrival,
 	IntroMontageMode,
+	IntroMontageMove,
 	IntroSequenceKind,
 	IntroSequenceSettings,
 	IntroTextReveal,
@@ -91,6 +93,14 @@ export type IntroCard = {
 	 * drag its own clip along and show the backdrop through the gap.
 	 */
 	reveal?: { pct: number; fromTop: boolean };
+	/**
+	 * How far the IMAGE is moved inside the card, in pixels. The card itself
+	 * never moves for this — a tiled card that moves drags its clip along — and
+	 * `scale` is always big enough to keep the cell covered at the shift's
+	 * extreme, which `resolveCardMotion` guarantees.
+	 */
+	shiftX?: number;
+	shiftY?: number;
 };
 
 /** How far along one line of text is, however it is being revealed. */
@@ -203,6 +213,8 @@ export function createDefaultIntroSequence(
 		montage: intro ? 'mosaic-grid' : 'mosaic-burst',
 		divisionPattern: 'grid',
 		divisionAngleDeg: 0,
+		montageArrival: 'auto',
+		montageMove: 'auto',
 		imageSourceMode: 'setlist',
 		imageAssetIds: [],
 		imageCount: intro ? 9 : 9,
@@ -512,6 +524,99 @@ function sequentialSlice(
 	};
 }
 
+/** What one image's own movement does to it this frame. */
+type CardMotion = { scale: number; shiftX: number; shiftY: number };
+
+/**
+ * The animation variant, as a scale and a shift of the image inside its card.
+ *
+ * `t` is the card's own progress: the whole window for a tiled montage (which is
+ * on screen all along) and its own turn for a sequential one. The invariant every
+ * branch keeps is that the shift never exceeds what the scale has gained —
+ * `(scale - 1) * size / 2` — so a pan inside a tiled cell can never uncover the
+ * backdrop. `auto` returns `null`: the montage keeps the movement it was written
+ * with.
+ */
+function resolveCardMotion(
+	move: IntroMontageMove,
+	t: number,
+	size: { width: number; height: number },
+	index: number
+): CardMotion | null {
+	const p = clamp01(t);
+	const eased = easeInOut(p);
+	/** A scale, and the shift it can afford without uncovering anything. */
+	const afford = (wanted: number, fx: number, fy: number): CardMotion => {
+		// Never below 1, float error included: a card smaller than its cell
+		// uncovers the backdrop.
+		const scale = Math.max(1, wanted);
+		return {
+			scale,
+			shiftX: ((scale - 1) * size.width * fx) / 2,
+			shiftY: ((scale - 1) * size.height * fy) / 2
+		};
+	};
+	switch (move) {
+		case 'still':
+			return afford(1, 0, 0);
+		case 'zoom-in':
+			return afford(1 + 0.16 * eased, 0, 0);
+		case 'zoom-out':
+			return afford(1.16 - 0.16 * eased, 0, 0);
+		case 'pan': {
+			// Alternating directions, so a mosaic drifts instead of sliding as
+			// one block. The travel is the whole margin the scale bought.
+			const dir = index % 2 === 0 ? 1 : -1;
+			return afford(1.16, dir * (eased * 2 - 1), 0);
+		}
+		case 'pulse':
+			return afford(1.06 + 0.06 * Math.sin(p * Math.PI * 4), 0, 0);
+		case 'auto':
+		default:
+			return null;
+	}
+}
+
+/**
+ * The order the cells of a tiled montage arrive in: cell index → rank.
+ *
+ * Ranks are what `staggered` reads, so an arrival order is only a permutation —
+ * nothing about the geometry or the timing changes with it.
+ */
+function arrivalRanks(
+	cells: readonly IntroDivisionCell[],
+	arrival: IntroMontageArrival,
+	viewport: IntroViewport
+): Map<number, number> {
+	const cx = viewport.width / 2;
+	const cy = viewport.height / 2;
+	const keyed = cells.map(cell => {
+		const distance = Math.hypot(cell.x - cx, cell.y - cy);
+		switch (arrival) {
+			case 'reading':
+				return { index: cell.index, key: cell.y * 1e5 + cell.x };
+			case 'centre-out':
+				return { index: cell.index, key: distance };
+			case 'edges-in':
+				return { index: cell.index, key: -distance };
+			case 'random':
+				// Deterministic: the same shuffle in the preview and the file.
+				return { index: cell.index, key: hashRank(cell.index) };
+			case 'together':
+			default:
+				return { index: cell.index, key: 0 };
+		}
+	});
+	keyed.sort((a, b) => a.key - b.key || a.index - b.index);
+	return new Map(keyed.map((entry, rank) => [entry.index, rank]));
+}
+
+/** A stable pseudo-random key for a cell, for the `random` arrival. */
+function hashRank(index: number): number {
+	const x = Math.sin(index * 127.1 + 311.7) * 43758.5453;
+	return x - Math.floor(x);
+}
+
 /**
  * Where every card sits this frame. Cards with `alpha <= 0` are returned too,
  * so the painter can decide cheaply and the layout stays easy to reason about.
@@ -521,6 +626,9 @@ export function resolveIntroCards(options: {
 	/** The shape of the cuts; the tiled montages build their cells from it. */
 	pattern?: IntroDivisionPattern;
 	angleDeg?: number;
+	/** The animation variants; both default to the montage's own. */
+	arrival?: IntroMontageArrival;
+	move?: IntroMontageMove;
 	count: number;
 	viewport: IntroViewport;
 	/** The `cards` slot mount — `1` through the hold. */
@@ -557,6 +665,34 @@ export function resolveIntroCards(options: {
 		height: cell.height,
 		polygon: cell.polygon
 	});
+	const move = options.move ?? 'auto';
+	/**
+	 * The variant's movement for one card, or the montage's own when the variant
+	 * is `auto`. `fallbackScale` is what the montage wrote for itself.
+	 */
+	const motion = (
+		t: number,
+		size: { width: number; height: number },
+		index: number,
+		fallbackScale: number
+	): CardMotion =>
+		resolveCardMotion(move, t, size, index) ?? {
+			scale: fallbackScale,
+			shiftX: 0,
+			shiftY: 0
+		};
+	/** The arrival order for a tiled montage, with the montage's own default. */
+	const ranks = (
+		list: readonly IntroDivisionCell[],
+		fallback: IntroMontageArrival
+	): Map<number, number> =>
+		arrivalRanks(
+			list,
+			options.arrival && options.arrival !== 'auto'
+				? options.arrival
+				: fallback,
+			viewport
+		);
 	// Sequential montages use the mount only as a global fade, because their
 	// image cycling belongs to the whole window (see `sequentialSlice`).
 	const envelope = easeInOut(m);
@@ -564,42 +700,49 @@ export function resolveIntroCards(options: {
 	switch (montage) {
 		case 'mosaic-grid': {
 			// Every image at once, as asked: the whole wall arrives together
-			// and breathes as one piece.
+			// and breathes as one piece. An arrival order turns that into a
+			// staggered wall instead, which is the same montage with a variant.
 			const eased = easeInOut(m);
-			for (const cell of cells()) {
+			const list = cells();
+			const rank = ranks(list, 'together');
+			for (const cell of list) {
+				const own = easeInOut(
+					staggered(m, rank.get(cell.index) ?? cell.index, total)
+				);
+				const alpha =
+					(options.arrival ?? 'auto') === 'auto' ? eased : own;
 				cards.push({
 					...fromCell(cell),
-					alpha: eased,
+					alpha,
 					// A slow push that never stops, so the wall is alive even
 					// while nothing is mounting. It never drops below 1: a card
 					// smaller than its cell would uncover the backdrop.
-					scale: 1.08 - 0.06 * eased + 0.04 * p,
+					...motion(
+						p,
+						cell,
+						cell.index,
+						1.08 - 0.06 * eased + 0.04 * p
+					),
 					rotationRad: 0
 				});
 			}
 			return cards;
 		}
 		case 'mosaic-burst': {
-			// The same tiling, landing from the middle outwards: the cells
-			// nearest the centre of the screen are ranked first.
-			const cx = width / 2;
-			const cy = height / 2;
-			const ranked = cells()
-				.map(cell => ({
-					cell,
-					distance: Math.hypot(cell.x - cx, cell.y - cy)
-				}))
-				.sort((a, b) => a.distance - b.distance);
-			ranked.forEach((entry, rank) => {
-				const t = easeInOut(staggered(m, rank, total));
+			// The same tiling, landing from the middle outwards by default.
+			const list = cells();
+			const rank = ranks(list, 'centre-out');
+			for (const cell of list) {
+				const t = easeInOut(
+					staggered(m, rank.get(cell.index) ?? cell.index, total)
+				);
 				cards.push({
-					...fromCell(entry.cell),
+					...fromCell(cell),
 					alpha: t,
-					scale: 1.18 - 0.16 * t,
+					...motion(p, cell, cell.index, 1.18 - 0.16 * t),
 					rotationRad: 0
 				});
-			});
-			cards.sort((a, b) => a.index - b.index);
+			}
 			return cards;
 		}
 		case 'film-strip': {
@@ -636,14 +779,17 @@ export function resolveIntroCards(options: {
 			// the cell (`reveal`) instead of sliding the cell itself: a moving
 			// cell drags its clip along and the backdrop shows through the gap,
 			// which is exactly the black the user reported.
-			for (const cell of cells()) {
-				const t = easeInOut(staggered(m, cell.index, total));
+			const list = cells();
+			const rank = ranks(list, 'reading');
+			for (const cell of list) {
+				const order = rank.get(cell.index) ?? cell.index;
+				const t = easeInOut(staggered(m, order, total));
 				cards.push({
 					...fromCell(cell),
 					alpha: 1,
-					scale: 1,
+					...motion(p, cell, cell.index, 1),
 					rotationRad: 0,
-					reveal: { pct: t, fromTop: cell.index % 2 === 0 }
+					reveal: { pct: t, fromTop: order % 2 === 0 }
 				});
 			}
 			return cards;
@@ -666,7 +812,12 @@ export function resolveIntroCards(options: {
 					alpha: slice.alpha * envelope,
 					// A full push across the image's own turn, so the movement
 					// is visible however many images there are.
-					scale: 1.18 - 0.18 * easeInOut(slice.t),
+					...motion(
+						slice.t,
+						viewport,
+						index,
+						1.18 - 0.18 * easeInOut(slice.t)
+					),
 					rotationRad: 0
 				});
 			}
@@ -709,7 +860,12 @@ export function resolveIntroCards(options: {
 					width,
 					height,
 					alpha: slice.alpha * envelope,
-					scale: 1.06 - 0.06 * easeInOut(slice.t),
+					...motion(
+						slice.t,
+						viewport,
+						index,
+						1.06 - 0.06 * easeInOut(slice.t)
+					),
 					rotationRad: 0
 				});
 			}
@@ -840,6 +996,8 @@ export function resolveIntroFrame(options: {
 			montage: settings.montage,
 			pattern: settings.divisionPattern,
 			angleDeg: settings.divisionAngleDeg,
+			arrival: settings.montageArrival,
+			move: settings.montageMove,
 			count: cardCount,
 			viewport,
 			mount: mountOf('cards'),

@@ -36,6 +36,8 @@ import {
 import type {
 	IntroDivisionPattern,
 	IntroFillMode,
+	IntroMontageArrival,
+	IntroMontageMove,
 	IntroTitleFrameAnimation,
 	IntroTitleFrameShape,
 	IntroTitleFrameStyle,
@@ -278,6 +280,71 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 									}
 								]}
 							/>
+							<Select<IntroMontageMove>
+								value={settings.montageMove}
+								onChange={montageMove => patch({ montageMove })}
+								ariaLabel={t.intro_montage_move}
+								full
+								options={[
+									{
+										value: 'auto',
+										label: t.intro_move_auto
+									},
+									{
+										value: 'still',
+										label: t.intro_move_still
+									},
+									{
+										value: 'zoom-in',
+										label: t.intro_move_zoom_in
+									},
+									{
+										value: 'zoom-out',
+										label: t.intro_move_zoom_out
+									},
+									{ value: 'pan', label: t.intro_move_pan },
+									{
+										value: 'pulse',
+										label: t.intro_move_pulse
+									}
+								]}
+							/>
+							{TILED_MONTAGES.includes(settings.montage) && (
+								<Select<IntroMontageArrival>
+									value={settings.montageArrival}
+									onChange={montageArrival =>
+										patch({ montageArrival })
+									}
+									ariaLabel={t.intro_montage_arrival}
+									full
+									options={[
+										{
+											value: 'auto',
+											label: t.intro_arrival_auto
+										},
+										{
+											value: 'together',
+											label: t.intro_arrival_together
+										},
+										{
+											value: 'reading',
+											label: t.intro_arrival_reading
+										},
+										{
+											value: 'centre-out',
+											label: t.intro_arrival_centre_out
+										},
+										{
+											value: 'edges-in',
+											label: t.intro_arrival_edges_in
+										},
+										{
+											value: 'random',
+											label: t.intro_arrival_random
+										}
+									]}
+								/>
+							)}
 							{TILED_MONTAGES.includes(settings.montage) && (
 								<>
 									<Select<IntroDivisionPattern>

@@ -3378,6 +3378,13 @@ export function migrateWallpaperStore(
 			if (typeof settings.divisionAngleDeg !== 'number') {
 				settings.divisionAngleDeg = 0;
 			}
+			// Both variants start at the montage's own animation.
+			if (typeof settings.montageArrival !== 'string') {
+				settings.montageArrival = 'auto';
+			}
+			if (typeof settings.montageMove !== 'string') {
+				settings.montageMove = 'auto';
+			}
 			// The images stay automatic until the user picks some by hand.
 			if (typeof settings.imageSourceMode !== 'string') {
 				settings.imageSourceMode = 'setlist';

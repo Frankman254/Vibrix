@@ -269,6 +269,81 @@ describe('resolveIntroCards — divisions', () => {
 		expect(full.every(card => card.reveal?.pct === 1)).toBe(true);
 	});
 
+	it('never lets a variant shift the image past what its scale bought', () => {
+		// The invariant that keeps a pan from uncovering the backdrop inside a
+		// tiled cell: the shift can never exceed the margin the scale gained.
+		for (const move of [
+			'still',
+			'zoom-in',
+			'zoom-out',
+			'pan',
+			'pulse'
+		] as const) {
+			for (const montage of [
+				'mosaic-grid',
+				'mosaic-burst',
+				'shutter-wipe'
+			] as const) {
+				for (const progress of [0, 0.3, 0.5, 0.8, 1]) {
+					const cards = resolveIntroCards({
+						montage,
+						pattern: 'grid',
+						move,
+						count: 6,
+						viewport: VIEWPORT,
+						mount: 1,
+						progress
+					});
+					for (const card of cards) {
+						expect(card.scale).toBeGreaterThanOrEqual(1);
+						const marginX = ((card.scale - 1) * card.width) / 2;
+						const marginY = ((card.scale - 1) * card.height) / 2;
+						expect(Math.abs(card.shiftX ?? 0)).toBeLessThanOrEqual(
+							marginX + 0.0001
+						);
+						expect(Math.abs(card.shiftY ?? 0)).toBeLessThanOrEqual(
+							marginY + 0.0001
+						);
+					}
+				}
+			}
+		}
+	});
+
+	it('only reorders the cells when the arrival changes', () => {
+		// An arrival order is a permutation: the geometry stays put.
+		const boxes = (arrival: 'auto' | 'random' | 'edges-in') =>
+			resolveIntroCards({
+				montage: 'mosaic-burst',
+				pattern: 'grid',
+				arrival,
+				count: 9,
+				viewport: VIEWPORT,
+				mount: 0.5,
+				progress: 0.5
+			})
+				.slice()
+				.sort((a, b) => a.index - b.index)
+				.map(card => `${card.index}:${card.x}:${card.y}`);
+		expect(boxes('random')).toEqual(boxes('auto'));
+		expect(boxes('edges-in')).toEqual(boxes('auto'));
+		// …but the order they arrive in does change.
+		const alphas = (arrival: 'auto' | 'edges-in') =>
+			resolveIntroCards({
+				montage: 'mosaic-burst',
+				pattern: 'grid',
+				arrival,
+				count: 9,
+				viewport: VIEWPORT,
+				mount: 0.5,
+				progress: 0.5
+			})
+				.slice()
+				.sort((a, b) => a.index - b.index)
+				.map(card => card.alpha);
+		expect(alphas('edges-in')).not.toEqual(alphas('auto'));
+	});
+
 	it('leaves the non-tiled montages without a polygon', () => {
 		for (const montage of [
 			'fade-stack',
