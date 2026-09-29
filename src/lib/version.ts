@@ -170,4 +170,10 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // slot bank and by stable id instead of an array position. The single
 // `spectrumSource` / `spectrumSlotIndex` pair is dropped; migration points the
 // old index at the same Spectrum 1 slot, so nothing changes on screen.
-export const STORE_PERSIST_VERSION = 140;
+// v141: Manual Framing (`imageFramingManualEnabled`) and "the mark follows the
+// picture" (`logoFollowImageFocus`) are PER IMAGE (`framingManual`,
+// `logoFollowsFocus` on each `BackgroundImageItem`); the flat keys are the
+// ACTIVE image's live values, like every other `image*` key. Both switches live
+// inside the per-image card and as globals they leaked from one picture to the
+// next. Migration copies the old global into every stored image.
+export const STORE_PERSIST_VERSION = 141;

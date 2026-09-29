@@ -494,3 +494,39 @@ describe('migrateWallpaperStore v113 framing provenance', () => {
 		expect(migrated.backgroundImages[0]?.coverageFramingEdited).toBe(true);
 	});
 });
+
+describe('migrateWallpaperStore v141 per-image framing switches', () => {
+	it('copies the old globals into every stored image', () => {
+		const migrated = migrateWallpaperStore(
+			{
+				imageFramingManualEnabled: true,
+				logoFollowImageFocus: true,
+				backgroundImages: [{ assetId: 'img-1' }, { assetId: 'img-2' }]
+			} as never,
+			140
+		);
+		for (const image of migrated.backgroundImages) {
+			expect(image.framingManual).toBe(true);
+			expect(image.logoFollowsFocus).toBe(true);
+		}
+	});
+
+	it('leaves an already per-image value alone', () => {
+		const migrated = migrateWallpaperStore(
+			{
+				imageFramingManualEnabled: true,
+				logoFollowImageFocus: false,
+				backgroundImages: [
+					{
+						assetId: 'img-1',
+						framingManual: false,
+						logoFollowsFocus: true
+					}
+				]
+			} as never,
+			140
+		);
+		expect(migrated.backgroundImages[0]?.framingManual).toBe(false);
+		expect(migrated.backgroundImages[0]?.logoFollowsFocus).toBe(true);
+	});
+});

@@ -528,6 +528,19 @@ export interface BackgroundImageItem {
 	/** True once the user hand-tuned this framing; Keep-Covered auto-fit
 	 *  skips flagged images. Derived for pre-v113 persisted data. */
 	coverageFramingEdited: boolean;
+	/**
+	 * Manual framing for THIS picture: the coverage math is off and the stored
+	 * scale/position are drawn as authored. Per image because framing is a
+	 * decision about one picture — a vertical portrait needs manual room where
+	 * the next landscape shot does not.
+	 */
+	framingManual: boolean;
+	/**
+	 * Whether the mark follows THIS picture's `logoFocus` point when the image
+	 * becomes active. Per image for the same reason: one shot has a corner to
+	 * spare and the next one wants the logo left where the user put it.
+	 */
+	logoFollowsFocus: boolean;
 	mirror: boolean;
 	mirrorFill: boolean;
 	mirrorFillInvert: boolean;

@@ -507,7 +507,7 @@ export const en = {
 	focus_points_clear: 'Forget',
 	logo_follow_image_focus: 'The mark follows the picture',
 	logo_follow_image_focus_t:
-		'Takes the base position of the logo from each image own mark focus, so it stops landing on faces. The camera offsets still apply on top.',
+		'Takes the base position of the logo from THIS image own mark, so it stops landing on faces. Per image: each picture decides whether it moves the mark. The camera offsets still apply on top.',
 	intro_duration: 'Duration (s)',
 	intro_build_sec: 'Mounting (s)',
 	intro_release_sec: 'Dismounting (s)',
@@ -1540,9 +1540,9 @@ export const en = {
 	label_title_width: 'Title Width',
 	label_manual_framing: 'Manual Framing',
 	hint_manual_framing_on:
-		'Manual mode: scale and position are exactly what you set here. Nothing re-frames the image and the screen may not stay fully covered.',
+		'Manual mode for THIS image: scale and position are exactly what you set here. Nothing re-frames it and the screen may not stay fully covered.',
 	hint_manual_framing_off:
-		'Automatic mode: the image is kept covering the whole screen, so the scale cannot go below the coverage minimum. Turn this on to edit the values freely.',
+		'Automatic mode for THIS image: it is kept covering the whole screen, so the scale cannot go below the coverage minimum. Turn this on to edit the values freely. Each image has its own switch.',
 	label_cover_fit: 'Cover Fit',
 	hint_cover_fit:
 		'Sets the framing to exactly the scale that keeps the whole screen covered at the current composition. Fit mode and focus point are left as they are.',
@@ -2541,7 +2541,7 @@ export const en = {
 	qa_grp_sub_camera_layers: 'CAMERA LAYERS',
 	qa_manual_framing: 'MANUAL FRAME',
 	qa_manual_framing_t:
-		'Manual framing: the coverage math stops correcting the image. Switching it either way seeds the exact minimum covering framing.',
+		'Manual framing for the active image: the coverage math stops correcting it. Switching it either way seeds the exact minimum covering framing.',
 	qa_intro: 'INTRO',
 	qa_intro_t: 'Turn the generated intro on or off',
 	qa_ending: 'ENDING',

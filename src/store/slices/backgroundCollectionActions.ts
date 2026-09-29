@@ -31,7 +31,8 @@ import {
 	applyActiveImageConfigToDefaultImages,
 	buildBackgroundImageCollectionPatch,
 	moveBackgroundImageItem,
-	shuffleBackgroundImages
+	shuffleBackgroundImages,
+	syncActiveBackgroundImage
 } from '@/store/backgroundStoreUtils';
 import {
 	buildActiveImageSelectionPatch,
@@ -127,7 +128,10 @@ function buildSpectrumAvoidRegion(params: {
 		positionY: image.positionY,
 		rotation: image.rotation,
 		mirror: image.mirror,
-		keepCovered: true,
+		// The rect the RENDERER uses: with manual framing on there is no
+		// coverage raise, so measuring against a covered rect would put the
+		// exclusion zone somewhere nothing is drawn.
+		keepCovered: !image.framingManual,
 		focusX: image.focusX,
 		focusY: image.focusY,
 		mirrorFill: image.mirrorFill,
@@ -263,7 +267,12 @@ export function createBackgroundCollectionActions(
 		//   mode START at the minimum covering scale (the whole point of going
 		//   manual) instead of at a stale value the user then has to nudge.
 		setImageFramingManualEnabled: v => {
-			set({ imageFramingManualEnabled: v });
+			// Per image, like every other framing decision: the flat key is the
+			// ACTIVE image's live value and has to be written back into it.
+			set(state => ({
+				imageFramingManualEnabled: v,
+				...syncActiveBackgroundImage(state, { framingManual: v })
+			}));
 			void coverFitActiveImage();
 		},
 		setImagePlaybackSwitchAt: v =>
@@ -553,7 +562,10 @@ export function createBackgroundCollectionActions(
 					positionY: image.positionY,
 					rotation: image.rotation,
 					mirror: image.mirror,
-					keepCovered: true,
+					// Same rect the renderer draws: manual framing means no
+					// coverage raise, and a mark mapped through a rect nobody
+					// draws lands next to the thing it was pointing at.
+					keepCovered: !image.framingManual,
 					focusX: image.focusX,
 					focusY: image.focusY,
 					mirrorFill: image.mirrorFill,

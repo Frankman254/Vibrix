@@ -15,6 +15,39 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Corregido
+
+- **La marca ya no salta al voltear la imagen, y los interruptores del panel de
+  la imagen son de esa imagen.** Dos fallos de la funcionalidad nueva de puntos
+  por imagen:
+    - **Espejo (mirror) contra la marca.** El punto de la marca se guarda en
+      espacio de imagen (0..1 sobre la foto), y la vista previa ya lo dibujaba a
+      través del rectángulo real (`projectImagePoint`: espejo, espejo en Y y
+      rotación). El colocador del logo, en cambio, mapeaba el rectángulo como si
+      estuviera derecho: con **Espejo** activo la marca de la izquierda de la
+      foto es la derecha de la pantalla, así que el logo aterrizaba justo encima
+      del sujeto. Ahora `imagePointToLogoPosition` empuja el punto por el MISMO
+      mapeo que la previsualización. La zona de exclusión del spectrum radial
+      (`spectrumAnnulusInImageSpace`) tenía el mismo hueco y también voltea su
+      centro.
+    - **Encuadre manual ignorado al mapear.** Tanto la colocación de la marca
+      como la zona de exclusión pedían el rectángulo con `keepCovered: true`
+      fijo, es decir el rectángulo con la subida de cobertura, aunque con
+      **Encuadre manual** activo el render NO la aplica. Se mapeaba contra un
+      rectángulo que nadie dibuja. Ahora se usa `keepCovered: !framingManual`,
+      el mismo que el render.
+    - **Interruptores globales en un panel por imagen.** **Encuadre manual** y
+      **¿La marca sigue a la imagen?** viven dentro de la tarjeta de la imagen
+      activa pero se guardaban en una única clave global: activarlos para un
+      retrato los activaba para todo el pool. Pasan a ser `framingManual` y
+      `logoFollowsFocus` de cada `BackgroundImageItem`; las claves planas
+      (`imageFramingManualEnabled`, `logoFollowImageFocus`) son, como el resto de
+      las `image*`, el valor vivo de la imagen ACTIVA: se escriben en su imagen
+      al cambiarlos y se restauran al cambiar de imagen.
+    - `STORE_PERSIST_VERSION` is at **141**, con migración: cada imagen guardada
+      hereda lo que decía el global, así que un proyecto restaurado se comporta
+      exactamente como se guardó.
+
 ### Añadido
 
 - **Movimiento (Camera Motion): el recorrido crece, la figura no.** La

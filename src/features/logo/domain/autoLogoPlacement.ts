@@ -1,4 +1,8 @@
 import { LOGO_RANGES } from '@/config/ranges';
+import {
+	projectImagePoint,
+	type ImagePointRect
+} from '@/features/background/domain/imagePointProjection';
 
 /**
  * Pure mapping from a saliency low-mass box (0..1 image space, y down — see
@@ -52,7 +56,9 @@ export function logoBoxSizeForViewport(
  * placement). Mapping canvas px into image space goes through the primary
  * draw rect from `resolveImageTransform`, which already accounts for
  * fit/crop/scale/position/focus. Rotation is ignored: it is rare, and the
- * ellipse is a bounding approximation of the shaped ring anyway.
+ * ellipse is a bounding approximation of the shaped ring anyway; mirroring is
+ * NOT, because a flipped picture puts the whole subject on the other side and
+ * an exclusion zone on the wrong half is worse than none.
  */
 export function spectrumAnnulusInImageSpace(params: {
 	spectrumPositionX: number;
@@ -62,7 +68,14 @@ export function spectrumAnnulusInImageSpace(params: {
 	viewportWidth: number;
 	viewportHeight: number;
 	/** primary draw rect in canvas px (resolveImageTransform) */
-	imageRect: { cx: number; cy: number; width: number; height: number };
+	imageRect: {
+		cx: number;
+		cy: number;
+		width: number;
+		height: number;
+		mirror?: boolean;
+		mirrorY?: boolean;
+	};
 }): {
 	center: { x: number; y: number };
 	innerRadii: { x: number; y: number };
@@ -83,10 +96,16 @@ export function spectrumAnnulusInImageSpace(params: {
 		inner,
 		params.innerRadius + Math.max(0, params.maxHeight)
 	);
+	// A mirrored rect draws image space backwards, so the screen point maps to
+	// the opposite fraction of the picture. The flips are applied here instead
+	// of through `unprojectImagePoint` because this centre is allowed to fall
+	// outside `0..1` (the ring can sit off the picture) and that helper clamps.
+	const rawX = (sx - left) / params.imageRect.width;
+	const rawY = (sy - top) / params.imageRect.height;
 	return {
 		center: {
-			x: (sx - left) / params.imageRect.width,
-			y: (sy - top) / params.imageRect.height
+			x: params.imageRect.mirror ? 1 - rawX : rawX,
+			y: params.imageRect.mirrorY ? 1 - rawY : rawY
 		},
 		innerRadii: {
 			x: inner / params.imageRect.width,
@@ -114,7 +133,7 @@ export function spectrumAnnulusInImageSpace(params: {
 export function imagePointToLogoPosition(params: {
 	point: { x: number; y: number };
 	/** Primary draw rect in canvas px, from `resolveImageTransform`. */
-	imageRect: { cx: number; cy: number; width: number; height: number };
+	imageRect: ImagePointRect;
 	viewportWidth: number;
 	viewportHeight: number;
 }): { x: number; y: number } {
@@ -129,8 +148,14 @@ export function imagePointToLogoPosition(params: {
 	) {
 		return { x: 0, y: 0 };
 	}
-	const sx = imageRect.cx - imageRect.width / 2 + point.x * imageRect.width;
-	const sy = imageRect.cy - imageRect.height / 2 + point.y * imageRect.height;
+	// The SAME mapping the preview's dot uses, mirror and rotation included: a
+	// flipped or turned picture moves the spot the mark describes, so mapping
+	// the rect as if it were upright lands the logo on the subject's face.
+	const { left: sx, top: sy } = projectImagePoint(
+		imageRect,
+		point.x,
+		point.y
+	);
 	const clamp = (value: number) =>
 		Math.min(
 			LOGO_RANGES.positionX.max,

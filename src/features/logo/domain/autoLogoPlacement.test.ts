@@ -60,12 +60,19 @@ describe('logoBoxSizeForViewport', () => {
 
 describe('imagePointToLogoPosition', () => {
 	const viewport = { viewportWidth: 1000, viewportHeight: 500 };
+	const upright = { rotation: 0, mirror: false };
 
 	it('maps the middle of a full-screen image to the middle of the screen', () => {
 		expect(
 			imagePointToLogoPosition({
 				point: { x: 0.5, y: 0.5 },
-				imageRect: { cx: 500, cy: 250, width: 1000, height: 500 },
+				imageRect: {
+					cx: 500,
+					cy: 250,
+					width: 1000,
+					height: 500,
+					...upright
+				},
 				...viewport
 			})
 		).toEqual({ x: 0, y: 0 });
@@ -76,7 +83,13 @@ describe('imagePointToLogoPosition', () => {
 		// image point now lands somewhere else entirely.
 		const placed = imagePointToLogoPosition({
 			point: { x: 0.75, y: 0.25 },
-			imageRect: { cx: 300, cy: 250, width: 2000, height: 1000 },
+			imageRect: {
+				cx: 300,
+				cy: 250,
+				width: 2000,
+				height: 1000,
+				...upright
+			},
 			...viewport
 		});
 		expect(placed.x).toBeCloseTo(0.6, 5);
@@ -87,10 +100,73 @@ describe('imagePointToLogoPosition', () => {
 	it('clamps a focus point that falls off the screen', () => {
 		const placed = imagePointToLogoPosition({
 			point: { x: 1, y: 1 },
-			imageRect: { cx: 500, cy: 250, width: 6000, height: 3000 },
+			imageRect: {
+				cx: 500,
+				cy: 250,
+				width: 6000,
+				height: 3000,
+				...upright
+			},
 			...viewport
 		});
 		expect(placed.x).toBeLessThanOrEqual(0.9);
 		expect(placed.y).toBeGreaterThanOrEqual(-0.9);
+	});
+
+	// The bug: a mirrored picture draws image space backwards, so a mark on the
+	// left of the PICTURE is on the right of the SCREEN. Mapping the rect as if
+	// it were upright put the logo on the subject instead of beside it.
+	it('mirrors the mark with the picture', () => {
+		const rect = {
+			cx: 500,
+			cy: 250,
+			width: 1000,
+			height: 500,
+			rotation: 0
+		};
+		const mirrored = imagePointToLogoPosition({
+			point: { x: 0.3, y: 0.42 },
+			imageRect: { ...rect, mirror: true },
+			...viewport
+		});
+		const opposite = imagePointToLogoPosition({
+			point: { x: 0.7, y: 0.42 },
+			imageRect: { ...rect, mirror: false },
+			...viewport
+		});
+		expect(mirrored).toEqual(opposite);
+		// And it really moved: the unmirrored mark is on the other side.
+		expect(mirrored.x).toBeCloseTo(0.4, 5);
+	});
+
+	it('flips on Y for a mirror-fill clone and follows a rotation', () => {
+		const rect = { cx: 500, cy: 250, width: 1000, height: 500 };
+		expect(
+			imagePointToLogoPosition({
+				point: { x: 0.5, y: 0.25 },
+				imageRect: {
+					...rect,
+					rotation: 0,
+					mirror: false,
+					mirrorY: true
+				},
+				...viewport
+			}).y
+		).toBeCloseTo(
+			-imagePointToLogoPosition({
+				point: { x: 0.5, y: 0.25 },
+				imageRect: { ...rect, rotation: 0, mirror: false },
+				...viewport
+			}).y,
+			5
+		);
+		// A quarter turn sends a point that was to the right downwards.
+		const turned = imagePointToLogoPosition({
+			point: { x: 1, y: 0.5 },
+			imageRect: { ...rect, rotation: 90, mirror: false },
+			...viewport
+		});
+		expect(turned.x).toBeCloseTo(0, 5);
+		expect(turned.y).toBeCloseTo(-0.9, 5);
 	});
 });

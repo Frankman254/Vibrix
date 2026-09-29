@@ -6,6 +6,7 @@ import {
 	MAX_LOGO_SLOT_COUNT
 } from '@/store/featureProfiles';
 import { DEFAULT_STATE } from '@/store/defaultState';
+import { syncActiveBackgroundImage } from '@/store/backgroundStoreUtils';
 import { APP_LOGO_URL } from '@/config/appLogo';
 import type { WallpaperStore } from '@/store/wallpaperStoreTypes';
 
@@ -22,7 +23,13 @@ export function createLogoSlice(
 		setShowLogoDiagnosticsHud: v => set({ showLogoDiagnosticsHud: v }),
 		setLogoEnabled: v => set({ logoEnabled: v }),
 		setLogoFollowImageFocus: v => {
-			set({ logoFollowImageFocus: v });
+			// Per image: the flat key is the ACTIVE image's live value, so the
+			// switch has to be written back into the image it belongs to or the
+			// next image switch reads the old one.
+			set(state => ({
+				logoFollowImageFocus: v,
+				...syncActiveBackgroundImage(state, { logoFollowsFocus: v })
+			}));
 			// Turning it ON must move the mark right now: waiting for the next
 			// image switch would make the switch look broken.
 			if (v) void get().applyImageLogoFocus(get().activeImageId);

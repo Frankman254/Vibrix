@@ -24,6 +24,8 @@ export type BackgroundImageLayoutState = Pick<
 	| 'imageAudioReactiveDecay'
 	| 'imageAudioChannel'
 	| 'imageFitMode'
+	| 'imageFramingManualEnabled'
+	| 'logoFollowImageFocus'
 	| 'imageMirror'
 	| 'imageMirrorFill'
 	| 'imageMirrorFillInvert'
@@ -43,6 +45,8 @@ export type BackgroundImageLayoutPatch = Partial<BackgroundImageLayout> & {
 	audioChannel?: WallpaperState['imageAudioChannel'];
 	mirror?: boolean;
 	rotation?: number;
+	framingManual?: boolean;
+	logoFollowsFocus?: boolean;
 	opacity?: number;
 	transitionType?: SlideshowTransitionType;
 	transitionDuration?: number;
@@ -129,6 +133,12 @@ export function syncStateWithActiveBackgroundImage(
 			patch.imageAudioChannel ?? state.imageAudioChannel;
 	if ('imageFitMode' in patch)
 		nextConfig.fitMode = patch.imageFitMode ?? state.imageFitMode;
+	if ('imageFramingManualEnabled' in patch)
+		nextConfig.framingManual =
+			patch.imageFramingManualEnabled ?? state.imageFramingManualEnabled;
+	if ('logoFollowImageFocus' in patch)
+		nextConfig.logoFollowsFocus =
+			patch.logoFollowImageFocus ?? state.logoFollowImageFocus;
 	if ('imageMirror' in patch)
 		nextConfig.mirror = patch.imageMirror ?? state.imageMirror;
 	if ('imageMirrorFill' in patch)
@@ -251,6 +261,11 @@ export function buildFallbackBackgroundImageConfig(
 		imageAudioChannel:
 			state.imageAudioChannel ?? DEFAULT_STATE.imageAudioChannel,
 		imageFitMode: state.imageFitMode ?? DEFAULT_STATE.imageFitMode,
+		imageFramingManualEnabled:
+			state.imageFramingManualEnabled ??
+			DEFAULT_STATE.imageFramingManualEnabled,
+		logoFollowImageFocus:
+			state.logoFollowImageFocus ?? DEFAULT_STATE.logoFollowImageFocus,
 		imageMirror: state.imageMirror ?? DEFAULT_STATE.imageMirror,
 		imageMirrorFill: state.imageMirrorFill ?? DEFAULT_STATE.imageMirrorFill,
 		imageMirrorFillInvert:
@@ -346,6 +361,15 @@ export function normalizePersistedBackgroundImages(
 				image.logoFocusSource === 'manual' ? 'manual' : 'auto',
 			rotation: image.rotation ?? fallbackImageConfig.imageRotation,
 			fitMode: image.fitMode ?? fallbackImageConfig.imageFitMode,
+			// Pre-v141 items carry no per-image switch: they inherit what used
+			// to be the single global value, so a restored project keeps the
+			// look it was saved with.
+			framingManual:
+				image.framingManual ??
+				fallbackImageConfig.imageFramingManualEnabled,
+			logoFollowsFocus:
+				image.logoFollowsFocus ??
+				fallbackImageConfig.logoFollowImageFocus,
 			mirror: image.mirror ?? fallbackImageConfig.imageMirror,
 			mirrorFill: image.mirrorFill ?? fallbackImageConfig.imageMirrorFill,
 			mirrorFillInvert:

@@ -30,6 +30,8 @@ export type BackgroundImageSettings = Pick<
 	| 'logoFocusSource'
 	| 'rotation'
 	| 'fitMode'
+	| 'framingManual'
+	| 'logoFollowsFocus'
 	| 'mirror'
 	| 'mirrorFill'
 	| 'mirrorFillInvert'
@@ -81,6 +83,8 @@ export function getDefaultBackgroundImageSettings(): BackgroundImageSettings {
 		logoFocusSource: 'auto',
 		rotation: 0,
 		fitMode: DEFAULT_STATE.imageFitMode,
+		framingManual: DEFAULT_STATE.imageFramingManualEnabled,
+		logoFollowsFocus: DEFAULT_STATE.logoFollowImageFocus,
 		mirror: DEFAULT_STATE.imageMirror,
 		mirrorFill: DEFAULT_STATE.imageMirrorFill,
 		mirrorFillInvert: DEFAULT_STATE.imageMirrorFillInvert,
@@ -156,6 +160,9 @@ export function createBackgroundImageItem(
 		logoFocusSource: settings.logoFocusSource ?? defaults.logoFocusSource,
 		rotation: settings.rotation ?? defaults.rotation,
 		fitMode: settings.fitMode ?? defaults.fitMode,
+		framingManual: settings.framingManual ?? defaults.framingManual,
+		logoFollowsFocus:
+			settings.logoFollowsFocus ?? defaults.logoFollowsFocus,
 		// Never hand-framed; provenance flag, deliberately not part of
 		// importable settings.
 		coverageFramingEdited: false,
@@ -225,6 +232,8 @@ export function getBackgroundImageRuntimePatch(
 	| 'imageAudioReactiveDecay'
 	| 'imageAudioChannel'
 	| 'imageFitMode'
+	| 'imageFramingManualEnabled'
+	| 'logoFollowImageFocus'
 	| 'imageMirror'
 	| 'imageMirrorFill'
 	| 'imageMirrorFillInvert'
@@ -253,6 +262,10 @@ export function getBackgroundImageRuntimePatch(
 		imageAudioChannel:
 			image?.audioChannel ?? DEFAULT_STATE.imageAudioChannel,
 		imageFitMode: image?.fitMode ?? DEFAULT_STATE.imageFitMode,
+		imageFramingManualEnabled:
+			image?.framingManual ?? DEFAULT_STATE.imageFramingManualEnabled,
+		logoFollowImageFocus:
+			image?.logoFollowsFocus ?? DEFAULT_STATE.logoFollowImageFocus,
 		imageMirror: image?.mirror ?? DEFAULT_STATE.imageMirror,
 		imageMirrorFill: image?.mirrorFill ?? DEFAULT_STATE.imageMirrorFill,
 		imageMirrorFillInvert:

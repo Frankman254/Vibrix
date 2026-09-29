@@ -3591,6 +3591,28 @@ export function migrateWallpaperStore(
 		);
 	}
 
+	if (fromVersion < 141) {
+		// Manual Framing and "the mark follows the picture" became PER IMAGE:
+		// both are decisions about one photograph, and as globals they leaked
+		// from one image to the next. Every stored image inherits what the
+		// global said, so a restored project behaves exactly as it was saved.
+		const framingManual = migratedState.imageFramingManualEnabled ?? false;
+		const logoFollowsFocus = migratedState.logoFollowImageFocus ?? false;
+		migratedState.backgroundImages = (
+			migratedState.backgroundImages ?? []
+		).map(image => ({
+			...image,
+			framingManual:
+				typeof image.framingManual === 'boolean'
+					? image.framingManual
+					: framingManual,
+			logoFollowsFocus:
+				typeof image.logoFollowsFocus === 'boolean'
+					? image.logoFollowsFocus
+					: logoFollowsFocus
+		}));
+	}
+
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;
 }
 

@@ -510,7 +510,7 @@ export const es: Record<TranslationKey, string> = {
 	focus_points_clear: 'Olvidar',
 	logo_follow_image_focus: 'El logo sigue a la imagen',
 	logo_follow_image_focus_t:
-		'Toma la posición base del logo del foco de logo de cada imagen, así deja de caer sobre las caras. Los desplazamientos de la cámara se siguen aplicando encima.',
+		'Toma la posición base del logo de la marca de ESTA imagen, así deja de caer sobre las caras. Es por imagen: cada foto decide si mueve la marca. Los desplazamientos de la cámara se siguen aplicando encima.',
 	intro_duration: 'Duración (s)',
 	intro_build_sec: 'Montaje (s)',
 	intro_release_sec: 'Desmontaje (s)',
@@ -1556,9 +1556,9 @@ export const es: Record<TranslationKey, string> = {
 	label_title_width: 'Ancho del Titulo',
 	label_manual_framing: 'Encuadre Manual',
 	hint_manual_framing_on:
-		'Modo manual: la escala y la posicion son exactamente las que pongas aqui. Nada reencuadra la imagen y la pantalla puede quedar sin cubrir del todo.',
+		'Modo manual para ESTA imagen: la escala y la posicion son exactamente las que pongas aqui. Nada la reencuadra y la pantalla puede quedar sin cubrir del todo.',
 	hint_manual_framing_off:
-		'Modo automatico: la imagen se mantiene cubriendo toda la pantalla, asi que la escala no baja del minimo de cobertura. Activa esto para editar los valores a voluntad.',
+		'Modo automatico para ESTA imagen: se mantiene cubriendo toda la pantalla, asi que la escala no baja del minimo de cobertura. Activa esto para editar los valores a voluntad. Cada imagen tiene su propio interruptor.',
 	label_cover_fit: 'Cover Fit',
 	hint_cover_fit:
 		'Ajusta el encuadre a la escala exacta que mantiene toda la pantalla cubierta con la composicion actual. El modo de ajuste y el punto de foco quedan como estan.',
@@ -2568,7 +2568,7 @@ export const es: Record<TranslationKey, string> = {
 	qa_grp_sub_camera_layers: 'CAPAS DE CÁMARA',
 	qa_manual_framing: 'ENCUADRE MAN.',
 	qa_manual_framing_t:
-		'Encuadre manual: el cálculo de cobertura deja de corregir la imagen. Al cambiarlo en cualquier sentido se siembra el encuadre mínimo exacto que cubre la pantalla.',
+		'Encuadre manual de la imagen activa: el cálculo de cobertura deja de corregirla. Al cambiarlo en cualquier sentido se siembra el encuadre mínimo exacto que cubre la pantalla.',
 	qa_intro: 'INTRO',
 	qa_intro_t: 'Activar o desactivar el intro generado',
 	qa_ending: 'ENDING',
