@@ -149,4 +149,9 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // the window's own spectrum, every piece mounted and taken apart again on the
 // configured duration. Migration carries the v129 values over and drops the old
 // keys; both windows stay off.
-export const STORE_PERSIST_VERSION = 130;
+// v131: the intro's spectrum is now one of the SAVED spectrum slots, drawn by
+// the real spectrum engine and moved by its own fixed generated wave instead of
+// the track's audio (`spectrumSource`, `spectrumSlotIndex`, `spectrumCentered`,
+// `spectrumWaveSpeed`, `spectrumWaveIntensity`). The old shape/size/colour keys
+// are dropped; a window that asked for a figure keeps asking for one.
+export const STORE_PERSIST_VERSION = 131;

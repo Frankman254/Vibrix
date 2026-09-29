@@ -251,12 +251,18 @@ export function createBackgroundCollectionActions(
 	}
 
 	return {
-		// Manual framing OFF hands the composition back to the coverage math,
-		// so refit the active image right away instead of waiting for the next
-		// viewport change: the switch has to show its effect immediately.
+		// The switch always hands the user the exact covered framing, in BOTH
+		// directions, and it does it now instead of waiting for the next viewport
+		// change:
+		// - OFF gives the composition back to the coverage math, so it has to
+		//   show its effect immediately.
+		// - ON stops the render-time coverage raise, so whatever was stored is
+		//   suddenly what is drawn. Seeding the cover fit is what makes manual
+		//   mode START at the minimum covering scale (the whole point of going
+		//   manual) instead of at a stale value the user then has to nudge.
 		setImageFramingManualEnabled: v => {
 			set({ imageFramingManualEnabled: v });
-			if (!v) void coverFitActiveImage();
+			void coverFitActiveImage();
 		},
 		setImagePlaybackSwitchAt: v =>
 			set(state => ({

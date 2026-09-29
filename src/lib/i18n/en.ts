@@ -541,16 +541,19 @@ export const en = {
 	intro_logo_hint:
 		'It sits above the title, in the middle, and mounts with the rest.',
 	intro_section_spectrum: 'Spectrum',
-	intro_spectrum_shape: 'Shape',
-	intro_spectrum_none: 'None',
-	intro_spectrum_bars: 'Bars',
-	intro_spectrum_mirror: 'Mirror',
-	intro_spectrum_ring: 'Ring',
-	intro_spectrum_wave: 'Wave',
-	intro_spectrum_size: 'Size (% of height)',
-	intro_spectrum_color: 'Spectrum colour',
+	intro_spectrum_enabled: 'Show a spectrum',
+	intro_spectrum_enabled_tooltip:
+		'Mounts one of your saved spectrum slots during the window and takes it apart again at the end.',
+	intro_spectrum_slot: 'Saved slot',
+	intro_spectrum_no_slots:
+		'No saved spectrum slots yet. Save one from the Spectrum tab and it will show up here.',
+	intro_spectrum_centered: 'Centre it',
+	intro_spectrum_centered_tooltip:
+		"Ignores the slot's position and puts the figure in the middle of the composition.",
+	intro_spectrum_wave_speed: 'Wave speed',
+	intro_spectrum_wave_intensity: 'Wave height',
 	intro_spectrum_hint:
-		"The window's own spectrum: it grows outwards from the middle as it mounts and retracts into it again, reading the audio that is actually playing.",
+		'The figure is your saved slot drawn by the real spectrum engine, moved by its own fixed wave — never by the track — so it animates smoothly even over silence or a fade-in.',
 	global_composition_hud_title: 'Global composition',
 	global_composition_hud_note: 'per-image ignored',
 	global_composition_hud_exit: 'Turn the global composition mode off',

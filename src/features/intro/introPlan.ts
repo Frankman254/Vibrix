@@ -21,10 +21,13 @@ import type {
 	IntroMontageMode,
 	IntroSequenceKind,
 	IntroSequenceSettings,
-	IntroSpectrumShape,
 	IntroTextReveal,
 	WallpaperState
 } from '@/types/wallpaper';
+import {
+	INTRO_WAVE_INTENSITY_RANGE,
+	INTRO_WAVE_SPEED_RANGE
+} from './introSpectrum';
 
 export type IntroSequenceState = Pick<
 	WallpaperState,
@@ -35,6 +38,13 @@ export type IntroSequenceState = Pick<
 export type IntroWindow = {
 	kind: IntroSequenceKind;
 	progress: number;
+	/**
+	 * Seconds since the window opened. `progress` is normalized, which is what
+	 * the mount envelopes want, but a wave needs REAL seconds so it travels at
+	 * the same speed whatever the configured duration — and taking them from
+	 * the track keeps live and offline identical.
+	 */
+	elapsedSec: number;
 };
 
 export type IntroViewport = { width: number; height: number };
@@ -73,12 +83,20 @@ export type IntroTextPlan = {
 	frame: IntroTextFrame;
 };
 
+/**
+ * The intro spectrum is drawn by the REAL spectrum engine from a saved slot, so
+ * the plan carries no geometry at all: only how far the figure is mounted and
+ * how opaque it is. `introSpectrumDraw` turns that into a slot render.
+ */
 export type IntroSpectrumPlan = {
-	shape: Exclude<IntroSpectrumShape, 'none'>;
-	/** Normalised bar heights, already masked by how far the shape is up. */
-	bars: number[];
-	sizePct: number;
+	/** Which saved spectrum slot, by position in `spectrumProfileSlots`. */
+	slotIndex: number;
+	centered: boolean;
+	/** `0..1` — feeds both the generated wave's height and the opacity. */
+	mount: number;
 	alpha: number;
+	waveSpeed: number;
+	waveIntensity: number;
 };
 
 export type IntroLogoPlan = {
@@ -109,10 +127,7 @@ export const INTRO_PHASE_RANGE = { min: 0.05, max: 0.45 } as const;
 export const INTRO_TITLE_SIZE_RANGE = { min: 4, max: 22 } as const;
 export const INTRO_TAGLINE_SIZE_RANGE = { min: 2, max: 12 } as const;
 export const INTRO_LOGO_SIZE_RANGE = { min: 4, max: 40 } as const;
-export const INTRO_SPECTRUM_SIZE_RANGE = { min: 5, max: 60 } as const;
-
-/** How many bars the intro's own spectrum draws. Fixed: it is a flourish. */
-export const INTRO_SPECTRUM_BAR_COUNT = 56;
+export { INTRO_WAVE_INTENSITY_RANGE, INTRO_WAVE_SPEED_RANGE };
 
 /**
  * The order pieces are mounted in. The teardown runs it backwards, which is
@@ -166,10 +181,11 @@ export function createDefaultIntroSequence(
 		logoSource: 'none',
 		logoSizePct: 14,
 
-		spectrumShape: intro ? 'mirror' : 'ring',
-		spectrumSizePct: 22,
-		spectrumColorSource: 'image',
-		spectrumColor: '#ff5bb0'
+		spectrumSource: 'none',
+		spectrumSlotIndex: 0,
+		spectrumCentered: true,
+		spectrumWaveSpeed: 1,
+		spectrumWaveIntensity: 1
 	};
 }
 
@@ -231,7 +247,11 @@ export function resolveIntroWindow(
 	const introSec = effectiveDuration(state.introSequence, totalSec);
 	const outroSec = effectiveDuration(state.outroSequence, totalSec);
 	if (introSec > 0 && timeSec < introSec) {
-		return { kind: 'intro', progress: clamp01(timeSec / introSec) };
+		return {
+			kind: 'intro',
+			progress: clamp01(timeSec / introSec),
+			elapsedSec: Math.max(0, timeSec)
+		};
 	}
 	if (outroSec > 0) {
 		const startSec = Math.max(introSec, totalSec - outroSec);
@@ -239,7 +259,8 @@ export function resolveIntroWindow(
 			const span = Math.max(0.001, totalSec - startSec);
 			return {
 				kind: 'outro',
-				progress: clamp01((timeSec - startSec) / span)
+				progress: clamp01((timeSec - startSec) / span),
+				elapsedSec: Math.max(0, timeSec - startSec)
 			};
 		}
 	}
@@ -562,56 +583,6 @@ export function resolveIntroTextFrame(
 	}
 }
 
-/**
- * The bar heights of the intro's own spectrum, already masked by how far it is
- * mounted: bars grow outwards from the middle and retract into it again.
- *
- * This is the window's own little spectrum, not the project's spectrum engine —
- * a four-second flourish has no business dragging a whole render subsystem and
- * its state into itself. It still reads the real bins, so it moves with the
- * music that is actually playing under the intro.
- */
-export function resolveIntroSpectrumBars(
-	bins: ArrayLike<number> | null,
-	barCount: number,
-	mount: number
-): number[] {
-	const count = Math.max(1, Math.round(barCount));
-	const m = clamp01(mount);
-	const half = count / 2;
-	const reach = m * half;
-	const bars: number[] = [];
-	for (let index = 0; index < count; index += 1) {
-		const distance = Math.abs(index + 0.5 - half);
-		// A soft edge half a bar wide, so the shape grows instead of stepping
-		// while still being empty at zero and complete at one.
-		const presence = clamp01(reach - distance + 0.5);
-		if (presence <= 0) {
-			bars.push(0);
-			continue;
-		}
-		let level = 0;
-		if (bins && bins.length > 0) {
-			// Read the low half of the spectrum: the top octaves are mostly
-			// silent and would leave the shape flat at both ends.
-			const span = Math.max(1, Math.floor(bins.length * 0.62));
-			const from = Math.floor((index / count) * span);
-			const to = Math.max(
-				from + 1,
-				Math.floor(((index + 1) / count) * span)
-			);
-			let sum = 0;
-			for (let b = from; b < to; b += 1) sum += bins[b] ?? 0;
-			level = sum / (to - from) / 255;
-		}
-		// A resting shape when there is no audio, so the flourish still reads
-		// as a spectrum on a silent frame.
-		const resting = 0.22 + 0.18 * Math.cos((distance / half) * Math.PI);
-		bars.push(clamp01(Math.max(level, resting)) * presence);
-	}
-	return bars;
-}
-
 /** Everything the painter needs about this frame, and nothing about colour. */
 export function resolveIntroFrame(options: {
 	kind: IntroSequenceKind;
@@ -620,9 +591,8 @@ export function resolveIntroFrame(options: {
 	viewport: IntroViewport;
 	/** How many images the montage actually has. */
 	cardCount: number;
-	bins: ArrayLike<number> | null;
 }): IntroFrame {
-	const { kind, settings, viewport, cardCount, bins } = options;
+	const { kind, settings, viewport, cardCount } = options;
 	const progress = clamp01(options.progress);
 	const mountOf = (slot: IntroMountSlot) =>
 		resolveSlotMount(settings, progress, slot);
@@ -649,20 +619,23 @@ export function resolveIntroFrame(options: {
 			progress
 		}),
 		spectrum:
-			settings.spectrumShape === 'none' || spectrumMount <= 0
+			settings.spectrumSource === 'none' ||
+			settings.spectrumSlotIndex < 0 ||
+			spectrumMount <= 0
 				? null
 				: {
-						shape: settings.spectrumShape,
-						bars: resolveIntroSpectrumBars(
-							bins,
-							INTRO_SPECTRUM_BAR_COUNT,
-							spectrumMount
+						slotIndex: Math.round(settings.spectrumSlotIndex),
+						centered: settings.spectrumCentered,
+						mount: spectrumMount,
+						alpha: clamp01(spectrumMount * 1.4),
+						waveSpeed: clampRange(
+							settings.spectrumWaveSpeed,
+							INTRO_WAVE_SPEED_RANGE
 						),
-						sizePct: clampRange(
-							settings.spectrumSizePct,
-							INTRO_SPECTRUM_SIZE_RANGE
-						),
-						alpha: clamp01(spectrumMount * 1.4)
+						waveIntensity: clampRange(
+							settings.spectrumWaveIntensity,
+							INTRO_WAVE_INTENSITY_RANGE
+						)
 					},
 		logo:
 			settings.logoSource === 'none' || logoMount <= 0

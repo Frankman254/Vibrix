@@ -167,16 +167,27 @@ después de él no hay nada.
   entradas: `typewriter` (**letra a letra**, se escribe al abrir y se borra al
   cerrar), `fade`, `rise`, `pop` y `wipe`.
 - **Logo** en el centro: el de Vibrix o el del proyecto.
-- **Spectrum propio de la ventana** (`bars`, `mirror`, `ring`, `wave`) que crece
-  del centro hacia fuera al montarse y se recoge al cerrar, leyendo los bins
-  reales. Es suyo y no el motor de Spectrum: una ventana de cinco segundos no
-  tiene por qué arrastrar un subsistema entero y su máquina de estados.
+- **Spectrum = uno de tus slots guardados.** La ventana elige un slot de
+  `spectrumProfileSlots` y lo dibuja **el motor real de Spectrum** por la misma
+  tubería que el wallpaper (responsive → placement → colores → `drawSpectrum`),
+  con su propia clave de runtime para no tocar el suavizado de las figuras vivas.
+  Se monta, se sostiene y se desmonta con la ventana, y opcionalmente se centra.
+  La primera versión dibujaba una figura parecida hecha a mano; se descartó
+  porque nunca coincide con el spectrum que el vídeo está a punto de mostrar, que
+  es justo el sentido del detalle.
+- **La onda es fija y generada**, no el audio de la pista (`introSpectrum.ts`,
+  determinista, con velocidad y altura configurables). Tres razones: sale idéntica
+  en cada render, funciona sobre silencio o fade-in —donde el intro suele caer— y
+  es fluida por construcción en vez de depender de lo que haya en los bins.
 
 ### 2.4 Dónde vive el código
 
 - `src/features/intro/introPlan.ts` — **el tiempo**: ventana, orden de montaje,
-  cartas de los siete montajes, revelado de texto, barras del spectrum. Puro y
-  cubierto por 22 pruebas.
+  cartas de los siete montajes, revelado de texto, plan del spectrum. Puro y
+  cubierto por pruebas.
+- `introSpectrum.ts` — la onda fija generada; `introSpectrumDraw.ts` — el puente
+  al motor real de Spectrum (un callback, para que `introPaint.ts` no arrastre el
+  motor).
 - `introPaint.ts` — **el espacio**: un solo pintor, porque maquetar un título
   necesita métricas de fuente que sólo da un canvas.
 - `introColors.ts` — colores y logo, compartidos por los dos caminos.

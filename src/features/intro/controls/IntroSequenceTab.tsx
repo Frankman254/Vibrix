@@ -36,7 +36,6 @@ import type {
 	IntroMontageMode,
 	IntroSequenceKind,
 	IntroSequenceOrder,
-	IntroSpectrumShape,
 	IntroTextReveal,
 	TrackTitleFontStyle
 } from '@/types/wallpaper';
@@ -45,8 +44,9 @@ import {
 	INTRO_IMAGE_COUNT_RANGE,
 	INTRO_LOGO_SIZE_RANGE,
 	INTRO_PHASE_RANGE,
-	INTRO_SPECTRUM_SIZE_RANGE,
 	INTRO_TAGLINE_SIZE_RANGE,
+	INTRO_WAVE_INTENSITY_RANGE,
+	INTRO_WAVE_SPEED_RANGE,
 	INTRO_TITLE_SIZE_RANGE,
 	createDefaultIntroSequence,
 	pickIntroImages
@@ -75,6 +75,19 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 					s.setlists,
 					s.activeSetlistId
 				).length
+		)
+	);
+	// Only slots that actually hold a saved figure: an empty slot would draw
+	// nothing and look like a bug.
+	const slotOptions = useWallpaperStore(
+		useShallow(s =>
+			s.spectrumProfileSlots
+				.map((slot, index) => ({ slot, index }))
+				.filter(entry => entry.slot.values !== null)
+				.map(entry => ({
+					value: String(entry.index),
+					label: entry.slot.name || `#${entry.index + 1}`
+				}))
 		)
 	);
 	const factory = createDefaultIntroSequence(kind);
@@ -451,61 +464,71 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 						dense
 					>
 						<div className="flex flex-col gap-2">
-							<Select<IntroSpectrumShape>
-								value={settings.spectrumShape}
-								onChange={spectrumShape =>
-									patch({ spectrumShape })
+							<ToggleControl
+								label={t.intro_spectrum_enabled}
+								value={settings.spectrumSource === 'slot'}
+								onChange={on =>
+									patch({
+										spectrumSource: on ? 'slot' : 'none'
+									})
 								}
-								ariaLabel={t.intro_spectrum_shape}
-								full
-								options={[
-									{
-										value: 'none',
-										label: t.intro_spectrum_none
-									},
-									{
-										value: 'bars',
-										label: t.intro_spectrum_bars
-									},
-									{
-										value: 'mirror',
-										label: t.intro_spectrum_mirror
-									},
-									{
-										value: 'ring',
-										label: t.intro_spectrum_ring
-									},
-									{
-										value: 'wave',
-										label: t.intro_spectrum_wave
-									}
-								]}
+								tooltip={t.intro_spectrum_enabled_tooltip}
 							/>
-							{settings.spectrumShape === 'none' ? null : (
+							{settings.spectrumSource ===
+							'none' ? null : slotOptions.length === 0 ? (
+								<Caption>{t.intro_spectrum_no_slots}</Caption>
+							) : (
 								<>
-									<Slider
-										label={t.intro_spectrum_size}
-										value={settings.spectrumSizePct}
-										min={INTRO_SPECTRUM_SIZE_RANGE.min}
-										max={INTRO_SPECTRUM_SIZE_RANGE.max}
-										step={0.5}
-										onChange={spectrumSizePct =>
-											patch({ spectrumSizePct })
+									<Select<string>
+										value={String(
+											settings.spectrumSlotIndex
+										)}
+										onChange={value =>
+											patch({
+												spectrumSlotIndex: Number(value)
+											})
 										}
-										defaultValue={factory.spectrumSizePct}
+										ariaLabel={t.intro_spectrum_slot}
+										full
+										options={slotOptions}
+									/>
+									<ToggleControl
+										label={t.intro_spectrum_centered}
+										value={settings.spectrumCentered}
+										onChange={spectrumCentered =>
+											patch({ spectrumCentered })
+										}
+										tooltip={
+											t.intro_spectrum_centered_tooltip
+										}
+									/>
+									<Slider
+										label={t.intro_spectrum_wave_speed}
+										value={settings.spectrumWaveSpeed}
+										min={INTRO_WAVE_SPEED_RANGE.min}
+										max={INTRO_WAVE_SPEED_RANGE.max}
+										step={0.05}
+										onChange={spectrumWaveSpeed =>
+											patch({ spectrumWaveSpeed })
+										}
+										defaultValue={factory.spectrumWaveSpeed}
 										variant="compact"
 										formatValue={formatDecimal}
 									/>
-									<AdaptiveColorInput
-										label={t.intro_spectrum_color}
-										source={settings.spectrumColorSource}
-										onSourceChange={spectrumColorSource =>
-											patch({ spectrumColorSource })
+									<Slider
+										label={t.intro_spectrum_wave_intensity}
+										value={settings.spectrumWaveIntensity}
+										min={INTRO_WAVE_INTENSITY_RANGE.min}
+										max={INTRO_WAVE_INTENSITY_RANGE.max}
+										step={0.05}
+										onChange={spectrumWaveIntensity =>
+											patch({ spectrumWaveIntensity })
 										}
-										value={settings.spectrumColor}
-										onChange={spectrumColor =>
-											patch({ spectrumColor })
+										defaultValue={
+											factory.spectrumWaveIntensity
 										}
+										variant="compact"
+										formatValue={formatDecimal}
 									/>
 								</>
 							)}

@@ -31,13 +31,16 @@ import {
 	resolveIntroFrame,
 	resolveIntroWindow
 } from './introPlan';
+import { createIntroSpectrumPainter } from './introSpectrumDraw';
 
 export default function IntroLayer({ zIndex = 95 }: { zIndex?: number }) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const rafRef = useRef<number>(0);
 	const paintedRef = useRef(false);
 	const imagesRef = useRef(new Map<string, HTMLImageElement>());
-	const { getCurrentTime, getDuration, getFrequencyBins } = useAudioContext();
+	const { getCurrentTime, getDuration } = useAudioContext();
+	/** Wall-clock of the previous frame, for the renderer's own smoothing. */
+	const lastFrameMsRef = useRef(0);
 	const palette = useBackgroundPalette();
 	const paletteRef = useRef(palette);
 	paletteRef.current = palette;
@@ -102,6 +105,11 @@ export default function IntroLayer({ zIndex = 95 }: { zIndex?: number }) {
 				const image = imageFor(url);
 				if (image) images.set(index, image);
 			});
+			const nowMs = performance.now();
+			const dt = lastFrameMsRef.current
+				? Math.min(0.1, (nowMs - lastFrameMsRef.current) / 1000)
+				: 1 / 60;
+			lastFrameMsRef.current = nowMs;
 			const logoUrl = resolveIntroLogoUrl(settings, state);
 			const logo = logoUrl ? imageFor(logoUrl) : null;
 			const viewport = { width: c.width, height: c.height };
@@ -116,8 +124,7 @@ export default function IntroLayer({ zIndex = 95 }: { zIndex?: number }) {
 					settings,
 					progress: window_.progress,
 					viewport,
-					cardCount: Math.max(1, ids.length),
-					bins: getFrequencyBins()
+					cardCount: Math.max(1, ids.length)
 				}),
 				images,
 				logo,
@@ -126,6 +133,15 @@ export default function IntroLayer({ zIndex = 95 }: { zIndex?: number }) {
 					paletteRef.current,
 					resolveIntroThemePalette(state)
 				),
+				paintSpectrum:
+					createIntroSpectrumPainter({
+						kind: window_.kind,
+						state,
+						palette: paletteRef.current,
+						themePalette: resolveIntroThemePalette(state),
+						windowTimeSec: window_.elapsedSec,
+						dt
+					}) ?? undefined,
 				backdrop: settings.backdropColor,
 				titleFontStyle: settings.titleFontStyle,
 				taglineFontStyle: settings.taglineFontStyle
@@ -141,7 +157,7 @@ export default function IntroLayer({ zIndex = 95 }: { zIndex?: number }) {
 			imagesRef.current.clear();
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
 		};
-	}, [getCurrentTime, getDuration, getFrequencyBins]);
+	}, [getCurrentTime, getDuration]);
 
 	return (
 		<canvas

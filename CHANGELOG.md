@@ -31,12 +31,35 @@ the version scheme in `src/lib/version.ts`.
       tema) y **5 entradas**, entre ellas **letra a letra**: se escriben una a una
       al abrir y se borran una a una al cerrar.
     - **Logo en el centro**: el de Vibrix o el del proyecto, con tamaño propio.
-    - **Spectrum propio de la ventana** (barras, espejo, anillo u onda) que crece
-      del centro hacia fuera al montarse y se recoge al cerrar, leyendo el audio
-      que suena de verdad.
+    - **Spectrum de la ventana = uno de tus slots guardados.** Se elige un slot
+      de `spectrumProfileSlots` y lo dibuja **el motor real del spectrum** (misma
+      tubería: responsive → placement → colores → `drawSpectrum`), no una figura
+      parecida hecha para el intro. Se monta, se sostiene y se desmonta con la
+      ventana, opcionalmente centrado, y se mueve con una **onda fija generada**
+      (`introSpectrum.ts`) en vez del audio de la pista: velocidad y altura
+      configurables. Así la animación es idéntica en cada render y es fluida
+      aunque la pista empiece en silencio o con fade-in.
       Las ventanas siguen sin añadir duración al vídeo.
-      `STORE_PERSIST_VERSION` is at **130**; la migración traslada lo que hubiera
-      en v129 y borra sus claves. Ambas ventanas siguen llegando apagadas.
+      `STORE_PERSIST_VERSION` is at **131**; la migración traslada lo que hubiera
+      en v129, y la de v131 cambia las claves viejas del spectrum del intro
+      (`spectrumShape` / `spectrumSizePct` / `spectrumColorSource` /
+      `spectrumColor`) por las nuevas (`spectrumSource`, `spectrumSlotIndex`,
+      `spectrumCentered`, `spectrumWaveSpeed`, `spectrumWaveIntensity`): una
+      ventana que pedía figura sigue pidiéndola, con el slot 0 y centrada. Ambas
+      ventanas siguen llegando apagadas.
+
+- **Manual Framing calcula bien en los dos sentidos.** Al **activarlo** la imagen
+  se siembra ya en la escala mínima que cubre la pantalla (antes había que mover
+  el slider a mano), y al **desactivarlo** el cálculo interno ya no mete zoom de
+  más. La causa era una mezcla de unidades: el _reframe_ de fondo es lineal sobre
+  la escala **de autor**, así que guardar en `imageScale` el mínimo **dibujado**
+  dejaba que el reframe lo volviera a multiplicar. Ahora
+  `resolveImageTransform` publica `reframeScaleFactor` y
+  `minAuthoredScaleForCoverage`, y tanto los sliders como el Cover Fit y el
+  ajuste automático escriben el mínimo **de autor**. El aviso
+  `scale-raised-for-coverage` comparaba también unidades distintas y se corrigió.
+  El overlay de AutoZoom muestra ahora `stored / reframe / authored-min` para
+  poder leer los números en pantalla.
 
 ### Añadido
 

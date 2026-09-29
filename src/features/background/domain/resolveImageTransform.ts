@@ -1,5 +1,6 @@
 import {
 	getLayoutReferenceResolution,
+	resolveResponsiveBackgroundScaleFactor,
 	resolveResponsiveBackgroundTransform
 } from '@/features/layout/responsiveLayout';
 import { AUTOZOOM_SEAM_OVERLAP, resolveAutoZoomScale } from './autoZoom';
@@ -30,6 +31,20 @@ export type ResolvedImageTransform = {
 	effectivePositionY: number;
 	effectiveRotation: number;
 	minScaleForCoverage: number;
+	/**
+	 * The multiplier the background reframe applies to the authored scale here
+	 * (1 when the reframe is off). See
+	 * `resolveResponsiveBackgroundScaleFactor`.
+	 */
+	reframeScaleFactor: number;
+	/**
+	 * `minScaleForCoverage` expressed in AUTHORED units — what has to be stored
+	 * in `imageScale` for the DRAWN composition to sit exactly at the coverage
+	 * minimum. Equal to `minScaleForCoverage` with the reframe off. Every
+	 * writer of `imageScale` (Cover Fit, AutoZoom, the scale slider floor) must
+	 * use THIS one, never `minScaleForCoverage`.
+	 */
+	minAuthoredScaleForCoverage: number;
 	bounds: ImageTransformBounds;
 	warnings: string[];
 	baseWidth: number;
@@ -443,6 +458,7 @@ export function resolveImageTransform({
 	const authoredScale = authoredBaseScale + Math.max(0, reactiveScaleBoost);
 	let responsiveBaseScale = authoredBaseScale;
 	let resolvedScale = authoredScale;
+	let reframeScaleFactor = 1;
 	let resolvedPositionX = positionX;
 	let resolvedPositionY = positionY;
 	const sanitizedMirrorFillDepth =
@@ -481,6 +497,18 @@ export function resolveImageTransform({
 		resolvedPositionX = responsive.positionX;
 		resolvedPositionY = responsive.positionY;
 		responsiveBaseScale = resolvedScale - Math.max(0, reactiveScaleBoost);
+		reframeScaleFactor = resolveResponsiveBackgroundScaleFactor({
+			...layout,
+			mirror,
+			currentViewport: {
+				width: safeViewportWidth,
+				height: safeViewportHeight
+			},
+			currentBaseWidth: base.width,
+			currentBaseHeight: base.height,
+			referenceBaseWidth: referenceBase.width,
+			referenceBaseHeight: referenceBase.height
+		});
 	}
 
 	const minScaleForCoverage = resolveMinimumCoverScale(
@@ -491,6 +519,11 @@ export function resolveImageTransform({
 		fitMode,
 		rotation,
 		sanitizedMirrorFillDepth
+	);
+	const minAuthoredScaleForCoverage = clamp(
+		minScaleForCoverage / reframeScaleFactor,
+		0.01,
+		100
 	);
 	const coverageActive = keepCovered;
 	const coveredBaseScale = coverageActive
@@ -557,7 +590,10 @@ export function resolveImageTransform({
 	) {
 		warnings.push('position-clamped-for-coverage');
 	}
-	if (coverageActive && authoredBaseScale < minScaleForCoverage) {
+	// Reframed units on BOTH sides: `authoredBaseScale` is authored-side and
+	// `minScaleForCoverage` drawn-side, so comparing those two reports a raise
+	// that never happened (or misses one that did) whenever the reframe is on.
+	if (coverageActive && responsiveBaseScale < minScaleForCoverage) {
 		warnings.push('scale-raised-for-coverage');
 	}
 
@@ -648,6 +684,8 @@ export function resolveImageTransform({
 		effectivePositionY,
 		effectiveRotation: rotation,
 		minScaleForCoverage,
+		reframeScaleFactor,
+		minAuthoredScaleForCoverage,
 		bounds,
 		warnings,
 		baseWidth: base.width,

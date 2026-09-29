@@ -599,8 +599,12 @@ export type IntroTextReveal = 'typewriter' | 'fade' | 'rise' | 'pop' | 'wipe';
 /** Which mark sits in the middle of the composition. */
 export type IntroLogoSource = 'none' | 'vibrix' | 'project';
 
-/** The shape the intro's own spectrum draws while it mounts. */
-export type IntroSpectrumShape = 'none' | 'bars' | 'mirror' | 'ring' | 'wave';
+/**
+ * Where the intro's spectrum figure comes from. `slot` draws one of the SAVED
+ * spectrum profile slots with the real spectrum renderer, so the flourish is
+ * the same figure the wallpaper uses — not a lookalike.
+ */
+export type IntroSpectrumSource = 'none' | 'slot';
 
 /** Which end of the setlist the cards come from, and in which direction. */
 export type IntroSequenceOrder = 'setlist' | 'setlist-reverse';
@@ -647,10 +651,23 @@ export interface IntroSequenceSettings {
 	/** Logo height as a share of the viewport height. */
 	logoSizePct: number;
 
-	spectrumShape: IntroSpectrumShape;
-	spectrumSizePct: number;
-	spectrumColorSource: ColorSourceMode;
-	spectrumColor: string;
+	spectrumSource: IntroSpectrumSource;
+	/**
+	 * Which saved spectrum slot is drawn, by position. `-1` (or an index past
+	 * the end) means "no slot picked yet" and nothing is drawn.
+	 */
+	spectrumSlotIndex: number;
+	/** Draw the slot's figure in the middle of the screen, ignoring its own
+	 *  stored position — the intro is a centred composition. */
+	spectrumCentered: boolean;
+	/**
+	 * The fixed wave is generated from the window's own clock, NOT from the
+	 * track: an intro has to animate identically every time and stay fluid even
+	 * over silence or a fade-in. Speed multiplies that clock.
+	 */
+	spectrumWaveSpeed: number;
+	/** How tall the fixed wave swings, `0.2..1.5`. */
+	spectrumWaveIntensity: number;
 }
 
 export interface ProfileSlot<T> {

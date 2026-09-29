@@ -12,7 +12,10 @@ import {
 	LIVE_LOGO_SCOPE,
 	type LogoScope
 } from '@/features/logo';
-import { applySpectrumPlacementToState } from '@/features/spectrum';
+import {
+	applySpectrumPlacementToState,
+	resolveMainSpectrumState
+} from '@/features/spectrum';
 import {
 	createDefaultSpectrumInstanceSettings,
 	getSpectrumInstanceRuntimeKey
@@ -25,7 +28,6 @@ import {
 } from '@/features/layout/responsiveLayout';
 import {
 	getEditorThemePalette,
-	resolveModeDrivenColors,
 	resolveThemeColor,
 	type BackgroundPalette
 } from '@/lib/backgroundPalette';
@@ -163,43 +165,6 @@ function resolveLogoDrive(context: OverlayRenderContext): {
 		resolvedChannel: resolved.resolvedChannel,
 		channelInstant: synthetic ? drive : resolved.instantLevel,
 		channelRouterSmoothed: synthetic ? drive : resolved.value
-	};
-}
-
-function resolveMainSpectrumState(
-	state: WallpaperState,
-	backgroundPalette: BackgroundPalette,
-	themePalette: BackgroundPalette
-): WallpaperState & {
-	spectrumRainbowColors?: string[];
-	spectrumGlowRainbowColors?: string[];
-} {
-	const resolvedColors = resolveModeDrivenColors(
-		state.spectrumColorSource,
-		state.spectrumPrimaryColor,
-		state.spectrumSecondaryColor,
-		backgroundPalette,
-		themePalette
-	);
-	// The glow carries its own color source/colors, resolved independently of
-	// the fill so it works in manual / image / theme alike.
-	const resolvedGlow = resolveModeDrivenColors(
-		state.spectrumGlowColorSource,
-		state.spectrumGlowPrimaryColor,
-		state.spectrumGlowSecondaryColor,
-		backgroundPalette,
-		themePalette
-	);
-	return {
-		...state,
-		spectrumPrimaryColor: resolvedColors.primaryColor,
-		spectrumSecondaryColor: resolvedColors.secondaryColor,
-		spectrumRainbowColors: resolvedColors.rainbowColors,
-		spectrumGlowPrimaryColor: resolvedGlow.primaryColor,
-		spectrumGlowSecondaryColor: resolvedGlow.secondaryColor,
-		// Rainbow / rotate glow samples its own palette, so an image-driven glow
-		// can sweep the wallpaper's colors independently of the fill.
-		spectrumGlowRainbowColors: resolvedGlow.rainbowColors
 	};
 }
 

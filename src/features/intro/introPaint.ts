@@ -19,6 +19,19 @@ import type {
 	IntroViewport
 } from './introPlan';
 
+/**
+ * Draws the intro's spectrum figure. It is a callback and not code in this file
+ * on purpose: the figure is a SAVED spectrum slot rendered by the real spectrum
+ * engine, and a painter that only needs font metrics has no business pulling a
+ * whole render subsystem in. `introSpectrumDraw` builds it; the live layer and
+ * the offline export both pass it down.
+ */
+export type PaintIntroSpectrum = (
+	ctx: CanvasRenderingContext2D,
+	plan: IntroSpectrumPlan,
+	windowAlpha: number
+) => void;
+
 /** What a card is drawn from — an `<img>` live, the same offline. */
 export type IntroImageSource = CanvasImageSource & {
 	width: number;
@@ -28,7 +41,6 @@ export type IntroImageSource = CanvasImageSource & {
 export type IntroPaintColors = {
 	title: string;
 	tagline: string;
-	spectrum: string;
 };
 
 export type PaintIntroOptions = {
@@ -42,6 +54,8 @@ export type PaintIntroOptions = {
 	backdrop: string;
 	titleFontStyle: TrackTitleFontStyle;
 	taglineFontStyle: TrackTitleFontStyle;
+	/** Absent → the spectrum simply is not drawn. */
+	paintSpectrum?: PaintIntroSpectrum;
 };
 
 /**
@@ -209,84 +223,6 @@ function paintTitleFrame(
 	ctx.restore();
 }
 
-function paintSpectrum(
-	ctx: CanvasRenderingContext2D,
-	plan: IntroSpectrumPlan,
-	viewport: IntroViewport,
-	centreY: number,
-	color: string,
-	windowAlpha: number
-): void {
-	const bars = plan.bars;
-	if (bars.length === 0 || plan.alpha <= 0.001) return;
-	const reach = (viewport.height * plan.sizePct) / 100;
-	ctx.save();
-	ctx.globalAlpha = Math.min(1, plan.alpha) * windowAlpha;
-	ctx.fillStyle = color;
-	ctx.strokeStyle = color;
-
-	if (plan.shape === 'ring') {
-		const radius = reach * 0.9;
-		const centreX = viewport.width / 2;
-		const thickness = Math.max(
-			1,
-			((2 * Math.PI * radius) / bars.length) * 0.55
-		);
-		ctx.lineWidth = thickness;
-		ctx.lineCap = 'round';
-		for (let index = 0; index < bars.length; index += 1) {
-			const level = bars[index] ?? 0;
-			if (level <= 0.001) continue;
-			const angle = (index / bars.length) * Math.PI * 2 - Math.PI / 2;
-			const inner = radius;
-			const outer = radius + level * reach * 0.6;
-			ctx.beginPath();
-			ctx.moveTo(
-				centreX + Math.cos(angle) * inner,
-				centreY + Math.sin(angle) * inner
-			);
-			ctx.lineTo(
-				centreX + Math.cos(angle) * outer,
-				centreY + Math.sin(angle) * outer
-			);
-			ctx.stroke();
-		}
-		ctx.restore();
-		return;
-	}
-
-	if (plan.shape === 'wave') {
-		ctx.lineWidth = Math.max(1.5, viewport.height * 0.004);
-		ctx.lineJoin = 'round';
-		ctx.beginPath();
-		for (let index = 0; index < bars.length; index += 1) {
-			const x = (index / (bars.length - 1 || 1)) * viewport.width;
-			const y = centreY - ((bars[index] ?? 0) - 0.5) * reach;
-			if (index === 0) ctx.moveTo(x, y);
-			else ctx.lineTo(x, y);
-		}
-		ctx.stroke();
-		ctx.restore();
-		return;
-	}
-
-	const slot = viewport.width / bars.length;
-	const barW = Math.max(1, slot * 0.6);
-	for (let index = 0; index < bars.length; index += 1) {
-		const level = bars[index] ?? 0;
-		if (level <= 0.001) continue;
-		const x = slot * (index + 0.5) - barW / 2;
-		const tall = level * reach;
-		if (plan.shape === 'mirror') {
-			ctx.fillRect(x, centreY - tall / 2, barW, tall);
-		} else {
-			// `bars` stands on a baseline below the composition's centre.
-			ctx.fillRect(x, centreY + reach / 2 - tall, barW, tall);
-		}
-	}
-	ctx.restore();
-}
-
 export function paintIntro({
 	ctx,
 	viewport,
@@ -296,7 +232,8 @@ export function paintIntro({
 	colors,
 	backdrop,
 	titleFontStyle,
-	taglineFontStyle
+	taglineFontStyle,
+	paintSpectrum
 }: PaintIntroOptions): void {
 	const { width, height } = viewport;
 	if (!(width > 0 && height > 0)) return;
@@ -339,15 +276,9 @@ export function paintIntro({
 	let cursorY = height / 2 - stackH / 2;
 	const centreX = width / 2;
 
-	if (frame.spectrum) {
-		paintSpectrum(
-			ctx,
-			frame.spectrum,
-			viewport,
-			height / 2,
-			colors.spectrum,
-			windowAlpha
-		);
+	// Behind the stack: the figure is scenery, the title is the message.
+	if (frame.spectrum && paintSpectrum) {
+		paintSpectrum(ctx, frame.spectrum, windowAlpha);
 	}
 
 	if (frame.logo && logo && logoH > 0) {

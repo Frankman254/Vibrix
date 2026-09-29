@@ -173,6 +173,7 @@ export function drawAutoZoomDebugOverlay({
 	ctx.textBaseline = 'bottom';
 	ctx.fillStyle = COLOR_TEXT;
 	const rows = [
+		`stored ${snapshot.scale.toFixed(3)}   reframe x${effective.reframeScaleFactor.toFixed(3)}   authored-min ${effective.minAuthoredScaleForCoverage.toFixed(3)}`,
 		`authored ${authored.effectiveScale.toFixed(3)}   min ${effective.minScaleForCoverage.toFixed(3)}   drawn ${effective.effectiveScale.toFixed(3)}`,
 		...(effective.warnings.length > 0
 			? [effective.warnings.join(' · ')]
@@ -191,7 +192,7 @@ export function drawAutoZoomDebugOverlay({
 			metrics.width + font * 0.8,
 			font * 1.3
 		);
-		ctx.fillStyle = index === 0 ? COLOR_TEXT : COLOR_AUTHORED;
+		ctx.fillStyle = index < 2 ? COLOR_TEXT : COLOR_AUTHORED;
 		ctx.fillText(row, font * 0.8, y);
 	});
 	ctx.restore();

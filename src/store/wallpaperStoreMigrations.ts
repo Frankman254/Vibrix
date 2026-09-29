@@ -3258,6 +3258,49 @@ export function migrateWallpaperStore(
 		delete legacy.outroStinger;
 	}
 
+	if (fromVersion < 131) {
+		// The intro's spectrum stopped being a lookalike figure with its own
+		// shape/size/colour and became "one of your SAVED slots, drawn by the
+		// real engine, moved by its own fixed wave". The old four keys have no
+		// equivalent — a shape is not a slot — so all a migration can honestly
+		// carry over is WHETHER a figure was asked for: slot 0, centred, and
+		// the wave at its neutral values.
+		const migrateWindowSpectrum = (window_: unknown): void => {
+			if (!window_ || typeof window_ !== 'object') return;
+			const settings = window_ as Record<string, unknown>;
+			const base = createDefaultIntroSequence('intro');
+			if (settings.spectrumSource === undefined) {
+				settings.spectrumSource =
+					typeof settings.spectrumShape === 'string' &&
+					settings.spectrumShape !== 'none'
+						? 'slot'
+						: 'none';
+			}
+			settings.spectrumSlotIndex =
+				typeof settings.spectrumSlotIndex === 'number'
+					? settings.spectrumSlotIndex
+					: base.spectrumSlotIndex;
+			settings.spectrumCentered =
+				typeof settings.spectrumCentered === 'boolean'
+					? settings.spectrumCentered
+					: base.spectrumCentered;
+			settings.spectrumWaveSpeed =
+				typeof settings.spectrumWaveSpeed === 'number'
+					? settings.spectrumWaveSpeed
+					: base.spectrumWaveSpeed;
+			settings.spectrumWaveIntensity =
+				typeof settings.spectrumWaveIntensity === 'number'
+					? settings.spectrumWaveIntensity
+					: base.spectrumWaveIntensity;
+			delete settings.spectrumShape;
+			delete settings.spectrumSizePct;
+			delete settings.spectrumColorSource;
+			delete settings.spectrumColor;
+		};
+		migrateWindowSpectrum(migratedState.introSequence);
+		migrateWindowSpectrum(migratedState.outroSequence);
+	}
+
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;
 }
 

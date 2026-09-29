@@ -101,6 +101,8 @@ export {
 	applySpectrumPlacementToState,
 	resolveSpectrumPlacement
 } from './runtime/spectrumPlacement';
+export { resolveMainSpectrumState } from './runtime/spectrumColorState';
+export type { ResolvedSpectrumColorState } from './runtime/spectrumColorState';
 export { hydrateSpectrumProfileValues } from './runtime/spectrumProfileHydrate';
 export { invalidateSpectrumPresetMorph } from './runtime/spectrumPresetTransition';
 export {

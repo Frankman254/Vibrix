@@ -294,12 +294,40 @@ describe('autoCoverFitActiveImage', () => {
 });
 
 describe('setImageFramingManualEnabled', () => {
+	it('seeds the exact covered framing when manual framing is turned on', async () => {
+		setup({
+			// No focus point so the exact fit lands dead centre.
+			itemSettings: { scale: 1.5, focusX: null, focusY: null },
+			state: {
+				imageScale: 1.5,
+				imagePositionX: 0.5,
+				imageFocusX: null,
+				imageFocusY: null
+			}
+		});
+
+		useWallpaperStore.getState().setImageFramingManualEnabled(true);
+		await Promise.resolve();
+		await Promise.resolve();
+
+		const s = useWallpaperStore.getState();
+		// Manual mode STARTS at the minimum covering scale — that is the whole
+		// reason to go manual — instead of at the stale stored value.
+		expect(s.imageFramingManualEnabled).toBe(true);
+		expect(s.imageScale).toBeCloseTo(COVER_MIN, 6);
+		expect(s.imagePositionX).toBeCloseTo(0, 6);
+	});
+
 	it('stops the passive refit while manual framing is on', async () => {
 		setup({
 			itemSettings: { scale: 1.5 },
-			state: { imageScale: 1.5, imagePositionX: 0.5 }
+			state: {
+				imageScale: 1.5,
+				imagePositionX: 0.5,
+				imageFramingManualEnabled: true
+			}
 		});
-		useWallpaperStore.getState().setImageFramingManualEnabled(true);
+		loadImageDimensionsMock.mockClear();
 
 		await useWallpaperStore.getState().autoFitCoveredActiveImage();
 

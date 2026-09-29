@@ -312,6 +312,39 @@ function getViewportPositionFromFocusCenter(
 	return offsetPixels / Math.max(1, viewportPixels * 0.5);
 }
 
+/**
+ * The multiplier the background reframe applies to the authored `imageScale`
+ * at this viewport — 1 when the reframe is off.
+ *
+ * Why this exists: the reframe map is LINEAR in the authored scale (both
+ * `scaleForWidth` and `scaleForHeight` are a constant times it), so the whole
+ * reframe collapses to one factor. Coverage math is authored-side (the store
+ * and the sliders write `imageScale`) while the coverage minimum is drawn-side,
+ * and the two only agree once this factor is divided out. Without it a Cover
+ * Fit writes the drawn minimum as if it were the authored value and the
+ * reframe multiplies it again — the "extra zoom" the coverage math cannot see.
+ */
+export function resolveResponsiveBackgroundScaleFactor(
+	input: Omit<
+		ResponsiveBackgroundTransformInput,
+		'authoredScale' | 'authoredPositionX' | 'authoredPositionY'
+	>
+): number {
+	if (
+		!input.layoutResponsiveEnabled ||
+		!input.layoutBackgroundReframeEnabled
+	) {
+		return 1;
+	}
+	const { scale } = resolveResponsiveBackgroundTransform({
+		...input,
+		authoredScale: 1,
+		authoredPositionX: 0,
+		authoredPositionY: 0
+	});
+	return Math.max(0.01, scale);
+}
+
 export function resolveResponsiveBackgroundTransform(
 	input: ResponsiveBackgroundTransformInput
 ): ResponsiveBackgroundTransform {

@@ -34,13 +34,6 @@ export function resolveIntroColors(
 			backgroundPalette,
 			themePalette,
 			'accent'
-		),
-		spectrum: resolveThemeColor(
-			settings.spectrumColorSource,
-			settings.spectrumColor,
-			backgroundPalette,
-			themePalette,
-			'dominant'
 		)
 	};
 }

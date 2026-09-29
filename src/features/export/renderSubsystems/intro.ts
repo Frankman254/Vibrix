@@ -9,6 +9,7 @@
  */
 import { resolveSlideshowPool } from '@/features/background';
 import {
+	createIntroSpectrumPainter,
 	paintIntro,
 	pickIntroImages,
 	resolveIntroColors,
@@ -98,8 +99,7 @@ export function createIntroSubsystem(): RenderSubsystem {
 					settings,
 					progress: window_.progress,
 					viewport: ctx.resolution,
-					cardCount: Math.max(1, assets.images.size),
-					bins: ctx.audio?.bins ?? null
+					cardCount: Math.max(1, assets.images.size)
 				}),
 				images: assets.images,
 				logo: assets.logo,
@@ -108,6 +108,15 @@ export function createIntroSubsystem(): RenderSubsystem {
 					ctx.palette,
 					resolveIntroThemePalette(ctx.state)
 				),
+				paintSpectrum:
+					createIntroSpectrumPainter({
+						kind: window_.kind,
+						state: ctx.state as WallpaperState,
+						palette: ctx.palette,
+						themePalette: resolveIntroThemePalette(ctx.state),
+						windowTimeSec: window_.elapsedSec,
+						dt: Math.max(0.0001, ctx.deltaMs / 1000)
+					}) ?? undefined,
 				backdrop: settings.backdropColor,
 				titleFontStyle: settings.titleFontStyle,
 				taglineFontStyle: settings.taglineFontStyle

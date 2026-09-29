@@ -17,7 +17,12 @@ type SliderRange = {
 export type BackgroundPositionRanges = {
 	positionX: SliderRange;
 	positionY: SliderRange;
-	/** Minimum scale needed to cover the viewport (rotation-aware). */
+	/**
+	 * Minimum AUTHORED scale needed to cover the viewport (rotation-aware, and
+	 * divided by the background reframe factor). The sliders write authored
+	 * values, so this is the floor they must clamp against — the drawn minimum
+	 * would leave the reframe free to multiply it again.
+	 */
 	minScale: number;
 	/**
 	 * Legal normalized position window for full coverage, always computed
@@ -219,7 +224,7 @@ export function useBackgroundPositionRanges({
 			}
 		});
 		const coverageBounds = covered.bounds;
-		const minScale = covered.minScaleForCoverage;
+		const minScale = covered.minAuthoredScaleForCoverage;
 
 		// Coverage ON: clamp the position sliders to the legal coverage window
 		// (rotation + focus aware) so the user cannot expose the background.

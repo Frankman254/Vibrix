@@ -545,16 +545,19 @@ export const es: Record<TranslationKey, string> = {
 	intro_logo_hint:
 		'Va encima del título, en el centro, y se monta con el resto.',
 	intro_section_spectrum: 'Spectrum',
-	intro_spectrum_shape: 'Forma',
-	intro_spectrum_none: 'Ninguno',
-	intro_spectrum_bars: 'Barras',
-	intro_spectrum_mirror: 'Espejo',
-	intro_spectrum_ring: 'Anillo',
-	intro_spectrum_wave: 'Onda',
-	intro_spectrum_size: 'Tamaño (% del alto)',
-	intro_spectrum_color: 'Color del spectrum',
+	intro_spectrum_enabled: 'Mostrar un spectrum',
+	intro_spectrum_enabled_tooltip:
+		'Monta uno de tus slots de spectrum guardados durante la ventana y lo desmonta al final.',
+	intro_spectrum_slot: 'Slot guardado',
+	intro_spectrum_no_slots:
+		'Todavía no hay slots de spectrum guardados. Guarda uno en la pestaña Spectrum y aparecerá aquí.',
+	intro_spectrum_centered: 'Centrarlo',
+	intro_spectrum_centered_tooltip:
+		'Ignora la posición del slot y pone la figura en el centro de la composición.',
+	intro_spectrum_wave_speed: 'Velocidad de la onda',
+	intro_spectrum_wave_intensity: 'Altura de la onda',
 	intro_spectrum_hint:
-		'El spectrum propio de la ventana: crece del centro hacia fuera al montarse y se recoge al cerrar, leyendo el audio que suena de verdad.',
+		'La figura es tu slot guardado dibujado por el motor real del spectrum, movido por su propia onda fija —nunca por la pista—, así que la animación es fluida incluso sobre silencio o un fade-in.',
 	global_composition_hud_title: 'Composición global',
 	global_composition_hud_note: 'per-imagen ignorado',
 	global_composition_hud_exit: 'Desactivar el modo de composición global',

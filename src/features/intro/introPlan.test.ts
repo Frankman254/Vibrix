@@ -1,13 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
 	INTRO_MOUNT_ORDER,
-	INTRO_SPECTRUM_BAR_COUNT,
 	createDefaultIntroSequence,
 	pickIntroImages,
 	resolveIntroBackdropAlpha,
 	resolveIntroCards,
 	resolveIntroFrame,
-	resolveIntroSpectrumBars,
 	resolveIntroTextFrame,
 	resolveIntroWindow,
 	resolveSlotMount,
@@ -238,30 +236,6 @@ describe('resolveIntroTextFrame', () => {
 	});
 });
 
-describe('resolveIntroSpectrumBars', () => {
-	it('grows outwards from the middle and retracts into it', () => {
-		const half = resolveIntroSpectrumBars(null, 20, 0.5);
-		expect(half).toHaveLength(20);
-		// The middle is up, the ends are not.
-		expect(half[10]).toBeGreaterThan(0);
-		expect(half[0]).toBe(0);
-		expect(half[19]).toBe(0);
-		const none = resolveIntroSpectrumBars(null, 20, 0);
-		expect(none.every(value => value === 0)).toBe(true);
-		const all = resolveIntroSpectrumBars(null, 20, 1);
-		expect(all.every(value => value > 0)).toBe(true);
-	});
-
-	it('reads the bins when there is audio, and rests when there is not', () => {
-		const loud = new Uint8Array(128).fill(255);
-		const bars = resolveIntroSpectrumBars(loud, 20, 1);
-		expect(Math.max(...bars)).toBeCloseTo(1);
-		const silent = resolveIntroSpectrumBars(null, 20, 1);
-		expect(Math.max(...silent)).toBeLessThan(1);
-		expect(Math.max(...silent)).toBeGreaterThan(0);
-	});
-});
-
 describe('resolveIntroFrame', () => {
 	it('drops the pieces that are switched off or empty', () => {
 		const frame = resolveIntroFrame({
@@ -270,12 +244,11 @@ describe('resolveIntroFrame', () => {
 				titleText: '',
 				taglineText: '',
 				logoSource: 'none',
-				spectrumShape: 'none'
+				spectrumSource: 'none'
 			}),
 			progress: 0.5,
 			viewport: VIEWPORT,
-			cardCount: 4,
-			bins: null
+			cardCount: 4
 		});
 		expect(frame.title).toBeNull();
 		expect(frame.tagline).toBeNull();
@@ -292,12 +265,11 @@ describe('resolveIntroFrame', () => {
 				titleText: 'CLUBLioNx',
 				taglineText: 'For you and your waifu',
 				logoSource: 'vibrix',
-				spectrumShape: 'mirror'
+				spectrumSource: 'slot'
 			}),
 			progress: 0.5,
 			viewport: VIEWPORT,
-			cardCount: 9,
-			bins: null
+			cardCount: 9
 		});
 		expect(frame.title?.frame.visibleChars).toBe('CLUBLioNx'.length);
 		expect(frame.tagline?.frame.visibleChars).toBe(
@@ -305,7 +277,10 @@ describe('resolveIntroFrame', () => {
 		);
 		expect(frame.titleFrame?.widthPct).toBe(1);
 		expect(frame.logo?.alpha).toBe(1);
-		expect(frame.spectrum?.bars).toHaveLength(INTRO_SPECTRUM_BAR_COUNT);
+		expect(frame.spectrum?.slotIndex).toBe(0);
+		expect(frame.spectrum?.centered).toBe(true);
+		expect(frame.spectrum?.mount).toBe(1);
+		expect(frame.spectrum?.alpha).toBe(1);
 		expect(frame.backdropAlpha).toBe(1);
 	});
 
@@ -316,12 +291,11 @@ describe('resolveIntroFrame', () => {
 				titleText: 'CLUBLioNx',
 				taglineText: 'For you and your waifu',
 				logoSource: 'vibrix',
-				spectrumShape: 'ring'
+				spectrumSource: 'slot'
 			}),
 			progress: 1,
 			viewport: VIEWPORT,
-			cardCount: 9,
-			bins: null
+			cardCount: 9
 		});
 		expect(frame.backdropAlpha).toBeCloseTo(0);
 		expect(frame.title?.frame.alpha).toBe(0);

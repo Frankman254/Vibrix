@@ -228,3 +228,67 @@ describe('resolveImageTransform', () => {
 		expect(r.minScaleForCoverage).toBeCloseTo(1.0, 1);
 	});
 });
+
+describe('minAuthoredScaleForCoverage (background reframe)', () => {
+	// The reported bug: a project authored on a 3440x1440 ultrawide, reopened
+	// in a 1512x860 window. The reframe multiplies the authored scale, so
+	// storing the DRAWN minimum leaves the image over-zoomed.
+	const reframed = {
+		viewportWidth: 1512,
+		viewportHeight: 860,
+		imageWidth: 1920,
+		imageHeight: 1080,
+		fitMode: 'contain' as const,
+		keepCovered: true,
+		layout: {
+			layoutResponsiveEnabled: true,
+			layoutBackgroundReframeEnabled: true,
+			layoutReferenceWidth: 3440,
+			layoutReferenceHeight: 1440
+		}
+	};
+
+	it('is the drawn minimum divided by the reframe factor', () => {
+		const r = resolveImageTransform(params({ ...reframed, scale: 1 }));
+		expect(r.reframeScaleFactor).toBeGreaterThan(1);
+		expect(
+			r.minAuthoredScaleForCoverage * r.reframeScaleFactor
+		).toBeCloseTo(r.minScaleForCoverage, 6);
+	});
+
+	it('draws exactly at the coverage minimum when stored', () => {
+		const probe = resolveImageTransform(params({ ...reframed, scale: 1 }));
+		const exact = resolveImageTransform(
+			params({ ...reframed, scale: probe.minAuthoredScaleForCoverage })
+		);
+		// No extra zoom: the drawn scale IS the minimum, not above it.
+		expect(exact.effectiveScale).toBeCloseTo(exact.minScaleForCoverage, 6);
+		expect(exact.warnings).not.toContain('scale-raised-for-coverage');
+	});
+
+	it('over-zooms when the drawn minimum is stored instead', () => {
+		const probe = resolveImageTransform(params({ ...reframed, scale: 1 }));
+		const naive = resolveImageTransform(
+			params({ ...reframed, scale: probe.minScaleForCoverage })
+		);
+		expect(naive.effectiveScale).toBeGreaterThan(naive.minScaleForCoverage);
+	});
+
+	it('is the drawn minimum when the reframe is off', () => {
+		const r = resolveImageTransform(
+			params({
+				...reframed,
+				scale: 1,
+				layout: {
+					...reframed.layout,
+					layoutBackgroundReframeEnabled: false
+				}
+			})
+		);
+		expect(r.reframeScaleFactor).toBe(1);
+		expect(r.minAuthoredScaleForCoverage).toBeCloseTo(
+			r.minScaleForCoverage,
+			6
+		);
+	});
+});

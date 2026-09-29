@@ -11,8 +11,7 @@ import {
 	normalizeSceneSlotAgainstState,
 	resolveEffectiveSceneSlotId
 } from '@/features/scenes/sceneSlot';
-import { getImageBaseSize, resolveImageTransform } from '@/features/background';
-import { resolveAutoZoomScale } from '@/features/background/domain/autoZoom';
+import { resolveImageTransform } from '@/features/background';
 import {
 	extractCameraFxProfileSettings,
 	extractLightsProfileSettings,
@@ -31,6 +30,90 @@ import {
 	syncStateWithActiveBackgroundImage
 } from '@/store/backgroundStoreUtils';
 import type { BackgroundImageItem, WallpaperState } from '@/types/wallpaper';
+
+/** The responsive-layout keys the coverage math has to see. */
+type CoverageLayout = Pick<
+	WallpaperState,
+	| 'layoutResponsiveEnabled'
+	| 'layoutBackgroundReframeEnabled'
+	| 'layoutReferenceWidth'
+	| 'layoutReferenceHeight'
+>;
+
+function coverageLayout(state: WallpaperState): CoverageLayout {
+	return {
+		layoutResponsiveEnabled: state.layoutResponsiveEnabled,
+		layoutBackgroundReframeEnabled: state.layoutBackgroundReframeEnabled,
+		layoutReferenceWidth: state.layoutReferenceWidth,
+		layoutReferenceHeight: state.layoutReferenceHeight
+	};
+}
+
+/**
+ * The AUTHORED scale at which the drawn composition sits exactly on the
+ * coverage minimum, plus the composition center clamped into coverage bounds
+ * at that scale.
+ *
+ * Two resolves on purpose, and they are not interchangeable:
+ * - WITH the layout, to read `minAuthoredScaleForCoverage`: the background
+ *   reframe multiplies whatever is stored, so the drawn minimum is not the
+ *   number to store. Writing `minScaleForCoverage` straight into `imageScale`
+ *   is exactly the over-zoom this function exists to avoid.
+ * - WITHOUT it, to clamp the position: `effectivePositionX/Y` under a layout is
+ *   the REFRAMED position, and storing that as the authored value would reframe
+ *   it twice. The renderer clamps the position for coverage on every frame
+ *   anyway, so the authored-space clamp is all the store needs.
+ */
+function resolveCoverFraming(params: {
+	imageSize: { width: number; height: number };
+	viewport: { width: number; height: number };
+	layout: CoverageLayout;
+	fitMode: BackgroundImageItem['fitMode'];
+	positionX: number;
+	positionY: number;
+	rotation: number;
+	mirror: boolean;
+	focusX?: number | null;
+	focusY?: number | null;
+	mirrorFill?: boolean;
+	mirrorFillInvert?: boolean;
+	mirrorFillCount: number;
+	/** Floor the result at the stored scale (the raise-only AutoZoom rule). */
+	raiseOnlyFrom?: number;
+}): { scale: number; positionX: number; positionY: number } {
+	const geometry = {
+		viewportWidth: params.viewport.width,
+		viewportHeight: params.viewport.height,
+		imageWidth: params.imageSize.width,
+		imageHeight: params.imageSize.height,
+		fitMode: params.fitMode,
+		positionX: params.positionX,
+		positionY: params.positionY,
+		rotation: params.rotation,
+		mirror: params.mirror,
+		keepCovered: true,
+		focusX: params.focusX ?? null,
+		focusY: params.focusY ?? null,
+		mirrorFill: params.mirrorFill,
+		mirrorFillInvert: params.mirrorFillInvert,
+		mirrorFillCount: params.mirrorFillCount
+	};
+	const { minAuthoredScaleForCoverage } = resolveImageTransform({
+		...geometry,
+		scale: params.raiseOnlyFrom ?? 1,
+		layout: params.layout
+	});
+	const scale =
+		params.raiseOnlyFrom != null
+			? Math.max(params.raiseOnlyFrom, minAuthoredScaleForCoverage)
+			: minAuthoredScaleForCoverage;
+	const resolved = resolveImageTransform({ ...geometry, scale });
+	return {
+		scale,
+		positionX: resolved.effectivePositionX,
+		positionY: resolved.effectivePositionY
+	};
+}
 
 export type ActiveImageSelection = {
 	patch: Partial<WallpaperState>;
@@ -227,52 +310,29 @@ export function buildAutoZoomPatch(
 		img => img.assetId === state.activeImageId
 	);
 	if (!image?.url) return null;
-	const mirrorFillCount = image.mirrorFill ? (image.mirrorFillCount ?? 0) : 0;
-	const base = getImageBaseSize(
-		viewport.width,
-		viewport.height,
-		imageSize.width,
-		imageSize.height,
-		state.imageFitMode
-	);
-	const autoZoomMin = resolveAutoZoomScale({
-		viewportWidth: viewport.width,
-		viewportHeight: viewport.height,
-		tileWidthAtScaleOne: base.width,
-		tileHeightAtScaleOne: base.height,
-		mirrorFillCount,
-		rotation: image.rotation
-	});
-	const nextScale = Math.max(state.imageScale, autoZoomMin);
-	// Re-resolve the composition at the new scale: its effective position is
-	// the authored position CLAMPED into coverage bounds. This is the same
-	// clamp the renderer applies, so the stored state and the drawn result
-	// cannot disagree.
-	const resolved = resolveImageTransform({
-		viewportWidth: viewport.width,
-		viewportHeight: viewport.height,
-		imageWidth: imageSize.width,
-		imageHeight: imageSize.height,
+	const framing = resolveCoverFraming({
+		imageSize,
+		viewport,
+		layout: coverageLayout(state),
 		fitMode: state.imageFitMode,
-		scale: nextScale,
 		positionX: state.imagePositionX,
 		positionY: state.imagePositionY,
 		rotation: image.rotation,
 		mirror: state.imageMirror,
-		keepCovered: true,
 		mirrorFill: image.mirrorFill,
 		mirrorFillInvert: state.imageMirrorFillInvert,
-		mirrorFillCount
+		mirrorFillCount: image.mirrorFill ? (image.mirrorFillCount ?? 0) : 0,
+		raiseOnlyFrom: state.imageScale
 	});
 	const alreadyFitted =
-		state.imageScale === nextScale &&
-		state.imagePositionX === resolved.effectivePositionX &&
-		state.imagePositionY === resolved.effectivePositionY;
+		state.imageScale === framing.scale &&
+		state.imagePositionX === framing.positionX &&
+		state.imagePositionY === framing.positionY;
 	if (alreadyFitted) return null;
 	return syncStateWithActiveBackgroundImage(state, {
-		imageScale: nextScale,
-		imagePositionX: resolved.effectivePositionX,
-		imagePositionY: resolved.effectivePositionY
+		imageScale: framing.scale,
+		imagePositionX: framing.positionX,
+		imagePositionY: framing.positionY
 	});
 }
 
@@ -302,59 +362,33 @@ export function buildCoveredAutoFitPatch(
 }
 
 /**
- * The exact covered framing for one image at `viewport`: scale set exactly to
- * the coverage minimum (a machine framing may shrink as well as grow) and the
- * composition center clamped into coverage bounds. `fitMode` and the focus
- * point are user intent and are NEVER touched.
+ * The exact covered framing for one image at `viewport`: the authored scale at
+ * which the DRAWN composition lands exactly on the coverage minimum (a machine
+ * framing may shrink as well as grow) and the composition center clamped into
+ * coverage bounds. `fitMode` and the focus point are user intent and are NEVER
+ * touched.
  */
 function computeCoverFit(
 	image: BackgroundImageItem,
 	imageSize: { width: number; height: number },
-	viewport: { width: number; height: number }
+	viewport: { width: number; height: number },
+	layout: CoverageLayout
 ): { scale: number; positionX: number; positionY: number } {
-	const mirrorFillCount = image.mirrorFill ? (image.mirrorFillCount ?? 0) : 0;
-	const base = getImageBaseSize(
-		viewport.width,
-		viewport.height,
-		imageSize.width,
-		imageSize.height,
-		image.fitMode
-	);
-	const coverScale = resolveAutoZoomScale({
-		viewportWidth: viewport.width,
-		viewportHeight: viewport.height,
-		tileWidthAtScaleOne: base.width,
-		tileHeightAtScaleOne: base.height,
-		mirrorFillCount,
-		rotation: image.rotation
-	});
-	// Re-resolve the composition at the exact scale: its effective position is
-	// the authored position CLAMPED into coverage bounds. This is the same
-	// clamp the renderer applies (focus included), so the stored state and the
-	// drawn result cannot disagree.
-	const resolved = resolveImageTransform({
-		viewportWidth: viewport.width,
-		viewportHeight: viewport.height,
-		imageWidth: imageSize.width,
-		imageHeight: imageSize.height,
+	return resolveCoverFraming({
+		imageSize,
+		viewport,
+		layout,
 		fitMode: image.fitMode,
-		scale: coverScale,
 		positionX: image.positionX,
 		positionY: image.positionY,
 		rotation: image.rotation,
 		mirror: image.mirror,
-		keepCovered: true,
 		focusX: image.focusX,
 		focusY: image.focusY,
 		mirrorFill: image.mirrorFill,
 		mirrorFillInvert: image.mirrorFillInvert,
-		mirrorFillCount
+		mirrorFillCount: image.mirrorFill ? (image.mirrorFillCount ?? 0) : 0
 	});
-	return {
-		scale: coverScale,
-		positionX: resolved.effectivePositionX,
-		positionY: resolved.effectivePositionY
-	};
 }
 
 function isExactFit(
@@ -384,7 +418,12 @@ export function buildCoverFitPatch(
 		img => img.assetId === state.activeImageId
 	);
 	if (!image?.url) return null;
-	const fit = computeCoverFit(image, imageSize, viewport);
+	const fit = computeCoverFit(
+		image,
+		imageSize,
+		viewport,
+		coverageLayout(state)
+	);
 	if (isExactFit(image, fit)) return null;
 	return {
 		imageScale: fit.scale,
@@ -422,7 +461,12 @@ export function buildCoverFitAllImagesPatch(
 	const backgroundImages = state.backgroundImages.map(image => {
 		const dims = dimsByAssetId[image.assetId];
 		if (!image.url || !dims) return image;
-		const fit = computeCoverFit(image, dims, viewport);
+		const fit = computeCoverFit(
+			image,
+			dims,
+			viewport,
+			coverageLayout(state)
+		);
 		if (isExactFit(image, fit)) return image;
 		changed = true;
 		return {
