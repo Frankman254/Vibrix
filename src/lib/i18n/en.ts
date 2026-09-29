@@ -2332,6 +2332,9 @@ export const en = {
 	sfx_cam_mode_path_trace: 'Frame',
 	sfx_cam_mode_zoom_pulse: 'Pulse',
 	sfx_cam_mode_lissajous: 'Weave',
+	sfx_motion_range: 'Movement scale',
+	sfx_motion_range_hint:
+		'How far the path is allowed to reach across the screen. The amount dial is how loud the movement is inside that path; this is how big the path itself is, so a logo (and the spectrums moving with it) can cross the screen instead of drifting a little. It also buys the zoom a full-bleed layer needs, so nothing cuts its own border into view.',
 	sfx_motion_amount_audio: 'Audio → size',
 	sfx_motion_amount: 'Motion amount',
 	sfx_drive_fixed: 'Fixed',

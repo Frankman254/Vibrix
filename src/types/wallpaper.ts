@@ -355,6 +355,13 @@ export type MotionLayer = {
 export type MotionLayerSettings = {
 	cameraMotionMode: import('@/features/stageFx/stageFxConfig').CameraMotionMode;
 	cameraMotionAmount: number;
+	/**
+	 * How far across the screen the movement is ALLOWED to travel: a multiplier
+	 * on the amplitude cap AND on the zoom slack the bounded targets need, so
+	 * raising it actually widens the path instead of being clamped away.
+	 * `1` is the historical reach.
+	 */
+	cameraMotionRange: number;
 	cameraMotionSpeed: number;
 	cameraMotionDrive: import('@/features/stageFx/stageFxConfig').CameraMotionDrive;
 	cameraMotionAudioInfluence: number;
@@ -2118,6 +2125,9 @@ export type WallpaperState = {
 	activeMotionLayerId: string;
 	cameraMotionMode: import('@/features/stageFx/stageFxConfig').CameraMotionMode;
 	cameraMotionAmount: number;
+	/** Movement scale: how far the path is allowed to reach (the flat live
+	 *  value of the active motion layer). */
+	cameraMotionRange: number;
 	cameraMotionSpeed: number;
 	cameraMotionDrive: import('@/features/stageFx/stageFxConfig').CameraMotionDrive;
 	cameraMotionAudioInfluence: number;

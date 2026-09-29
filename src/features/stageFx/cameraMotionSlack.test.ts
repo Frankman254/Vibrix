@@ -21,11 +21,12 @@ function audio(level: number): AudioSnapshot {
 	};
 }
 
-function stateFor(targets: CameraMotionTarget[]): WallpaperState {
+function stateFor(targets: CameraMotionTarget[], range = 1): WallpaperState {
 	const settings = {
 		...DEFAULT_STATE,
 		cameraMotionMode: 'circle' as const,
 		cameraMotionAmount: 1,
+		cameraMotionRange: range,
 		cameraMotionSpeed: 4,
 		cameraMotionDrive: 'fixed' as const,
 		cameraMotionAudioInfluence: 0,
@@ -48,8 +49,8 @@ function stateFor(targets: CameraMotionTarget[]): WallpaperState {
  * for against the room its own scale gives it. Anything above 1 is a canvas
  * sliding its own border into view — the cut-off spectrum edge.
  */
-function worstOverflowRatio(targets: CameraMotionTarget[]): number {
-	const state = stateFor(targets);
+function worstOverflowRatio(targets: CameraMotionTarget[], range = 1): number {
+	const state = stateFor(targets, range);
 	const runtime = createCameraFxRuntime();
 	let worst = 0;
 	for (let i = 0; i < 240; i++) {
@@ -123,5 +124,47 @@ describe('stepCameraFx — no layer cuts its own edge', () => {
 			VIEWPORT
 		);
 		expect(frame.motion.scale).toBe(1);
+	});
+});
+
+describe('stepCameraFx — movement scale', () => {
+	/** The furthest the layer gets from centre over a full revolution. */
+	function widestTravel(targets: CameraMotionTarget[], range: number) {
+		const state = stateFor(targets, range);
+		const runtime = createCameraFxRuntime();
+		let widest = 0;
+		for (let i = 0; i < 240; i++) {
+			const frame = stepCameraFx(
+				runtime,
+				state,
+				() => audio(0),
+				i * 16.6,
+				1 / 60,
+				VIEWPORT
+			);
+			widest = Math.max(
+				widest,
+				Math.abs(frame.motion.tx),
+				Math.abs(frame.motion.ty)
+			);
+		}
+		return widest;
+	}
+
+	it('widens how far the logo travels, proportionally', () => {
+		const base = widestTravel(['logo'], 1);
+		expect(widestTravel(['logo'], 3) / base).toBeCloseTo(3, 1);
+	});
+
+	it('widens the spectrum too without letting it cut its edge', () => {
+		// The point of scaling the slack ceiling with the reach: a bigger path
+		// is useless if the clamp takes it straight back off.
+		const base = widestTravel(['spectrum'], 1);
+		expect(widestTravel(['spectrum'], 3)).toBeGreaterThan(base * 2);
+		expect(worstOverflowRatio(['spectrum'], 3)).toBeLessThanOrEqual(1.0001);
+	});
+
+	it('changes nothing at the default scale', () => {
+		expect(widestTravel(['logo'], 1)).toBe(widestTravel(['logo'], 0.2));
 	});
 });

@@ -16,6 +16,7 @@ import type {
 	CameraMotionMode,
 	CameraMotionTarget
 } from '@/features/stageFx/stageFxConfig';
+import { CAMERA_MOTION_RANGE_RANGE } from '@/features/stageFx/stageFxConfig';
 import { formatDecimal } from '@/editor/motionTabUtils';
 import { MotionSlider as Slider } from '@/editor/MotionSharedControls';
 import {
@@ -36,6 +37,7 @@ export function CameraMotionSection() {
 			enabled: state.cameraMotionEnabled,
 			mode: state.cameraMotionMode,
 			amount: state.cameraMotionAmount,
+			range: state.cameraMotionRange,
 			speed: state.cameraMotionSpeed,
 			drive: state.cameraMotionDrive,
 			audioInfluence: state.cameraMotionAudioInfluence,
@@ -55,6 +57,7 @@ export function CameraMotionSection() {
 			enabled: state.setCameraMotionEnabled,
 			mode: state.setCameraMotionMode,
 			amount: state.setCameraMotionAmount,
+			range: state.setCameraMotionRange,
 			speed: state.setCameraMotionSpeed,
 			drive: state.setCameraMotionDrive,
 			audioInfluence: state.setCameraMotionAudioInfluence,
@@ -196,6 +199,18 @@ export function CameraMotionSection() {
 						variant="macro"
 						formatValue={formatDecimal}
 					/>
+					<Slider
+						label={t.sfx_motion_range}
+						value={s.range}
+						min={CAMERA_MOTION_RANGE_RANGE.min}
+						max={CAMERA_MOTION_RANGE_RANGE.max}
+						step={0.1}
+						onChange={set.range}
+						defaultValue={FACTORY_DEFAULT_STATE.cameraMotionRange}
+						variant="compact"
+						formatValue={formatDecimal}
+					/>
+					<Caption>{t.sfx_motion_range_hint}</Caption>
 					<Slider
 						label={t.sfx_motion_amount_audio}
 						value={s.amplitudeAudio}

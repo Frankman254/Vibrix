@@ -60,6 +60,7 @@ export function extractMotionLayerSettingsFromState(
 	return {
 		cameraMotionMode: state.cameraMotionMode,
 		cameraMotionAmount: state.cameraMotionAmount,
+		cameraMotionRange: state.cameraMotionRange,
 		cameraMotionSpeed: state.cameraMotionSpeed,
 		cameraMotionDrive: state.cameraMotionDrive,
 		cameraMotionAudioInfluence: state.cameraMotionAudioInfluence,

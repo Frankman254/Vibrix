@@ -22,6 +22,7 @@ import {
 import {
 	CAMERA_FX_CAPS,
 	cameraMotionSlackMode,
+	resolveCameraMotionRange,
 	cameraMotionTargetIncludes,
 	readFxChannel,
 	resolveFxThreshold,
@@ -35,6 +36,7 @@ export type CameraFxSettings = Pick<
 	| 'cameraMotionMode'
 	| 'cameraMotionDrive'
 	| 'cameraMotionAmount'
+	| 'cameraMotionRange'
 	| 'cameraMotionSpeed'
 	| 'cameraMotionDirection'
 	| 'cameraMotionAudioChannel'
@@ -249,9 +251,13 @@ function stepMotionLayer(
 	const shaped = paused
 		? follower.value
 		: stepMotionAudioFollower(follower, level, dtSec);
+	// The reach multiplier: the amount dial is the movement's loudness inside
+	// the path, this is how big the path itself is allowed to be.
+	const range = resolveCameraMotionRange(settings.cameraMotionRange);
 	const baseAmp =
 		Math.min(1.5, Math.max(0, settings.cameraMotionAmount)) *
-		CAMERA_FX_CAPS.maxMotionPx;
+		CAMERA_FX_CAPS.maxMotionPx *
+		range;
 	// Audio → amplitude, independently of audio → speed: a movement can get
 	// bigger without getting faster, which is what a kick actually looks like.
 	// It rides the same shaped level, so the size swells on the hit instead of
@@ -290,8 +296,11 @@ function stepMotionLayer(
 			: slackMode === 'frame'
 				? amp
 				: 0;
+	// The slack ceiling grows with the reach for the same reason the amplitude
+	// does: at `range` 1 this is exactly the historical cap.
+	const maxScale = 1 + (CAMERA_FX_CAPS.maxScale - 1) * range;
 	const scale = Math.min(
-		CAMERA_FX_CAPS.maxScale,
+		maxScale,
 		Math.max(1, 1 + slackAmp / minDim + (offset.zoom * amp) / minDim)
 	);
 	const limitX = bounded ? ((scale - 1) * viewport.width) / 2 : amp;

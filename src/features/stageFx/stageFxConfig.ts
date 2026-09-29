@@ -106,6 +106,24 @@ export const CAMERA_FX_CAPS = {
 } as const;
 
 /**
+ * Movement scale. The caps above are what a subtle drift needs; a logo that is
+ * supposed to cross the screen with its spectrum needs more, and asking for it
+ * has to widen BOTH budgets — the amplitude and the zoom slack that keeps a
+ * full-bleed layer from cutting its own border into view — or the extra
+ * amplitude is clamped straight back off.
+ */
+export const CAMERA_MOTION_RANGE_RANGE = { min: 1, max: 6 } as const;
+
+/** The reach multiplier of a layer, clamped, with old saves reading as `1`. */
+export function resolveCameraMotionRange(value: number | undefined): number {
+	if (!Number.isFinite(value)) return CAMERA_MOTION_RANGE_RANGE.min;
+	return Math.min(
+		CAMERA_MOTION_RANGE_RANGE.max,
+		Math.max(CAMERA_MOTION_RANGE_RANGE.min, value as number)
+	);
+}
+
+/**
  * Scale Stage Lights down on weaker GPUs. Returns already-capped beam counts,
  * blur, and draw-pass flags so the renderer can skip gradient/shadow work
  * entirely rather than just zeroing the blur.

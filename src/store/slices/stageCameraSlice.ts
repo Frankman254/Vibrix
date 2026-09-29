@@ -129,6 +129,7 @@ export function createStageCameraSlice(
 		setCameraMotionEnabled: v => set({ cameraMotionEnabled: v }),
 		setCameraMotionMode: v => set({ cameraMotionMode: v }),
 		setCameraMotionAmount: v => set({ cameraMotionAmount: v }),
+		setCameraMotionRange: v => set({ cameraMotionRange: v }),
 		setCameraMotionSpeed: v => set({ cameraMotionSpeed: v }),
 		setCameraMotionDrive: v => set({ cameraMotionDrive: v }),
 		setCameraMotionAudioInfluence: v =>

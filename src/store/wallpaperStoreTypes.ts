@@ -1126,6 +1126,7 @@ export type WallpaperStore = WallpaperState & {
 		v: import('@/features/stageFx/stageFxConfig').CameraMotionMode
 	) => void;
 	setCameraMotionAmount: (v: number) => void;
+	setCameraMotionRange: (v: number) => void;
 	setCameraMotionSpeed: (v: number) => void;
 	setCameraMotionDrive: (
 		v: import('@/features/stageFx/stageFxConfig').CameraMotionDrive

@@ -2360,6 +2360,9 @@ export const es: Record<TranslationKey, string> = {
 	sfx_cam_mode_path_trace: 'Marco',
 	sfx_cam_mode_zoom_pulse: 'Pulso',
 	sfx_cam_mode_lissajous: 'Trama',
+	sfx_motion_range: 'Escala de movimiento',
+	sfx_motion_range_hint:
+		'Hasta dónde puede llegar el recorrido en la pantalla. La cantidad es cuánto se mueve dentro de ese recorrido; esto es el tamaño del recorrido en sí, así el logo (y los spectrums que van con él) puede cruzar la pantalla en vez de moverse un poco. También compra el zoom que necesita una capa a pantalla completa para que no se le vea el borde.',
 	sfx_motion_amount_audio: 'Audio → tamaño',
 	sfx_motion_amount: 'Cantidad de movimiento',
 	sfx_drive_fixed: 'Fijo',

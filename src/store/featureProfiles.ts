@@ -203,6 +203,7 @@ export const CAMERA_FX_PROFILE_KEYS = [
 	'cameraMotionEnabled',
 	'cameraMotionMode',
 	'cameraMotionAmount',
+	'cameraMotionRange',
 	'cameraMotionSpeed',
 	'cameraMotionDrive',
 	'cameraMotionAudioInfluence',

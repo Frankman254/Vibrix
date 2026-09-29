@@ -40,7 +40,7 @@ the version scheme in `src/lib/version.ts`.
       configurables. Así la animación es idéntica en cada render y es fluida
       aunque la pista empiece en silencio o con fade-in.
       Las ventanas siguen sin añadir duración al vídeo.
-      `STORE_PERSIST_VERSION` is at **135**; la migración traslada lo que hubiera
+      `STORE_PERSIST_VERSION` is at **136**; la migración traslada lo que hubiera
       en v129, y la de v131 cambia las claves viejas del spectrum del intro
       (`spectrumShape` / `spectrumSizePct` / `spectrumColorSource` /
       `spectrumColor`) por las nuevas (`spectrumSource`, `spectrumSlotIndex`,
@@ -144,6 +144,20 @@ the version scheme in `src/lib/version.ts`.
       Todo sigue montándose y desmontándose con la ventana.
       `STORE_PERSIST_VERSION` pasa a **135**; la migración siembra los valores
       que reproducen exactamente el comportamiento anterior.
+
+- **Escala de movimiento en Camera Motion.** Los movimientos estaban
+  limitados: la amplitud tenía un techo fijo (96 px × la cantidad) y, para las
+  capas a pantalla completa como el Spectrum 1 y 2, el recorte se quedaba
+  además con casi todo lo que pasara del zoom máximo (×1.18). El resultado era
+  que el logo —y los spectrums que se mueven con él— apenas se desplazaban.
+  Ahora cada capa de movimiento tiene su **escala de movimiento** (`1..6`), que
+  multiplica **las dos cosas**: la amplitud y el margen de zoom que necesita una
+  capa a pantalla completa para no meter su propio borde en cuadro. Así subirla
+  ensancha de verdad el recorrido en vez de que el clamp lo devuelva. La
+  cantidad sigue siendo «cuánto se mueve dentro del recorrido»; esto es el
+  tamaño del recorrido. Con `1` nada se mueve distinto a como se movía.
+  `STORE_PERSIST_VERSION` pasa a **136**; la migración siembra `1` en el valor
+  vivo y en cada capa de `motionLayers`.
 
 - **Arreglado: pantalla negra al abrir Intro y ending.** El selector del slot de
   spectrum construía los objetos de opción **dentro** del selector del store, así

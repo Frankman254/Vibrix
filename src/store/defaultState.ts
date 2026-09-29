@@ -515,6 +515,7 @@ const BASE_STATE: Omit<
 	cameraMotionEnabled: false,
 	cameraMotionMode: 'none',
 	cameraMotionAmount: 0.3,
+	cameraMotionRange: 1,
 	cameraMotionSpeed: 0.4,
 	cameraMotionDrive: 'fixed-audio',
 	cameraMotionAudioInfluence: 0.3,

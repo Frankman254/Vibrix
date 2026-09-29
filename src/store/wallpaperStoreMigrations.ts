@@ -50,6 +50,7 @@ import {
 	DEFAULT_MOTION_LAYER_ID,
 	extractMotionLayerSettingsFromState
 } from '@/features/stageFx/motionLayers';
+import { CAMERA_MOTION_RANGE_RANGE } from '@/features/stageFx/stageFxConfig';
 import { getCurrentViewportResolution } from '@/features/layout/viewportMetrics';
 import { normalizeSpectrumSettings } from '@/features/spectrum';
 import {
@@ -3461,6 +3462,24 @@ export function migrateWallpaperStore(
 		};
 		migrateWindowLogo(migratedState.introSequence);
 		migrateWindowLogo(migratedState.outroSequence);
+	}
+
+	if (fromVersion < 136) {
+		// Movement scale. `1` is the reach every existing movement had, so no
+		// saved project moves differently on upgrade; the layers carry their own
+		// copy or the slider reads undefined the moment one is selected.
+		migratedState.cameraMotionRange ??= CAMERA_MOTION_RANGE_RANGE.min;
+		migratedState.motionLayers = (migratedState.motionLayers ?? []).map(
+			layer => ({
+				...layer,
+				settings: {
+					...layer.settings,
+					cameraMotionRange:
+						layer.settings?.cameraMotionRange ??
+						CAMERA_MOTION_RANGE_RANGE.min
+				}
+			})
+		);
 	}
 
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;
