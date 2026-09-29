@@ -755,9 +755,10 @@ export type IntroTitleFrameAnimation =
 /**
  * Where the montage's images come from.
  *  - `setlist` the head (or the tail) of the selected setlist, automatically.
+ *  - `catalog` the same, but over the WHOLE collection, ignoring the setlist.
  *  - `manual`  exactly the images picked in `imageAssetIds`, in that order.
  */
-export type IntroImageSourceMode = 'setlist' | 'manual';
+export type IntroImageSourceMode = 'setlist' | 'catalog' | 'manual';
 
 export interface IntroSequenceSettings {
 	enabled: boolean;

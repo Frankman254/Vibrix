@@ -42,6 +42,18 @@ describe('resolveIntroPool', () => {
 		expect(pool.map(item => item.assetId)).toEqual(['c', 'b']);
 	});
 
+	it('ignores the setlist in catalog mode and slices the collection', () => {
+		const pool = resolveIntroPool(
+			{
+				backgroundImages: COLLECTION,
+				setlists: [setlist(['c'])],
+				activeSetlistId: 'set-1'
+			},
+			settings({ imageSourceMode: 'catalog' })
+		);
+		expect(pool.map(item => item.assetId)).toEqual(['a', 'b', 'c']);
+	});
+
 	it('is the WHOLE collection when the images are hand-picked', () => {
 		// A picked image must still be drawn when the setlist filters it out.
 		const pool = resolveIntroPool(

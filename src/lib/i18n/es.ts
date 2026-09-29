@@ -555,7 +555,9 @@ export const es: Record<TranslationKey, string> = {
 	intro_division_irregular: 'Irregular',
 	intro_image_source: 'Imágenes',
 	intro_image_source_setlist: 'Del setlist',
+	intro_image_source_catalog: 'De todo el catálogo',
 	intro_image_source_manual: 'Elegidas a mano',
+	intro_picked_list: 'Lista de imágenes',
 	intro_picked_count: '{used} de {pool} elegidas',
 	intro_picked_clear: 'Vaciar',
 	intro_picked_add: 'Añadir al montaje',
@@ -662,7 +664,6 @@ export const es: Record<TranslationKey, string> = {
 	intro_spectrum_wave_intensity: 'Altura de la onda',
 	intro_spectrum_hint:
 		'Cada figura es tu slot guardado dibujado por el motor real del spectrum, movido por su propia onda fija —nunca por la pista—, así que la animación es fluida incluso sobre silencio o un fade-in.',
-	intro_sections_title: 'Ajustes de la ventana',
 	intro_aria_sections: 'Secciones de la ventana de intro',
 	intro_view_timing: 'Tiempo',
 	intro_view_montage: 'Montaje',

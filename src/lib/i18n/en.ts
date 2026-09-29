@@ -551,7 +551,9 @@ export const en = {
 	intro_division_irregular: 'Irregular',
 	intro_image_source: 'Images',
 	intro_image_source_setlist: 'From the setlist',
+	intro_image_source_catalog: 'From all images',
 	intro_image_source_manual: 'Hand-picked',
+	intro_picked_list: 'Image list',
 	intro_picked_count: '{used} of {pool} picked',
 	intro_picked_clear: 'Clear',
 	intro_picked_add: 'Add to the montage',
@@ -658,7 +660,6 @@ export const en = {
 	intro_spectrum_wave_intensity: 'Wave height',
 	intro_spectrum_hint:
 		'Each figure is your saved slot drawn by the real spectrum engine, moved by its own fixed wave — never by the track — so it animates smoothly even over silence or a fade-in.',
-	intro_sections_title: 'Window settings',
 	intro_aria_sections: 'Intro window sections',
 	intro_view_timing: 'Timing',
 	intro_view_montage: 'Montage',

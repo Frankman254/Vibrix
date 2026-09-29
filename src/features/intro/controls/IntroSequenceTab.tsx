@@ -13,6 +13,7 @@ import { useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import {
 	Caption,
+	FieldLabel,
 	SectionCard,
 	SegmentedControl,
 	Select,
@@ -24,7 +25,6 @@ import { useTabViewState } from '@/hooks/useTabViewState';
 import { useWallpaperStore } from '@/store/wallpaperStore';
 import { useT } from '@/lib/i18n';
 import ToggleControl from '@/editor/ToggleControl';
-import CollapsibleSection from '@/editor/CollapsibleSection';
 import AdaptiveColorInput from '@/editor/AdaptiveColorInput';
 import ConnectedColorInput from '@/editor/ConnectedColorInput';
 import ProfileSlotsEditor from '@/editor/ProfileSlotsEditor';
@@ -116,6 +116,10 @@ const TILED_MONTAGES: readonly IntroMontageMode[] = [
  * Only slots that actually hold a saved figure: an empty slot would draw nothing
  * and look like a bug. The id — never the array position — is what gets stored,
  * so deleting another slot cannot silently retarget the window.
+ *
+ * The label carries the slot NUMBER even when the slot has a name, because
+ * saved figures very often share one («veo que todos son iguales en mi
+ * proyecto») and the name alone cannot tell them apart.
  */
 function toSlotOptions(
 	slots: ProfileSlot<SpectrumProfileSettings>[]
@@ -125,7 +129,9 @@ function toSlotOptions(
 		.filter(entry => entry.slot.values !== null)
 		.map(entry => ({
 			value: entry.slot.id,
-			label: entry.slot.name || `#${entry.index + 1}`
+			label: entry.slot.name
+				? `${entry.index + 1} · ${entry.slot.name}`
+				: `#${entry.index + 1}`
 		}));
 }
 
@@ -187,6 +193,12 @@ function IntroSpectrumBankControls({
  * The window's settings grew past what one column of accordions can hold, so it
  * is split the way the Spectrum tab is: one sub-tab per piece of the
  * composition, remembered per window in the workspace.
+ *
+ * Inside a sub-tab the sections are PLAIN cards, never accordions: the tab is
+ * already the thing that chooses what is on screen, and a collapsible on top of
+ * it let a tab hide its own only content — «al entrar a esa pestaña se puede
+ * esconder todo el menu no tiene sentido». The one exception is the hand-picked
+ * image grid, which is long enough to deserve its own fold.
  */
 type IntroWindowView = 'timing' | 'montage' | 'text' | 'logo' | 'spectrum';
 
@@ -247,11 +259,17 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 	// setlist holds is not an error, it just uses what there is. Hand-picked
 	// mode counts the picks that still exist in the collection.
 	const available = new Set(backgroundImages.map(image => image.assetId));
+	// `catalog` slices the whole collection, `setlist` the active curation: the
+	// readout has to count the pool the window will actually read.
+	const sourcePoolSize =
+		settings.imageSourceMode === 'setlist'
+			? poolSize
+			: backgroundImages.length;
 	const used =
 		settings.imageSourceMode === 'manual'
 			? settings.imageAssetIds.filter(id => available.has(id)).length
 			: pickIntroImages(
-					Array.from({ length: poolSize }, (_, i) => ({
+					Array.from({ length: sourcePoolSize }, (_, i) => ({
 						assetId: String(i)
 					})),
 					settings
@@ -296,28 +314,24 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 
 			{!settings.enabled ? null : (
 				<>
-					<SectionCard
-						title={t.intro_sections_title}
+					{/* The sub-tab row is a navigation bar, not a setting: wrapping
+					    it in a titled card cost a header's worth of height on
+					    every screen and said nothing. */}
+					<SegmentedControl<IntroWindowView>
+						value={view}
+						onChange={setView}
+						options={viewOptions}
+						size="sm"
 						density="compact"
-					>
-						<SegmentedControl<IntroWindowView>
-							value={view}
-							onChange={setView}
-							options={viewOptions}
-							size="sm"
-							density="compact"
-							full
-							ariaLabel={t.intro_aria_sections}
-						/>
-					</SectionCard>
+						full
+						ariaLabel={t.intro_aria_sections}
+					/>
 
 					<TabFade tabKey={view}>
 						{view === 'timing' ? (
-							<CollapsibleSection
+							<SectionCard
 								title={t.intro_section_timing}
-								sectionId={`intro-${kind}-timing`}
-								defaultOpen
-								dense
+								density="compact"
 							>
 								<div className="flex flex-col gap-2">
 									<Slider
@@ -370,15 +384,13 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 									</Caption>
 									<Caption>{t.intro_timing_hint}</Caption>
 								</div>
-							</CollapsibleSection>
+							</SectionCard>
 						) : null}
 
 						{view === 'montage' ? (
-							<CollapsibleSection
+							<SectionCard
 								title={t.intro_section_montage}
-								sectionId={`intro-${kind}-montage`}
-								defaultOpen
-								dense
+								density="compact"
 							>
 								<div className="flex flex-col gap-2">
 									<Select<IntroMontageMode>
@@ -549,25 +561,36 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 											)}
 										</>
 									)}
-									<SegmentedControl<IntroImageSourceMode>
-										value={settings.imageSourceMode}
-										onChange={imageSourceMode =>
-											patch({ imageSourceMode })
-										}
-										options={[
-											{
-												value: 'setlist',
-												label: t.intro_image_source_setlist
-											},
-											{
-												value: 'manual',
-												label: t.intro_image_source_manual
+									<div className="flex flex-col gap-1">
+										<FieldLabel>
+											{t.intro_image_source}
+										</FieldLabel>
+										<SegmentedControl<IntroImageSourceMode>
+											value={settings.imageSourceMode}
+											onChange={imageSourceMode =>
+												patch({ imageSourceMode })
 											}
-										]}
-									/>
+											full
+											options={[
+												{
+													value: 'setlist',
+													label: t.intro_image_source_setlist
+												},
+												{
+													value: 'catalog',
+													label: t.intro_image_source_catalog
+												},
+												{
+													value: 'manual',
+													label: t.intro_image_source_manual
+												}
+											]}
+										/>
+									</div>
 									{settings.imageSourceMode === 'manual' ? (
 										<>
 											<IntroImagePicker
+												sectionId={`intro-${kind}-picker`}
 												images={backgroundImages}
 												previewQuality={
 													imagePreviewQuality
@@ -682,7 +705,7 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 										/>
 									) : null}
 									<Caption>
-										{poolSize === 0
+										{sourcePoolSize === 0
 											? t.intro_no_images
 											: t.intro_uses_images
 													.replace(
@@ -691,19 +714,17 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 													)
 													.replace(
 														'{pool}',
-														String(poolSize)
+														String(sourcePoolSize)
 													)}
 									</Caption>
 								</div>
-							</CollapsibleSection>
+							</SectionCard>
 						) : null}
 
 						{view === 'text' ? (
-							<CollapsibleSection
+							<SectionCard
 								title={t.intro_section_title}
-								sectionId={`intro-${kind}-title`}
-								defaultOpen
-								dense
+								density="compact"
 							>
 								<div className="flex flex-col gap-2">
 									<ToggleControl
@@ -953,14 +974,13 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 										}
 									/>
 								</div>
-							</CollapsibleSection>
+							</SectionCard>
 						) : null}
 
 						{view === 'text' ? (
-							<CollapsibleSection
+							<SectionCard
 								title={t.intro_section_tagline}
-								sectionId={`intro-${kind}-tagline`}
-								dense
+								density="compact"
 							>
 								<div className="flex flex-col gap-2">
 									<ToggleControl
@@ -1049,14 +1069,13 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 									/>
 									<Caption>{t.intro_tagline_hint}</Caption>
 								</div>
-							</CollapsibleSection>
+							</SectionCard>
 						) : null}
 
 						{view === 'logo' ? (
-							<CollapsibleSection
+							<SectionCard
 								title={t.intro_section_logo}
-								sectionId={`intro-${kind}-logo`}
-								dense
+								density="compact"
 							>
 								<div className="flex flex-col gap-2">
 									<SegmentedControl<IntroLogoSource>
@@ -1192,14 +1211,13 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 									)}
 									<Caption>{t.intro_logo_hint}</Caption>
 								</div>
-							</CollapsibleSection>
+							</SectionCard>
 						) : null}
 
 						{view === 'spectrum' ? (
-							<CollapsibleSection
+							<SectionCard
 								title={t.intro_section_spectrum}
-								sectionId={`intro-${kind}-spectrum`}
-								dense
+								density="compact"
 							>
 								<div className="flex flex-col gap-2">
 									<IntroSpectrumBankControls
@@ -1301,7 +1319,7 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 									)}
 									<Caption>{t.intro_spectrum_hint}</Caption>
 								</div>
-							</CollapsibleSection>
+							</SectionCard>
 						) : null}
 					</TabFade>
 				</>
