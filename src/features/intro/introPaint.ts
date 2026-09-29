@@ -44,8 +44,17 @@ import type {
 export type PaintIntroSpectrum = (
 	ctx: CanvasRenderingContext2D,
 	plan: IntroSpectrumPlan,
-	windowAlpha: number
+	windowAlpha: number,
+	logoAnchor: IntroLogoAnchor | null
 ) => void;
+
+/**
+ * Where the WINDOW's logo lands, in canvas pixels, so a figure saved to ring a
+ * logo can ring THIS one. Without it a radial slot would ring the wallpaper's
+ * logo position — which is wherever the active image's mark dragged it, and is
+ * not in this window at all.
+ */
+export type IntroLogoAnchor = { x: number; y: number; sizePx: number };
 
 /** A normalised point on an image that should stay in frame when cropping. */
 export type IntroFocusPoint = { x: number; y: number };
@@ -552,33 +561,42 @@ export function paintIntro({
 	let cursorY = height / 2 - stackH / 2;
 	const centreX = width / 2;
 
+	// The logo's place is resolved BEFORE the spectrum is painted, because the
+	// figure is drawn first and a radial slot may have to ring it.
+	// `stack` nudges the row it already owns; `free` measures from the centre of
+	// the screen, which is what makes a corner logo possible.
+	const logoPlan = frame.logo && logoH > 0 ? frame.logo : null;
+	const logoCentreY = logoPlan
+		? (logoPlan.placement === 'free' ? height / 2 : cursorY + logoH / 2) +
+			logoPlan.offsetY * height
+		: 0;
+	const logoCentreX = logoPlan ? centreX + logoPlan.offsetX * width : 0;
+	const logoDrawH = logoPlan ? logoH * logoPlan.scale : 0;
+	const logoAnchor: IntroLogoAnchor | null =
+		logoPlan && logo
+			? { x: logoCentreX, y: logoCentreY, sizePx: logoDrawH }
+			: null;
+
 	// Behind the stack: the figure is scenery, the title is the message.
 	if (paintSpectrum) {
 		for (const plan of frame.spectrums) {
-			paintSpectrum(ctx, plan, windowAlpha);
+			paintSpectrum(ctx, plan, windowAlpha, logoAnchor);
 		}
 	}
 
-	if (frame.logo && logoH > 0) {
-		const plan = frame.logo;
-		// `stack` nudges the row it already owns; `free` measures from the
-		// centre of the screen, which is what makes a corner logo possible.
-		const baseY =
-			plan.placement === 'free' ? height / 2 : cursorY + logoH / 2;
-		const centreY = baseY + plan.offsetY * height;
-		const logoX = centreX + plan.offsetX * width;
+	if (logoPlan) {
 		if (logo) {
-			const drawH = logoH * plan.scale;
 			const ratio = logo.width > 0 ? logo.height / logo.width : 1;
-			const drawW = (ratio > 0 ? drawH / ratio : drawH) * plan.stretch;
+			const drawW =
+				(ratio > 0 ? logoDrawH / ratio : logoDrawH) * logoPlan.stretch;
 			ctx.save();
-			ctx.globalAlpha = Math.min(1, plan.alpha) * windowAlpha;
+			ctx.globalAlpha = Math.min(1, logoPlan.alpha) * windowAlpha;
 			ctx.drawImage(
 				logo,
-				logoX - drawW / 2,
-				centreY - drawH / 2,
+				logoCentreX - drawW / 2,
+				logoCentreY - logoDrawH / 2,
 				drawW,
-				drawH
+				logoDrawH
 			);
 			ctx.restore();
 		}

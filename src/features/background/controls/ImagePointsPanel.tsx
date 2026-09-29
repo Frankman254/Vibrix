@@ -209,6 +209,29 @@ export default function ImagePointsPanel({
 					</Button>
 				)}
 			</div>
+			{/* Framing FROM the face: with the coverage fit on, the focus point
+			    is what stays in frame, so copying the face into it centres a
+			    vertical picture on the face both ways — «centrar la imagen
+			    vertical y horizontalmente respecto al punto de la cara». */}
+			{point === 'focus' ? (
+				<Button
+					onClick={() => {
+						if (image.faceFocusX === null) return;
+						onChangeFocusPoint(
+							image.faceFocusX,
+							image.faceFocusY ?? 0.5
+						);
+					}}
+					size="sm"
+					density="compact"
+					variant="secondary"
+					disabled={image.faceFocusX === null}
+					title={tr.image_points_center_face_t}
+					full
+				>
+					{tr.image_points_center_face}
+				</Button>
+			) : null}
 			{point === 'focus' && !isAdvanced ? null : (
 				<div className="grid gap-2 sm:grid-cols-2">
 					<BgPreciseSliderControl

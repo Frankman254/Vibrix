@@ -12,6 +12,7 @@
 import { useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import {
+	Button,
 	Caption,
 	FieldLabel,
 	SectionCard,
@@ -33,6 +34,7 @@ import { formatDecimal } from '@/editor/motionTabUtils';
 import { resolveSlideshowPool } from '@/features/background';
 import { MAX_INTRO_SLOT_COUNT } from '@/store/featureProfiles';
 import IntroImagePicker from './IntroImagePicker';
+import { INTRO_PRESETS } from '../introPresets';
 import {
 	TRACK_TITLE_FONTS,
 	TRACK_TITLE_FONT_LABELS
@@ -288,6 +290,10 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 		{ value: 'spectrum', label: t.intro_view_spectrum }
 	];
 
+	// Preset labels are looked up by key, which the literal-typed dictionary
+	// cannot express: one cast, at the one place that needs it.
+	const text = t as unknown as Record<string, string>;
+
 	const phases = resolveIntroPhases(settings);
 	const revealOptions: { value: IntroTextReveal; label: string }[] = [
 		{ value: 'typewriter', label: t.intro_reveal_typewriter },
@@ -326,6 +332,34 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 						full
 						ariaLabel={t.intro_aria_sections}
 					/>
+
+					{/* Above the sub-tabs on purpose: a quick look is the shortcut
+					    into the whole window, so it must not be buried inside
+					    one of its sections. A preset is a patch — the text, the
+					    picked images and the spectrum slots survive it. */}
+					<SectionCard
+						title={t.intro_presets_title}
+						density="compact"
+					>
+						<div className="flex flex-col gap-1.5">
+							<div className="grid grid-cols-3 gap-1.5">
+								{INTRO_PRESETS.map(preset => (
+									<Button
+										key={preset.id}
+										onClick={() => patch(preset.patch)}
+										size="sm"
+										density="compact"
+										variant="secondary"
+										title={text[preset.hintKey]}
+										full
+									>
+										{text[preset.labelKey]}
+									</Button>
+								))}
+							</div>
+							<Caption>{t.intro_presets_hint}</Caption>
+						</div>
+					</SectionCard>
 
 					<TabFade tabKey={view}>
 						{view === 'timing' ? (

@@ -29,7 +29,7 @@ import type {
 	WallpaperState
 } from '@/types/wallpaper';
 import type { IntroSpectrumPlan } from './introPlan';
-import type { PaintIntroSpectrum } from './introPaint';
+import type { IntroLogoAnchor, PaintIntroSpectrum } from './introPaint';
 import { resolveIntroSpectrumWave } from './introSpectrum';
 
 /**
@@ -63,6 +63,39 @@ function resolveSlotLook(
 	} as Partial<WallpaperState>;
 }
 
+/**
+ * Point a follow-the-logo slot at the WINDOW's logo, or turn the following off
+ * when this window draws no logo at all.
+ *
+ * Positions are −1..1 measured from the centre of the canvas, Y up, which is
+ * the convention the spectrum renderers read.
+ */
+export function resolveWindowLogoPlacement(
+	anchor: IntroLogoAnchor | null,
+	width: number,
+	height: number
+): Pick<
+	WallpaperState,
+	| 'spectrumFollowLogo'
+	| 'logoEnabled'
+	| 'logoPositionX'
+	| 'logoPositionY'
+	| 'logoBaseSize'
+	| 'logoMinScale'
+> | null {
+	if (!anchor || !(width > 0 && height > 0)) return null;
+	return {
+		spectrumFollowLogo: true,
+		logoEnabled: true,
+		logoPositionX: (anchor.x / width) * 2 - 1,
+		logoPositionY: 1 - (anchor.y / height) * 2,
+		logoBaseSize: anchor.sizePx,
+		// The ring is sized from the logo as the window draws it, so the live
+		// wallpaper's minimum scale must not inflate it.
+		logoMinScale: 1
+	};
+}
+
 export type IntroSpectrumContext = {
 	kind: 'intro' | 'outro';
 	state: WallpaperState;
@@ -89,7 +122,7 @@ export function createIntroSpectrumPainter(
 		return null;
 	}
 
-	return (ctx, plan, windowAlpha) => {
+	return (ctx, plan, windowAlpha, logoAnchor) => {
 		const bank =
 			plan.bank === 'second'
 				? state.spectrumSecondProfileSlots
@@ -114,10 +147,25 @@ export function createIntroSpectrumPainter(
 			spectrumInstances: [],
 			spectrumOpacity: alpha
 		} as WallpaperState;
+		// Positions are −1..1 from the centre of the canvas (Y up), so CENTRED
+		// is zero — not 0.5, which is a quarter of the screen off to the right.
 		if (plan.centered) {
 			merged.spectrumFollowLogo = false;
-			merged.spectrumPositionX = 0.5;
-			merged.spectrumPositionY = 0.5;
+			merged.spectrumPositionX = 0;
+			merged.spectrumPositionY = 0;
+		} else if (merged.spectrumFollowLogo) {
+			// «el spectrum circular de la intro se esta centrando en el mark de
+			// la primera imagen»: `logoPositionX/Y` in the live state is the
+			// WALLPAPER's logo, dragged there by the active image's mark, and
+			// that logo is not in this window. A slot that rings a logo rings
+			// the window's own, and rings nothing when the window has none.
+			const placement = resolveWindowLogoPlacement(
+				logoAnchor,
+				canvas.width,
+				canvas.height
+			);
+			if (placement) Object.assign(merged, placement);
+			else merged.spectrumFollowLogo = false;
 		}
 
 		const placed = applySpectrumPlacementToState(

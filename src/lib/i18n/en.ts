@@ -481,6 +481,9 @@ export const en = {
 	intro_section_timing: 'Timing',
 	image_points_title: 'Image points',
 	image_points_focus: 'Framing',
+	image_points_center_face: 'Centre the framing on the face',
+	image_points_center_face_t:
+		'Uses the face point as the framing focus, so the face stays centred when the picture is cropped. Needs a face point.',
 	image_points_face: 'Face',
 	image_points_mark: 'Mark',
 	image_points_focus_x: 'Focus X',
@@ -555,6 +558,23 @@ export const en = {
 	intro_division_lightning: 'Lightning',
 	intro_division_starburst: 'Starburst',
 	intro_division_irregular: 'Irregular',
+	intro_presets_title: 'Quick looks',
+	intro_presets_hint:
+		'One click sets a finished composition. Your text, your picked images and your spectrum slots are left alone — keep editing from there.',
+	intro_preset_poster: 'Poster',
+	intro_preset_poster_hint:
+		'Nine images in a grid, boxed title, reading order.',
+	intro_preset_cinematic: 'Cinematic',
+	intro_preset_cinematic_hint: 'Slow fades, serif title, long pan.',
+	intro_preset_neon: 'Neon',
+	intro_preset_neon_hint: 'Diagonal shutters, rainbow frame, techno title.',
+	intro_preset_strip: 'Film strip',
+	intro_preset_strip_hint: 'Columns like a contact sheet, ribbon title.',
+	intro_preset_burst: 'Burst',
+	intro_preset_burst_hint:
+		'Twelve images from the centre out, short and loud.',
+	intro_preset_minimal: 'Minimal',
+	intro_preset_minimal_hint: 'Three images, slow zoom, no frame.',
 	intro_image_source: 'Images',
 	intro_image_source_setlist: 'From the setlist',
 	intro_image_source_catalog: 'From all images',

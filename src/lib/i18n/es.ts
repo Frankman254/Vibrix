@@ -484,6 +484,9 @@ export const es: Record<TranslationKey, string> = {
 	intro_section_timing: 'Tiempos',
 	image_points_title: 'Puntos de la imagen',
 	image_points_focus: 'Encuadre',
+	image_points_center_face: 'Centrar el encuadre en la cara',
+	image_points_center_face_t:
+		'Usa el punto de la cara como foco del encuadre, para que la cara quede centrada cuando la imagen se recorta. Necesita un punto de cara.',
 	image_points_face: 'Cara',
 	image_points_mark: 'Marca',
 	image_points_focus_x: 'Focus X',
@@ -559,6 +562,24 @@ export const es: Record<TranslationKey, string> = {
 	intro_division_lightning: 'Rayo',
 	intro_division_starburst: 'Media estrella',
 	intro_division_irregular: 'Irregular',
+	intro_presets_title: 'Estilos rápidos',
+	intro_presets_hint:
+		'Un clic deja una composición terminada. No toca tu texto, tus imágenes elegidas ni tus slots de spectrum — sigue editando desde ahí.',
+	intro_preset_poster: 'Póster',
+	intro_preset_poster_hint:
+		'Nueve imágenes en cuadrícula, título con marco, en orden de lectura.',
+	intro_preset_cinematic: 'Cinematográfico',
+	intro_preset_cinematic_hint: 'Fundidos lentos, título serif, paneo largo.',
+	intro_preset_neon: 'Neón',
+	intro_preset_neon_hint:
+		'Cortinillas diagonales, marco arcoíris, título techno.',
+	intro_preset_strip: 'Tira de película',
+	intro_preset_strip_hint:
+		'Columnas como una tira de contactos, título en cinta.',
+	intro_preset_burst: 'Estallido',
+	intro_preset_burst_hint: 'Doce imágenes desde el centro, corto y fuerte.',
+	intro_preset_minimal: 'Mínimo',
+	intro_preset_minimal_hint: 'Tres imágenes, zoom lento, sin marco.',
 	intro_image_source: 'Imágenes',
 	intro_image_source_setlist: 'Del setlist',
 	intro_image_source_catalog: 'De todo el catálogo',
