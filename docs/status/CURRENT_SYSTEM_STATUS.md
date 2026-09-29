@@ -178,42 +178,42 @@ See `docs/features/SPECTRUM_ENGINE.md` (ownership model) and
 
 Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 
-| Version | Adds                                                                                       |
-| ------- | ------------------------------------------------------------------------------------------ |
-| v96     | `spectrumShape: pixel`, `spectrumPixelate`, `spectrumPixelateScale`                        |
-| v97     | Spectrum 2 gets its own `spectrumSecondProfileSlots` bank                                  |
-| v98     | Scene-first model — `defaultSceneSlotId`                                                   |
-| v99     | Re-runs instance migration to backfill missing Spectrum 2 keys                             |
-| v100–02 | Liquid Glass toggles, per-surface tuning, then the reworked lens model                     |
-| v103    | Legacy Motion bundles + per-image Spectrum 2 overrides split into slots                    |
-| v104    | Scene/per-image bindings reference slots by stable `id`, never by index                    |
-| v105    | Per-liquid-layer retro pixelate (`spectrumLiquidLayer{1,2,3}Pixelate`)                     |
-| v106    | Radial shapes normalized + 6 retired; `spectrumRadialSharpness`                            |
-| v107–10 | Retired FX cleanup + unified Looks catalog and audio routing                               |
-| v111    | Cache-safe Vibrix factory logo URL and legacy logo migration                               |
-| v112    | Built-in logo variant mode (vector/pixel/auto)                                             |
-| v113    | Per-image `coverageFramingEdited` provenance flag                                          |
-| v114    | `showAutoZoomDebug` coverage-overlay debug flag                                            |
-| v115    | `sceneServiceBaseUrl` (AI scene-intent service location)                                   |
-| v116    | Keep-Covered unconditional; `imageCoverageLockEnabled` removed                             |
-| v117    | `imageFramingManualEnabled`: manual framing switch (coverage math off)                     |
-| v118    | `offlineExportResolutionId` + `offlineExportFps`: persisted export profile                 |
-| v119    | `effectLayers` + `activeEffectLayerId`: several Looks stacks at once                       |
-| v120    | Looks slots and per-image Looks overrides carry the whole layer stack                      |
-| v121    | Global composition mode (`globalCompositionOverride` + per-image opt-out)                  |
-| v122    | `sceneServiceModel` — which model the scene service should use ('' = server)               |
-| v123    | `slideshowTransitionAnchor`: where a manual timestamp sits in its transition               |
-| v124    | `motionLayers` + `activeMotionLayerId`: several Camera Motion movements at once            |
-| v125    | `cameraMotionAmplitudeAudio`: audio drives the size of a movement, not only its speed      |
-| v126    | Per-image `cameraFxOverride` / `lightsOverride` / `trackTitleOverride`, all `null`         |
-| v127    | `transitionPresets` (factory seeded) + per-image `transitionPresetId`, `null`              |
-| v128    | `globalCompositionSlots` (6 vacíos) + `activeGlobalCompositionSlotId`, `null`              |
-| v129    | `introStinger` + `outroStinger` (intro/ending generados), ambos apagados                   |
-| v130    | `introSequence` + `outroSequence` (módulo de intro/ending), ambos apagados                 |
-| v131    | El spectrum del intro pasa a ser un slot guardado + onda fija generada                     |
-| v132    | El tiempo del intro en segundos (`buildSec`/`releaseSec`) + `backdropColorSource`          |
-| v133    | Foco de cara y de logo por imagen (`faceFocus*`, `logoFocus*`) + `logoFollowImageFocus`    |
-| v134    | Patrón e inclinación de las divisiones del montaje (`divisionPattern`, `divisionAngleDeg`) |
+| Version | Adds                                                                                                                           |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| v96     | `spectrumShape: pixel`, `spectrumPixelate`, `spectrumPixelateScale`                                                            |
+| v97     | Spectrum 2 gets its own `spectrumSecondProfileSlots` bank                                                                      |
+| v98     | Scene-first model — `defaultSceneSlotId`                                                                                       |
+| v99     | Re-runs instance migration to backfill missing Spectrum 2 keys                                                                 |
+| v100–02 | Liquid Glass toggles, per-surface tuning, then the reworked lens model                                                         |
+| v103    | Legacy Motion bundles + per-image Spectrum 2 overrides split into slots                                                        |
+| v104    | Scene/per-image bindings reference slots by stable `id`, never by index                                                        |
+| v105    | Per-liquid-layer retro pixelate (`spectrumLiquidLayer{1,2,3}Pixelate`)                                                         |
+| v106    | Radial shapes normalized + 6 retired; `spectrumRadialSharpness`                                                                |
+| v107–10 | Retired FX cleanup + unified Looks catalog and audio routing                                                                   |
+| v111    | Cache-safe Vibrix factory logo URL and legacy logo migration                                                                   |
+| v112    | Built-in logo variant mode (vector/pixel/auto)                                                                                 |
+| v113    | Per-image `coverageFramingEdited` provenance flag                                                                              |
+| v114    | `showAutoZoomDebug` coverage-overlay debug flag                                                                                |
+| v115    | `sceneServiceBaseUrl` (AI scene-intent service location)                                                                       |
+| v116    | Keep-Covered unconditional; `imageCoverageLockEnabled` removed                                                                 |
+| v117    | `imageFramingManualEnabled`: manual framing switch (coverage math off)                                                         |
+| v118    | `offlineExportResolutionId` + `offlineExportFps`: persisted export profile                                                     |
+| v119    | `effectLayers` + `activeEffectLayerId`: several Looks stacks at once                                                           |
+| v120    | Looks slots and per-image Looks overrides carry the whole layer stack                                                          |
+| v121    | Global composition mode (`globalCompositionOverride` + per-image opt-out)                                                      |
+| v122    | `sceneServiceModel` — which model the scene service should use ('' = server)                                                   |
+| v123    | `slideshowTransitionAnchor`: where a manual timestamp sits in its transition                                                   |
+| v124    | `motionLayers` + `activeMotionLayerId`: several Camera Motion movements at once                                                |
+| v125    | `cameraMotionAmplitudeAudio`: audio drives the size of a movement, not only its speed                                          |
+| v126    | Per-image `cameraFxOverride` / `lightsOverride` / `trackTitleOverride`, all `null`                                             |
+| v127    | `transitionPresets` (factory seeded) + per-image `transitionPresetId`, `null`                                                  |
+| v128    | `globalCompositionSlots` (6 vacíos) + `activeGlobalCompositionSlotId`, `null`                                                  |
+| v129    | `introStinger` + `outroStinger` (intro/ending generados), ambos apagados                                                       |
+| v130    | `introSequence` + `outroSequence` (módulo de intro/ending), ambos apagados                                                     |
+| v131    | El spectrum del intro pasa a ser un slot guardado + onda fija generada                                                         |
+| v132    | El tiempo del intro en segundos (`buildSec`/`releaseSec`) + `backdropColorSource`                                              |
+| v133    | Foco de cara y de logo por imagen (`faceFocus*`, `logoFocus*`) + `logoFollowImageFocus`                                        |
+| v134    | Divisiones del montaje (`divisionPattern`, `divisionAngleDeg`) + imágenes elegidas a mano (`imageSourceMode`, `imageAssetIds`) |
 
 ---
 

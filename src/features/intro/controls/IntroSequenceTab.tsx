@@ -27,12 +27,14 @@ import AdaptiveColorInput from '@/editor/AdaptiveColorInput';
 import { MotionSlider as Slider } from '@/editor/MotionSharedControls';
 import { formatDecimal } from '@/editor/motionTabUtils';
 import { resolveSlideshowPool } from '@/features/background';
+import IntroImagePicker from './IntroImagePicker';
 import {
 	TRACK_TITLE_FONTS,
 	TRACK_TITLE_FONT_LABELS
 } from '@/lib/canvasText/trackTitleOptions';
 import type {
 	IntroDivisionPattern,
+	IntroImageSourceMode,
 	IntroLogoSource,
 	IntroMontageMode,
 	IntroSequenceKind,
@@ -104,6 +106,12 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 	// option objects on every call, so the snapshot never compares equal and the
 	// store re-renders for ever: React #185, black screen.
 	const spectrumProfileSlots = useWallpaperStore(s => s.spectrumProfileSlots);
+	// The hand-picked grid lists the WHOLE collection: a picked image must not
+	// disappear because the active setlist filters it out.
+	const backgroundImages = useWallpaperStore(s => s.backgroundImages);
+	const imagePreviewQuality = useWallpaperStore(
+		s => s.editorImagePreviewQuality
+	);
 	// Only slots that actually hold a saved figure: an empty slot would draw
 	// nothing and look like a bug.
 	const slotOptions = useMemo(
@@ -121,11 +129,18 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 	const patch = (next: Parameters<typeof setIntroSequence>[1]) =>
 		setIntroSequence(kind, next);
 	// What the montage will actually show: asking for more images than the
-	// setlist holds is not an error, it just uses what there is.
-	const used = pickIntroImages(
-		Array.from({ length: poolSize }, (_, i) => ({ assetId: String(i) })),
-		settings
-	).length;
+	// setlist holds is not an error, it just uses what there is. Hand-picked
+	// mode counts the picks that still exist in the collection.
+	const available = new Set(backgroundImages.map(image => image.assetId));
+	const used =
+		settings.imageSourceMode === 'manual'
+			? settings.imageAssetIds.filter(id => available.has(id)).length
+			: pickIntroImages(
+					Array.from({ length: poolSize }, (_, i) => ({
+						assetId: String(i)
+					})),
+					settings
+				).length;
 
 	const phases = resolveIntroPhases(settings);
 	const revealOptions: { value: IntroTextReveal; label: string }[] = [
@@ -295,30 +310,64 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 									)}
 								</>
 							)}
-							<Slider
-								label={t.intro_image_count}
-								value={settings.imageCount}
-								min={INTRO_IMAGE_COUNT_RANGE.min}
-								max={INTRO_IMAGE_COUNT_RANGE.max}
-								step={1}
-								onChange={imageCount => patch({ imageCount })}
-								defaultValue={factory.imageCount}
-								variant="compact"
-							/>
-							<SegmentedControl<IntroSequenceOrder>
-								value={settings.order}
-								onChange={order => patch({ order })}
+							<SegmentedControl<IntroImageSourceMode>
+								value={settings.imageSourceMode}
+								onChange={imageSourceMode =>
+									patch({ imageSourceMode })
+								}
 								options={[
 									{
 										value: 'setlist',
-										label: t.intro_order_first
+										label: t.intro_image_source_setlist
 									},
 									{
-										value: 'setlist-reverse',
-										label: t.intro_order_last
+										value: 'manual',
+										label: t.intro_image_source_manual
 									}
 								]}
 							/>
+							{settings.imageSourceMode === 'manual' ? (
+								<>
+									<IntroImagePicker
+										images={backgroundImages}
+										previewQuality={imagePreviewQuality}
+										selected={settings.imageAssetIds}
+										onChange={imageAssetIds =>
+											patch({ imageAssetIds })
+										}
+									/>
+									<Caption>{t.intro_picked_hint}</Caption>
+								</>
+							) : (
+								<>
+									<Slider
+										label={t.intro_image_count}
+										value={settings.imageCount}
+										min={INTRO_IMAGE_COUNT_RANGE.min}
+										max={INTRO_IMAGE_COUNT_RANGE.max}
+										step={1}
+										onChange={imageCount =>
+											patch({ imageCount })
+										}
+										defaultValue={factory.imageCount}
+										variant="compact"
+									/>
+									<SegmentedControl<IntroSequenceOrder>
+										value={settings.order}
+										onChange={order => patch({ order })}
+										options={[
+											{
+												value: 'setlist',
+												label: t.intro_order_first
+											},
+											{
+												value: 'setlist-reverse',
+												label: t.intro_order_last
+											}
+										]}
+									/>
+								</>
+							)}
 							<Slider
 								label={t.intro_image_dim}
 								value={settings.imageDim}

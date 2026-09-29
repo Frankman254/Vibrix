@@ -7,7 +7,10 @@
  * `introPlan` decides how far each piece is mounted and `paintIntro` places it,
  * so the file and the preview agree frame for frame.
  */
-import { resolveSlideshowPool } from '@/features/background';
+import {
+	getBackgroundPalette,
+	type BackgroundPalette
+} from '@/lib/backgroundPalette';
 import {
 	createIntroSpectrumPainter,
 	paintIntro,
@@ -16,6 +19,8 @@ import {
 	resolveIntroFocusMap,
 	resolveIntroFrame,
 	resolveIntroLogoUrl,
+	resolveIntroPaletteUrl,
+	resolveIntroPool,
 	resolveIntroThemePalette,
 	resolveIntroWindow,
 	selectIntroSequence
@@ -42,6 +47,12 @@ type WindowAssets = {
 	/** Card index → the point of that image to keep in frame while cropping. */
 	focus: Map<number, { x: number; y: number }>;
 	logo: HTMLImageElement | null;
+	/**
+	 * What `current image` means inside the window: the palette of the FIRST
+	 * setlist image, resolved here so the file and the preview agree. `null`
+	 * falls back to the frame's own palette.
+	 */
+	palette: BackgroundPalette | null;
 };
 
 async function loadWindowAssets(
@@ -52,14 +63,15 @@ async function loadWindowAssets(
 	const assets: WindowAssets = {
 		images: new Map(),
 		focus: new Map(),
-		logo: null
+		logo: null,
+		palette: null
 	};
 	if (!settings.enabled) return assets;
-	const pool = resolveSlideshowPool(
-		state.backgroundImages,
-		state.setlists,
-		state.activeSetlistId
-	);
+	const pool = resolveIntroPool(state, settings);
+	const paletteUrl = resolveIntroPaletteUrl(state);
+	if (paletteUrl) {
+		assets.palette = await getBackgroundPalette(paletteUrl);
+	}
 	const ids = pickIntroImages(pool, settings);
 	assets.focus = resolveIntroFocusMap(pool, ids);
 	const logoUrl = resolveIntroLogoUrl(settings, state);
@@ -82,7 +94,8 @@ export function createIntroSubsystem(): RenderSubsystem {
 	const empty = (): WindowAssets => ({
 		images: new Map(),
 		focus: new Map(),
-		logo: null
+		logo: null,
+		palette: null
 	});
 	let intro: WindowAssets = empty();
 	let outro: WindowAssets = empty();
@@ -120,14 +133,14 @@ export function createIntroSubsystem(): RenderSubsystem {
 				logo: assets.logo,
 				colors: resolveIntroColors(
 					settings,
-					ctx.palette,
+					assets.palette ?? ctx.palette,
 					resolveIntroThemePalette(ctx.state)
 				),
 				paintSpectrum:
 					createIntroSpectrumPainter({
 						kind: window_.kind,
 						state: ctx.state as WallpaperState,
-						palette: ctx.palette,
+						palette: assets.palette ?? ctx.palette,
 						themePalette: resolveIntroThemePalette(ctx.state),
 						windowTimeSec: window_.elapsedSec,
 						dt: Math.max(0.0001, ctx.deltaMs / 1000)

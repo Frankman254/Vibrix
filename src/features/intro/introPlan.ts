@@ -187,6 +187,8 @@ export function createDefaultIntroSequence(
 		montage: intro ? 'mosaic-grid' : 'mosaic-burst',
 		divisionPattern: 'grid',
 		divisionAngleDeg: 0,
+		imageSourceMode: 'setlist',
+		imageAssetIds: [],
 		imageCount: intro ? 9 : 9,
 		order: intro ? 'setlist' : 'setlist-reverse',
 		backdropColorSource: 'manual',
@@ -319,6 +321,15 @@ export function pickIntroImages(
 	);
 	if (pool.length === 0) return [];
 	const ids = pool.map(image => image.assetId);
+	if (settings.imageSourceMode === 'manual') {
+		// The user's own list, in the user's own order. Ids that are no longer
+		// in the collection are dropped instead of drawing a hole, and the cap
+		// is the same one the automatic mode obeys.
+		const available = new Set(ids);
+		return settings.imageAssetIds
+			.filter(assetId => available.has(assetId))
+			.slice(0, INTRO_IMAGE_COUNT_RANGE.max);
+	}
 	if (settings.order === 'setlist-reverse') {
 		return ids.slice(Math.max(0, ids.length - count)).reverse();
 	}

@@ -10,11 +10,15 @@
  * It deliberately carries no `data-camera-motion-layer`: an intro that shakes
  * with the camera would read as part of the scene instead of framing it.
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useWallpaperStore } from '@/store/wallpaperStore';
 import { useAudioContext } from '@/context/useAudioContext';
 import { useBackgroundPalette } from '@/hooks/useBackgroundPalette';
-import { resolveSlideshowPool } from '@/features/background';
+import {
+	DEFAULT_BACKGROUND_PALETTE,
+	getBackgroundPalette
+} from '@/lib/backgroundPalette';
+import { resolveIntroPaletteUrl, resolveIntroPool } from './introPool';
 import {
 	syncOutputCanvasBacking,
 	subscribeOutputRenderQuality
@@ -42,7 +46,30 @@ export default function IntroLayer({ zIndex = 95 }: { zIndex?: number }) {
 	const { getCurrentTime, getDuration } = useAudioContext();
 	/** Wall-clock of the previous frame, for the renderer's own smoothing. */
 	const lastFrameMsRef = useRef(0);
-	const palette = useBackgroundPalette();
+	const livePalette = useBackgroundPalette();
+	/**
+	 * `current image` inside a window means the FIRST image of the setlist, not
+	 * whatever is active: the intro plays before anything has been on screen.
+	 * The live palette is the fallback for a collection with no setlist image.
+	 */
+	const paletteUrl = useWallpaperStore(resolveIntroPaletteUrl);
+	const [introPalette, setIntroPalette] = useState(
+		DEFAULT_BACKGROUND_PALETTE
+	);
+	useEffect(() => {
+		if (!paletteUrl) return;
+		let cancelled = false;
+		void getBackgroundPalette(paletteUrl).then(next => {
+			if (!cancelled) setIntroPalette(next);
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, [paletteUrl]);
+	const palette =
+		paletteUrl && introPalette.sourceUrl === paletteUrl
+			? introPalette
+			: livePalette;
 	const paletteRef = useRef(palette);
 	paletteRef.current = palette;
 
@@ -93,11 +120,7 @@ export default function IntroLayer({ zIndex = 95 }: { zIndex?: number }) {
 			}
 
 			const settings = selectIntroSequence(state, window_.kind);
-			const pool = resolveSlideshowPool(
-				state.backgroundImages,
-				state.setlists,
-				state.activeSetlistId
-			);
+			const pool = resolveIntroPool(state, settings);
 			const ids = pickIntroImages(pool, settings);
 			const images = new Map<number, HTMLImageElement>();
 			ids.forEach((assetId, index) => {

@@ -96,6 +96,33 @@ describe('pickIntroImages', () => {
 		).toHaveLength(5);
 		expect(pickIntroImages([], settings('intro'))).toEqual([]);
 	});
+
+	it('draws the hand-picked list in the picked order', () => {
+		expect(
+			pickIntroImages(
+				pool,
+				settings('intro', {
+					imageSourceMode: 'manual',
+					imageAssetIds: ['d', 'a', 'c'],
+					// Neither of these applies to a hand-picked list.
+					imageCount: 2,
+					order: 'setlist-reverse'
+				})
+			)
+		).toEqual(['d', 'a', 'c']);
+	});
+
+	it('drops hand-picked ids that are no longer in the collection', () => {
+		expect(
+			pickIntroImages(
+				pool,
+				settings('intro', {
+					imageSourceMode: 'manual',
+					imageAssetIds: ['a', 'gone', 'b']
+				})
+			)
+		).toEqual(['a', 'b']);
+	});
 });
 
 describe('resolveSlotMount', () => {

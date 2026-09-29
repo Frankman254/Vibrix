@@ -656,6 +656,13 @@ export type IntroSpectrumSource = 'none' | 'slot';
 /** Which end of the setlist the cards come from, and in which direction. */
 export type IntroSequenceOrder = 'setlist' | 'setlist-reverse';
 
+/**
+ * Where the montage's images come from.
+ *  - `setlist` the head (or the tail) of the selected setlist, automatically.
+ *  - `manual`  exactly the images picked in `imageAssetIds`, in that order.
+ */
+export type IntroImageSourceMode = 'setlist' | 'manual';
+
 export interface IntroSequenceSettings {
 	enabled: boolean;
 	/** Seconds the window lasts. Never more than half the video. */
@@ -678,6 +685,14 @@ export interface IntroSequenceSettings {
 	 */
 	divisionPattern: IntroDivisionPattern;
 	divisionAngleDeg: number;
+	/**
+	 * `manual` draws exactly `imageAssetIds`, in the order they were picked, and
+	 * ignores both `imageCount` and `order`: "no las saque automáticamente".
+	 * The picked ids are looked up in the WHOLE collection, so a hand-picked
+	 * image is drawn even when the active setlist filters it out.
+	 */
+	imageSourceMode: IntroImageSourceMode;
+	imageAssetIds: string[];
 	/** How many setlist images the montage composes. */
 	imageCount: number;
 	order: IntroSequenceOrder;

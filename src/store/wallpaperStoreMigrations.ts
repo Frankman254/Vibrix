@@ -3378,6 +3378,13 @@ export function migrateWallpaperStore(
 			if (typeof settings.divisionAngleDeg !== 'number') {
 				settings.divisionAngleDeg = 0;
 			}
+			// The images stay automatic until the user picks some by hand.
+			if (typeof settings.imageSourceMode !== 'string') {
+				settings.imageSourceMode = 'setlist';
+			}
+			if (!Array.isArray(settings.imageAssetIds)) {
+				settings.imageAssetIds = [];
+			}
 		};
 		migrateWindowDivisions(migratedState.introSequence);
 		migrateWindowDivisions(migratedState.outroSequence);

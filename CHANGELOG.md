@@ -82,6 +82,22 @@ the version scheme in `src/lib/version.ts`.
       dentro de la celda** en vez de mover la celda: una celda que se desplaza
       se lleva su recorte y deja ver el fondo por el hueco.
 
+- **Imágenes elegidas a mano para la intro y el ending.** Además del modo
+  automático («del setlist», que sigue tomando la cabeza o la cola del set), hay
+  un modo **elegidas a mano**: una rejilla con **toda la colección** donde cada
+  clic añade o quita, y la chapa numerada dice la **posición en el montaje** —
+  el orden en que las eliges es el orden en que la ventana las muestra, que es
+  lo que reparte las imágenes entre la apertura, el medio y el cierre. La lista
+  se busca en la colección completa, así que una imagen elegida a mano se dibuja
+  aunque el setlist activo la filtre; una id que ya no exista se descarta en vez
+  de dejar un hueco.
+
+- **`Imagen actual` dentro de la intro = la PRIMERA imagen del setlist.** Los
+  colores de la ventana (fondo, título, frase, spectrum) tomaban la paleta de la
+  imagen _activa_, que durante una intro todavía no significa nada. Ahora la
+  ventana resuelve su paleta de la primera imagen del setlist, igual en la
+  previsualización y en el render offline.
+
 - **Arreglado: pantalla negra al abrir Intro y ending.** El selector del slot de
   spectrum construía los objetos de opción **dentro** del selector del store, así
   que la comparación nunca daba igual y el componente se re-renderizaba en bucle
