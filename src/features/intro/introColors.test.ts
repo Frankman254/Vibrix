@@ -15,7 +15,7 @@ const IMAGE_PALETTE = {
 	backdrop: '#010203',
 	rainbow: ['#ff0000', '#00ff00', '#0000ff']
 };
-const THEME_PALETTE = getEditorThemePalette('neon');
+const THEME_PALETTE = getEditorThemePalette('aurora');
 
 function colors(patch: Partial<IntroSequenceSettings>) {
 	return resolveIntroColors(

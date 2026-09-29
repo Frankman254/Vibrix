@@ -624,8 +624,14 @@ export const es: Record<TranslationKey, string> = {
 	intro_logo_vibrix: 'Vibrix',
 	intro_logo_project: 'El del proyecto',
 	intro_logo_size: 'Tamaño (% del alto)',
+	intro_logo_stretch: 'Ancho',
+	intro_logo_placement_stack: 'En la columna',
+	intro_logo_placement_free: 'Libre',
+	intro_logo_offset_x: 'Desplazamiento X',
+	intro_logo_offset_y: 'Desplazamiento Y',
+	intro_logo_opacity: 'Opacidad',
 	intro_logo_hint:
-		'Va encima del título, en el centro, y se monta con el resto.',
+		'En la columna es la primera fila encima del título y los desplazamientos lo corren desde ahí; libre se coloca desde el centro de la pantalla y el título se recentra.',
 	intro_section_spectrum: 'Spectrum',
 	intro_spectrum_enabled: 'Mostrar un spectrum',
 	intro_spectrum_enabled_tooltip:

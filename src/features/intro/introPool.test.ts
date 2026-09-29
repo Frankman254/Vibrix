@@ -16,7 +16,8 @@ function setlist(imageAssetIds: string[]): Setlist {
 		id: 'set-1',
 		name: 'Set',
 		imageAssetIds,
-		trackIds: []
+		trackIds: [],
+		createdAt: 0
 	} as Setlist;
 }
 

@@ -3436,6 +3436,33 @@ export function migrateWallpaperStore(
 		migrateWindowDivisions(migratedState.outroSequence);
 	}
 
+	if (fromVersion < 135) {
+		// The intro's logo got its own placement, offsets, stretch and opacity.
+		// The defaults reproduce the old behaviour exactly: first row of the
+		// centred column, no offset, natural aspect, fully opaque.
+		const migrateWindowLogo = (window_: unknown): void => {
+			if (!window_ || typeof window_ !== 'object') return;
+			const settings = window_ as Record<string, unknown>;
+			if (typeof settings.logoPlacement !== 'string') {
+				settings.logoPlacement = 'stack';
+			}
+			if (typeof settings.logoOffsetX !== 'number') {
+				settings.logoOffsetX = 0;
+			}
+			if (typeof settings.logoOffsetY !== 'number') {
+				settings.logoOffsetY = 0;
+			}
+			if (typeof settings.logoStretch !== 'number') {
+				settings.logoStretch = 1;
+			}
+			if (typeof settings.logoOpacity !== 'number') {
+				settings.logoOpacity = 1;
+			}
+		};
+		migrateWindowLogo(migratedState.introSequence);
+		migrateWindowLogo(migratedState.outroSequence);
+	}
+
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;
 }
 

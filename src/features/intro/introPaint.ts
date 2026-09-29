@@ -450,14 +450,18 @@ export function paintIntro({
 		? measureLine(ctx, frame.tagline, taglineFontStyle, viewport)
 		: null;
 	const logoH = frame.logo ? (height * frame.logo.sizePct) / 100 : 0;
+	// A `free` logo is positioned by its own offsets, so it must not reserve a
+	// row in the centred column — otherwise moving it away would leave a hole
+	// and push the title off centre.
+	const logoInStack = frame.logo?.placement !== 'free' ? logoH : 0;
 	const titleH = titleLine ? titleLine.sizePx * 1.18 : 0;
 	const taglineH = taglineLine ? taglineLine.sizePx * 1.5 : 0;
 	const gap = height * 0.022;
 	const stackH =
-		logoH +
+		logoInStack +
 		titleH +
 		taglineH +
-		(logoH > 0 && titleH > 0 ? gap : 0) +
+		(logoInStack > 0 && titleH > 0 ? gap : 0) +
 		(titleH > 0 && taglineH > 0 ? gap : 0);
 	let cursorY = height / 2 - stackH / 2;
 	const centreX = width / 2;
@@ -467,24 +471,30 @@ export function paintIntro({
 		paintSpectrum(ctx, frame.spectrum, windowAlpha);
 	}
 
-	if (frame.logo && logo && logoH > 0) {
-		const scale = frame.logo.scale;
-		const drawH = logoH * scale;
-		const ratio = logo.width > 0 ? logo.height / logo.width : 1;
-		const drawW = ratio > 0 ? drawH / ratio : drawH;
-		ctx.save();
-		ctx.globalAlpha = Math.min(1, frame.logo.alpha) * windowAlpha;
-		ctx.drawImage(
-			logo,
-			centreX - drawW / 2,
-			cursorY + logoH / 2 - drawH / 2,
-			drawW,
-			drawH
-		);
-		ctx.restore();
-		cursorY += logoH + gap;
-	} else if (frame.logo && logoH > 0) {
-		cursorY += logoH + gap;
+	if (frame.logo && logoH > 0) {
+		const plan = frame.logo;
+		// `stack` nudges the row it already owns; `free` measures from the
+		// centre of the screen, which is what makes a corner logo possible.
+		const baseY =
+			plan.placement === 'free' ? height / 2 : cursorY + logoH / 2;
+		const centreY = baseY + plan.offsetY * height;
+		const logoX = centreX + plan.offsetX * width;
+		if (logo) {
+			const drawH = logoH * plan.scale;
+			const ratio = logo.width > 0 ? logo.height / logo.width : 1;
+			const drawW = (ratio > 0 ? drawH / ratio : drawH) * plan.stretch;
+			ctx.save();
+			ctx.globalAlpha = Math.min(1, plan.alpha) * windowAlpha;
+			ctx.drawImage(
+				logo,
+				logoX - drawW / 2,
+				centreY - drawH / 2,
+				drawW,
+				drawH
+			);
+			ctx.restore();
+		}
+		if (logoInStack > 0) cursorY += logoInStack + gap;
 	}
 
 	if (titleLine && frame.title) {

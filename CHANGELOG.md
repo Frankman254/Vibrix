@@ -40,7 +40,7 @@ the version scheme in `src/lib/version.ts`.
       configurables. Así la animación es idéntica en cada render y es fluida
       aunque la pista empiece en silencio o con fade-in.
       Las ventanas siguen sin añadir duración al vídeo.
-      `STORE_PERSIST_VERSION` is at **134**; la migración traslada lo que hubiera
+      `STORE_PERSIST_VERSION` is at **135**; la migración traslada lo que hubiera
       en v129, y la de v131 cambia las claves viejas del spectrum del intro
       (`spectrumShape` / `spectrumSizePct` / `spectrumColorSource` /
       `spectrumColor`) por las nuevas (`spectrumSource`, `spectrumSlotIndex`,
@@ -130,6 +130,20 @@ the version scheme in `src/lib/version.ts`.
   imagen _activa_, que durante una intro todavía no significa nada. Ahora la
   ventana resuelve su paleta de la primera imagen del setlist, igual en la
   previsualización y en el render offline.
+
+- **El logo de la intro: posición y tamaño de verdad.** Tenía un solo control
+  (el alto en % de la pantalla) y siempre caía en la fila de encima del título.
+  Ahora tiene:
+    - **Colocación**: `En la columna` (lo de antes: primera fila de la columna
+      centrada, y los desplazamientos lo corren desde ahí) o `Libre` (se coloca
+      desde el centro de la pantalla y el título **se recentra solo**, sin dejar
+      el hueco que dejaba antes).
+    - **Desplazamiento X e Y** (`-50%..+50%` del ancho/alto), **ancho**
+      (`50%..200%` sobre el alto, para estirarlo o comprimirlo), **opacidad**
+      (`10%..100%`) y el alto máximo sube de **40%** a **80%** de la pantalla.
+      Todo sigue montándose y desmontándose con la ventana.
+      `STORE_PERSIST_VERSION` pasa a **135**; la migración siembra los valores
+      que reproducen exactamente el comportamiento anterior.
 
 - **Arreglado: pantalla negra al abrir Intro y ending.** El selector del slot de
   spectrum construía los objetos de opción **dentro** del selector del store, así

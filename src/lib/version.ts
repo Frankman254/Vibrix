@@ -164,4 +164,4 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // `logoFocusX/Y` + `logoFocusSource`, seeded as "not measured yet" so the
 // estimator owns them — plus the global `logoFollowImageFocus`, which takes the
 // logo's base position from the active image's own mark focus.
-export const STORE_PERSIST_VERSION = 134;
+export const STORE_PERSIST_VERSION = 135;

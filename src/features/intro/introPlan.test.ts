@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+	INTRO_LOGO_OFFSET_RANGE,
+	INTRO_LOGO_STRETCH_RANGE,
 	INTRO_MOUNT_ORDER,
 	createDefaultIntroSequence,
 	pickIntroImages,
@@ -593,5 +595,48 @@ describe('resolveIntroFrame', () => {
 		expect(frame.logo).toBeNull();
 		expect(frame.spectrum).toBeNull();
 		expect(frame.cards.every(card => card.alpha === 0)).toBe(true);
+	});
+});
+
+describe('the intro logo', () => {
+	function logoPlan(patch: Partial<IntroSequenceSettings>) {
+		return resolveIntroFrame({
+			kind: 'intro',
+			settings: settings('intro', { logoSource: 'vibrix', ...patch }),
+			progress: 0.5,
+			viewport: VIEWPORT,
+			cardCount: 4
+		}).logo;
+	}
+
+	it('carries the placement and the offsets to the painter', () => {
+		const plan = logoPlan({
+			logoPlacement: 'free',
+			logoOffsetX: -0.3,
+			logoOffsetY: 0.25,
+			logoStretch: 1.4
+		});
+		expect(plan?.placement).toBe('free');
+		expect(plan?.offsetX).toBeCloseTo(-0.3);
+		expect(plan?.offsetY).toBeCloseTo(0.25);
+		expect(plan?.stretch).toBeCloseTo(1.4);
+	});
+
+	it('clamps offsets and stretch to their ranges', () => {
+		const plan = logoPlan({
+			logoOffsetX: -4,
+			logoOffsetY: 9,
+			logoStretch: 40
+		});
+		expect(plan?.offsetX).toBe(INTRO_LOGO_OFFSET_RANGE.min);
+		expect(plan?.offsetY).toBe(INTRO_LOGO_OFFSET_RANGE.max);
+		expect(plan?.stretch).toBe(INTRO_LOGO_STRETCH_RANGE.max);
+	});
+
+	it('scales the mount alpha by the configured opacity', () => {
+		// Fully mounted at mid-window: the only thing left to cut the alpha is
+		// the user's own opacity.
+		expect(logoPlan({ logoOpacity: 0.4 })?.alpha).toBeCloseTo(0.4);
+		expect(logoPlan({})?.alpha).toBe(1);
 	});
 });

@@ -647,6 +647,16 @@ export type IntroTextReveal = 'typewriter' | 'fade' | 'rise' | 'pop' | 'wipe';
 export type IntroLogoSource = 'none' | 'vibrix' | 'project';
 
 /**
+ * Where the logo sits inside the window.
+ *
+ * `stack` keeps it as the first row of the centred column (logo → title →
+ * tagline) and treats the offsets as a nudge from that row. `free` takes it
+ * out of the column: the offsets become its position from the centre of the
+ * screen and the rest of the stack closes the gap it leaves.
+ */
+export type IntroLogoPlacement = 'stack' | 'free';
+
+/**
  * Where the intro's spectrum figure comes from. `slot` draws one of the SAVED
  * spectrum profile slots with the real spectrum renderer, so the flourish is
  * the same figure the wallpaper uses — not a lookalike.
@@ -809,6 +819,15 @@ export interface IntroSequenceSettings {
 	logoSource: IntroLogoSource;
 	/** Logo height as a share of the viewport height. */
 	logoSizePct: number;
+	logoPlacement: IntroLogoPlacement;
+	/** Horizontal offset as a share of the viewport width (`-0.5..0.5`). */
+	logoOffsetX: number;
+	/** Vertical offset as a share of the viewport height (`-0.5..0.5`). */
+	logoOffsetY: number;
+	/** Width multiplier on top of the height-driven size (`0.5..2`). */
+	logoStretch: number;
+	/** Peak opacity of the logo once it is fully mounted (`0.1..1`). */
+	logoOpacity: number;
 
 	spectrumSource: IntroSpectrumSource;
 	/**

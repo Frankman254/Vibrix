@@ -620,8 +620,14 @@ export const en = {
 	intro_logo_vibrix: 'Vibrix',
 	intro_logo_project: "The project's",
 	intro_logo_size: 'Size (% of height)',
+	intro_logo_stretch: 'Width',
+	intro_logo_placement_stack: 'In the column',
+	intro_logo_placement_free: 'Free',
+	intro_logo_offset_x: 'Offset X',
+	intro_logo_offset_y: 'Offset Y',
+	intro_logo_opacity: 'Opacity',
 	intro_logo_hint:
-		'It sits above the title, in the middle, and mounts with the rest.',
+		'In the column it is the first row above the title and the offsets nudge it from there; free it is placed from the centre of the screen and the title recentres itself.',
 	intro_section_spectrum: 'Spectrum',
 	intro_spectrum_enabled: 'Show a spectrum',
 	intro_spectrum_enabled_tooltip:

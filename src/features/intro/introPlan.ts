@@ -18,6 +18,7 @@
  */
 import type {
 	IntroDivisionPattern,
+	IntroLogoPlacement,
 	IntroLogoSource,
 	IntroMontageArrival,
 	IntroMontageMode,
@@ -156,6 +157,12 @@ export type IntroLogoPlan = {
 	sizePct: number;
 	alpha: number;
 	scale: number;
+	placement: IntroLogoPlacement;
+	/** Offsets as shares of the viewport, applied by the painter. */
+	offsetX: number;
+	offsetY: number;
+	/** Width multiplier on top of the height the size gives it. */
+	stretch: number;
 };
 
 export type IntroFrame = {
@@ -178,7 +185,10 @@ export const INTRO_IMAGE_COUNT_RANGE = { min: 1, max: 16 } as const;
 export const INTRO_PHASE_SEC_RANGE = { min: 0.2, max: 10 } as const;
 export const INTRO_TITLE_SIZE_RANGE = { min: 4, max: 22 } as const;
 export const INTRO_TAGLINE_SIZE_RANGE = { min: 2, max: 12 } as const;
-export const INTRO_LOGO_SIZE_RANGE = { min: 4, max: 40 } as const;
+export const INTRO_LOGO_SIZE_RANGE = { min: 4, max: 80 } as const;
+export const INTRO_LOGO_OFFSET_RANGE = { min: -0.5, max: 0.5 } as const;
+export const INTRO_LOGO_STRETCH_RANGE = { min: 0.5, max: 2 } as const;
+export const INTRO_LOGO_OPACITY_RANGE = { min: 0.1, max: 1 } as const;
 export const INTRO_FRAME_THICKNESS_RANGE = { min: 0.25, max: 4 } as const;
 export { INTRO_WAVE_INTENSITY_RANGE, INTRO_WAVE_SPEED_RANGE };
 
@@ -252,6 +262,11 @@ export function createDefaultIntroSequence(
 
 		logoSource: 'none',
 		logoSizePct: 14,
+		logoPlacement: 'stack',
+		logoOffsetX: 0,
+		logoOffsetY: 0,
+		logoStretch: 1,
+		logoOpacity: 1,
 
 		spectrumSource: 'none',
 		spectrumSlotIndex: 0,
@@ -1031,8 +1046,26 @@ export function resolveIntroFrame(options: {
 							settings.logoSizePct,
 							INTRO_LOGO_SIZE_RANGE
 						),
-						alpha: clamp01(logoMount),
-						scale: 0.8 + 0.2 * easeInOut(logoMount)
+						alpha:
+							clamp01(logoMount) *
+							clampRange(
+								settings.logoOpacity,
+								INTRO_LOGO_OPACITY_RANGE
+							),
+						scale: 0.8 + 0.2 * easeInOut(logoMount),
+						placement: settings.logoPlacement,
+						offsetX: clampRange(
+							settings.logoOffsetX,
+							INTRO_LOGO_OFFSET_RANGE
+						),
+						offsetY: clampRange(
+							settings.logoOffsetY,
+							INTRO_LOGO_OFFSET_RANGE
+						),
+						stretch: clampRange(
+							settings.logoStretch,
+							INTRO_LOGO_STRETCH_RANGE
+						)
 					},
 		title: title
 			? {

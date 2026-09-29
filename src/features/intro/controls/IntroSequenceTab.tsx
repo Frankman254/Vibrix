@@ -42,6 +42,7 @@ import type {
 	IntroTitleFrameShape,
 	IntroTitleFrameStyle,
 	IntroImageSourceMode,
+	IntroLogoPlacement,
 	IntroLogoSource,
 	IntroMontageMode,
 	IntroSequenceKind,
@@ -59,7 +60,10 @@ import {
 	INTRO_DURATION_RANGE,
 	INTRO_FRAME_THICKNESS_RANGE,
 	INTRO_IMAGE_COUNT_RANGE,
+	INTRO_LOGO_OFFSET_RANGE,
+	INTRO_LOGO_OPACITY_RANGE,
 	INTRO_LOGO_SIZE_RANGE,
+	INTRO_LOGO_STRETCH_RANGE,
 	INTRO_PHASE_SEC_RANGE,
 	INTRO_TAGLINE_SIZE_RANGE,
 	INTRO_WAVE_INTENSITY_RANGE,
@@ -77,6 +81,11 @@ const FONT_OPTIONS = TRACK_TITLE_FONTS.map(value => ({
 
 function formatPct(value: number): string {
 	return `${Math.round(value * 100)}%`;
+}
+
+function formatSignedPct(value: number): string {
+	const pct = Math.round(value * 100);
+	return `${pct > 0 ? '+' : ''}${pct}%`;
 }
 
 function formatDeg(value: number): string {
@@ -804,19 +813,89 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 								]}
 							/>
 							{settings.logoSource === 'none' ? null : (
-								<Slider
-									label={t.intro_logo_size}
-									value={settings.logoSizePct}
-									min={INTRO_LOGO_SIZE_RANGE.min}
-									max={INTRO_LOGO_SIZE_RANGE.max}
-									step={0.5}
-									onChange={logoSizePct =>
-										patch({ logoSizePct })
-									}
-									defaultValue={factory.logoSizePct}
-									variant="compact"
-									formatValue={formatDecimal}
-								/>
+								<>
+									<Slider
+										label={t.intro_logo_size}
+										value={settings.logoSizePct}
+										min={INTRO_LOGO_SIZE_RANGE.min}
+										max={INTRO_LOGO_SIZE_RANGE.max}
+										step={0.5}
+										onChange={logoSizePct =>
+											patch({ logoSizePct })
+										}
+										defaultValue={factory.logoSizePct}
+										variant="compact"
+										formatValue={formatDecimal}
+									/>
+									<Slider
+										label={t.intro_logo_stretch}
+										value={settings.logoStretch}
+										min={INTRO_LOGO_STRETCH_RANGE.min}
+										max={INTRO_LOGO_STRETCH_RANGE.max}
+										step={0.01}
+										onChange={logoStretch =>
+											patch({ logoStretch })
+										}
+										defaultValue={factory.logoStretch}
+										variant="compact"
+										formatValue={formatPct}
+									/>
+									<SegmentedControl<IntroLogoPlacement>
+										value={settings.logoPlacement}
+										onChange={logoPlacement =>
+											patch({ logoPlacement })
+										}
+										options={[
+											{
+												value: 'stack',
+												label: t.intro_logo_placement_stack
+											},
+											{
+												value: 'free',
+												label: t.intro_logo_placement_free
+											}
+										]}
+									/>
+									<Slider
+										label={t.intro_logo_offset_x}
+										value={settings.logoOffsetX}
+										min={INTRO_LOGO_OFFSET_RANGE.min}
+										max={INTRO_LOGO_OFFSET_RANGE.max}
+										step={0.005}
+										onChange={logoOffsetX =>
+											patch({ logoOffsetX })
+										}
+										defaultValue={factory.logoOffsetX}
+										variant="compact"
+										formatValue={formatSignedPct}
+									/>
+									<Slider
+										label={t.intro_logo_offset_y}
+										value={settings.logoOffsetY}
+										min={INTRO_LOGO_OFFSET_RANGE.min}
+										max={INTRO_LOGO_OFFSET_RANGE.max}
+										step={0.005}
+										onChange={logoOffsetY =>
+											patch({ logoOffsetY })
+										}
+										defaultValue={factory.logoOffsetY}
+										variant="compact"
+										formatValue={formatSignedPct}
+									/>
+									<Slider
+										label={t.intro_logo_opacity}
+										value={settings.logoOpacity}
+										min={INTRO_LOGO_OPACITY_RANGE.min}
+										max={INTRO_LOGO_OPACITY_RANGE.max}
+										step={0.01}
+										onChange={logoOpacity =>
+											patch({ logoOpacity })
+										}
+										defaultValue={factory.logoOpacity}
+										variant="compact"
+										formatValue={formatPct}
+									/>
+								</>
 							)}
 							<Caption>{t.intro_logo_hint}</Caption>
 						</div>
