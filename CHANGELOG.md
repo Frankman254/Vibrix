@@ -38,6 +38,17 @@ the version scheme in `src/lib/version.ts`.
       capa) y en el **exportador** (`ctx.filter` por capa; Canvas2D aplica el
       filtro por trazo, así que el halo sigue cada figura dibujada en vez de una
       única silueta).
+    - **La figura ya no se corta al moverse.** Una capa de figura (los dos
+      spectrums, el logo, el título, la letra) se dibuja en un lienzo del tamaño
+      de la pantalla: mover ese lienzo metía su propio borde en cuadro y cortaba
+      el dibujo por una línea recta — el corte que se veía con el zoom de borde
+      apagado. Ahora esas capas **mueven lo que pintan, no su lienzo**
+      (`beginCameraDrawOffset`): la figura se pasea a su tamaño real y sólo la
+      recorta el borde de verdad de la pantalla, igual que ya hacía el
+      exportador (`renderFrameAt` traslada el contexto, nunca la capa). Sin
+      claves nuevas ni migración. El **Zoom para tapar el borde** se queda para
+      las capas que son un baño de pantalla completa (luces, flash, partículas,
+      lluvia, fondo), donde desplazarse sí deja una franja.
     - `STORE_PERSIST_VERSION` is at **140**, con migración: las cuatro claves
       nuevas (`cameraMotionEdgeZoom`, `cameraMotionSmoothing`,
       `cameraMotionTrail`, `cameraMotionTrailColor`) entran también en cada capa

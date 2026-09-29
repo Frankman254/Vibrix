@@ -11,8 +11,25 @@ import {
 	resolveCameraLayerOffset,
 	stepCameraFx
 } from '@/features/stageFx/cameraFxDraw';
+import {
+	clearCameraDrawOffsets,
+	publishCameraDrawOffset
+} from '@/features/stageFx/cameraDrawOffset';
+
+/**
+ * Whether this root paints its camera translation itself.
+ *
+ * A canvas that carries `data-camera-motion-draw` translates its drawing
+ * context instead of its element (see `cameraDrawOffset`), so its own bitmap
+ * border never enters the frame and the figure is never cut. Its element still
+ * takes the zoom, which only ever grows the layer and so exposes nothing.
+ */
+function drawsItsOwnMotion(target: HTMLElement): boolean {
+	return target.dataset.cameraMotionDraw !== undefined;
+}
 
 function clearMotionTargets(targets: HTMLElement[]) {
+	clearCameraDrawOffsets();
 	for (const target of targets) {
 		target.style.transform = '';
 		target.style.transformOrigin = '';
@@ -92,6 +109,7 @@ export default function CameraFxStage({ children }: { children: ReactNode }) {
 				if (!offset) {
 					// Only clear styles on the frame this target stops being animated.
 					if (wasAnimated) {
+						if (layer) publishCameraDrawOffset(layer, null);
 						target.style.transform = '';
 						target.style.transformOrigin = '';
 						target.style.willChange = '';
@@ -102,7 +120,25 @@ export default function CameraFxStage({ children }: { children: ReactNode }) {
 				}
 
 				const { tx, ty, scale } = offset;
-				target.style.transform = `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, 0) scale(${scale.toFixed(4)})`;
+				const viaDraw =
+					layer !== undefined && drawsItsOwnMotion(target);
+				if (viaDraw) {
+					// The canvas moves what it paints, not itself, so its border
+					// stays outside the frame at the figure's own size. The
+					// element's zoom still scales whatever the canvas paints, so
+					// the offset is divided out of it: the figure lands on the
+					// same pixel it would have with an element translation, and
+					// with the same math the export uses.
+					const unzoom = scale > 0 ? 1 / scale : 1;
+					publishCameraDrawOffset(layer, {
+						tx: tx * unzoom,
+						ty: ty * unzoom
+					});
+					target.style.transform =
+						scale === 1 ? '' : `scale(${scale.toFixed(4)})`;
+				} else {
+					target.style.transform = `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, 0) scale(${scale.toFixed(4)})`;
+				}
 				// The halo is a stack of drop-shadows behind the layer: a blurred
 				// copy of its own silhouette, offset where it came from. Writing
 				// '' when there is none keeps the cheap path cheap — a layer with

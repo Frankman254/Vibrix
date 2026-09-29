@@ -30,6 +30,13 @@ export {
 	resolveCameraLayerOffset,
 	stepCameraFx
 } from './cameraFxDraw';
+export {
+	beginCameraDrawOffset,
+	clearCameraDrawOffsets,
+	publishCameraDrawOffset,
+	readCameraDrawOffset
+} from './cameraDrawOffset';
+export type { CameraDrawOffset } from './cameraDrawOffset';
 export type {
 	CameraFxFrame,
 	CameraFxRuntime,

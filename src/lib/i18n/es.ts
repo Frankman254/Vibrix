@@ -2435,7 +2435,7 @@ export const es: Record<TranslationKey, string> = {
 	sfx_motion_trail_color: 'Color de la estela',
 	sfx_motion_edge_zoom: 'Zoom para tapar el borde',
 	sfx_motion_edge_zoom_hint:
-		'Sólo para capas cuyo contenido llega al borde (un spectrum, la letra, la lluvia): cuánto acercarlas para que su propio borde de lienzo no entre en cuadro mientras se desplazan. El zoom agranda lo dibujado, y por eso viene apagado; el fondo no se ve afectado, siempre tapa su borde.',
+		'Ya no hace falta para una figura: los spectrums, el logo, el título y la letra ahora mueven lo que dibujan en vez de su propio lienzo, así que nunca se cortan ni se agrandan. Queda para las capas que son un baño de pantalla completa (las luces, el flash, las partículas, la lluvia), donde desplazarse siempre deja una franja en el borde: esto las acerca lo justo para taparla. Apagado por defecto, porque el zoom agranda lo dibujado.',
 	sfx_motion_amount_audio: 'Audio → tamaño',
 	sfx_motion_amount: 'Cantidad de movimiento',
 	sfx_drive_fixed: 'Fijo',

@@ -21,6 +21,8 @@ import {
 	transitionSubsystemsForLayerType,
 	useVisualTransitionFade
 } from '@/features/visualTransition/useVisualTransitionFade';
+import { beginCameraDrawOffset } from '@/features/stageFx/render';
+import type { CameraMotionLayer } from '@/features/stageFx/stageFxConfig';
 import {
 	cameraTargetForSpectrumPartition,
 	partitionDrawsMainSpectrum,
@@ -90,6 +92,13 @@ export default function AudioLayerCanvas({
 		const unsubQuality = subscribeOutputRenderQuality(resize);
 		window.addEventListener('resize', resize);
 
+		/** The Camera FX target this canvas answers to, right now. */
+		function cameraMotionLayer(): CameraMotionLayer {
+			return layerRef.current.type === 'spectrum'
+				? cameraTargetForSpectrumPartition(spectrumPartitionRef.current)
+				: layerRef.current.type;
+		}
+
 		function frame(time: number) {
 			const currentCanvas = canvasRef.current;
 			if (!currentCanvas || !ctx) return;
@@ -152,21 +161,34 @@ export default function AudioLayerCanvas({
 			const trackCurrentTime = getCurrentTime();
 			const trackDuration = getDuration();
 			const configuredLayer = layerRef.current;
-			renderAudioLayerFrame({
+			// Camera Motion moves the DRAWING, not this canvas: its bitmap is
+			// the size of the viewport, so translating the element would slide
+			// its border into the frame and cut the figure along a straight
+			// line. Same model the video export already uses.
+			const offsetPushed = beginCameraDrawOffset(
 				ctx,
-				canvas: currentCanvas,
-				layer: configuredLayer,
-				state,
-				audio,
-				dt,
-				timeMs: time,
-				palette: paletteRef.current,
-				trackTitle: cachedFormattedTrackTitleRef.current,
-				trackCurrentTime,
-				trackDuration,
-				frameState: frameRenderStateRef.current,
-				spectrumPartition: spectrumPartitionRef.current
-			});
+				cameraMotionLayer(),
+				currentCanvas
+			);
+			try {
+				renderAudioLayerFrame({
+					ctx,
+					canvas: currentCanvas,
+					layer: configuredLayer,
+					state,
+					audio,
+					dt,
+					timeMs: time,
+					palette: paletteRef.current,
+					trackTitle: cachedFormattedTrackTitleRef.current,
+					trackCurrentTime,
+					trackDuration,
+					frameState: frameRenderStateRef.current,
+					spectrumPartition: spectrumPartitionRef.current
+				});
+			} finally {
+				if (offsetPushed) ctx.restore();
+			}
 
 			rafRef.current = requestAnimationFrame(frame);
 		}
@@ -203,6 +225,9 @@ export default function AudioLayerCanvas({
 		[layer.type, spectrumPartition]
 	);
 
+	// `data-camera-motion-draw` tells CameraFxStage not to translate this
+	// element: the frame loop above translates the drawing instead, so this
+	// canvas' own border never enters the frame and the figure is never cut.
 	return (
 		<div
 			ref={fadeRef}
@@ -211,6 +236,7 @@ export default function AudioLayerCanvas({
 					? cameraTargetForSpectrumPartition(spectrumPartition)
 					: layer.type
 			}
+			data-camera-motion-draw=""
 			style={{
 				position: 'fixed',
 				inset: 0,

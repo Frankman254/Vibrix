@@ -2406,7 +2406,7 @@ export const en = {
 	sfx_motion_trail_color: 'Trail colour',
 	sfx_motion_edge_zoom: 'Edge cover zoom',
 	sfx_motion_edge_zoom_hint:
-		'Only for layers whose content reaches the edge (a spectrum, the lyrics, the rain): how much to zoom them so their own canvas border stays out of frame while they travel. Zooming enlarges what is drawn, which is why this is off by default — the background is not affected, it always covers its own edge.',
+		'Not needed any more for a figure: the spectrums, the logo, the title and the lyrics now move what they paint instead of their own canvas, so nothing is ever cut and nothing is enlarged. It is left here for the layers that are a full-screen wash (the lights, the flash, the particles, the rain), where travelling always reveals a band at the edge: this zooms them enough to cover it. Off by default, because zooming enlarges what is drawn.',
 	sfx_motion_amount_audio: 'Audio → size',
 	sfx_motion_amount: 'Motion amount',
 	sfx_drive_fixed: 'Fixed',
