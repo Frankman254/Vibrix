@@ -17,9 +17,18 @@ import { useShallow } from 'zustand/react/shallow';
 import { Button, Caption, UI_COLORS } from '@/ui';
 import { useT } from '@/lib/i18n';
 import { useWallpaperStore } from '@/store/wallpaperStore';
+import ToggleControl from '@/editor/ToggleControl';
 import BgPreciseSliderControl from './BgPreciseSliderControl';
+import type { ImageFocusPointKind } from './InteractiveImagePreview';
 
-export default function ImageFocusPointsSection() {
+export default function ImageFocusPointsSection({
+	pickMode,
+	onPickModeChange
+}: {
+	/** Which point a click on the preview places, armed from here. */
+	pickMode: ImageFocusPointKind | null;
+	onPickModeChange: (mode: ImageFocusPointKind | null) => void;
+}) {
 	const t = useT();
 	const [busy, setBusy] = useState(false);
 	const store = useWallpaperStore(
@@ -32,6 +41,7 @@ export default function ImageFocusPointsSection() {
 			analyze: s.analyzeBackgroundImageFocus,
 			analyzeAll: s.analyzeAllBackgroundImageFocus,
 			logoFollowImageFocus: s.logoFollowImageFocus,
+			setLogoFollowImageFocus: s.setLogoFollowImageFocus,
 			applyImageLogoFocus: s.applyImageLogoFocus
 		}))
 	);
@@ -97,6 +107,49 @@ export default function ImageFocusPointsSection() {
 					{t.focus_points_scan_all}
 				</Button>
 			</div>
+			<div className="grid grid-cols-2 gap-2">
+				<Button
+					onClick={() =>
+						onPickModeChange(pickMode === 'face' ? null : 'face')
+					}
+					size="sm"
+					density="compact"
+					variant={pickMode === 'face' ? 'primary' : 'secondary'}
+					disabled={busy}
+					full
+				>
+					{pickMode === 'face'
+						? t.focus_points_pick_done
+						: t.focus_points_pick_face}
+				</Button>
+				<Button
+					onClick={() =>
+						onPickModeChange(pickMode === 'logo' ? null : 'logo')
+					}
+					size="sm"
+					density="compact"
+					variant={pickMode === 'logo' ? 'primary' : 'secondary'}
+					disabled={busy}
+					full
+				>
+					{pickMode === 'logo'
+						? t.focus_points_pick_done
+						: t.focus_points_pick_logo}
+				</Button>
+			</div>
+			<Caption>{t.focus_points_pick_hint}</Caption>
+			{/* The switch that makes the mark focus actually move the logo. It
+			    also lives in the Logo tab, but this is where the point is
+			    placed, so this is where the user looks for it. */}
+			<ToggleControl
+				label={t.logo_follow_image_focus}
+				value={store.logoFollowImageFocus}
+				onChange={value => {
+					store.setLogoFollowImageFocus(value);
+					if (value) void store.applyImageLogoFocus(image.assetId);
+				}}
+				tooltip={t.logo_follow_image_focus_t}
+			/>
 			<div className="grid gap-2 sm:grid-cols-2">
 				<BgPreciseSliderControl
 					label={t.focus_points_face_x}

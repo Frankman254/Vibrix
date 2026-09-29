@@ -145,6 +145,20 @@ the version scheme in `src/lib/version.ts`.
       `STORE_PERSIST_VERSION` pasa a **135**; la migración siembra los valores
       que reproducen exactamente el comportamiento anterior.
 
+- **Los tres puntos de la imagen se ven y se colocan en el preview.** El focus
+  de encuadre ya se veía; el **foco de cara** y el **foco de logo** eran dos
+  parejas de sliders sin nada en pantalla, así que no había forma de saber dónde
+  caían. Ahora el preview dibuja los tres: **aro** = focus de encuadre, **F** =
+  cara, **L** = logo, y un aro a rayas significa «todavía nadie lo ha medido».
+    - Dos botones nuevos (**Señalar la cara** / **Señalar el logo**) arman el
+      clic: pinchas la imagen y el punto se queda ahí, con la proyección real del
+      rect que se dibuja —rotación y espejo incluidos— así que el punto cae en el
+      píxel que señalaste (`imagePointProjection.ts`, con tests de ida y vuelta).
+    - El interruptor **«El logo sigue a la imagen»** se repite aquí, donde se
+      colocan los puntos, y al activarlo se aplica el foco de logo de la imagen
+      activa en el acto. Antes sólo estaba en la pestaña de Logo, que es lo que
+      hacía imposible «activarlo para que el logo se centre ahí».
+
 - **Spectrum 1 y Spectrum 2 en la ventana, cada uno con sus slots de verdad.**
   El intro tenía **un solo** interruptor y **una sola** lista, así que los slots
   propios de Spectrum 2 (`spectrumSecondProfileSlots`) no aparecían y no había

@@ -1913,6 +1913,18 @@ export const es: Record<TranslationKey, string> = {
 	scene_legacy_overrides_detected: 'Overrides por imagen (legacy) detectados',
 	bg_preview_focus_anchor:
 		'Punto de zoom por bajos (focus). Ajusta con los sliders Focus X/Y abajo.',
+	bg_preview_face_point: 'Foco de cara de esta imagen (F)',
+	bg_preview_logo_point: 'Foco de logo de esta imagen (L)',
+	bg_preview_pick_face: 'Haz clic en la cara de la imagen',
+	bg_preview_pick_logo: 'Haz clic donde puede ir el logo',
+	bg_preview_pick_focus: 'Haz clic para poner el focus de encuadre',
+	bg_preview_drag_hint:
+		'Arrastra para mover — se mantiene cubierta · Aro = focus de encuadre · F = cara · L = logo',
+	focus_points_pick_face: 'Señalar la cara',
+	focus_points_pick_logo: 'Señalar el logo',
+	focus_points_pick_done: 'Listo',
+	focus_points_pick_hint:
+		'Con uno de estos activado, haz clic en la imagen de arriba: F es la cara y L es donde puede ir el logo. Un aro a rayas significa que todavía nadie lo ha medido.',
 	hud_drag_tooltip: 'Arrastrar HUD',
 	hud_drag_launcher_tooltip: 'Arrastrar lanzador HUD',
 	label_clear: 'Limpiar',

@@ -158,7 +158,14 @@ function IntroSpectrumBankControls({
 			<ToggleControl
 				label={label}
 				value={enabled}
-				onChange={onEnabledChange}
+				onChange={value => {
+					onEnabledChange(value);
+					// Switching a figure on with nothing chosen would leave a
+					// picker showing a slot it is not actually using, and draw
+					// nothing. Pick the first saved slot instead.
+					const first = options[0];
+					if (value && !slotId && first) onSlotChange(first.value);
+				}}
 				tooltip={tooltip}
 			/>
 			{!enabled ? null : options.length === 0 ? (

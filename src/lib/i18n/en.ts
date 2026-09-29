@@ -1895,6 +1895,18 @@ export const en = {
 	scene_legacy_overrides_detected: 'Legacy per-image overrides detected',
 	bg_preview_focus_anchor:
 		'Bass-zoom anchor (focus). Adjust with the Focus X/Y sliders below.',
+	bg_preview_face_point: 'Face focus of this picture (F)',
+	bg_preview_logo_point: 'Mark focus of this picture (L)',
+	bg_preview_pick_face: 'Click the face in the picture',
+	bg_preview_pick_logo: 'Click where the mark can sit',
+	bg_preview_pick_focus: 'Click to set the framing focus',
+	bg_preview_drag_hint:
+		'Drag to pan — kept covered · Ring = framing focus · F = face · L = mark',
+	focus_points_pick_face: 'Point at the face',
+	focus_points_pick_logo: 'Point at the mark',
+	focus_points_pick_done: 'Done',
+	focus_points_pick_hint:
+		'With one of these on, click the picture above: F is the face, L is where a mark can sit. A dashed ring means nobody has measured it yet.',
 	hud_drag_tooltip: 'Drag HUD',
 	hud_drag_launcher_tooltip: 'Drag HUD launcher',
 	label_clear: 'Clear',

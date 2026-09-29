@@ -5,8 +5,15 @@ import {
 	type PointerEvent as ReactPointerEvent
 } from 'react';
 import { resolveImageTransform } from '@/features/background/domain/resolveImageTransform';
+import {
+	projectImagePoint,
+	unprojectImagePoint,
+	type ImageFocusPointKind
+} from '@/features/background/domain/imagePointProjection';
 import { useT } from '@/lib/i18n';
 import type BgFitModeSelector from './BgFitModeSelector';
+
+export type { ImageFocusPointKind };
 
 function getScreenAspect(): number {
 	if (typeof window === 'undefined') return 16 / 9;
@@ -44,9 +51,13 @@ export default function InteractiveImagePreview({
 	layoutReferenceWidth,
 	layoutReferenceHeight,
 	pickFocusActive,
+	facePoint,
+	logoPoint,
+	pointPickMode,
 	onChangePositionX,
 	onChangePositionY,
-	onPickFocus
+	onPickFocus,
+	onPickPoint
 }: {
 	imageUrl: string;
 	fitMode: Parameters<typeof BgFitModeSelector>[0]['value'];
@@ -67,9 +78,16 @@ export default function InteractiveImagePreview({
 	layoutReferenceWidth: number;
 	layoutReferenceHeight: number;
 	pickFocusActive: boolean;
+	/** Where the face is INSIDE the picture, `0..1` of the image itself. */
+	facePoint: { x: number; y: number; measured: boolean } | null;
+	/** Where a mark can sit inside the picture, same space. */
+	logoPoint: { x: number; y: number; measured: boolean } | null;
+	/** Which annotation a click places, `null` while none is being placed. */
+	pointPickMode: ImageFocusPointKind | null;
 	onChangePositionX: (value: number) => void;
 	onChangePositionY: (value: number) => void;
 	onPickFocus: (x: number, y: number) => void;
+	onPickPoint: (kind: ImageFocusPointKind, x: number, y: number) => void;
 }) {
 	const t = useT();
 	const frameRef = useRef<HTMLDivElement | null>(null);
@@ -138,11 +156,61 @@ export default function InteractiveImagePreview({
 		viewportSize.height / 2 -
 		transform.effectivePositionY * viewportSize.height * 0.5;
 
+	// The annotations describe the PICTURE, so they are projected through the
+	// primary rect (the image itself), not through the composition box the
+	// mirror-fill clones widen.
+	const primaryRect =
+		transform.drawRects.find(rect => rect.kind === 'primary') ?? null;
+	const annotationMarkers = primaryRect
+		? (
+				[
+					{
+						kind: 'face' as ImageFocusPointKind,
+						point: facePoint,
+						color: 'var(--editor-success-fg, #4ade80)',
+						label: t.bg_preview_face_point
+					},
+					{
+						kind: 'logo' as ImageFocusPointKind,
+						point: logoPoint,
+						color: 'var(--editor-accent-fg, #7dd3fc)',
+						label: t.bg_preview_logo_point
+					}
+				] as const
+			)
+				.filter(entry => entry.point !== null)
+				.map(entry => ({
+					...entry,
+					point: entry.point as {
+						x: number;
+						y: number;
+						measured: boolean;
+					},
+					at: projectImagePoint(
+						primaryRect,
+						entry.point!.x,
+						entry.point!.y
+					)
+				}))
+		: [];
+
 	function clamp01(value: number) {
 		return Math.min(1, Math.max(0, value));
 	}
 
 	function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+		if (pointPickMode && primaryRect) {
+			const rect = event.currentTarget.getBoundingClientRect();
+			const point = unprojectImagePoint(
+				primaryRect,
+				((event.clientX - rect.left) / Math.max(1, rect.width)) *
+					viewportSize.width,
+				((event.clientY - rect.top) / Math.max(1, rect.height)) *
+					viewportSize.height
+			);
+			onPickPoint(pointPickMode, point.x, point.y);
+			return;
+		}
 		if (pickFocusActive) {
 			const rect = event.currentTarget.getBoundingClientRect();
 			const pointX =
@@ -212,7 +280,7 @@ export default function InteractiveImagePreview({
 				borderColor: 'var(--editor-accent-border)',
 				background:
 					'radial-gradient(circle at center, rgba(255,255,255,0.05), rgba(255,255,255,0.015) 45%, rgba(0,0,0,0.16) 100%)',
-				cursor: pickFocusActive ? 'crosshair' : 'grab'
+				cursor: pickFocusActive || pointPickMode ? 'crosshair' : 'grab'
 			}}
 			onPointerDown={handlePointerDown}
 			onPointerMove={handlePointerMove}
@@ -282,6 +350,26 @@ export default function InteractiveImagePreview({
 					}}
 				/>
 			</div>
+			{annotationMarkers.map(marker => (
+				<div
+					key={marker.kind}
+					aria-hidden
+					title={marker.label}
+					className="pointer-events-none absolute flex h-4 w-4 items-center justify-center rounded-full border text-[8px] font-bold"
+					style={{
+						left: marker.at.left - 8,
+						top: marker.at.top - 8,
+						borderColor: marker.color,
+						borderWidth: 2,
+						borderStyle: marker.point.measured ? 'solid' : 'dashed',
+						background: 'rgba(0,0,0,0.45)',
+						color: marker.color,
+						boxShadow: '0 0 0 1px rgba(0,0,0,0.6)'
+					}}
+				>
+					{marker.kind === 'face' ? 'F' : 'L'}
+				</div>
+			))}
 			<div
 				className="pointer-events-none absolute bottom-2 left-2 rounded border px-2 py-1 text-[10px] leading-tight"
 				style={{
@@ -290,9 +378,13 @@ export default function InteractiveImagePreview({
 					color: 'var(--editor-accent-soft)'
 				}}
 			>
-				{pickFocusActive
-					? 'Click to set focus point'
-					: 'Drag to pan — kept covered · Dot = bass-zoom anchor'}
+				{pointPickMode === 'face'
+					? t.bg_preview_pick_face
+					: pointPickMode === 'logo'
+						? t.bg_preview_pick_logo
+						: pickFocusActive
+							? t.bg_preview_pick_focus
+							: t.bg_preview_drag_hint}
 			</div>
 		</div>
 	);

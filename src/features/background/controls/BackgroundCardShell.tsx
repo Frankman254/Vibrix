@@ -1,4 +1,6 @@
 import { useState, type ReactNode } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import { useWallpaperStore } from '@/store/wallpaperStore';
 import type { BackgroundImageItem } from '@/types/wallpaper';
 import type { SliderRange } from '@/types/controls';
 import { Button } from '@/ui';
@@ -7,7 +9,9 @@ import BgSectionCard from './BgSectionCard';
 import BackgroundQuickControls from './BackgroundQuickControls';
 import FocusQuickControls from './FocusQuickControls';
 import ImageFocusPointsSection from './ImageFocusPointsSection';
-import InteractiveImagePreview from './InteractiveImagePreview';
+import InteractiveImagePreview, {
+	type ImageFocusPointKind
+} from './InteractiveImagePreview';
 
 export default function BackgroundCardShell({
 	t,
@@ -105,6 +109,40 @@ export default function BackgroundCardShell({
 	onCenterFocus: () => void;
 }) {
 	const [pickFocusActive, setPickFocusActive] = useState(false);
+	// Placing a face / mark point happens ON the preview, and the buttons that
+	// arm it live in the section below it, so the mode is owned here — the one
+	// component that renders both. The two setters come from the store for the
+	// same reason `ImageFocusPointsSection` reads it directly: none of this is
+	// the framing panel's business.
+	const [pointPickMode, setPointPickMode] =
+		useState<ImageFocusPointKind | null>(null);
+	const focusPoints = useWallpaperStore(
+		useShallow(s => ({
+			setFaceFocus: s.setBackgroundImageFaceFocus,
+			setLogoFocus: s.setBackgroundImageLogoFocus,
+			logoFollowImageFocus: s.logoFollowImageFocus,
+			applyImageLogoFocus: s.applyImageLogoFocus
+		}))
+	);
+
+	const applyPickedPoint = (
+		kind: ImageFocusPointKind,
+		x: number,
+		y: number
+	) => {
+		if (!activeImage) return;
+		if (kind === 'face') {
+			focusPoints.setFaceFocus(activeImage.assetId, x, y);
+		} else {
+			focusPoints.setLogoFocus(activeImage.assetId, x, y);
+			// The mark only moves on screen if the follow switch is on; applying
+			// it here is what makes "click and the logo lands there" true.
+			if (focusPoints.logoFollowImageFocus) {
+				void focusPoints.applyImageLogoFocus(activeImage.assetId);
+			}
+		}
+		setPointPickMode(null);
+	};
 
 	return (
 		<BgSectionCard
@@ -183,6 +221,28 @@ export default function BackgroundCardShell({
 						layoutReferenceWidth={layoutReferenceWidth}
 						layoutReferenceHeight={layoutReferenceHeight}
 						pickFocusActive={pickFocusActive}
+						facePoint={
+							activeImage.faceFocusX != null &&
+							activeImage.faceFocusY != null
+								? {
+										x: activeImage.faceFocusX,
+										y: activeImage.faceFocusY,
+										measured: true
+									}
+								: { x: 0.5, y: 0.4, measured: false }
+						}
+						logoPoint={
+							activeImage.logoFocusX != null &&
+							activeImage.logoFocusY != null
+								? {
+										x: activeImage.logoFocusX,
+										y: activeImage.logoFocusY,
+										measured: true
+									}
+								: { x: 0.5, y: 0.8, measured: false }
+						}
+						pointPickMode={pointPickMode}
+						onPickPoint={applyPickedPoint}
 						onChangePositionX={onChangePositionX}
 						onChangePositionY={onChangePositionY}
 						onPickFocus={(x, y) => {
@@ -208,9 +268,10 @@ export default function BackgroundCardShell({
 						focusX={imageFocusX}
 						focusY={imageFocusY}
 						pickFocusActive={pickFocusActive}
-						onPickFocus={() =>
-							setPickFocusActive(current => !current)
-						}
+						onPickFocus={() => {
+							setPickFocusActive(current => !current);
+							setPointPickMode(null);
+						}}
 						onCenterFocus={() => {
 							onCenterFocus();
 							setPickFocusActive(false);
@@ -226,7 +287,15 @@ export default function BackgroundCardShell({
 					/>
 				) : null}
 
-				{activeImage?.url ? <ImageFocusPointsSection /> : null}
+				{activeImage?.url ? (
+					<ImageFocusPointsSection
+						pickMode={pointPickMode}
+						onPickModeChange={mode => {
+							setPointPickMode(mode);
+							if (mode) setPickFocusActive(false);
+						}}
+					/>
+				) : null}
 
 				{activeImage?.url ? (
 					<BackgroundQuickControls
