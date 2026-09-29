@@ -3385,6 +3385,45 @@ export function migrateWallpaperStore(
 			if (!Array.isArray(settings.imageAssetIds)) {
 				settings.imageAssetIds = [];
 			}
+			// `solid` is exactly the old behaviour.
+			if (typeof settings.backdropFillMode !== 'string') {
+				settings.backdropFillMode = 'solid';
+			}
+			if (typeof settings.backdropColorSecondary !== 'string') {
+				settings.backdropColorSecondary = '#1b0a2a';
+			}
+			// The title's box keeps the look it had: a stroked rectangle that
+			// draws itself, in the title's own colour.
+			if (typeof settings.titleFrameShape !== 'string') {
+				settings.titleFrameShape = 'rect';
+			}
+			if (typeof settings.titleFrameStyle !== 'string') {
+				settings.titleFrameStyle = 'outline';
+			}
+			if (typeof settings.titleFrameAnimation !== 'string') {
+				settings.titleFrameAnimation = 'draw';
+			}
+			if (typeof settings.titleFrameColorSource !== 'string') {
+				settings.titleFrameColorSource =
+					typeof settings.titleColorSource === 'string'
+						? settings.titleColorSource
+						: 'manual';
+			}
+			if (typeof settings.titleFrameColor !== 'string') {
+				settings.titleFrameColor =
+					typeof settings.titleColor === 'string'
+						? settings.titleColor
+						: '#ffffff';
+			}
+			if (typeof settings.titleFrameFillMode !== 'string') {
+				settings.titleFrameFillMode = 'solid';
+			}
+			if (typeof settings.titleFrameColorSecondary !== 'string') {
+				settings.titleFrameColorSecondary = '#ff3ea5';
+			}
+			if (typeof settings.titleFrameThickness !== 'number') {
+				settings.titleFrameThickness = 1;
+			}
 		};
 		migrateWindowDivisions(migratedState.introSequence);
 		migrateWindowDivisions(migratedState.outroSequence);

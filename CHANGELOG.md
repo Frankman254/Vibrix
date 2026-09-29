@@ -82,6 +82,26 @@ the version scheme in `src/lib/version.ts`.
       dentro de la celda** en vez de mover la celda: una celda que se desplaza
       se lleva su recorte y deja ver el fondo por el hueco.
 
+- **Sub-modos de color en la intro: sólido, degradado y arcoíris.** El fondo de
+  la ventana tenía fuente de color (manual / imagen actual / tema) pero solo
+  sabía pintar un color plano. Ahora la fuente decide QUÉ colores y el sub-modo
+  CÓMO se ponen: un color, un degradado entre dos, o la paleta arcoíris de esa
+  misma fuente (la misma `resolveModeDrivenColors` que usan spectrum, partículas
+  y letras). En `sólido` sigue usando el color con rol de fondo, que es más
+  oscuro que el dominante y es lo que un fondo quiere.
+
+- **El marco del título: formas, animaciones y color propio.** Era un rectángulo
+  con borde en el color del título. Ahora:
+    - **8 formas** (`introTitleFrame.ts`, con tests): rectángulo, redondeado,
+      cápsula, subrayado, corchetes, cinta, rombo y hexágono. Las curvas se
+      muestrean a polilínea a propósito: así la geometría se testea sin canvas.
+    - **Contorno, relleno o ambos**, con grosor configurable (0,25×–4×).
+    - **5 animaciones**: se dibuja solo (el trazo recorre su propia longitud),
+      se expande, crece, aparece o barrido del relleno. Al cerrar la ventana la
+      animación corre hacia atrás, como todo lo demás.
+    - **Color propio** con fuente y sub-modo (sólido / degradado / arcoíris), así
+      el marco puede contrastar con el título que sostiene.
+
 - **Imágenes elegidas a mano para la intro y el ending.** Además del modo
   automático («del setlist», que sigue tomando la cabeza o la cola del set), hay
   un modo **elegidas a mano**: una rejilla con **toda la colección** donde cada

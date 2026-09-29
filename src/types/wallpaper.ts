@@ -657,6 +657,46 @@ export type IntroSpectrumSource = 'none' | 'slot';
 export type IntroSequenceOrder = 'setlist' | 'setlist-reverse';
 
 /**
+ * How a flat area of an intro / ending window is filled. It rides ON TOP of the
+ * colour source (manual / current image / theme), exactly like the spectrum's
+ * colour modes: the source says WHICH colours, the fill mode says how they are
+ * laid down — one colour, a two-colour gradient, or the whole rainbow palette.
+ */
+export type IntroFillMode = 'solid' | 'gradient' | 'rainbow';
+
+/**
+ * The shape of the box around the intro's title. The geometry is in
+ * `features/intro/introTitleFrame.ts`.
+ */
+export type IntroTitleFrameShape =
+	| 'rect'
+	| 'rounded'
+	| 'pill'
+	| 'underline'
+	| 'brackets'
+	| 'ribbon'
+	| 'diamond'
+	| 'hexagon';
+
+/** Whether the box is drawn, filled, or both. `brackets` is never filled. */
+export type IntroTitleFrameStyle = 'outline' | 'filled' | 'both';
+
+/**
+ * How the box arrives (and leaves, running backwards).
+ *  - `draw`   the outline draws itself along its own length.
+ *  - `expand` it grows sideways from the middle of the title.
+ *  - `grow`   it scales up from the middle, both axes.
+ *  - `fade`   it simply fades.
+ *  - `sweep`  the fill wipes across from the left.
+ */
+export type IntroTitleFrameAnimation =
+	| 'draw'
+	| 'expand'
+	| 'grow'
+	| 'fade'
+	| 'sweep';
+
+/**
  * Where the montage's images come from.
  *  - `setlist` the head (or the tail) of the selected setlist, automatically.
  *  - `manual`  exactly the images picked in `imageAssetIds`, in that order.
@@ -699,6 +739,10 @@ export interface IntroSequenceSettings {
 	/** Colour behind the montage, and what the window fades from / to. */
 	backdropColorSource: ColorSourceMode;
 	backdropColor: string;
+	/** `gradient` blends into `backdropColorSecondary`; `rainbow` ignores both
+	 *  manual colours and lays the source's rainbow palette down instead. */
+	backdropFillMode: IntroFillMode;
+	backdropColorSecondary: string;
 	/** How much the montage is darkened so the text stays readable, `0..1`. */
 	imageDim: number;
 
@@ -711,8 +755,18 @@ export interface IntroSequenceSettings {
 	titleReveal: IntroTextReveal;
 	titleColorSource: ColorSourceMode;
 	titleColor: string;
-	/** The rectangle drawn around the title. */
+	/** The box drawn around the title, and how it looks and arrives. */
 	titleFrameEnabled: boolean;
+	titleFrameShape: IntroTitleFrameShape;
+	titleFrameStyle: IntroTitleFrameStyle;
+	titleFrameAnimation: IntroTitleFrameAnimation;
+	/** Its own colour, so the box can contrast with the title it holds. */
+	titleFrameColorSource: ColorSourceMode;
+	titleFrameColor: string;
+	titleFrameFillMode: IntroFillMode;
+	titleFrameColorSecondary: string;
+	/** Line width as a multiple of the default (`0.25..4`). */
+	titleFrameThickness: number;
 
 	taglineEnabled: boolean;
 	taglineText: string;

@@ -9,15 +9,22 @@
 import { APP_LOGO_URL } from '@/config/appLogo';
 import {
 	getEditorThemePalette,
+	resolveModeDrivenColors,
 	resolveThemeColor,
 	type BackgroundPalette
 } from '@/lib/backgroundPalette';
 import type {
 	BackgroundImageItem,
+	ColorSourceMode,
+	IntroFillMode,
 	IntroSequenceSettings,
 	WallpaperState
 } from '@/types/wallpaper';
-import type { IntroFocusPoint, IntroPaintColors } from './introPaint';
+import type {
+	IntroFill,
+	IntroFocusPoint,
+	IntroPaintColors
+} from './introPaint';
 
 export function resolveIntroColors(
 	settings: IntroSequenceSettings,
@@ -39,13 +46,100 @@ export function resolveIntroColors(
 			themePalette,
 			'accent'
 		),
-		backdrop: resolveThemeColor(
-			settings.backdropColorSource,
-			settings.backdropColor,
+		backdrop: resolveIntroBackdropFill(
+			settings,
+			backgroundPalette,
+			themePalette
+		),
+		titleFrame: resolveIntroFill(
+			{
+				source: settings.titleFrameColorSource,
+				primary: settings.titleFrameColor,
+				secondary: settings.titleFrameColorSecondary,
+				mode: settings.titleFrameFillMode
+			},
 			backgroundPalette,
 			themePalette,
-			'backdrop'
+			'text'
 		)
+	};
+}
+
+/**
+ * One area's fill: the colour SOURCE brings the colours (and its own rainbow),
+ * the fill MODE lays them down. `solid` goes through the role-aware
+ * `resolveThemeColor`, so a solid fill in `theme` mode gets the colour meant for
+ * that role instead of the palette's dominant one.
+ */
+export function resolveIntroFill(
+	spec: {
+		source: ColorSourceMode;
+		primary: string;
+		secondary: string;
+		mode: IntroFillMode;
+	},
+	backgroundPalette: BackgroundPalette,
+	themePalette: BackgroundPalette,
+	role: Parameters<typeof resolveThemeColor>[4]
+): IntroFill {
+	const driven = resolveModeDrivenColors(
+		spec.source,
+		spec.primary,
+		spec.secondary,
+		backgroundPalette,
+		themePalette
+	);
+	return {
+		mode: spec.mode,
+		primary:
+			spec.mode === 'solid'
+				? resolveThemeColor(
+						spec.source,
+						spec.primary,
+						backgroundPalette,
+						themePalette,
+						role
+					)
+				: driven.primaryColor,
+		secondary: driven.secondaryColor,
+		rainbow: driven.rainbowColors
+	};
+}
+
+/**
+ * The backdrop's fill. The colour SOURCE decides which colours are in play —
+ * the same `resolveModeDrivenColors` every other subsystem uses, so `current
+ * image` and `theme` bring their own palette and their own rainbow — and the
+ * fill mode decides how they are laid down. `solid` keeps the role-aware
+ * `backdrop` colour, which is darker than the dominant one and is what a
+ * backdrop wants.
+ */
+export function resolveIntroBackdropFill(
+	settings: IntroSequenceSettings,
+	backgroundPalette: BackgroundPalette,
+	themePalette: BackgroundPalette
+): IntroFill {
+	const driven = resolveModeDrivenColors(
+		settings.backdropColorSource,
+		settings.backdropColor,
+		settings.backdropColorSecondary,
+		backgroundPalette,
+		themePalette
+	);
+	return {
+		mode: settings.backdropFillMode,
+		primary:
+			settings.backdropFillMode === 'solid'
+				? resolveThemeColor(
+						settings.backdropColorSource,
+						settings.backdropColor,
+						backgroundPalette,
+						themePalette,
+						'backdrop'
+					)
+				: driven.primaryColor,
+		secondary: driven.secondaryColor,
+		rainbow: driven.rainbowColors
 	};
 }
 

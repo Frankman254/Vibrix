@@ -23,6 +23,7 @@ import type {
 	IntroSequenceKind,
 	IntroSequenceSettings,
 	IntroTextReveal,
+	IntroTitleFrameAnimation,
 	WallpaperState
 } from '@/types/wallpaper';
 import {
@@ -126,6 +127,20 @@ export type IntroSpectrumPlan = {
 	waveIntensity: number;
 };
 
+/**
+ * How far the title's box is mounted. Every animation is expressed with the same
+ * four numbers, so the painter has one code path: the shape is scaled by
+ * `widthPct`/`heightPct` around the title's centre, `drawPct` is how much of the
+ * outline is drawn, and `fillPct` how much of the inside is filled.
+ */
+export type IntroTitleFramePlan = {
+	alpha: number;
+	widthPct: number;
+	heightPct: number;
+	drawPct: number;
+	fillPct: number;
+};
+
 export type IntroLogoPlan = {
 	source: Exclude<IntroLogoSource, 'none'>;
 	sizePct: number;
@@ -144,7 +159,7 @@ export type IntroFrame = {
 	logo: IntroLogoPlan | null;
 	title: IntroTextPlan | null;
 	/** The rectangle around the title: how wide it has drawn itself. */
-	titleFrame: { alpha: number; widthPct: number } | null;
+	titleFrame: IntroTitleFramePlan | null;
 	tagline: IntroTextPlan | null;
 };
 
@@ -154,6 +169,7 @@ export const INTRO_PHASE_SEC_RANGE = { min: 0.2, max: 10 } as const;
 export const INTRO_TITLE_SIZE_RANGE = { min: 4, max: 22 } as const;
 export const INTRO_TAGLINE_SIZE_RANGE = { min: 2, max: 12 } as const;
 export const INTRO_LOGO_SIZE_RANGE = { min: 4, max: 40 } as const;
+export const INTRO_FRAME_THICKNESS_RANGE = { min: 0.25, max: 4 } as const;
 export { INTRO_WAVE_INTENSITY_RANGE, INTRO_WAVE_SPEED_RANGE };
 
 /**
@@ -193,6 +209,8 @@ export function createDefaultIntroSequence(
 		order: intro ? 'setlist' : 'setlist-reverse',
 		backdropColorSource: 'manual',
 		backdropColor: '#000000',
+		backdropFillMode: 'solid',
+		backdropColorSecondary: '#1b0a2a',
 		imageDim: 0.45,
 
 		titleEnabled: true,
@@ -203,6 +221,14 @@ export function createDefaultIntroSequence(
 		titleColorSource: 'manual',
 		titleColor: '#ffffff',
 		titleFrameEnabled: true,
+		titleFrameShape: intro ? 'rect' : 'pill',
+		titleFrameStyle: 'outline',
+		titleFrameAnimation: 'draw',
+		titleFrameColorSource: 'manual',
+		titleFrameColor: '#ffffff',
+		titleFrameFillMode: 'solid',
+		titleFrameColorSecondary: '#ff3ea5',
+		titleFrameThickness: 1,
 
 		taglineEnabled: true,
 		taglineText: '',
@@ -733,6 +759,47 @@ export function resolveIntroTextFrame(
 	}
 }
 
+/** How the title's box arrives, in the four numbers the painter reads. */
+export function resolveTitleFramePlan(
+	animation: IntroTitleFrameAnimation,
+	mount: number
+): IntroTitleFramePlan {
+	const m = clamp01(mount);
+	const eased = easeInOut(m);
+	const full: IntroTitleFramePlan = {
+		alpha: 1,
+		widthPct: 1,
+		heightPct: 1,
+		drawPct: 1,
+		fillPct: 1
+	};
+	switch (animation) {
+		case 'expand':
+			return { ...full, widthPct: eased, alpha: m > 0 ? 1 : 0 };
+		case 'grow':
+			return {
+				...full,
+				widthPct: eased,
+				heightPct: eased,
+				alpha: m > 0 ? 1 : 0
+			};
+		case 'fade':
+			return { ...full, alpha: m };
+		case 'sweep':
+			return { ...full, fillPct: eased, alpha: m > 0 ? 1 : 0 };
+		case 'draw':
+		default:
+			// The outline draws itself; the fill follows it in, a touch behind,
+			// so a filled box does not flash into existence.
+			return {
+				...full,
+				drawPct: eased,
+				fillPct: easeInOut(clamp01((m - 0.25) / 0.75)),
+				alpha: m > 0 ? 1 : 0
+			};
+	}
+}
+
 /** Everything the painter needs about this frame, and nothing about colour. */
 export function resolveIntroFrame(options: {
 	kind: IntroSequenceKind;
@@ -825,10 +892,10 @@ export function resolveIntroFrame(options: {
 			: null,
 		titleFrame:
 			title && settings.titleFrameEnabled && titleFrameMount > 0
-				? {
-						alpha: clamp01(titleFrameMount),
-						widthPct: easeInOut(titleFrameMount)
-					}
+				? resolveTitleFramePlan(
+						settings.titleFrameAnimation,
+						titleFrameMount
+					)
 				: null,
 		tagline: tagline
 			? {

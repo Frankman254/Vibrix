@@ -146,7 +146,10 @@ export function createIntroSubsystem(): RenderSubsystem {
 						dt: Math.max(0.0001, ctx.deltaMs / 1000)
 					}) ?? undefined,
 				titleFontStyle: settings.titleFontStyle,
-				taglineFontStyle: settings.taglineFontStyle
+				taglineFontStyle: settings.taglineFontStyle,
+				titleFrameShape: settings.titleFrameShape,
+				titleFrameStyle: settings.titleFrameStyle,
+				titleFrameThickness: settings.titleFrameThickness
 			});
 		},
 		dispose() {

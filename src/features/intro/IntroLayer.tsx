@@ -169,7 +169,10 @@ export default function IntroLayer({ zIndex = 95 }: { zIndex?: number }) {
 						dt
 					}) ?? undefined,
 				titleFontStyle: settings.titleFontStyle,
-				taglineFontStyle: settings.taglineFontStyle
+				taglineFontStyle: settings.taglineFontStyle,
+				titleFrameShape: settings.titleFrameShape,
+				titleFrameStyle: settings.titleFrameStyle,
+				titleFrameThickness: settings.titleFrameThickness
 			});
 			rafRef.current = requestAnimationFrame(frame);
 		}

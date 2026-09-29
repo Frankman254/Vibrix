@@ -10,10 +10,23 @@ import {
 	TRACK_TITLE_FONT_STACKS,
 	TRACK_TITLE_FONT_WEIGHT
 } from '@/lib/canvasText/trackFonts';
-import type { TrackTitleFontStyle } from '@/types/wallpaper';
+import type {
+	IntroFillMode,
+	IntroTitleFrameShape,
+	IntroTitleFrameStyle,
+	TrackTitleFontStyle
+} from '@/types/wallpaper';
+import {
+	outlineLength,
+	resolveTitleFrameShape,
+	titleFrameBounds,
+	type FrameRect,
+	type FrameSubpath
+} from './introTitleFrame';
 import type {
 	IntroCard,
 	IntroFrame,
+	IntroTitleFramePlan,
 	IntroSpectrumPlan,
 	IntroTextPlan,
 	IntroViewport
@@ -41,12 +54,56 @@ export type IntroImageSource = CanvasImageSource & {
 	height: number;
 };
 
+/**
+ * A fill an area can be painted with: the colour source has already been
+ * resolved, so all that is left is how the colours are laid down.
+ */
+export type IntroFill = {
+	mode: IntroFillMode;
+	primary: string;
+	secondary: string;
+	/** The source's rainbow palette, used by `rainbow` only. */
+	rainbow: string[];
+};
+
 export type IntroPaintColors = {
 	title: string;
 	tagline: string;
 	/** What the window paints behind the montage and fades from / to. */
-	backdrop: string;
+	backdrop: IntroFill;
+	/** The box around the title has its own colour, so it can contrast. */
+	titleFrame: IntroFill;
 };
+
+/**
+ * Turn a fill into something `fillStyle` accepts, over the box
+ * (`x`, `y`, `width`, `height`). Gradients run top→bottom, which is what reads
+ * as "a background" rather than as a swipe.
+ */
+export function fillStyleFor(
+	ctx: CanvasRenderingContext2D,
+	fill: IntroFill,
+	x: number,
+	y: number,
+	width: number,
+	height: number
+): string | CanvasGradient {
+	if (fill.mode === 'solid') return fill.primary;
+	const gradient = ctx.createLinearGradient(x, y, x, y + height);
+	if (fill.mode === 'gradient') {
+		gradient.addColorStop(0, fill.primary);
+		gradient.addColorStop(1, fill.secondary);
+		return gradient;
+	}
+	const colors = fill.rainbow.length > 0 ? fill.rainbow : [fill.primary];
+	colors.forEach((color, index) => {
+		gradient.addColorStop(
+			colors.length === 1 ? 0 : index / (colors.length - 1),
+			color
+		);
+	});
+	return gradient;
+}
 
 export type PaintIntroOptions = {
 	ctx: CanvasRenderingContext2D;
@@ -63,6 +120,10 @@ export type PaintIntroOptions = {
 	colors: IntroPaintColors;
 	titleFontStyle: TrackTitleFontStyle;
 	taglineFontStyle: TrackTitleFontStyle;
+	titleFrameShape: IntroTitleFrameShape;
+	titleFrameStyle: IntroTitleFrameStyle;
+	/** Line width as a multiple of the default. */
+	titleFrameThickness: number;
 	/** Absent → the spectrum simply is not drawn. */
 	paintSpectrum?: PaintIntroSpectrum;
 };
@@ -251,27 +312,91 @@ function paintLine(
 	ctx.restore();
 }
 
+/**
+ * The box around the title.
+ *
+ * One code path for every shape and every animation: the outline is a list of
+ * point runs, scaled around the title's centre by the plan's `widthPct` /
+ * `heightPct`, stroked with a dash so `drawPct` can draw it along its own
+ * length, and filled through a left-to-right wipe for `fillPct`. An open shape
+ * (the brackets) is never filled — there is no inside to fill.
+ */
 function paintTitleFrame(
 	ctx: CanvasRenderingContext2D,
-	rect: { x: number; y: number; width: number; height: number },
-	widthPct: number,
-	alpha: number,
-	color: string,
+	rect: FrameRect,
+	shape: IntroTitleFrameShape,
+	style: IntroTitleFrameStyle,
+	thickness: number,
+	plan: IntroTitleFramePlan,
+	fill: IntroFill,
 	windowAlpha: number
 ): void {
-	if (alpha <= 0.001 || widthPct <= 0) return;
-	const drawnWidth = rect.width * widthPct;
+	if (plan.alpha <= 0.001) return;
+	if (plan.widthPct <= 0.001 || plan.heightPct <= 0.001) return;
+	const subpaths = resolveTitleFrameShape(shape, rect);
+	if (subpaths.length === 0) return;
+	const bounds = titleFrameBounds(subpaths);
+	const cx = rect.x + rect.width / 2;
+	const cy = rect.y + rect.height / 2;
+
+	const trace = (subpath: FrameSubpath): void => {
+		ctx.beginPath();
+		subpath.points.forEach((point, index) => {
+			if (index === 0) ctx.moveTo(point.x, point.y);
+			else ctx.lineTo(point.x, point.y);
+		});
+		if (subpath.closed) ctx.closePath();
+	};
+
 	ctx.save();
-	ctx.globalAlpha = Math.min(1, alpha) * windowAlpha;
-	ctx.strokeStyle = color;
-	ctx.lineWidth = Math.max(1, rect.height * 0.035);
-	// The box draws itself outwards from the centre of the title.
-	ctx.strokeRect(
-		rect.x + (rect.width - drawnWidth) / 2,
-		rect.y,
-		drawnWidth,
-		rect.height
-	);
+	ctx.globalAlpha = Math.min(1, plan.alpha) * windowAlpha;
+	// The shape grows from the middle of the title, which is where the eye is.
+	ctx.translate(cx, cy);
+	ctx.scale(plan.widthPct, plan.heightPct);
+	ctx.translate(-cx, -cy);
+
+	const closed = subpaths.filter(subpath => subpath.closed);
+	if (style !== 'outline' && closed.length > 0 && plan.fillPct > 0.001) {
+		ctx.save();
+		// The wipe lives in the shape's own bounds, so a pointed end fills
+		// together with the rest instead of lagging behind.
+		ctx.beginPath();
+		ctx.rect(
+			bounds.x,
+			bounds.y,
+			bounds.width * Math.min(1, plan.fillPct),
+			bounds.height
+		);
+		ctx.clip();
+		ctx.fillStyle = fillStyleFor(
+			ctx,
+			fill,
+			bounds.x,
+			bounds.y,
+			bounds.width,
+			bounds.height
+		);
+		for (const subpath of closed) {
+			trace(subpath);
+			ctx.fill();
+		}
+		ctx.restore();
+	}
+
+	if (style !== 'filled') {
+		ctx.strokeStyle = fill.primary;
+		ctx.lineWidth = Math.max(1, rect.height * 0.035 * thickness);
+		ctx.lineJoin = 'round';
+		if (plan.drawPct < 1) {
+			const length = outlineLength(subpaths);
+			ctx.setLineDash([length * Math.max(0, plan.drawPct), length]);
+		}
+		for (const subpath of subpaths) {
+			trace(subpath);
+			ctx.stroke();
+		}
+		ctx.setLineDash([]);
+	}
 	ctx.restore();
 }
 
@@ -285,6 +410,9 @@ export function paintIntro({
 	colors,
 	titleFontStyle,
 	taglineFontStyle,
+	titleFrameShape,
+	titleFrameStyle,
+	titleFrameThickness,
 	paintSpectrum
 }: PaintIntroOptions): void {
 	const { width, height } = viewport;
@@ -294,7 +422,7 @@ export function paintIntro({
 
 	ctx.save();
 	ctx.globalAlpha = windowAlpha;
-	ctx.fillStyle = colors.backdrop;
+	ctx.fillStyle = fillStyleFor(ctx, colors.backdrop, 0, 0, width, height);
 	ctx.fillRect(0, 0, width, height);
 	ctx.restore();
 
@@ -303,7 +431,9 @@ export function paintIntro({
 	if (frame.imageDim > 0.001) {
 		ctx.save();
 		ctx.globalAlpha = frame.imageDim * windowAlpha;
-		ctx.fillStyle = colors.backdrop;
+		// The dim is one flat colour on purpose: a gradient over the montage
+		// would read as a second backdrop instead of as shading.
+		ctx.fillStyle = colors.backdrop.primary;
 		ctx.fillRect(0, 0, width, height);
 		ctx.restore();
 	}
@@ -365,9 +495,11 @@ export function paintIntro({
 					width: titleLine.fullWidth + boxPadX * 2,
 					height: titleH + boxPadY * 2
 				},
-				frame.titleFrame.widthPct,
-				frame.titleFrame.alpha,
-				colors.title,
+				titleFrameShape,
+				titleFrameStyle,
+				titleFrameThickness,
+				frame.titleFrame,
+				colors.titleFrame,
 				windowAlpha
 			);
 		}

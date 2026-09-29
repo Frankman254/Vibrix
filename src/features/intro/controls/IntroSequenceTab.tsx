@@ -24,6 +24,7 @@ import { useT } from '@/lib/i18n';
 import ToggleControl from '@/editor/ToggleControl';
 import CollapsibleSection from '@/editor/CollapsibleSection';
 import AdaptiveColorInput from '@/editor/AdaptiveColorInput';
+import ConnectedColorInput from '@/editor/ConnectedColorInput';
 import { MotionSlider as Slider } from '@/editor/MotionSharedControls';
 import { formatDecimal } from '@/editor/motionTabUtils';
 import { resolveSlideshowPool } from '@/features/background';
@@ -34,6 +35,10 @@ import {
 } from '@/lib/canvasText/trackTitleOptions';
 import type {
 	IntroDivisionPattern,
+	IntroFillMode,
+	IntroTitleFrameAnimation,
+	IntroTitleFrameShape,
+	IntroTitleFrameStyle,
 	IntroImageSourceMode,
 	IntroLogoSource,
 	IntroMontageMode,
@@ -42,6 +47,7 @@ import type {
 	IntroTextReveal,
 	TrackTitleFontStyle
 } from '@/types/wallpaper';
+import { INTRO_TITLE_FRAME_SHAPES } from '../introTitleFrame';
 import {
 	INTRO_ANGLED_PATTERNS,
 	INTRO_DIVISION_ANGLE_RANGE,
@@ -49,6 +55,7 @@ import {
 } from '../introDivisions';
 import {
 	INTRO_DURATION_RANGE,
+	INTRO_FRAME_THICKNESS_RANGE,
 	INTRO_IMAGE_COUNT_RANGE,
 	INTRO_LOGO_SIZE_RANGE,
 	INTRO_PHASE_SEC_RANGE,
@@ -390,6 +397,35 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 									patch({ backdropColor })
 								}
 							/>
+							<SegmentedControl<IntroFillMode>
+								value={settings.backdropFillMode}
+								onChange={backdropFillMode =>
+									patch({ backdropFillMode })
+								}
+								options={[
+									{
+										value: 'solid',
+										label: t.intro_fill_solid
+									},
+									{
+										value: 'gradient',
+										label: t.intro_fill_gradient
+									},
+									{
+										value: 'rainbow',
+										label: t.intro_fill_rainbow
+									}
+								]}
+							/>
+							{settings.backdropFillMode === 'gradient' ? (
+								<ConnectedColorInput
+									label={t.intro_backdrop_color_secondary}
+									value={settings.backdropColorSecondary}
+									onChange={backdropColorSecondary =>
+										patch({ backdropColorSecondary })
+									}
+								/>
+							) : null}
 							<Caption>
 								{poolSize === 0
 									? t.intro_no_images
@@ -464,6 +500,140 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 								}
 								tooltip={t.intro_title_frame_tooltip}
 							/>
+							{settings.titleFrameEnabled ? (
+								<>
+									<Select<IntroTitleFrameShape>
+										value={settings.titleFrameShape}
+										onChange={titleFrameShape =>
+											patch({ titleFrameShape })
+										}
+										ariaLabel={t.intro_frame_shape}
+										full
+										options={INTRO_TITLE_FRAME_SHAPES.map(
+											value => ({
+												value,
+												label: t[
+													`intro_frame_shape_${value}`
+												]
+											})
+										)}
+									/>
+									<SegmentedControl<IntroTitleFrameStyle>
+										value={settings.titleFrameStyle}
+										onChange={titleFrameStyle =>
+											patch({ titleFrameStyle })
+										}
+										options={[
+											{
+												value: 'outline',
+												label: t.intro_frame_style_outline
+											},
+											{
+												value: 'filled',
+												label: t.intro_frame_style_filled
+											},
+											{
+												value: 'both',
+												label: t.intro_frame_style_both
+											}
+										]}
+									/>
+									<Select<IntroTitleFrameAnimation>
+										value={settings.titleFrameAnimation}
+										onChange={titleFrameAnimation =>
+											patch({ titleFrameAnimation })
+										}
+										ariaLabel={t.intro_frame_animation}
+										full
+										options={[
+											{
+												value: 'draw',
+												label: t.intro_frame_anim_draw
+											},
+											{
+												value: 'expand',
+												label: t.intro_frame_anim_expand
+											},
+											{
+												value: 'grow',
+												label: t.intro_frame_anim_grow
+											},
+											{
+												value: 'fade',
+												label: t.intro_frame_anim_fade
+											},
+											{
+												value: 'sweep',
+												label: t.intro_frame_anim_sweep
+											}
+										]}
+									/>
+									<Slider
+										label={t.intro_frame_thickness}
+										value={settings.titleFrameThickness}
+										min={INTRO_FRAME_THICKNESS_RANGE.min}
+										max={INTRO_FRAME_THICKNESS_RANGE.max}
+										step={0.05}
+										onChange={titleFrameThickness =>
+											patch({ titleFrameThickness })
+										}
+										defaultValue={
+											factory.titleFrameThickness
+										}
+										variant="compact"
+										formatValue={value =>
+											`${formatDecimal(value)}×`
+										}
+									/>
+									<AdaptiveColorInput
+										label={t.intro_frame_color}
+										source={settings.titleFrameColorSource}
+										onSourceChange={titleFrameColorSource =>
+											patch({ titleFrameColorSource })
+										}
+										value={settings.titleFrameColor}
+										onChange={titleFrameColor =>
+											patch({ titleFrameColor })
+										}
+									/>
+									<SegmentedControl<IntroFillMode>
+										value={settings.titleFrameFillMode}
+										onChange={titleFrameFillMode =>
+											patch({ titleFrameFillMode })
+										}
+										options={[
+											{
+												value: 'solid',
+												label: t.intro_fill_solid
+											},
+											{
+												value: 'gradient',
+												label: t.intro_fill_gradient
+											},
+											{
+												value: 'rainbow',
+												label: t.intro_fill_rainbow
+											}
+										]}
+									/>
+									{settings.titleFrameFillMode ===
+									'gradient' ? (
+										<ConnectedColorInput
+											label={
+												t.intro_frame_color_secondary
+											}
+											value={
+												settings.titleFrameColorSecondary
+											}
+											onChange={titleFrameColorSecondary =>
+												patch({
+													titleFrameColorSecondary
+												})
+											}
+										/>
+									) : null}
+								</>
+							) : null}
 							<AdaptiveColorInput
 								label={t.intro_title_color}
 								source={settings.titleColorSource}
