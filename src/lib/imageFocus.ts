@@ -42,6 +42,54 @@ export const FOCUS_FALLBACK_FACE = { x: 0.5, y: 0.38 } as const;
 /** And where a mark goes when nothing can be measured: lower middle. */
 export const FOCUS_FALLBACK_LOGO = { x: 0.5, y: 0.76 } as const;
 
+/**
+ * How far the mark stays from the left and right edges of the image, and how
+ * far it stays from the face horizontally.
+ *
+ * The mark is not alone: the spectrum is drawn around it, so a mark parked at
+ * `x = 0.06` throws the whole figure into a corner — «para que el spectrum con
+ * el logo no se vean demaciados a las esquinas». The gap is what keeps the mark
+ * off the face's own column.
+ */
+export const LOGO_EDGE_MARGIN = 0.18;
+export const LOGO_FACE_GAP = 0.16;
+
+/**
+ * The horizontal place for the mark, given where the face is.
+ *
+ * The rule is geometric, not pixel-scored, because the complaint about the old
+ * mark was geometric: it drifted to the edges. So:
+ *
+ *  - the image is split into the band LEFT of the face and the band RIGHT of
+ *    it, each one already shrunk by the edge margin and the face gap;
+ *  - the roomier band wins, and a TIE goes left («tomando como prioridad el
+ *    lado izquierdo»);
+ *  - inside the winning band the mark sits as close to the middle of the frame
+ *    as the band allows, so it tends to the centre instead of the corner.
+ *
+ * When neither band has room — a face that fills the frame — the mark takes the
+ * safe margin of the roomier side, which is still better than sitting on top of
+ * the face.
+ */
+export function resolveMarkX(faceX: number): number {
+	const min = LOGO_EDGE_MARGIN;
+	const max = 1 - LOGO_EDGE_MARGIN;
+	const face = clamp01(faceX);
+	const leftEnd = face - LOGO_FACE_GAP;
+	const rightStart = face + LOGO_FACE_GAP;
+	const leftRoom = leftEnd - min;
+	const rightRoom = max - rightStart;
+	// The tie is decided with a tolerance: a face at 0.5 leaves bands that are
+	// the same width up to floating-point dust, and that case must go left.
+	const useLeft = leftRoom >= rightRoom - 1e-9;
+	if (useLeft) {
+		if (leftRoom <= 0) return min;
+		return Math.min(Math.max(0.5, min), leftEnd);
+	}
+	if (rightRoom <= 0) return max;
+	return Math.max(Math.min(0.5, max), rightStart);
+}
+
 function clamp01(value: number): number {
 	return value < 0 ? 0 : value > 1 ? 1 : value;
 }
@@ -185,6 +233,12 @@ export function resolveFocusFromGrid(
 	const usableFace = face.confidence >= 0.06;
 	const anchor = usableFace ? face : FOCUS_FALLBACK_FACE;
 
+	// WHERE the mark sits horizontally is decided by `resolveMarkX`, not by the
+	// pixels: the calm score is free to pick a corner, and a corner is exactly
+	// what the user does not want. The pixels still choose the HEIGHT, and only
+	// inside the column band that the geometric rule picked.
+	const markX = resolveMarkX(anchor.x);
+	const bandHalf = 0.5 - LOGO_EDGE_MARGIN;
 	const logoScore = new Float32Array(cells);
 	for (let i = 0; i < cells; i += 1) {
 		const x = (i % grid) + 0.5;
@@ -193,9 +247,11 @@ export function resolveFocusFromGrid(
 		const calm =
 			(1 - (measurements.skin[i] ?? 0)) *
 			(1 - (measurements.detail[i] ?? 0));
-		logoScore[i] = calm * (0.4 + 0.6 * clamp01(distance / 0.6));
+		const inBand = Math.abs(x / grid - markX) <= bandHalf ? 1 : 0;
+		logoScore[i] = inBand * calm * (0.4 + 0.6 * clamp01(distance / 0.6));
 	}
-	const logo = pickFocusWindow(logoScore, Math.round(grid * 0.28), grid);
+	const scored = pickFocusWindow(logoScore, Math.round(grid * 0.28), grid);
+	const logo = { ...scored, x: markX };
 
 	return {
 		face: usableFace
@@ -204,7 +260,7 @@ export function resolveFocusFromGrid(
 		logo:
 			logo.confidence > 0
 				? logo
-				: { ...FOCUS_FALLBACK_LOGO, confidence: 0 }
+				: { ...FOCUS_FALLBACK_LOGO, x: markX, confidence: 0 }
 	};
 }
 

@@ -482,9 +482,15 @@ export const es: Record<TranslationKey, string> = {
 	intro_enabled_tooltip:
 		'Cubre el principio (o el final) de la línea de tiempo: no añade duración, así que el audio no se desfasa.',
 	intro_section_timing: 'Tiempos',
-	focus_points_title: 'Foco de cara y de logo',
-	focus_points_hint:
-		'Dónde está la cara y dónde puede ir el logo, medido en esta imagen. Lo que tenga que recortarla —los paneles de la intro— mantiene la cara en cuadro, y el logo arranca en la zona tranquila. Se estima de los píxeles; si mueves un slider el punto pasa a ser tuyo.',
+	image_points_title: 'Puntos de la imagen',
+	image_points_focus: 'Encuadre',
+	image_points_face: 'Cara',
+	image_points_mark: 'Marca',
+	image_points_focus_x: 'Focus X',
+	image_points_focus_y: 'Focus Y',
+	image_points_pick_here: 'Colocar en el preview',
+	image_points_pick_hint:
+		'Haz clic en el preview para colocar el punto elegido. Los marcadores de arriba muestran dónde están los tres.',
 	focus_points_scan: 'Analizar esta imagen',
 	focus_points_scan_t:
 		'Vuelve a estimar los dos puntos de los píxeles, reemplazando lo que haya.',
@@ -1540,11 +1546,8 @@ export const es: Record<TranslationKey, string> = {
 		'Aplica Cover Fit a cada imagen de fondo cuyas dimensiones se conocen. Los encuadres ajustados a mano se sobrescriben.',
 	confirm_cover_fit_all:
 		'Esto reencuadra todas las imagenes de fondo a cobertura total, incluidas las ajustadas a mano. Continuar?',
-	label_pick_focus: 'Elegir Foco',
 	label_center_focus: 'Centrar Foco',
 	label_clear_focus: 'Limpiar Foco',
-	hint_pick_focus_active:
-		'Haz clic en el preview de la imagen para elegir el punto que debe mantenerse en vista.',
 	hint_image_focus_point:
 		'Guarda el punto visual que debe preservarse cuando cambia el tamano de pantalla.',
 	label_auto_focus: 'Auto Enfocar',
@@ -1921,11 +1924,7 @@ export const es: Record<TranslationKey, string> = {
 	bg_preview_pick_focus: 'Haz clic para poner el focus de encuadre',
 	bg_preview_drag_hint:
 		'Arrastra para mover — se mantiene cubierta · Aro = focus de encuadre · F = cara · L = logo',
-	focus_points_pick_face: 'Señalar la cara',
-	focus_points_pick_logo: 'Señalar el logo',
 	focus_points_pick_done: 'Listo',
-	focus_points_pick_hint:
-		'Con uno de estos activado, haz clic en la imagen de arriba: F es la cara y L es donde puede ir el logo. Un aro a rayas significa que todavía nadie lo ha medido.',
 	hud_drag_tooltip: 'Arrastrar HUD',
 	hud_drag_launcher_tooltip: 'Arrastrar lanzador HUD',
 	label_clear: 'Limpiar',

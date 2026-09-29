@@ -7,8 +7,7 @@ import { Button } from '@/ui';
 import BgFitModeSelector from './BgFitModeSelector';
 import BgSectionCard from './BgSectionCard';
 import BackgroundQuickControls from './BackgroundQuickControls';
-import FocusQuickControls from './FocusQuickControls';
-import ImageFocusPointsSection from './ImageFocusPointsSection';
+import ImagePointsPanel, { type ImagePointKind } from './ImagePointsPanel';
 import InteractiveImagePreview, {
 	type ImageFocusPointKind
 } from './InteractiveImagePreview';
@@ -108,14 +107,16 @@ export default function BackgroundCardShell({
 	onResetFraming: () => void;
 	onCenterFocus: () => void;
 }) {
-	const [pickFocusActive, setPickFocusActive] = useState(false);
-	// Placing a face / mark point happens ON the preview, and the buttons that
-	// arm it live in the section below it, so the mode is owned here — the one
-	// component that renders both. The two setters come from the store for the
-	// same reason `ImageFocusPointsSection` reads it directly: none of this is
-	// the framing panel's business.
-	const [pointPickMode, setPointPickMode] =
-		useState<ImageFocusPointKind | null>(null);
+	// Placing ANY of the three points happens ON the preview, and the buttons
+	// that arm it live in the panel right below it, so the mode is owned here —
+	// the one component that renders both. One mode, not two: arming a point
+	// necessarily disarms the others. The setters come from the store for the
+	// same reason `ImagePointsPanel` reads it directly: none of this is the
+	// framing panel's business.
+	const [pickMode, setPickMode] = useState<ImagePointKind | null>(null);
+	const pickFocusActive = pickMode === 'focus';
+	const pointPickMode: ImageFocusPointKind | null =
+		pickMode === 'face' || pickMode === 'logo' ? pickMode : null;
 	const focusPoints = useWallpaperStore(
 		useShallow(s => ({
 			setFaceFocus: s.setBackgroundImageFaceFocus,
@@ -141,7 +142,7 @@ export default function BackgroundCardShell({
 				void focusPoints.applyImageLogoFocus(activeImage.assetId);
 			}
 		}
-		setPointPickMode(null);
+		setPickMode(null);
 	};
 
 	return (
@@ -247,7 +248,7 @@ export default function BackgroundCardShell({
 						onChangePositionY={onChangePositionY}
 						onPickFocus={(x, y) => {
 							onChangeFocusPoint(x, y);
-							setPickFocusActive(false);
+							setPickMode(null);
 						}}
 					/>
 				) : (
@@ -263,36 +264,23 @@ export default function BackgroundCardShell({
 				)}
 
 				{activeImage?.url ? (
-					<FocusQuickControls
+					<ImagePointsPanel
 						t={t}
 						focusX={imageFocusX}
 						focusY={imageFocusY}
-						pickFocusActive={pickFocusActive}
-						onPickFocus={() => {
-							setPickFocusActive(current => !current);
-							setPointPickMode(null);
-						}}
+						pickMode={pickMode}
+						onPickModeChange={setPickMode}
 						onCenterFocus={() => {
 							onCenterFocus();
-							setPickFocusActive(false);
+							setPickMode(null);
 						}}
 						onAutoFocus={() => {
 							onAutoFocusActiveImage();
-							setPickFocusActive(false);
+							setPickMode(null);
 						}}
 						onChangeFocusPoint={(x, y) => {
 							onChangeFocusPoint(x, y);
-							setPickFocusActive(false);
-						}}
-					/>
-				) : null}
-
-				{activeImage?.url ? (
-					<ImageFocusPointsSection
-						pickMode={pointPickMode}
-						onPickModeChange={mode => {
-							setPointPickMode(mode);
-							if (mode) setPickFocusActive(false);
+							setPickMode(null);
 						}}
 					/>
 				) : null}

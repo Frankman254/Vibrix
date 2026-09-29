@@ -479,9 +479,15 @@ export const en = {
 	intro_enabled_tooltip:
 		'It covers the head (or the tail) of the timeline — it does not add time, so the audio stays in sync.',
 	intro_section_timing: 'Timing',
-	focus_points_title: 'Face and mark focus',
-	focus_points_hint:
-		'Where the face is and where a mark can sit, measured on this image. Anything that has to crop it — the intro panels — keeps the face in frame, and the logo starts on the calm spot. Estimated from the pixels; move a slider and the point becomes yours.',
+	image_points_title: 'Image points',
+	image_points_focus: 'Framing',
+	image_points_face: 'Face',
+	image_points_mark: 'Mark',
+	image_points_focus_x: 'Focus X',
+	image_points_focus_y: 'Focus Y',
+	image_points_pick_here: 'Place on the preview',
+	image_points_pick_hint:
+		'Click the preview to place the selected point. The markers above show where all three are.',
 	focus_points_scan: 'Scan this image',
 	focus_points_scan_t:
 		'Estimate both points again from the pixels, replacing what is there.',
@@ -1525,11 +1531,8 @@ export const en = {
 		'Applies Cover Fit to every background image whose dimensions are known. Hand-tuned framings are overwritten.',
 	confirm_cover_fit_all:
 		'This re-frames every background image to full coverage, including hand-tuned ones. Continue?',
-	label_pick_focus: 'Pick Focus',
 	label_center_focus: 'Center Focus',
 	label_clear_focus: 'Clear Focus',
-	hint_pick_focus_active:
-		'Click the image preview to choose the point to keep in view.',
 	hint_image_focus_point:
 		'Stores the visual point to preserve when the screen size changes.',
 	label_auto_focus: 'Auto Focus',
@@ -1903,11 +1906,7 @@ export const en = {
 	bg_preview_pick_focus: 'Click to set the framing focus',
 	bg_preview_drag_hint:
 		'Drag to pan — kept covered · Ring = framing focus · F = face · L = mark',
-	focus_points_pick_face: 'Point at the face',
-	focus_points_pick_logo: 'Point at the mark',
 	focus_points_pick_done: 'Done',
-	focus_points_pick_hint:
-		'With one of these on, click the picture above: F is the face, L is where a mark can sit. A dashed ring means nobody has measured it yet.',
 	hud_drag_tooltip: 'Drag HUD',
 	hud_drag_launcher_tooltip: 'Drag HUD launcher',
 	label_clear: 'Clear',

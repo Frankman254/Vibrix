@@ -5,7 +5,10 @@ import {
 	measureFocusGrid,
 	pickFocusWindow,
 	resolveFocusFromGrid,
-	skinLikeness
+	resolveMarkX,
+	skinLikeness,
+	LOGO_EDGE_MARGIN,
+	LOGO_FACE_GAP
 } from './imageFocus';
 
 /** A synthetic image: dark blue everywhere, one pale warm patch = a "face". */
@@ -118,5 +121,37 @@ describe('resolveFocusFromGrid', () => {
 		);
 		expect(grid.skin).toHaveLength(FOCUS_GRID * FOCUS_GRID);
 		expect(grid.detail).toHaveLength(FOCUS_GRID * FOCUS_GRID);
+	});
+});
+
+describe('resolveMarkX', () => {
+	it('sits as close to the middle as the face allows, on the roomier side', () => {
+		// Face well to the right: the left band is the roomy one, and the mark
+		// lands in the middle of the frame, not against the left edge.
+		expect(resolveMarkX(0.78)).toBeCloseTo(0.5, 5);
+		// Face well to the left: same, from the other side.
+		expect(resolveMarkX(0.22)).toBeCloseTo(0.5, 5);
+	});
+
+	it('gives way to the face when the face is near the middle', () => {
+		// Face just right of centre: the left band is still the roomier one, so
+		// the mark steps left of the face by exactly the gap.
+		const x = resolveMarkX(0.56);
+		expect(x).toBeCloseTo(0.56 - LOGO_FACE_GAP, 5);
+		expect(Math.abs(x - 0.56)).toBeGreaterThanOrEqual(LOGO_FACE_GAP - 1e-9);
+		// Face just LEFT of centre: the right band wins and the mark mirrors.
+		expect(resolveMarkX(0.44)).toBeCloseTo(0.44 + LOGO_FACE_GAP, 5);
+	});
+
+	it('prefers the LEFT side when both sides have the same room', () => {
+		expect(resolveMarkX(0.5)).toBeCloseTo(0.5 - LOGO_FACE_GAP, 5);
+	});
+
+	it('never leaves the safe margin, even for a face that fills the frame', () => {
+		for (const faceX of [0, 0.05, 0.5, 0.95, 1]) {
+			const x = resolveMarkX(faceX);
+			expect(x).toBeGreaterThanOrEqual(LOGO_EDGE_MARGIN);
+			expect(x).toBeLessThanOrEqual(1 - LOGO_EDGE_MARGIN);
+		}
 	});
 });
