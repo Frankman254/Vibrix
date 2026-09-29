@@ -42,6 +42,7 @@ import type {
 	IntroTitleFrameShape,
 	IntroTitleFrameStyle,
 	IntroImageSourceMode,
+	IntroTextStyleSource,
 	IntroLogoPlacement,
 	IntroLogoSource,
 	IntroMontageMode,
@@ -547,7 +548,28 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 								ariaLabel={t.intro_font}
 								options={FONT_OPTIONS}
 								full
+								disabled={
+									settings.titleTextStyleSource ===
+									'track-info'
+								}
 							/>
+							<SegmentedControl<IntroTextStyleSource>
+								value={settings.titleTextStyleSource}
+								onChange={titleTextStyleSource =>
+									patch({ titleTextStyleSource })
+								}
+								options={[
+									{
+										value: 'own',
+										label: t.intro_text_style_own
+									},
+									{
+										value: 'track-info',
+										label: t.intro_text_style_track_info
+									}
+								]}
+							/>
+							<Caption>{t.intro_text_style_hint}</Caption>
 							<Slider
 								label={t.intro_title_size}
 								value={settings.titleSizePct}
@@ -753,7 +775,28 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 								ariaLabel={t.intro_font}
 								options={FONT_OPTIONS}
 								full
+								disabled={
+									settings.taglineTextStyleSource ===
+									'track-info'
+								}
 							/>
+							<SegmentedControl<IntroTextStyleSource>
+								value={settings.taglineTextStyleSource}
+								onChange={taglineTextStyleSource =>
+									patch({ taglineTextStyleSource })
+								}
+								options={[
+									{
+										value: 'own',
+										label: t.intro_text_style_own
+									},
+									{
+										value: 'track-info',
+										label: t.intro_text_style_track_info
+									}
+								]}
+							/>
+							<Caption>{t.intro_text_style_hint}</Caption>
 							<Slider
 								label={t.intro_tagline_size}
 								value={settings.taglineSizePct}

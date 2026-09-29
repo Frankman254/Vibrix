@@ -260,6 +260,8 @@ export function createDefaultIntroSequence(
 		taglineColorSource: 'image',
 		taglineColor: '#ffd7ec',
 
+		titleTextStyleSource: 'own',
+		taglineTextStyleSource: 'own',
 		logoSource: 'none',
 		logoSizePct: 14,
 		logoPlacement: 'stack',

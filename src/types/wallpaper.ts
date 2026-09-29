@@ -664,6 +664,17 @@ export type IntroLogoSource = 'none' | 'vibrix' | 'project';
 export type IntroLogoPlacement = 'stack' | 'free';
 
 /**
+ * Where a line of the intro takes its typography from.
+ *
+ * `own` is the window's own font plus the soft shadow that keeps white text
+ * legible over a montage. `track-info` borrows Track Info's configuration —
+ * font, uppercase, letter spacing, text treatment, outline, halo and backdrop
+ * chip — so a line looks as finished as the widget without a second set of
+ * controls. The line keeps its OWN colour either way.
+ */
+export type IntroTextStyleSource = 'own' | 'track-info';
+
+/**
  * Where the intro's spectrum figure comes from. `slot` draws one of the SAVED
  * spectrum profile slots with the real spectrum renderer, so the flourish is
  * the same figure the wallpaper uses — not a lookalike.
@@ -797,6 +808,7 @@ export interface IntroSequenceSettings {
 	/** The channel / project name. Empty means "draw nothing". */
 	titleText: string;
 	titleFontStyle: TrackTitleFontStyle;
+	titleTextStyleSource: IntroTextStyleSource;
 	/** Cap height as a share of the viewport height. */
 	titleSizePct: number;
 	titleReveal: IntroTextReveal;
@@ -818,6 +830,7 @@ export interface IntroSequenceSettings {
 	taglineEnabled: boolean;
 	taglineText: string;
 	taglineFontStyle: TrackTitleFontStyle;
+	taglineTextStyleSource: IntroTextStyleSource;
 	taglineSizePct: number;
 	taglineReveal: IntroTextReveal;
 	taglineColorSource: ColorSourceMode;

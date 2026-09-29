@@ -3482,6 +3482,23 @@ export function migrateWallpaperStore(
 		);
 	}
 
+	if (fromVersion < 137) {
+		// Each line of the intro can borrow Track Info's typography. `own` is
+		// what both lines have always drawn, so nothing changes on upgrade.
+		const migrateWindowTextStyle = (window_: unknown): void => {
+			if (!window_ || typeof window_ !== 'object') return;
+			const settings = window_ as Record<string, unknown>;
+			if (typeof settings.titleTextStyleSource !== 'string') {
+				settings.titleTextStyleSource = 'own';
+			}
+			if (typeof settings.taglineTextStyleSource !== 'string') {
+				settings.taglineTextStyleSource = 'own';
+			}
+		};
+		migrateWindowTextStyle(migratedState.introSequence);
+		migrateWindowTextStyle(migratedState.outroSequence);
+	}
+
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;
 }
 

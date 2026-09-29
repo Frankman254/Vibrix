@@ -40,7 +40,7 @@ the version scheme in `src/lib/version.ts`.
       configurables. Así la animación es idéntica en cada render y es fluida
       aunque la pista empiece en silencio o con fade-in.
       Las ventanas siguen sin añadir duración al vídeo.
-      `STORE_PERSIST_VERSION` is at **136**; la migración traslada lo que hubiera
+      `STORE_PERSIST_VERSION` is at **137**; la migración traslada lo que hubiera
       en v129, y la de v131 cambia las claves viejas del spectrum del intro
       (`spectrumShape` / `spectrumSizePct` / `spectrumColorSource` /
       `spectrumColor`) por las nuevas (`spectrumSource`, `spectrumSlotIndex`,
@@ -144,6 +144,22 @@ the version scheme in `src/lib/version.ts`.
       Todo sigue montándose y desmontándose con la ventana.
       `STORE_PERSIST_VERSION` pasa a **135**; la migración siembra los valores
       que reproducen exactamente el comportamiento anterior.
+
+- **El título y la frase de la intro pueden usar la tipografía de Track
+  Info.** Tal cual lo pediste: en vez de una segunda tanda de controles más
+  pobre, cada línea elige entre **su propio estilo** (lo de antes: su fuente y
+  la sombra suave que la hace legible sobre cualquier montaje) y **el de Track
+  Info**, que toma de esa pestaña la fuente, las mayúsculas, el espaciado entre
+  letras, el tratamiento (sólido, degradado, metálico, neón, cristal, sombra),
+  el contorno, el halo y la placa de fondo. La línea conserva **su color y su
+  tamaño**, que son suyos.
+    - Todo lo que Track Info guarda en píxeles se convierte a proporción del
+      tamaño de la línea (`introTextStyle.ts`, con tests): 18 px de halo en un
+      widget de 28 px llegan como `0.64em`, así se ve igual en un título que es
+      cinco veces más grande, en vez de desaparecer.
+    - El espaciado se dibuja letra por letra de verdad, y la línea visible sigue
+      centrada mientras se escribe.
+      `STORE_PERSIST_VERSION` pasa a **137**.
 
 - **Escala de movimiento en Camera Motion.** Los movimientos estaban
   limitados: la amplitud tenía un techo fijo (96 px × la cantidad) y, para las

@@ -21,6 +21,7 @@ import {
 	resolveIntroLogoUrl,
 	resolveIntroPaletteUrl,
 	resolveIntroPool,
+	resolveIntroTextStyle,
 	resolveIntroThemePalette,
 	resolveIntroWindow,
 	selectIntroSequence
@@ -145,8 +146,20 @@ export function createIntroSubsystem(): RenderSubsystem {
 						windowTimeSec: window_.elapsedSec,
 						dt: Math.max(0.0001, ctx.deltaMs / 1000)
 					}) ?? undefined,
-				titleFontStyle: settings.titleFontStyle,
-				taglineFontStyle: settings.taglineFontStyle,
+				titleStyle: resolveIntroTextStyle(
+					settings.titleTextStyleSource,
+					settings.titleFontStyle,
+					ctx.state,
+					assets.palette ?? ctx.palette,
+					resolveIntroThemePalette(ctx.state)
+				),
+				taglineStyle: resolveIntroTextStyle(
+					settings.taglineTextStyleSource,
+					settings.taglineFontStyle,
+					ctx.state,
+					assets.palette ?? ctx.palette,
+					resolveIntroThemePalette(ctx.state)
+				),
 				titleFrameShape: settings.titleFrameShape,
 				titleFrameStyle: settings.titleFrameStyle,
 				titleFrameThickness: settings.titleFrameThickness

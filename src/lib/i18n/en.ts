@@ -620,6 +620,10 @@ export const en = {
 	intro_logo_vibrix: 'Vibrix',
 	intro_logo_project: "The project's",
 	intro_logo_size: 'Size (% of height)',
+	intro_text_style_own: 'Its own style',
+	intro_text_style_track_info: "Track Info's",
+	intro_text_style_hint:
+		"With Track Info's, the line borrows that tab's font, uppercase, letter spacing, treatment, outline, halo and backdrop chip — everything configured once, over there. The line keeps its own colour and its own size.",
 	intro_logo_stretch: 'Width',
 	intro_logo_placement_stack: 'In the column',
 	intro_logo_placement_free: 'Free',

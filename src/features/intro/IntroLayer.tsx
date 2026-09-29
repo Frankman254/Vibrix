@@ -24,6 +24,7 @@ import {
 	subscribeOutputRenderQuality
 } from '@/runtime/outputRenderQuality';
 import { paintIntro } from './introPaint';
+import { resolveIntroTextStyle } from './introTextStyle';
 import {
 	resolveIntroColors,
 	resolveIntroFocusMap,
@@ -168,8 +169,20 @@ export default function IntroLayer({ zIndex = 95 }: { zIndex?: number }) {
 						windowTimeSec: window_.elapsedSec,
 						dt
 					}) ?? undefined,
-				titleFontStyle: settings.titleFontStyle,
-				taglineFontStyle: settings.taglineFontStyle,
+				titleStyle: resolveIntroTextStyle(
+					settings.titleTextStyleSource,
+					settings.titleFontStyle,
+					state,
+					paletteRef.current,
+					resolveIntroThemePalette(state)
+				),
+				taglineStyle: resolveIntroTextStyle(
+					settings.taglineTextStyleSource,
+					settings.taglineFontStyle,
+					state,
+					paletteRef.current,
+					resolveIntroThemePalette(state)
+				),
 				titleFrameShape: settings.titleFrameShape,
 				titleFrameStyle: settings.titleFrameStyle,
 				titleFrameThickness: settings.titleFrameThickness

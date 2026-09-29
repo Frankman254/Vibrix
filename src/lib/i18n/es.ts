@@ -624,6 +624,10 @@ export const es: Record<TranslationKey, string> = {
 	intro_logo_vibrix: 'Vibrix',
 	intro_logo_project: 'El del proyecto',
 	intro_logo_size: 'Tamaño (% del alto)',
+	intro_text_style_own: 'Su propio estilo',
+	intro_text_style_track_info: 'El de Track Info',
+	intro_text_style_hint:
+		'Con el de Track Info, la línea toma de esa pestaña la fuente, las mayúsculas, el espaciado, el tratamiento, el contorno, el halo y la placa de fondo: todo configurado una vez, allí. La línea conserva su color y su tamaño.',
 	intro_logo_stretch: 'Ancho',
 	intro_logo_placement_stack: 'En la columna',
 	intro_logo_placement_free: 'Libre',

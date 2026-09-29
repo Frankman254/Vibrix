@@ -16,6 +16,7 @@ import type {
 	IntroTitleFrameStyle,
 	TrackTitleFontStyle
 } from '@/types/wallpaper';
+import { applyTextTreatment } from '@/lib/canvasText/trackTextTreatment';
 import {
 	outlineLength,
 	resolveTitleFrameShape,
@@ -23,6 +24,7 @@ import {
 	type FrameRect,
 	type FrameSubpath
 } from './introTitleFrame';
+import type { IntroTextStyle } from './introTextStyle';
 import type {
 	IntroCard,
 	IntroFrame,
@@ -118,8 +120,9 @@ export type PaintIntroOptions = {
 	focus?: ReadonlyMap<number, IntroFocusPoint>;
 	logo: IntroImageSource | null;
 	colors: IntroPaintColors;
-	titleFontStyle: TrackTitleFontStyle;
-	taglineFontStyle: TrackTitleFontStyle;
+	/** Typography of each line — its own, or Track Info's borrowed. */
+	titleStyle: IntroTextStyle;
+	taglineStyle: IntroTextStyle;
 	titleFrameShape: IntroTitleFrameShape;
 	titleFrameStyle: IntroTitleFrameStyle;
 	/** Line width as a multiple of the default. */
@@ -239,9 +242,24 @@ type MeasuredLine = {
 	text: string;
 	fullText: string;
 	sizePx: number;
+	/** Extra room between glyphs, in pixels at this size. */
+	spacing: number;
 	width: number;
 	fullWidth: number;
 };
+
+/** The width of `text` drawn glyph by glyph with `spacing` between them. */
+function spacedWidth(
+	ctx: CanvasRenderingContext2D,
+	text: string,
+	spacing: number
+): number {
+	const glyphs = [...text];
+	if (glyphs.length === 0) return 0;
+	let width = 0;
+	for (const glyph of glyphs) width += ctx.measureText(glyph).width;
+	return width + spacing * (glyphs.length - 1);
+}
 
 /**
  * Measure a line at its wanted size, shrinking it if the full string would run
@@ -251,36 +269,66 @@ type MeasuredLine = {
 function measureLine(
 	ctx: CanvasRenderingContext2D,
 	plan: IntroTextPlan,
-	style: TrackTitleFontStyle,
+	style: IntroTextStyle,
 	viewport: IntroViewport
 ): MeasuredLine {
 	const safeWidth = viewport.width * 0.86;
+	const fullText = style.uppercase ? plan.text.toUpperCase() : plan.text;
 	let sizePx = (viewport.height * plan.sizePct) / 100;
-	ctx.font = fontFor(style, sizePx).font;
-	let fullWidth = ctx.measureText(plan.text).width;
+	ctx.font = fontFor(style.font, sizePx).font;
+	let spacing = sizePx * style.letterSpacingEm;
+	let fullWidth = spacedWidth(ctx, fullText, spacing);
 	if (fullWidth > safeWidth && fullWidth > 0) {
 		sizePx *= safeWidth / fullWidth;
-		ctx.font = fontFor(style, sizePx).font;
-		fullWidth = ctx.measureText(plan.text).width;
+		ctx.font = fontFor(style.font, sizePx).font;
+		spacing = sizePx * style.letterSpacingEm;
+		fullWidth = spacedWidth(ctx, fullText, spacing);
 	}
-	const text = plan.text.slice(
+	const text = fullText.slice(
 		0,
-		Math.max(0, Math.min(plan.text.length, plan.frame.visibleChars))
+		Math.max(0, Math.min(fullText.length, plan.frame.visibleChars))
 	);
 	return {
 		text,
-		fullText: plan.text,
+		fullText,
 		sizePx,
-		width: ctx.measureText(text).width,
+		spacing,
+		width: spacedWidth(ctx, text, spacing),
 		fullWidth
 	};
+}
+
+/**
+ * Draw the line glyph by glyph from its left edge, so the letter spacing is
+ * real spacing and not a font trick. `stroke` is drawn under each glyph rather
+ * than over the whole run, which is what keeps an outline from cutting into the
+ * next letter.
+ */
+function drawSpacedRun(
+	ctx: CanvasRenderingContext2D,
+	line: MeasuredLine,
+	startX: number,
+	stroke: { color: string; width: number } | undefined
+): void {
+	let cursor = startX;
+	if (stroke && stroke.width > 0) {
+		ctx.strokeStyle = stroke.color;
+		ctx.lineWidth = stroke.width;
+		ctx.lineJoin = 'round';
+		ctx.miterLimit = 2;
+	}
+	for (const glyph of [...line.text]) {
+		if (stroke && stroke.width > 0) ctx.strokeText(glyph, cursor, 0);
+		ctx.fillText(glyph, cursor, 0);
+		cursor += ctx.measureText(glyph).width + line.spacing;
+	}
 }
 
 function paintLine(
 	ctx: CanvasRenderingContext2D,
 	line: MeasuredLine,
 	plan: IntroTextPlan,
-	style: TrackTitleFontStyle,
+	style: IntroTextStyle,
 	color: string,
 	centreX: number,
 	baselineY: number,
@@ -289,8 +337,8 @@ function paintLine(
 	if (plan.frame.alpha <= 0.001 || line.text.length === 0) return;
 	ctx.save();
 	ctx.globalAlpha = Math.min(1, plan.frame.alpha) * windowAlpha;
-	ctx.font = fontFor(style, line.sizePx).font;
-	ctx.textAlign = 'center';
+	ctx.font = fontFor(style.font, line.sizePx).font;
+	ctx.textAlign = 'left';
 	ctx.textBaseline = 'alphabetic';
 	ctx.translate(centreX, baselineY + plan.frame.offsetEm * line.sizePx);
 	if (plan.frame.scale !== 1) ctx.scale(plan.frame.scale, plan.frame.scale);
@@ -307,12 +355,50 @@ function paintLine(
 		);
 		ctx.clip();
 	}
-	// A soft drop shadow is what keeps white text legible over any montage
-	// without painting a slab behind it.
-	ctx.shadowColor = 'rgba(0,0,0,0.55)';
-	ctx.shadowBlur = line.sizePx * 0.28;
-	ctx.fillStyle = color;
-	ctx.fillText(line.text, 0, 0);
+	// The visible run stays centred, so a typewriter line grows out of the
+	// middle exactly as it did before the spacing existed.
+	const startX = -line.width / 2;
+	if (style.backdrop) {
+		const pad = line.sizePx * style.backdrop.paddingEm;
+		ctx.save();
+		ctx.globalAlpha *= style.backdrop.opacity;
+		ctx.fillStyle = style.backdrop.color;
+		ctx.fillRect(
+			-line.fullWidth / 2 - pad,
+			-line.sizePx - pad * 0.6,
+			line.fullWidth + pad * 2,
+			line.sizePx * 1.28 + pad * 1.2
+		);
+		ctx.restore();
+	}
+	// The halo is its own pass in its own colour, the way Track Info draws it:
+	// a shadow on the coloured pass alone cannot read as a glow.
+	if (style.glow && style.glow.blurEm > 0) {
+		ctx.save();
+		ctx.shadowColor = style.glow.color;
+		ctx.shadowBlur = line.sizePx * style.glow.blurEm * style.glow.reach;
+		ctx.globalAlpha *= Math.min(1, 0.32 + (style.glow.reach - 1) * 0.14);
+		ctx.fillStyle = style.glow.color;
+		drawSpacedRun(ctx, line, startX, undefined);
+		ctx.restore();
+	}
+	ctx.save();
+	if (style.glow) {
+		ctx.shadowColor = style.glow.color;
+		ctx.shadowBlur = line.sizePx * style.glow.blurEm * 0.35;
+	}
+	// The treatment owns the fill (gradient, metal, neon…) and may ask for a
+	// stroke of its own; Track Info's glow colour is the gradient's other end.
+	const stroke = applyTextTreatment(ctx, style.treatment, {
+		top: -line.sizePx,
+		height: line.sizePx * 1.2,
+		baseColor: color,
+		secondaryColor: style.glow?.color ?? color,
+		userStrokeColor: style.stroke?.color ?? '',
+		userStrokeWidth: style.stroke ? line.sizePx * style.stroke.widthEm : 0
+	});
+	drawSpacedRun(ctx, line, startX, stroke);
+	ctx.restore();
 	ctx.restore();
 }
 
@@ -412,8 +498,8 @@ export function paintIntro({
 	focus,
 	logo,
 	colors,
-	titleFontStyle,
-	taglineFontStyle,
+	titleStyle,
+	taglineStyle,
 	titleFrameShape,
 	titleFrameStyle,
 	titleFrameThickness,
@@ -444,10 +530,10 @@ export function paintIntro({
 
 	// --- Layout of the centred stack: logo, title (in its box), tagline.
 	const titleLine = frame.title
-		? measureLine(ctx, frame.title, titleFontStyle, viewport)
+		? measureLine(ctx, frame.title, titleStyle, viewport)
 		: null;
 	const taglineLine = frame.tagline
-		? measureLine(ctx, frame.tagline, taglineFontStyle, viewport)
+		? measureLine(ctx, frame.tagline, taglineStyle, viewport)
 		: null;
 	const logoH = frame.logo ? (height * frame.logo.sizePct) / 100 : 0;
 	// A `free` logo is positioned by its own offsets, so it must not reserve a
@@ -521,7 +607,7 @@ export function paintIntro({
 			ctx,
 			titleLine,
 			frame.title,
-			titleFontStyle,
+			titleStyle,
 			colors.title,
 			centreX,
 			cursorY + titleLine.sizePx,
@@ -535,7 +621,7 @@ export function paintIntro({
 			ctx,
 			taglineLine,
 			frame.tagline,
-			taglineFontStyle,
+			taglineStyle,
 			colors.tagline,
 			centreX,
 			cursorY + taglineLine.sizePx,
