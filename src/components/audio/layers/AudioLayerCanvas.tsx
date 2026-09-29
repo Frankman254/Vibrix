@@ -21,7 +21,10 @@ import {
 	transitionSubsystemsForLayerType,
 	useVisualTransitionFade
 } from '@/features/visualTransition/useVisualTransitionFade';
-import { beginCameraDrawOffset } from '@/features/stageFx/render';
+import {
+	beginCameraDrawOffset,
+	endCameraDrawOffset
+} from '@/features/stageFx/render';
 import type { CameraMotionLayer } from '@/features/stageFx/stageFxConfig';
 import {
 	cameraTargetForSpectrumPartition,
@@ -187,7 +190,7 @@ export default function AudioLayerCanvas({
 					spectrumPartition: spectrumPartitionRef.current
 				});
 			} finally {
-				if (offsetPushed) ctx.restore();
+				if (offsetPushed) endCameraDrawOffset(ctx);
 			}
 
 			rafRef.current = requestAnimationFrame(frame);

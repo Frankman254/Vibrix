@@ -55,6 +55,11 @@ import {
 	clampSpectrumScale,
 	resolveScaledSpectrumSettings
 } from '../domain/spectrumScale';
+import {
+	endCameraDrawSpace,
+	mirrorCameraDrawSpace,
+	unapplyCameraDrawSpace
+} from '@/features/stageFx/render';
 
 export type { SpectrumSettings };
 
@@ -112,6 +117,12 @@ export function drawSpectrum(
 		settings.spectrumOpacity > 0.001;
 	const outputCtx = ctx;
 	const outputCanvas = canvas;
+	// Camera Motion moved the output context. The scene canvas below is a
+	// full-viewport tile, so it has to be painted in that SAME moved space and
+	// blitted back untranslated — a tile drawn straight and blitted through the
+	// camera shows its own bitmap edge, which is the «límite del canvas» the
+	// user sees when the figure is larger than the screen.
+	let sceneSpaceMirrored = false;
 	if (pixelateActive) {
 		runtime.pixelateSceneCanvas = ensureSnapshotCanvas(
 			runtime.pixelateSceneCanvas ?? null,
@@ -128,6 +139,7 @@ export function drawSpectrum(
 			);
 			ctx = sceneCtx;
 			canvas = runtime.pixelateSceneCanvas;
+			sceneSpaceMirrored = mirrorCameraDrawSpace(sceneCtx, outputCtx);
 		}
 	} else if (runtime.pixelateSceneCanvas) {
 		// Release the full-viewport backing store when pixelate inactive (feedbackCanvas precedent).
@@ -632,6 +644,8 @@ export function drawSpectrum(
 		if (alpha > 0.001) {
 			ctx.save();
 			ctx.globalAlpha = alpha;
+			// A snapshot of the canvas is already in frame space.
+			unapplyCameraDrawSpace(ctx);
 			ctx.drawImage(
 				runtime.modeTransitionSnapshotCanvas,
 				0,
@@ -667,9 +681,14 @@ export function drawSpectrum(
 	}
 	commitSpectrumFrameMemory(runtime, canvas, settings, renderQuality);
 
-	// Composite the pixelated scene back onto the real canvas.
+	// Composite the pixelated scene back onto the real canvas. The scene already
+	// carries the camera translation, so it is blitted in frame space.
 	if (pixelateActive && canvas !== outputCanvas) {
+		if (sceneSpaceMirrored) endCameraDrawSpace(ctx);
+		outputCtx.save();
+		unapplyCameraDrawSpace(outputCtx);
 		blitPixelatedScene(outputCtx, canvas, runtime, pixelScale);
+		outputCtx.restore();
 	}
 }
 

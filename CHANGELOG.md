@@ -17,6 +17,30 @@ the version scheme in `src/lib/version.ts`.
 
 ### Corregido
 
+- **El spectrum ya no se corta contra el borde de su propio canvas cuando la
+  cámara lo mueve.** Con una figura más grande que la pantalla (escala alta) y
+  **Camera Motion** apuntando al spectrum, aparecía un corte recto —vertical u
+  horizontal— que cruzaba el cuadro: «los límites del canvas». No era el canvas
+  de la capa, era el de los efectos que pintan a través de un lienzo intermedio
+  del tamaño del cuadro: el **pixelado retro**, el **fósforo** del osciloscopio,
+  el **pixelado por capa** de liquid, y los buffers de **memoria de frame**
+  (estela, fantasmas, rastro) y la **instantánea de transición de modo**.
+
+    El modelo de Camera Motion mueve el DIBUJO (`cameraDrawOffset`), no el
+    elemento. Esos lienzos intermedios se pintaban rectos y luego se estampaban a
+    través del contexto ya trasladado: se movían dos veces y su borde de mapa de
+    bits entraba en el cuadro. Ahora el contexto recuerda su desplazamiento de
+    cámara y cada lienzo intermedio sigue una sola regla: **se pinta en el mismo
+    espacio de cámara** (`mirrorCameraDrawSpace`) o ya viene en espacio de
+    pantalla porque se capturó del canvas, y **se estampa con la cámara anulada**
+    (`unapplyCameraDrawSpace`). Así el borde del lienzo coincide siempre con el
+    borde de la pantalla, que es justo lo que pedía «duplicar el radio del
+    canvas»: sitio de sobra hacia fuera, sin agrandar la figura.
+
+    La exportación de vídeo pasa por el mismo registro (`renderFrame` publica su
+    traslación y su zoom), así que los mismos efectos dejan de cortarse también en
+    el vídeo.
+
 - **La marca ya no salta al voltear la imagen, y los interruptores del panel de
   la imagen son de esa imagen.** Dos fallos de la funcionalidad nueva de puntos
   por imagen:

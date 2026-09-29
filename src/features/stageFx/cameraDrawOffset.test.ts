@@ -1,9 +1,14 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import {
 	beginCameraDrawOffset,
+	beginCameraDrawSpace,
 	clearCameraDrawOffsets,
+	endCameraDrawSpace,
+	mirrorCameraDrawSpace,
 	publishCameraDrawOffset,
-	readCameraDrawOffset
+	readCameraDrawOffset,
+	readCameraDrawSpace,
+	unapplyCameraDrawSpace
 } from './cameraDrawOffset';
 
 type Call = { kind: 'save' | 'translate'; x?: number; y?: number };
@@ -87,5 +92,100 @@ describe('camera draw offsets', () => {
 		clearCameraDrawOffsets();
 		expect(readCameraDrawOffset('spectrum')).toBeNull();
 		expect(readCameraDrawOffset('logo')).toBeNull();
+	});
+});
+
+/** A ctx that records the transform calls a tile helper makes on it. */
+function fakeSpaceCtx() {
+	const calls: string[] = [];
+	const ctx = {
+		save: () => calls.push('save'),
+		restore: () => calls.push('restore'),
+		translate: (x: number, y: number) => calls.push(`translate ${x} ${y}`),
+		scale: (x: number, y: number) => calls.push(`scale ${x} ${y}`)
+	} as unknown as CanvasRenderingContext2D;
+	return { ctx, calls };
+}
+
+const FRAME = { width: 800, height: 600 };
+
+describe('camera draw space on a context', () => {
+	it('remembers the space it pushed and forgets it on end', () => {
+		const { ctx } = fakeSpaceCtx();
+		expect(readCameraDrawSpace(ctx)).toBeNull();
+		expect(
+			beginCameraDrawSpace(ctx, { tx: 5, ty: -7, scale: 1, ...FRAME })
+		).toBe(true);
+		expect(readCameraDrawSpace(ctx)).toEqual({
+			tx: 5,
+			ty: -7,
+			scale: 1,
+			...FRAME
+		});
+		endCameraDrawSpace(ctx);
+		expect(readCameraDrawSpace(ctx)).toBeNull();
+	});
+
+	it('costs nothing when the camera is not moving that layer', () => {
+		const { ctx, calls } = fakeSpaceCtx();
+		expect(
+			beginCameraDrawSpace(ctx, { tx: 0, ty: 0, scale: 1, ...FRAME })
+		).toBe(false);
+		expect(calls).toEqual([]);
+		expect(readCameraDrawSpace(ctx)).toBeNull();
+	});
+
+	it('gives a scratch canvas the same space as its output', () => {
+		const output = fakeSpaceCtx();
+		const scratch = fakeSpaceCtx();
+		beginCameraDrawSpace(output.ctx, {
+			tx: 12,
+			ty: -30,
+			scale: 1,
+			...FRAME
+		});
+		expect(mirrorCameraDrawSpace(scratch.ctx, output.ctx)).toBe(true);
+		// The figure is painted MOVED inside the tile, same as the output.
+		expect(scratch.calls).toEqual(['save', 'translate 12 -30']);
+	});
+
+	it('mirrors nothing when the output carries no camera space', () => {
+		const output = fakeSpaceCtx();
+		const scratch = fakeSpaceCtx();
+		expect(mirrorCameraDrawSpace(scratch.ctx, output.ctx)).toBe(false);
+		expect(scratch.calls).toEqual([]);
+	});
+
+	it('cancels the translation so a tile blits in frame space', () => {
+		const { ctx, calls } = fakeSpaceCtx();
+		beginCameraDrawSpace(ctx, { tx: 12, ty: -30, scale: 1, ...FRAME });
+		calls.length = 0;
+		expect(unapplyCameraDrawSpace(ctx)).toBe(true);
+		// Net transform back to identity: the tile's border stays on the frame's.
+		expect(calls).toEqual(['translate -12 30']);
+	});
+
+	it('cancels the export zoom about the frame centre too', () => {
+		const { ctx, calls } = fakeSpaceCtx();
+		beginCameraDrawSpace(ctx, { tx: 10, ty: 20, scale: 2, ...FRAME });
+		expect(calls).toEqual([
+			'save',
+			'translate 410 320',
+			'scale 2 2',
+			'translate -400 -300'
+		]);
+		calls.length = 0;
+		expect(unapplyCameraDrawSpace(ctx)).toBe(true);
+		expect(calls).toEqual([
+			'translate 400 300',
+			'scale 0.5 0.5',
+			'translate -410 -320'
+		]);
+	});
+
+	it('does nothing on a context the camera never touched', () => {
+		const { ctx, calls } = fakeSpaceCtx();
+		expect(unapplyCameraDrawSpace(ctx)).toBe(false);
+		expect(calls).toEqual([]);
 	});
 });

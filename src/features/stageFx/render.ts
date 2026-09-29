@@ -32,11 +32,17 @@ export {
 } from './cameraFxDraw';
 export {
 	beginCameraDrawOffset,
+	beginCameraDrawSpace,
 	clearCameraDrawOffsets,
+	endCameraDrawOffset,
+	endCameraDrawSpace,
+	mirrorCameraDrawSpace,
 	publishCameraDrawOffset,
-	readCameraDrawOffset
+	readCameraDrawOffset,
+	readCameraDrawSpace,
+	unapplyCameraDrawSpace
 } from './cameraDrawOffset';
-export type { CameraDrawOffset } from './cameraDrawOffset';
+export type { CameraDrawOffset, CameraDrawSpace } from './cameraDrawOffset';
 export type {
 	CameraFxFrame,
 	CameraFxRuntime,

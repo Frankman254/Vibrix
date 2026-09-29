@@ -8,6 +8,10 @@ import {
 	resolveSubsystemDrawOrder,
 	resolveTransitionAlpha
 } from './frameComposition';
+import {
+	beginCameraDrawSpace,
+	endCameraDrawSpace
+} from '@/features/stageFx/render';
 
 /**
  * A canvas transform for one subsystem's layer, in output pixels: translate
@@ -66,18 +70,25 @@ export function renderFrameAt(
 		// alpha, so the layer's transform and fade wrap its whole draw.
 		target.save();
 		target.globalAlpha *= alpha;
+		// The camera transform goes through the shared registry so a subsystem
+		// that paints via a full-frame scratch canvas can read how far its own
+		// context was moved and composite that tile in frame space — otherwise
+		// the tile's bitmap edge rides into the picture (`cameraDrawOffset`).
+		let spacePushed = false;
 		if (transform) {
-			target.translate(
-				width / 2 + transform.tx,
-				height / 2 + transform.ty
-			);
-			target.scale(transform.scale, transform.scale);
-			target.translate(-width / 2, -height / 2);
+			spacePushed = beginCameraDrawSpace(target, {
+				tx: transform.tx,
+				ty: transform.ty,
+				scale: transform.scale,
+				width,
+				height
+			});
 			if (transform.trailFilter) target.filter = transform.trailFilter;
 		}
 		try {
 			subsystem.render(ctx);
 		} finally {
+			if (spacePushed) endCameraDrawSpace(target);
 			target.restore();
 		}
 	}

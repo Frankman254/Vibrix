@@ -9,6 +9,11 @@ import {
 } from '@/features/spectrum/domain/pixelArtHelpers';
 import { getColor } from '@/features/spectrum/color/spectrumColor';
 import {
+	endCameraDrawSpace,
+	mirrorCameraDrawSpace,
+	unapplyCameraDrawSpace
+} from '@/features/stageFx/render';
+import {
 	createGlowGradient,
 	glowUsesColorSweep
 } from '@/features/spectrum/effects/manualGlow';
@@ -172,10 +177,14 @@ function beginLiquidLayer(
 	if (!scratch || !scratchCtx) return DIRECT_TARGET(ctx);
 	runtime.liquidLayerPixelateCanvas = scratch;
 	scratchCtx.clearRect(0, 0, scratch.width, scratch.height);
+	// Full-viewport scratch: paint it in the output's camera space and blit it
+	// back untranslated, so the scratch border never enters the frame.
+	const spaceMirrored = mirrorCameraDrawSpace(scratchCtx, ctx);
 
 	return {
 		ctx: scratchCtx,
 		commit: () => {
+			if (spaceMirrored) endCameraDrawSpace(scratchCtx);
 			const { width: sw, height: sh } = computePixelateSmallSize(
 				canvas.width,
 				canvas.height,
@@ -192,6 +201,7 @@ function beginLiquidLayer(
 			ctx.globalAlpha = 1;
 			ctx.shadowBlur = 0;
 			ctx.shadowColor = 'rgba(0,0,0,0)';
+			unapplyCameraDrawSpace(ctx);
 			blitPixelated(ctx, scratch, runtime.pixelateSmallCanvas ?? null);
 			ctx.restore();
 		}

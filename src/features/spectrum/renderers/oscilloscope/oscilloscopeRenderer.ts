@@ -1,4 +1,9 @@
 import type { SpectrumSettings } from '@/features/spectrum/runtime/spectrumRuntime';
+import {
+	endCameraDrawSpace,
+	mirrorCameraDrawSpace,
+	unapplyCameraDrawSpace
+} from '@/features/stageFx/render';
 import type { SpectrumRuntimeState } from '@/features/spectrum/runtime/spectrumRuntime';
 import { createWaveGradient } from '@/features/spectrum/color/spectrumColor';
 import {
@@ -305,6 +310,11 @@ export function drawOscilloscope(
 		: null;
 	const renderCtx = phosphor ? phosphor.getContext('2d') : null;
 	const drawCtx = phosphor && renderCtx ? renderCtx : ctx;
+	// The phosphor buffer is a full-viewport tile: it must be traced in the same
+	// camera space as the output and blitted back untranslated, or its bitmap
+	// edge slides into the frame while the camera moves.
+	const phosphorSpaceMirrored =
+		renderCtx !== null && mirrorCameraDrawSpace(renderCtx, ctx);
 
 	if (phosphor && renderCtx) {
 		// Decay: paint a transparent black over the phosphor at (1 - decay)
@@ -346,8 +356,12 @@ export function drawOscilloscope(
 
 	drawCtx.restore();
 
-	if (phosphor) {
+	if (phosphor && renderCtx) {
+		if (phosphorSpaceMirrored) endCameraDrawSpace(renderCtx);
+		ctx.save();
+		unapplyCameraDrawSpace(ctx);
 		ctx.drawImage(phosphor, 0, 0);
+		ctx.restore();
 	}
 }
 

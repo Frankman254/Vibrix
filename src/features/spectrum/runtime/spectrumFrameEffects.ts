@@ -14,6 +14,7 @@ import {
 } from '@/features/spectrum/geometry/radialGeometry';
 import { getSpectrumFamilyCapabilities } from '@/features/spectrum/domain/spectrumFamilyCapabilities';
 import { resolveRadialSharpness } from './spectrumPlacement';
+import { unapplyCameraDrawSpace } from '@/features/stageFx/render';
 import type {
 	PerformanceMode,
 	ResolvedAudioReactiveChannel
@@ -312,6 +313,8 @@ export function drawSpectrumFrameMemoryUnderlay(
 		if (blurPx > 0.5) {
 			ctx.filter = `blur(${blurPx.toFixed(1)}px)`;
 		}
+		// Captured from the canvas: frame space, never through the camera again.
+		unapplyCameraDrawSpace(ctx);
 		ctx.drawImage(runtime.feedbackCanvas, 0, 0, width, height);
 		ctx.restore();
 	}
@@ -362,6 +365,7 @@ export function drawSpectrumFrameMemoryUnderlay(
 		if (blurPx > 0.5) {
 			ctx.filter = `blur(${blurPx.toFixed(1)}px)`;
 		}
+		unapplyCameraDrawSpace(ctx);
 		ctx.translate(offsetX, offsetY);
 		ctx.drawImage(historyCanvas, 0, 0, width, height);
 		ctx.restore();
