@@ -154,4 +154,10 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // the track's audio (`spectrumSource`, `spectrumSlotIndex`, `spectrumCentered`,
 // `spectrumWaveSpeed`, `spectrumWaveIntensity`). The old shape/size/colour keys
 // are dropped; a window that asked for a figure keeps asking for one.
-export const STORE_PERSIST_VERSION = 131;
+// v132: the intro's three sections are configured in SECONDS (`buildSec`,
+// `releaseSec`, with the hold as the remainder) instead of shares of the window,
+// because a share silently changes how long the montage takes whenever the
+// duration is edited — and the montage read as a flash. The backdrop also gained
+// a colour source (`backdropColorSource`). Migration turns the old percentages
+// into seconds against the stored duration.
+export const STORE_PERSIST_VERSION = 132;

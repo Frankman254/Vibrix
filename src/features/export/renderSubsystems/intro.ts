@@ -117,7 +117,6 @@ export function createIntroSubsystem(): RenderSubsystem {
 						windowTimeSec: window_.elapsedSec,
 						dt: Math.max(0.0001, ctx.deltaMs / 1000)
 					}) ?? undefined,
-				backdrop: settings.backdropColor,
 				titleFontStyle: settings.titleFontStyle,
 				taglineFontStyle: settings.taglineFontStyle
 			});

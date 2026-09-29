@@ -1,6 +1,6 @@
 # Current System Status
 
-**As of:** `chore/fase-0-higiene` (`main`) · App `0.7.0-alpha` · Store persist **v131**
+**As of:** `chore/fase-0-higiene` (`main`) · App `0.7.0-alpha` · Store persist **v132**
 
 This document describes the product **as implemented in code**, not aspirational roadmaps.
 
@@ -25,7 +25,7 @@ This document describes the product **as implemented in code**, not aspirational
 | -------------------------------- | ------ | ----------------------------------------------------------- |
 | Vite + React 19 SPA              | Stable | HashRouter (`#/edit`, `#/present`, `#/record`, `#/preview`) |
 | Shared `WallpaperAppProviders`   | Stable | Single `AudioDataProvider` above route shells               |
-| Zustand + `localStorage` persist | Stable | `STORE_PERSIST_VERSION = 131`                               |
+| Zustand + `localStorage` persist | Stable | `STORE_PERSIST_VERSION = 132`                               |
 | IndexedDB assets                 | Stable | Images, audio blobs                                         |
 | Vitest + GitHub Actions CI       | Stable | format, lint, types, tests, docs:check, build               |
 
@@ -172,7 +172,7 @@ See `docs/features/SPECTRUM_ENGINE.md` (ownership model) and
 | Constant                  | Value         | Location                                    |
 | ------------------------- | ------------- | ------------------------------------------- |
 | `APP_VERSION`             | `0.7.0-alpha` | `src/lib/version.ts`, `package.json`        |
-| `STORE_PERSIST_VERSION`   | **131**       | Migrations in `wallpaperStoreMigrations.ts` |
+| `STORE_PERSIST_VERSION`   | **132**       | Migrations in `wallpaperStoreMigrations.ts` |
 | `PROJECT_SCHEMA_VERSION`  | 1             |                                             |
 | `SETTINGS_SCHEMA_VERSION` | 1             |                                             |
 
@@ -211,6 +211,7 @@ Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 | v129    | `introStinger` + `outroStinger` (intro/ending generados), ambos apagados              |
 | v130    | `introSequence` + `outroSequence` (módulo de intro/ending), ambos apagados            |
 | v131    | El spectrum del intro pasa a ser un slot guardado + onda fija generada                |
+| v132    | El tiempo del intro en segundos (`buildSec`/`releaseSec`) + `backdropColorSource`     |
 
 ---
 

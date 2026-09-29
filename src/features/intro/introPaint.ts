@@ -41,6 +41,8 @@ export type IntroImageSource = CanvasImageSource & {
 export type IntroPaintColors = {
 	title: string;
 	tagline: string;
+	/** What the window paints behind the montage and fades from / to. */
+	backdrop: string;
 };
 
 export type PaintIntroOptions = {
@@ -51,7 +53,6 @@ export type PaintIntroOptions = {
 	images: ReadonlyMap<number, IntroImageSource>;
 	logo: IntroImageSource | null;
 	colors: IntroPaintColors;
-	backdrop: string;
 	titleFontStyle: TrackTitleFontStyle;
 	taglineFontStyle: TrackTitleFontStyle;
 	/** Absent → the spectrum simply is not drawn. */
@@ -230,7 +231,6 @@ export function paintIntro({
 	images,
 	logo,
 	colors,
-	backdrop,
 	titleFontStyle,
 	taglineFontStyle,
 	paintSpectrum
@@ -242,7 +242,7 @@ export function paintIntro({
 
 	ctx.save();
 	ctx.globalAlpha = windowAlpha;
-	ctx.fillStyle = backdrop;
+	ctx.fillStyle = colors.backdrop;
 	ctx.fillRect(0, 0, width, height);
 	ctx.restore();
 
@@ -251,7 +251,7 @@ export function paintIntro({
 	if (frame.imageDim > 0.001) {
 		ctx.save();
 		ctx.globalAlpha = frame.imageDim * windowAlpha;
-		ctx.fillStyle = backdrop;
+		ctx.fillStyle = colors.backdrop;
 		ctx.fillRect(0, 0, width, height);
 		ctx.restore();
 	}

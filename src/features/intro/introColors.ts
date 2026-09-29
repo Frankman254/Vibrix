@@ -34,6 +34,13 @@ export function resolveIntroColors(
 			backgroundPalette,
 			themePalette,
 			'accent'
+		),
+		backdrop: resolveThemeColor(
+			settings.backdropColorSource,
+			settings.backdropColor,
+			backgroundPalette,
+			themePalette,
+			'backdrop'
 		)
 	};
 }

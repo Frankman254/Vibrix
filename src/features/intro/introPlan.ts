@@ -45,6 +45,12 @@ export type IntroWindow = {
 	 * the track keeps live and offline identical.
 	 */
 	elapsedSec: number;
+	/**
+	 * The EFFECTIVE duration of this window in seconds — what the user asked
+	 * for, clamped to half the track. Every "in seconds" setting is resolved
+	 * against this, so a window that had to shrink still keeps its shape.
+	 */
+	durationSec: number;
 };
 
 export type IntroViewport = { width: number; height: number };
@@ -123,7 +129,7 @@ export type IntroFrame = {
 
 export const INTRO_DURATION_RANGE = { min: 0.5, max: 20 } as const;
 export const INTRO_IMAGE_COUNT_RANGE = { min: 1, max: 16 } as const;
-export const INTRO_PHASE_RANGE = { min: 0.05, max: 0.45 } as const;
+export const INTRO_PHASE_SEC_RANGE = { min: 0.2, max: 10 } as const;
 export const INTRO_TITLE_SIZE_RANGE = { min: 4, max: 22 } as const;
 export const INTRO_TAGLINE_SIZE_RANGE = { min: 2, max: 12 } as const;
 export const INTRO_LOGO_SIZE_RANGE = { min: 4, max: 40 } as const;
@@ -151,13 +157,16 @@ export function createDefaultIntroSequence(
 	const intro = kind === 'intro';
 	return {
 		enabled: false,
-		durationSec: intro ? 5 : 6,
-		buildPct: 0.3,
-		releasePct: intro ? 0.25 : 0.3,
+		// Long enough that the montage reads as an animation instead of a
+		// flash: the first version ran nine images through a 1.5 s build.
+		durationSec: intro ? 8 : 8,
+		buildSec: 2.5,
+		releaseSec: 2.5,
 
 		montage: intro ? 'mosaic-grid' : 'mosaic-burst',
 		imageCount: intro ? 9 : 9,
 		order: intro ? 'setlist' : 'setlist-reverse',
+		backdropColorSource: 'manual',
 		backdropColor: '#000000',
 		imageDim: 0.45,
 
@@ -250,7 +259,8 @@ export function resolveIntroWindow(
 		return {
 			kind: 'intro',
 			progress: clamp01(timeSec / introSec),
-			elapsedSec: Math.max(0, timeSec)
+			elapsedSec: Math.max(0, timeSec),
+			durationSec: introSec
 		};
 	}
 	if (outroSec > 0) {
@@ -260,7 +270,8 @@ export function resolveIntroWindow(
 			return {
 				kind: 'outro',
 				progress: clamp01((timeSec - startSec) / span),
-				elapsedSec: Math.max(0, timeSec - startSec)
+				elapsedSec: Math.max(0, timeSec - startSec),
+				durationSec: span
 			};
 		}
 	}
@@ -298,16 +309,68 @@ export function pickIntroImages(
  * down during the release in the reverse order, so the last thing to appear is
  * the first thing to go.
  */
+/** The three sections of a window, in seconds and as shares of it. */
+export type IntroPhases = {
+	totalSec: number;
+	buildSec: number;
+	holdSec: number;
+	releaseSec: number;
+	/** The same three as shares of the window, which is what the math wants. */
+	buildPct: number;
+	holdPct: number;
+	releasePct: number;
+};
+
+/**
+ * Split a window into mount / hold / dismount.
+ *
+ * `totalSec` is the EFFECTIVE duration (a window is clamped to half the track),
+ * so asking for 8 s on a 10 s track gives 5 s here and the three sections shrink
+ * together instead of the dismount being cut off mid-animation.
+ */
+export function resolveIntroPhases(
+	settings: IntroSequenceSettings,
+	totalSec?: number
+): IntroPhases {
+	const total = Math.max(
+		0.01,
+		totalSec ?? clampRange(settings.durationSec, INTRO_DURATION_RANGE)
+	);
+	let build = clampRange(settings.buildSec, INTRO_PHASE_SEC_RANGE);
+	let release = clampRange(settings.releaseSec, INTRO_PHASE_SEC_RANGE);
+	const wanted = build + release;
+	if (wanted > total) {
+		// Proportional, so a window that no longer fits keeps the shape the
+		// user gave it instead of losing its ending.
+		const factor = total / wanted;
+		build *= factor;
+		release *= factor;
+	}
+	const hold = Math.max(0, total - build - release);
+	return {
+		totalSec: total,
+		buildSec: build,
+		holdSec: hold,
+		releaseSec: release,
+		buildPct: build / total,
+		holdPct: hold / total,
+		releasePct: release / total
+	};
+}
+
 export function resolveSlotMount(
 	settings: IntroSequenceSettings,
 	progress: number,
-	slot: IntroMountSlot
+	slot: IntroMountSlot,
+	totalSec?: number
 ): number {
 	const index = INTRO_MOUNT_ORDER.indexOf(slot);
 	const count = INTRO_MOUNT_ORDER.length;
-	const build = clampRange(settings.buildPct, INTRO_PHASE_RANGE);
-	const release = clampRange(settings.releasePct, INTRO_PHASE_RANGE);
+	const phases = resolveIntroPhases(settings, totalSec);
+	const build = phases.buildPct;
+	const release = phases.releasePct;
 	const p = clamp01(progress);
+	if (build <= 0 && release <= 0) return 1;
 	if (p < build) return staggered(p / build, index, count);
 	if (p > 1 - release) {
 		// `closing` counts DOWN from 1 to 0, so the piece with the highest
@@ -329,21 +392,64 @@ export function resolveSlotMount(
 export function resolveIntroBackdropAlpha(
 	kind: IntroSequenceKind,
 	settings: IntroSequenceSettings,
-	progress: number
+	progress: number,
+	totalSec?: number
 ): number {
 	const p = clamp01(progress);
+	const phases = resolveIntroPhases(settings, totalSec);
 	if (kind === 'intro') {
-		const release = clampRange(settings.releasePct, INTRO_PHASE_RANGE);
+		const release = phases.releasePct;
 		// The backdrop is the last thing to go, so nothing is still on screen
 		// when the project appears underneath.
 		const tail = release * 0.45;
 		if (p <= 1 - tail) return 1;
 		return easeInOut((1 - p) / tail);
 	}
-	const build = clampRange(settings.buildPct, INTRO_PHASE_RANGE);
+	const build = phases.buildPct;
 	const head = build * 0.45;
 	if (p >= head) return 1;
 	return easeInOut(p / head);
+}
+
+/** One image's turn inside a sequential montage. */
+type SequentialSlice = {
+	/** 0..1 through this image's own turn. */
+	t: number;
+	/** Its opacity, crossfading with the neighbouring turns. */
+	alpha: number;
+	/** Whether this image is the one on screen right now (hard cuts). */
+	live: boolean;
+};
+
+/**
+ * Split the WHOLE window into `total` equal turns and report where `progress`
+ * falls inside image `index`'s turn.
+ *
+ * This is the fix for "la animación pasa muy rápido": the montage used to cycle
+ * on the mount envelope, which only runs during the build, so every image got a
+ * third of a third of the window. A turn is now `1 / total` of the window.
+ */
+function sequentialSlice(
+	progress: number,
+	index: number,
+	total: number
+): SequentialSlice {
+	const span = 1 / Math.max(1, total);
+	const local = (clamp01(progress) - index * span) / span;
+	const fade = 0.22;
+	if (local <= -fade || local >= 1 + fade) {
+		return { t: clamp01(local), alpha: 0, live: false };
+	}
+	const rampIn = local < 0 ? easeInOut(1 + local / fade) : 1;
+	// The last image keeps the screen: there is nothing to hand over to.
+	const isLast = index === total - 1;
+	const rampOut =
+		local > 1 && !isLast ? easeInOut(1 - (local - 1) / fade) : 1;
+	return {
+		t: clamp01(local),
+		alpha: Math.min(rampIn, rampOut),
+		live: local >= 0 && (local < 1 || isLast)
+	};
 }
 
 /**
@@ -365,6 +471,9 @@ export function resolveIntroCards(options: {
 	const cards: IntroCard[] = [];
 	const m = clamp01(mount);
 	const p = clamp01(progress);
+	// Sequential montages use the mount only as a global fade, because their
+	// image cycling belongs to the whole window (see `sequentialSlice`).
+	const envelope = easeInOut(m);
 
 	/** Grid geometry shared by the two mosaics. */
 	const columns = Math.ceil(Math.sqrt(total));
@@ -431,22 +540,24 @@ export function resolveIntroCards(options: {
 			// A big carousel crossing the screen for the whole window; mounting
 			// only fades it in, because a filmstrip does not dissolve.
 			//
-			// The cards are sized from the HEIGHT, not from "fit N of them
-			// across". Fitting five across turned the montage into a contact
-			// sheet of thumbnails — the images have to be big enough to actually
-			// look at, so barely two are on screen at a time and they travel.
-			const cardH = height * 0.62;
-			const cardW = Math.min((cardH * 16) / 9, width * 0.72);
-			const pitch = cardW * 1.06;
-			const drift = (0.5 - p) * pitch * total * 0.55;
+			// The strip is as tall as the screen and its cards touch, so there
+			// is never a black gap: what travels is the whole strip, from "left
+			// edge aligned" to "right edge aligned", over the window's own
+			// progress. Sizing cards to fit N across turned the montage into a
+			// contact sheet of thumbnails, and leaving a pitch bigger than the
+			// card left black bars between them.
+			const cardW = Math.max(width * 0.55, width / total);
+			const stripW = cardW * total;
+			const travel = Math.max(0, stripW - width);
+			const offsetX = -travel * p;
 			for (let index = 0; index < total; index += 1) {
 				const t = easeInOut(staggered(m, index, total));
 				cards.push({
 					index,
-					x: width / 2 + (index - (total - 1) / 2) * pitch + drift,
+					x: offsetX + cardW * (index + 0.5),
 					y: height / 2,
 					width: cardW,
-					height: cardH,
+					height,
 					alpha: t,
 					scale: 1,
 					rotationRad: 0
@@ -475,46 +586,46 @@ export function resolveIntroCards(options: {
 			return cards;
 		}
 		case 'ken-burns': {
-			// One image at a time with a slow push, cinema-style. The push runs
-			// on the window's own progress so it never freezes during the hold.
+			// One image at a time with a slow push, cinema-style. The cycling
+			// runs on the WINDOW, not on the mount envelope: nine images inside
+			// a 30 % build meant a sixth of a second each, which read as a
+			// flicker instead of a push. The envelope only fades the montage in
+			// and out.
 			for (let index = 0; index < total; index += 1) {
-				const t = staggered(m, index, total);
-				const eased = easeInOut(t);
-				const next =
-					index + 1 < total ? staggered(m, index + 1, total) : 0;
-				const drift = (p * total - index) * 0.06;
+				const slice = sequentialSlice(p, index, total);
+				if (slice.alpha <= 0) continue;
 				cards.push({
 					index,
 					x: width / 2 + width * 0.02 * Math.sin(index * 1.7),
 					y: height / 2,
 					width,
 					height,
-					alpha: eased * (1 - easeInOut(next)),
-					scale: 1.22 - 0.18 * clamp01(drift + eased * 0.4),
+					alpha: slice.alpha * envelope,
+					// A full push across the image's own turn, so the movement
+					// is visible however many images there are.
+					scale: 1.18 - 0.18 * easeInOut(slice.t),
 					rotationRad: 0
 				});
 			}
 			return cards;
 		}
 		case 'glitch-cut': {
-			// Hard cuts with a sliced offset. Deterministic in `progress`, so
-			// the file and the preview glitch on exactly the same frames.
+			// Hard cuts with a sliced offset, one image per slice of the whole
+			// window. Deterministic in `progress`, so the file and the preview
+			// glitch on exactly the same frames.
 			for (let index = 0; index < total; index += 1) {
-				const t = staggered(m, index, total);
-				const next =
-					index + 1 < total ? staggered(m, index + 1, total) : 0;
-				const live =
-					t >= 1 && next < 1 ? 1 : t > 0 && next <= 0 ? t : 0;
+				const slice = sequentialSlice(p, index, total);
+				if (!slice.live) continue;
 				const shake = Math.sin(p * 97 + index * 13);
 				cards.push({
 					index,
-					x: width / 2 + (live > 0 ? shake * width * 0.012 : 0),
+					x: width / 2 + shake * width * 0.012,
 					y: height / 2,
 					width,
 					height,
-					// A cut, not a dissolve: full on or fully out.
-					alpha: live > 0.5 ? 1 : 0,
-					scale: 1.04 + (live > 0 ? Math.abs(shake) * 0.02 : 0),
+					// A cut, not a dissolve: full on for its whole turn.
+					alpha: envelope,
+					scale: 1.04 + Math.abs(shake) * 0.02,
 					rotationRad: 0
 				});
 			}
@@ -522,22 +633,20 @@ export function resolveIntroCards(options: {
 		}
 		case 'fade-stack':
 		default: {
+			// One image per slice of the whole window, crossfading into the
+			// next. Only the card whose turn it is (and the one handing over to
+			// it) is returned, so the stack is cheap to paint.
 			for (let index = 0; index < total; index += 1) {
-				const t = staggered(m, index, total);
-				const eased = easeInOut(t);
-				// Only the card on top of the stack is visible: it fades in,
-				// holds, and is covered by the next one. The top card has
-				// nothing covering it, so it holds.
-				const next =
-					index + 1 < total ? staggered(m, index + 1, total) : 0;
+				const slice = sequentialSlice(p, index, total);
+				if (slice.alpha <= 0) continue;
 				cards.push({
 					index,
 					x: width / 2,
 					y: height / 2,
 					width,
 					height,
-					alpha: eased * (1 - easeInOut(next)),
-					scale: 1.06 - 0.06 * eased,
+					alpha: slice.alpha * envelope,
+					scale: 1.06 - 0.06 * easeInOut(slice.t),
 					rotationRad: 0
 				});
 			}
@@ -595,11 +704,14 @@ export function resolveIntroFrame(options: {
 	viewport: IntroViewport;
 	/** How many images the montage actually has. */
 	cardCount: number;
+	/** The window's effective duration; omit to use the configured one. */
+	durationSec?: number;
 }): IntroFrame {
 	const { kind, settings, viewport, cardCount } = options;
 	const progress = clamp01(options.progress);
+	const totalSec = options.durationSec;
 	const mountOf = (slot: IntroMountSlot) =>
-		resolveSlotMount(settings, progress, slot);
+		resolveSlotMount(settings, progress, slot, totalSec);
 
 	const spectrumMount = mountOf('spectrum');
 	const logoMount = mountOf('logo');
@@ -613,7 +725,12 @@ export function resolveIntroFrame(options: {
 	return {
 		kind,
 		progress,
-		backdropAlpha: resolveIntroBackdropAlpha(kind, settings, progress),
+		backdropAlpha: resolveIntroBackdropAlpha(
+			kind,
+			settings,
+			progress,
+			totalSec
+		),
 		imageDim: clamp01(settings.imageDim),
 		cards: resolveIntroCards({
 			montage: settings.montage,

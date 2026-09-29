@@ -3301,6 +3301,44 @@ export function migrateWallpaperStore(
 		migrateWindowSpectrum(migratedState.outroSequence);
 	}
 
+	if (fromVersion < 132) {
+		// The two ends of the window became SECONDS. The stored shares are
+		// exact, so they convert without losing the user's shape: 30 % of an 8 s
+		// intro is 2.4 s of mounting.
+		const migrateWindowPhases = (window_: unknown): void => {
+			if (!window_ || typeof window_ !== 'object') return;
+			const settings = window_ as Record<string, unknown>;
+			const base = createDefaultIntroSequence('intro');
+			const duration =
+				typeof settings.durationSec === 'number'
+					? settings.durationSec
+					: base.durationSec;
+			const secondsFrom = (pct: unknown, fallback: number): number =>
+				typeof pct === 'number'
+					? Math.max(0.2, pct * duration)
+					: fallback;
+			if (settings.buildSec === undefined) {
+				settings.buildSec = secondsFrom(
+					settings.buildPct,
+					base.buildSec
+				);
+			}
+			if (settings.releaseSec === undefined) {
+				settings.releaseSec = secondsFrom(
+					settings.releasePct,
+					base.releaseSec
+				);
+			}
+			delete settings.buildPct;
+			delete settings.releasePct;
+			if (typeof settings.backdropColorSource !== 'string') {
+				settings.backdropColorSource = base.backdropColorSource;
+			}
+		};
+		migrateWindowPhases(migratedState.introSequence);
+		migrateWindowPhases(migratedState.outroSequence);
+	}
+
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;
 }
 

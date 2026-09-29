@@ -8,6 +8,7 @@ import {
 	resolveIntroFrame,
 	resolveIntroTextFrame,
 	resolveIntroWindow,
+	resolveIntroPhases,
 	resolveSlotMount,
 	type IntroSequenceState
 } from './introPlan';
@@ -98,7 +99,12 @@ describe('pickIntroImages', () => {
 });
 
 describe('resolveSlotMount', () => {
-	const s = settings('intro', { buildPct: 0.3, releasePct: 0.3 });
+	// 3 s of the 10 s window each way, so the build ends exactly at 0.3.
+	const s = settings('intro', {
+		durationSec: 10,
+		buildSec: 3,
+		releaseSec: 3
+	});
 
 	it('holds everything mounted through the middle of the window', () => {
 		for (const slot of INTRO_MOUNT_ORDER) {
@@ -123,6 +129,34 @@ describe('resolveSlotMount', () => {
 			expect(resolveSlotMount(s, 1, slot)).toBe(0);
 			expect(resolveSlotMount(s, 0, slot)).toBe(0);
 		}
+	});
+});
+
+describe('resolveIntroPhases', () => {
+	it('gives the hold whatever the two ends leave over', () => {
+		const phases = resolveIntroPhases(
+			settings('intro', { durationSec: 6, buildSec: 2, releaseSec: 1 })
+		);
+		expect(phases.holdSec).toBeCloseTo(3);
+		expect(phases.buildPct).toBeCloseTo(2 / 6);
+	});
+
+	it('shrinks both ends proportionally instead of clipping one', () => {
+		const phases = resolveIntroPhases(
+			settings('intro', { durationSec: 4, buildSec: 6, releaseSec: 2 })
+		);
+		expect(phases.buildSec).toBeCloseTo(3);
+		expect(phases.releaseSec).toBeCloseTo(1);
+		expect(phases.holdSec).toBeCloseTo(0);
+	});
+
+	it('honours the window duration it is handed over the configured one', () => {
+		const s = settings('intro', {
+			durationSec: 10,
+			buildSec: 2,
+			releaseSec: 2
+		});
+		expect(resolveIntroPhases(s, 4).buildPct).toBeCloseTo(0.5);
 	});
 });
 
@@ -211,7 +245,10 @@ describe('resolveIntroCards', () => {
 				mount: 1,
 				progress: 0.5
 			});
-			expect(cards).toHaveLength(6);
+			// Sequential montages only return the image whose turn it is (and
+			// the one handing over to it), so the count is a ceiling.
+			expect(cards.length).toBeGreaterThan(0);
+			expect(cards.length).toBeLessThanOrEqual(6);
 			const visible = cards.filter(card => card.alpha > 0.01);
 			expect(visible.length).toBeGreaterThan(0);
 			for (const card of cards) {
@@ -220,6 +257,47 @@ describe('resolveIntroCards', () => {
 				expect(Number.isFinite(card.x)).toBe(true);
 				expect(Number.isFinite(card.y)).toBe(true);
 			}
+		}
+	});
+
+	it('spreads a sequential montage over the whole window, not the build', () => {
+		// The complaint this fixes: nine images cycling inside the mount
+		// envelope lasted a sixth of a second each. Each image must now own its
+		// own slice of the window, so which one is on screen depends on where in
+		// the window we are.
+		const at = (progress: number) =>
+			resolveIntroCards({
+				montage: 'fade-stack',
+				count: 6,
+				viewport: VIEWPORT,
+				mount: 1,
+				progress
+			})
+				.filter(card => card.alpha > 0.5)
+				.map(card => card.index);
+		expect(at(0.08)).toEqual([0]);
+		expect(at(0.55)).toEqual([3]);
+		expect(at(0.95)).toEqual([5]);
+	});
+
+	it('covers the whole screen with the film strip at every moment', () => {
+		for (const progress of [0, 0.25, 0.5, 0.75, 1]) {
+			const cards = resolveIntroCards({
+				montage: 'film-strip',
+				count: 5,
+				viewport: VIEWPORT,
+				mount: 1,
+				progress
+			});
+			// No black: the strip is screen-tall and its cards touch, and the
+			// run of them always spans the viewport.
+			for (const card of cards) {
+				expect(card.height).toBe(VIEWPORT.height);
+			}
+			const left = Math.min(...cards.map(c => c.x - c.width / 2));
+			const right = Math.max(...cards.map(c => c.x + c.width / 2));
+			expect(left).toBeLessThanOrEqual(0.001);
+			expect(right).toBeGreaterThanOrEqual(VIEWPORT.width - 0.001);
 		}
 	});
 

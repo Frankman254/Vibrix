@@ -142,7 +142,6 @@ export default function IntroLayer({ zIndex = 95 }: { zIndex?: number }) {
 						windowTimeSec: window_.elapsedSec,
 						dt
 					}) ?? undefined,
-				backdrop: settings.backdropColor,
 				titleFontStyle: settings.titleFontStyle,
 				taglineFontStyle: settings.taglineFontStyle
 			});

@@ -613,16 +613,23 @@ export interface IntroSequenceSettings {
 	enabled: boolean;
 	/** Seconds the window lasts. Never more than half the video. */
 	durationSec: number;
-	/** Share of the window spent mounting the composition, `0..0.45`. */
-	buildPct: number;
-	/** Share of the window spent taking it apart again, `0..0.45`. */
-	releasePct: number;
+	/**
+	 * Seconds spent mounting the composition, and seconds spent taking it apart
+	 * again. In SECONDS and not shares of the window, because "how long does the
+	 * title take to arrive" is the question a user actually asks — and a share
+	 * silently changes that answer whenever the duration is edited. The hold is
+	 * whatever is left: `durationSec - buildSec - releaseSec`. When the two
+	 * overflow the window they are shrunk proportionally, never clipped.
+	 */
+	buildSec: number;
+	releaseSec: number;
 
 	montage: IntroMontageMode;
 	/** How many setlist images the montage composes. */
 	imageCount: number;
 	order: IntroSequenceOrder;
 	/** Colour behind the montage, and what the window fades from / to. */
+	backdropColorSource: ColorSourceMode;
 	backdropColor: string;
 	/** How much the montage is darkened so the text stays readable, `0..1`. */
 	imageDim: number;

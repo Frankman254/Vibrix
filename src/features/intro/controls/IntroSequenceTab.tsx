@@ -43,13 +43,14 @@ import {
 	INTRO_DURATION_RANGE,
 	INTRO_IMAGE_COUNT_RANGE,
 	INTRO_LOGO_SIZE_RANGE,
-	INTRO_PHASE_RANGE,
+	INTRO_PHASE_SEC_RANGE,
 	INTRO_TAGLINE_SIZE_RANGE,
 	INTRO_WAVE_INTENSITY_RANGE,
 	INTRO_WAVE_SPEED_RANGE,
 	INTRO_TITLE_SIZE_RANGE,
 	createDefaultIntroSequence,
-	pickIntroImages
+	pickIntroImages,
+	resolveIntroPhases
 } from '../introPlan';
 
 const FONT_OPTIONS = TRACK_TITLE_FONTS.map(value => ({
@@ -105,6 +106,7 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 		settings
 	).length;
 
+	const phases = resolveIntroPhases(settings);
 	const revealOptions: { value: IntroTextReveal; label: string }[] = [
 		{ value: 'typewriter', label: t.intro_reveal_typewriter },
 		{ value: 'fade', label: t.intro_reveal_fade },
@@ -149,27 +151,36 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 								formatValue={formatDecimal}
 							/>
 							<Slider
-								label={t.intro_build_pct}
-								value={settings.buildPct}
-								min={INTRO_PHASE_RANGE.min}
-								max={INTRO_PHASE_RANGE.max}
-								step={0.01}
-								onChange={buildPct => patch({ buildPct })}
-								defaultValue={factory.buildPct}
+								label={t.intro_build_sec}
+								value={settings.buildSec}
+								min={INTRO_PHASE_SEC_RANGE.min}
+								max={INTRO_PHASE_SEC_RANGE.max}
+								step={0.1}
+								onChange={buildSec => patch({ buildSec })}
+								defaultValue={factory.buildSec}
 								variant="compact"
-								formatValue={formatPct}
+								formatValue={formatDecimal}
 							/>
 							<Slider
-								label={t.intro_release_pct}
-								value={settings.releasePct}
-								min={INTRO_PHASE_RANGE.min}
-								max={INTRO_PHASE_RANGE.max}
-								step={0.01}
-								onChange={releasePct => patch({ releasePct })}
-								defaultValue={factory.releasePct}
+								label={t.intro_release_sec}
+								value={settings.releaseSec}
+								min={INTRO_PHASE_SEC_RANGE.min}
+								max={INTRO_PHASE_SEC_RANGE.max}
+								step={0.1}
+								onChange={releaseSec => patch({ releaseSec })}
+								defaultValue={factory.releaseSec}
 								variant="compact"
-								formatValue={formatPct}
+								formatValue={formatDecimal}
 							/>
+							{/* The hold is not a control: it is what the other
+							    three numbers leave over, and showing it is the
+							    only way to see that at a glance. */}
+							<Caption>
+								{t.intro_hold_readout.replace(
+									'{sec}',
+									formatDecimal(phases.holdSec)
+								)}
+							</Caption>
 							<Caption>{t.intro_timing_hint}</Caption>
 						</div>
 					</CollapsibleSection>
@@ -261,8 +272,10 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 							/>
 							<AdaptiveColorInput
 								label={t.intro_backdrop_color}
-								source="manual"
-								onSourceChange={() => {}}
+								source={settings.backdropColorSource}
+								onSourceChange={backdropColorSource =>
+									patch({ backdropColorSource })
+								}
 								value={settings.backdropColor}
 								onChange={backdropColor =>
 									patch({ backdropColor })

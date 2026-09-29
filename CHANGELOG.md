@@ -40,7 +40,7 @@ the version scheme in `src/lib/version.ts`.
       configurables. Así la animación es idéntica en cada render y es fluida
       aunque la pista empiece en silencio o con fade-in.
       Las ventanas siguen sin añadir duración al vídeo.
-      `STORE_PERSIST_VERSION` is at **131**; la migración traslada lo que hubiera
+      `STORE_PERSIST_VERSION` is at **132**; la migración traslada lo que hubiera
       en v129, y la de v131 cambia las claves viejas del spectrum del intro
       (`spectrumShape` / `spectrumSizePct` / `spectrumColorSource` /
       `spectrumColor`) por las nuevas (`spectrumSource`, `spectrumSlotIndex`,
@@ -53,10 +53,32 @@ the version scheme in `src/lib/version.ts`.
   que la comparación nunca daba igual y el componente se re-renderizaba en bucle
   (React #185). Ahora se selecciona el array tal cual y el mapeo va en un memo.
 
-- **El carrusel (tira de film) ahora se ve grande.** Se dimensionaba para meter
-  cinco tarjetas de ancho, lo que lo convertía en una hoja de contactos de
-  miniaturas. Las tarjetas se miden desde el **alto** (62% de la pantalla), así
-  que apenas caben dos en pantalla y la tira viaja: se ven las imágenes.
+- **El carrusel (tira de film) ahora se ve grande y no deja fondo negro.** Se
+  dimensionaba para meter cinco tarjetas de ancho, lo que lo convertía en una
+  hoja de contactos de miniaturas; después seguía dejando barras negras porque el
+  paso entre tarjetas era mayor que la tarjeta. Ahora la tira mide **el alto
+  completo de la pantalla**, las tarjetas se tocan y lo que viaja es la tira
+  entera de borde a borde a lo largo de toda la ventana. Hay test de cobertura.
+
+- **El tiempo de la intro se configura en SEGUNDOS, no en porcentajes.** Son
+  tres secciones (`buildSec` → monta, sostiene, `releaseSec` → desmonta) y el
+  sostenimiento es lo que sobra de la duración, que se muestra en la pestaña. Un
+  porcentaje cambiaba en silencio cuánto tardaba el título en llegar cada vez que
+  se editaba la duración. Si montaje + desmontaje se pasan de la ventana se
+  reducen los dos en proporción, nunca se recorta uno. Los valores por defecto
+  pasan a 8 s de ventana con 2,5 s a cada lado.
+
+- **Arreglado: los montajes secuenciales pasaban volando.** Encadenado, Ken Burns
+  y corte glitch ciclaban las imágenes con la envolvente de **montaje**, que solo
+  corre durante el build: nueve imágenes dentro del 30% de una ventana de 5 s son
+  0,17 s cada una, que se lee como un parpadeo y no como una animación. Ahora
+  cada imagen tiene su turno = `1 / n` de **toda la ventana**, con fundido entre
+  turnos, y la envolvente solo hace el fade global de entrada y salida. Ken Burns
+  hace el push completo dentro de su propio turno, así que se percibe.
+
+- **El color de fondo de la ventana entra al sistema de colores.**
+  `backdropColorSource` (manual / imagen / tema) decide de dónde sale el fondo y
+  el color desde el que la ventana funde; antes solo aceptaba manual.
 
 - **HUD al día con las features nuevas.** Se añadieron los atajos que faltaban y
   se quitó una segmentación molesta:
