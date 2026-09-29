@@ -19,7 +19,9 @@ import {
 	extractRainProfileSettings,
 	extractSpectrumProfileSettings,
 	extractGlobalCompositionValues,
+	extractIntroProfileSettings,
 	createDefaultGlobalCompositionSlots,
+	MAX_INTRO_SLOT_COUNT,
 	MAX_GLOBAL_COMPOSITION_SLOT_COUNT,
 	MAX_LOOKS_SLOT_COUNT,
 	MAX_PROFILE_SLOT_COUNT
@@ -550,6 +552,53 @@ export function createBackgroundSlice(
 					? { introSequence: { ...state.introSequence, ...patch } }
 					: { outroSequence: { ...state.outroSequence, ...patch } }
 			),
+		addIntroProfileSlot: () =>
+			set(state => {
+				if (state.introProfileSlots.length >= MAX_INTRO_SLOT_COUNT)
+					return state;
+				return {
+					introProfileSlots: [
+						...state.introProfileSlots,
+						{
+							id: createProfileSlotId(),
+							name: `Intro ${state.introProfileSlots.length + 1}`,
+							values: null
+						}
+					]
+				};
+			}),
+		removeIntroProfileSlot: index =>
+			set(state => {
+				// The first three are the bank every project starts with, the
+				// same floor every other slot list keeps.
+				if (index < 3 || index >= state.introProfileSlots.length)
+					return state;
+				return {
+					introProfileSlots: state.introProfileSlots.filter(
+						(_, i) => i !== index
+					)
+				};
+			}),
+		saveIntroProfileSlot: index =>
+			set(state => {
+				if (index < 0 || index >= state.introProfileSlots.length)
+					return state;
+				const values = extractIntroProfileSettings(state);
+				return {
+					introProfileSlots: state.introProfileSlots.map((slot, i) =>
+						i === index ? { ...slot, values } : slot
+					)
+				};
+			}),
+		loadIntroProfileSlot: index =>
+			set(state => {
+				const slot = state.introProfileSlots[index];
+				if (!slot?.values) return state;
+				return {
+					introSequence: { ...slot.values.introSequence },
+					outroSequence: { ...slot.values.outroSequence }
+				};
+			}),
 		captureImageLogoOverride: () =>
 			set(state => ({
 				backgroundImages: state.backgroundImages.map(img =>

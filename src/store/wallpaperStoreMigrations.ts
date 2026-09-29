@@ -51,6 +51,7 @@ import {
 	extractMotionLayerSettingsFromState
 } from '@/features/stageFx/motionLayers';
 import { CAMERA_MOTION_RANGE_RANGE } from '@/features/stageFx/stageFxConfig';
+import { createDefaultIntroProfileSlots } from '@/store/featureProfiles';
 import { getCurrentViewportResolution } from '@/features/layout/viewportMetrics';
 import { normalizeSpectrumSettings } from '@/features/spectrum';
 import {
@@ -3497,6 +3498,19 @@ export function migrateWallpaperStore(
 		};
 		migrateWindowTextStyle(migratedState.introSequence);
 		migrateWindowTextStyle(migratedState.outroSequence);
+	}
+
+	if (fromVersion < 138) {
+		// Saved intro animations. A project that predates them gets the empty
+		// bank every new project starts with, and no setlist is bound to one,
+		// so activating a setlist keeps behaving exactly as before.
+		migratedState.introProfileSlots ??= createDefaultIntroProfileSlots();
+		migratedState.setlists = (migratedState.setlists ?? []).map(
+			setlist => ({
+				...setlist,
+				introSlotId: setlist.introSlotId ?? null
+			})
+		);
 	}
 
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;

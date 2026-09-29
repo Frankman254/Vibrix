@@ -25,9 +25,11 @@ import ToggleControl from '@/editor/ToggleControl';
 import CollapsibleSection from '@/editor/CollapsibleSection';
 import AdaptiveColorInput from '@/editor/AdaptiveColorInput';
 import ConnectedColorInput from '@/editor/ConnectedColorInput';
+import ProfileSlotsEditor from '@/editor/ProfileSlotsEditor';
 import { MotionSlider as Slider } from '@/editor/MotionSharedControls';
 import { formatDecimal } from '@/editor/motionTabUtils';
 import { resolveSlideshowPool } from '@/features/background';
+import { MAX_INTRO_SLOT_COUNT } from '@/store/featureProfiles';
 import IntroImagePicker from './IntroImagePicker';
 import {
 	TRACK_TITLE_FONTS,
@@ -1027,6 +1029,87 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 	);
 }
 
+/**
+ * Saved intro animations.
+ *
+ * One slot holds BOTH windows, which is why this lives outside the per-window
+ * editor: "my intro" is the opening and the ending together. The active setlist
+ * can be bound to one, and then activating that setlist loads it — the answer
+ * to "slots de animaciones para ese setlist o el global".
+ */
+function IntroSlotsSection() {
+	const t = useT();
+	const slots = useWallpaperStore(s => s.introProfileSlots);
+	const setlists = useWallpaperStore(s => s.setlists);
+	const activeSetlistId = useWallpaperStore(s => s.activeSetlistId);
+	const actions = useWallpaperStore(
+		useShallow(s => ({
+			add: s.addIntroProfileSlot,
+			remove: s.removeIntroProfileSlot,
+			save: s.saveIntroProfileSlot,
+			load: s.loadIntroProfileSlot,
+			bind: s.bindSetlistIntroSlot
+		}))
+	);
+	const activeSetlist = setlists.find(item => item.id === activeSetlistId);
+	const slotOptions = useMemo(
+		() => [
+			{ value: '', label: t.intro_slots_setlist_none },
+			...slots
+				.filter(slot => slot.values)
+				.map(slot => ({ value: slot.id, label: slot.name }))
+		],
+		[slots, t.intro_slots_setlist_none]
+	);
+
+	return (
+		<SectionCard title={t.intro_slots_title} density="compact">
+			<div className="flex flex-col gap-2">
+				<ProfileSlotsEditor
+					title=""
+					hint={t.intro_slots_hint}
+					slots={slots}
+					activeIndex={null}
+					onLoad={actions.load}
+					onSave={actions.save}
+					onAdd={actions.add}
+					onDelete={actions.remove}
+					loadLabel={t.label_load_profile}
+					saveLabel={t.label_save_profile}
+					slotLabel={t.label_profile_slot}
+					emptyLabel={t.profile_slot_empty}
+					activeLabel={t.profile_slot_active}
+					maxSlots={MAX_INTRO_SLOT_COUNT}
+				/>
+				{activeSetlist ? (
+					<>
+						<Select<string>
+							value={activeSetlist.introSlotId ?? ''}
+							onChange={value =>
+								actions.bind(
+									activeSetlist.id,
+									value === '' ? null : value
+								)
+							}
+							ariaLabel={t.intro_slots_setlist_label}
+							options={slotOptions}
+							full
+						/>
+						<Caption>
+							{t.intro_slots_setlist_hint.replace(
+								'{name}',
+								activeSetlist.name
+							)}
+						</Caption>
+					</>
+				) : (
+					<Caption>{t.intro_slots_setlist_empty}</Caption>
+				)}
+			</div>
+		</SectionCard>
+	);
+}
+
 export default function IntroSequenceTab() {
 	const t = useT();
 	const [kind, setKind] = useState<IntroSequenceKind>('intro');
@@ -1043,6 +1126,7 @@ export default function IntroSequenceTab() {
 				size="sm"
 				ariaLabel={t.tab_intro}
 			/>
+			<IntroSlotsSection />
 			<IntroWindowEditor kind={kind} />
 		</div>
 	);

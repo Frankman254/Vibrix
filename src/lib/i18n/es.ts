@@ -624,6 +624,15 @@ export const es: Record<TranslationKey, string> = {
 	intro_logo_vibrix: 'Vibrix',
 	intro_logo_project: 'El del proyecto',
 	intro_logo_size: 'Tamaño (% del alto)',
+	intro_slots_title: 'Animaciones guardadas',
+	intro_slots_hint:
+		'Un slot guarda el intro Y el ending juntos: un «así abre y así cierra este proyecto» completo.',
+	intro_slots_setlist_label: 'Animación de este setlist',
+	intro_slots_setlist_none: 'Lo que esté configurado aquí',
+	intro_slots_setlist_hint:
+		'Al activar «{name}» se carga esta animación. Si lo dejas en la primera opción, el setlist no cambia nada.',
+	intro_slots_setlist_empty:
+		'Activa un setlist para darle su propia animación.',
 	intro_text_style_own: 'Su propio estilo',
 	intro_text_style_track_info: 'El de Track Info',
 	intro_text_style_hint:

@@ -848,6 +848,12 @@ export type WallpaperStore = WallpaperState & {
 	removeLooksProfileSlot: (index: number) => void;
 	saveLooksProfileSlot: (index: number) => void;
 	loadLooksProfileSlot: (index: number) => void;
+	addIntroProfileSlot: () => void;
+	removeIntroProfileSlot: (index: number) => void;
+	saveIntroProfileSlot: (index: number) => void;
+	loadIntroProfileSlot: (index: number) => void;
+	/** Bind the setlist to a saved intro slot (`null` unbinds). */
+	bindSetlistIntroSlot: (setlistId: string, slotId: string | null) => void;
 	addTrackTitleProfileSlot: () => void;
 	removeTrackTitleProfileSlot: (index: number) => void;
 	saveTrackTitleProfileSlot: (index: number) => void;

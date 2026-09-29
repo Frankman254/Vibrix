@@ -10,6 +10,7 @@ import {
 	createDefaultRainProfileSlots,
 	createDefaultSpectrumProfileSlots,
 	createDefaultSpectrumSecondProfileSlots,
+	createDefaultIntroProfileSlots,
 	createDefaultTrackTitleProfileSlots
 } from '@/store/featureProfiles';
 import { IMAGE_BASS_ZOOM_CLASSIC } from '@/features/presets/imageBassZoomProfiles';
@@ -432,6 +433,7 @@ const BASE_STATE: Omit<
 	lightsProfileSlots: createDefaultLightsProfileSlots(),
 	cameraFxProfileSlots: createDefaultCameraFxProfileSlots(),
 	trackTitleProfileSlots: createDefaultTrackTitleProfileSlots(),
+	introProfileSlots: createDefaultIntroProfileSlots(),
 	sceneSlots: [],
 	activeSceneSlotId: null,
 	defaultSceneSlotId: null,

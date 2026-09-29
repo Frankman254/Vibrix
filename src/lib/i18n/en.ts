@@ -620,6 +620,15 @@ export const en = {
 	intro_logo_vibrix: 'Vibrix',
 	intro_logo_project: "The project's",
 	intro_logo_size: 'Size (% of height)',
+	intro_slots_title: 'Saved animations',
+	intro_slots_hint:
+		'One slot holds the intro AND the ending together — a whole "how this project opens and closes".',
+	intro_slots_setlist_label: 'Animation for this setlist',
+	intro_slots_setlist_none: 'Whatever is configured here',
+	intro_slots_setlist_hint:
+		'Activating «{name}» loads this animation. Leave it on the first option and the setlist changes nothing.',
+	intro_slots_setlist_empty:
+		'Activate a setlist to give it its own animation.',
 	intro_text_style_own: 'Its own style',
 	intro_text_style_track_info: "Track Info's",
 	intro_text_style_hint:

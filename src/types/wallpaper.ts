@@ -919,6 +919,13 @@ export interface Setlist {
 	name: string;
 	imageAssetIds: string[];
 	trackIds: string[];
+	/**
+	 * The saved intro animation this setlist opens and closes with, by slot id.
+	 * `null` means "whatever is configured globally" — activating the setlist
+	 * leaves the windows alone. Bound, activating it loads the slot, which is
+	 * the whole point: a setlist is a show, and a show has its own opening.
+	 */
+	introSlotId?: string | null;
 	/** Epoch ms — used to sort the panel newest-first if the user prefers. */
 	createdAt: number;
 }
@@ -1952,6 +1959,10 @@ export type WallpaperState = {
 	/** User-saveable Track Title slots referenced by Scene slots. */
 	trackTitleProfileSlots: ProfileSlot<
 		import('@/store/featureProfiles').TrackTitleProfileSettings
+	>[];
+	/** Saved intro / ending animations. One slot holds BOTH windows. */
+	introProfileSlots: ProfileSlot<
+		import('@/store/featureProfiles').IntroProfileSettings
 	>[];
 	/** Composition-only scene slots (references to feature slots). */
 	sceneSlots: SceneSlot[];

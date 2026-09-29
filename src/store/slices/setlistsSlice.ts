@@ -122,10 +122,25 @@ export function createSetlistsSlice(
 					trackMembers.has(state.activeAudioTrackId)
 						? state.activeAudioTrackId
 						: (setlist.trackIds[0] ?? null);
+				// A setlist is a show, so it may carry its own opening and
+				// ending: activating it loads the intro slot it is bound to.
+				// Unbound (the default) the windows are left exactly as
+				// configured globally.
+				const boundIntro = setlist.introSlotId
+					? state.introProfileSlots.find(
+							slot => slot.id === setlist.introSlotId
+						)?.values
+					: null;
 				return {
 					activeSetlistId: id,
 					activeImageId: nextActiveImageId,
-					activeAudioTrackId: nextActiveAudioTrackId
+					activeAudioTrackId: nextActiveAudioTrackId,
+					...(boundIntro
+						? {
+								introSequence: { ...boundIntro.introSequence },
+								outroSequence: { ...boundIntro.outroSequence }
+							}
+						: {})
 				};
 			}),
 		toggleSetlistImage: (id: string, assetId: string) =>
@@ -160,6 +175,12 @@ export function createSetlistsSlice(
 			set(state => ({
 				setlists: state.setlists.map(s =>
 					s.id === id ? { ...s, trackIds: [...trackIds] } : s
+				)
+			})),
+		bindSetlistIntroSlot: (setlistId: string, slotId: string | null) =>
+			set(state => ({
+				setlists: state.setlists.map(s =>
+					s.id === setlistId ? { ...s, introSlotId: slotId } : s
 				)
 			})),
 		setShowSetlistHud: (v: boolean) => set({ showSetlistHud: v })

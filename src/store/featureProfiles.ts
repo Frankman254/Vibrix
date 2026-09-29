@@ -40,6 +40,10 @@ export const MAX_TRACK_TITLE_SLOT_COUNT = 60;
 export const LIGHTS_PROFILE_SLOT_COUNT = 3;
 export const MAX_LIGHTS_SLOT_COUNT = 60;
 export const CAMERA_FX_PROFILE_SLOT_COUNT = 3;
+/** Saved intro / ending animations. Both windows travel together: one slot is
+ *  one complete "how this project opens and closes". */
+export const INTRO_PROFILE_SLOT_COUNT = 3;
+export const MAX_INTRO_SLOT_COUNT = 60;
 /** How many global composition slots a fresh project starts with. */
 export const GLOBAL_COMPOSITION_SLOT_COUNT = 6;
 /** Ceiling for the global composition slot list. */
@@ -707,6 +711,37 @@ export function createDefaultLooksProfileSlots(): Array<
 	return createEmptySlots<LooksProfileSettings>(
 		'Look',
 		LOOKS_PROFILE_SLOT_COUNT
+	);
+}
+
+/**
+ * One saved intro animation = BOTH windows.
+ *
+ * Splitting them would let a project load an opening that has nothing to do
+ * with its ending, which is never what "this is my intro" means.
+ */
+export const INTRO_PROFILE_KEYS = [
+	'introSequence',
+	'outroSequence'
+] as const satisfies ReadonlyArray<keyof WallpaperState>;
+
+export type IntroProfileSettings = Pick<
+	WallpaperState,
+	(typeof INTRO_PROFILE_KEYS)[number]
+>;
+
+export function extractIntroProfileSettings(
+	state: WallpaperState
+): IntroProfileSettings {
+	return pickState(state, INTRO_PROFILE_KEYS);
+}
+
+export function createDefaultIntroProfileSlots(): Array<
+	ProfileSlot<IntroProfileSettings>
+> {
+	return createEmptySlots<IntroProfileSettings>(
+		'Intro',
+		INTRO_PROFILE_SLOT_COUNT
 	);
 }
 

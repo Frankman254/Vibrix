@@ -40,7 +40,7 @@ the version scheme in `src/lib/version.ts`.
       configurables. Así la animación es idéntica en cada render y es fluida
       aunque la pista empiece en silencio o con fade-in.
       Las ventanas siguen sin añadir duración al vídeo.
-      `STORE_PERSIST_VERSION` is at **137**; la migración traslada lo que hubiera
+      `STORE_PERSIST_VERSION` is at **138**; la migración traslada lo que hubiera
       en v129, y la de v131 cambia las claves viejas del spectrum del intro
       (`spectrumShape` / `spectrumSizePct` / `spectrumColorSource` /
       `spectrumColor`) por las nuevas (`spectrumSource`, `spectrumSlotIndex`,
@@ -144,6 +144,18 @@ the version scheme in `src/lib/version.ts`.
       Todo sigue montándose y desmontándose con la ventana.
       `STORE_PERSIST_VERSION` pasa a **135**; la migración siembra los valores
       que reproducen exactamente el comportamiento anterior.
+
+- **Slots de animaciones de intro, globales o por setlist.** La pestaña
+  **Intro y ending** tiene su propio banco de slots (`introProfileSlots`, 3 al
+  empezar, hasta 60). Un slot guarda **las dos ventanas juntas** — el intro y el
+  ending —, porque «mi intro» es cómo abre y cómo cierra el proyecto, no una
+  mitad.
+    - Además, el **setlist activo puede quedar ligado a un slot**
+      (`Setlist.introSlotId`): al activar ese setlist se carga su animación. Sin
+      ligar (el valor por defecto) activar un setlist no toca nada, igual que
+      antes.
+      `STORE_PERSIST_VERSION` pasa a **138**; la migración crea el banco vacío y
+      deja todos los setlists sin ligar.
 
 - **El título y la frase de la intro pueden usar la tipografía de Track
   Info.** Tal cual lo pediste: en vez de una segunda tanda de controles más
