@@ -555,34 +555,102 @@ export interface BackgroundImageItem {
 }
 
 /**
- * The generated video intro / ending.
+ * The generated video intro / ending — its own module, with its own keys.
  *
- * The system builds both out of the images of the selected setlist — in the
- * setlist's own order — and renders them as a montage over the head and the
- * tail of the timeline. Neither adds time to the video: the intro covers its
- * first seconds and the ending its last, so the audio stays in sync.
+ * The system builds both out of the images of the selected setlist, in the
+ * setlist's own order, and mounts a small composition over them: a montage, an
+ * optional spectrum, a logo, a title and a tagline. Every piece arrives one
+ * after another while the window opens and is taken apart again in reverse
+ * while it closes, all driven by the configured duration — nothing here runs
+ * on wall-clock time.
+ *
+ * Neither window adds time to the video: the intro covers the head of the
+ * timeline and the ending its tail, so the audio never drifts.
  */
-export type StingerKind = 'intro' | 'outro';
+export type IntroSequenceKind = 'intro' | 'outro';
 
 /**
- * How the montage arranges its cards.
- *  - `fade-stack`  one image at a time, centred, cross-fading.
- *  - `slide-strip` a filmstrip crossing the screen, one card per image.
- *  - `grid-reveal` a grid that fills in card by card.
+ * How the montage arranges the setlist's images.
+ *  - `mosaic-grid`  every image at once in a mosaic; the whole wall breathes.
+ *  - `mosaic-burst` the same mosaic, but the cells land from the centre out.
+ *  - `fade-stack`   one image at a time, centred, cross-fading.
+ *  - `film-strip`   a filmstrip crossing the screen, one card per image.
+ *  - `shutter-wipe` vertical panels wiping in from alternating edges.
+ *  - `ken-burns`    one image at a time with a slow push, cinema-style.
+ *  - `glitch-cut`   hard cuts with sliced horizontal offsets.
  */
-export type StingerStyle = 'fade-stack' | 'slide-strip' | 'grid-reveal';
+export type IntroMontageMode =
+	| 'mosaic-grid'
+	| 'mosaic-burst'
+	| 'fade-stack'
+	| 'film-strip'
+	| 'shutter-wipe'
+	| 'ken-burns'
+	| 'glitch-cut';
+
+/**
+ * How a line of text is mounted and unmounted.
+ *  - `typewriter` letters appear one by one and are taken away one by one.
+ *  - `fade` / `rise` / `pop` the line moves as a whole.
+ *  - `wipe` a mask sweeps across the line.
+ */
+export type IntroTextReveal = 'typewriter' | 'fade' | 'rise' | 'pop' | 'wipe';
+
+/** Which mark sits in the middle of the composition. */
+export type IntroLogoSource = 'none' | 'vibrix' | 'project';
+
+/** The shape the intro's own spectrum draws while it mounts. */
+export type IntroSpectrumShape = 'none' | 'bars' | 'mirror' | 'ring' | 'wave';
 
 /** Which end of the setlist the cards come from, and in which direction. */
-export type StingerOrder = 'setlist' | 'setlist-reverse';
+export type IntroSequenceOrder = 'setlist' | 'setlist-reverse';
 
-export interface StingerSettings {
+export interface IntroSequenceSettings {
 	enabled: boolean;
 	/** Seconds the window lasts. Never more than half the video. */
 	durationSec: number;
-	style: StingerStyle;
+	/** Share of the window spent mounting the composition, `0..0.45`. */
+	buildPct: number;
+	/** Share of the window spent taking it apart again, `0..0.45`. */
+	releasePct: number;
+
+	montage: IntroMontageMode;
 	/** How many setlist images the montage composes. */
 	imageCount: number;
-	order: StingerOrder;
+	order: IntroSequenceOrder;
+	/** Colour behind the montage, and what the window fades from / to. */
+	backdropColor: string;
+	/** How much the montage is darkened so the text stays readable, `0..1`. */
+	imageDim: number;
+
+	titleEnabled: boolean;
+	/** The channel / project name. Empty means "draw nothing". */
+	titleText: string;
+	titleFontStyle: TrackTitleFontStyle;
+	/** Cap height as a share of the viewport height. */
+	titleSizePct: number;
+	titleReveal: IntroTextReveal;
+	titleColorSource: ColorSourceMode;
+	titleColor: string;
+	/** The rectangle drawn around the title. */
+	titleFrameEnabled: boolean;
+
+	taglineEnabled: boolean;
+	taglineText: string;
+	taglineFontStyle: TrackTitleFontStyle;
+	taglineSizePct: number;
+	taglineReveal: IntroTextReveal;
+	taglineColorSource: ColorSourceMode;
+	taglineColor: string;
+
+	logoSource: IntroLogoSource;
+	/** Logo height as a share of the viewport height. */
+	logoSizePct: number;
+
+	spectrumShape: IntroSpectrumShape;
+	spectrumSizePct: number;
+	spectrumColorSource: ColorSourceMode;
+	spectrumColor: string;
 }
 
 export interface ProfileSlot<T> {
@@ -1708,13 +1776,13 @@ export type WallpaperState = {
 	activeGlobalCompositionSlotId: string | null;
 
 	/**
-	 * The generated intro: a montage of the selected setlist's images over the
-	 * first `durationSec` seconds of the video. Disabled by default; nothing
-	 * about the project's own timing changes when it is on.
+	 * The generated intro: a composition mounted over the first `durationSec`
+	 * seconds of the video. Disabled by default; nothing about the project's
+	 * own timing changes when it is on.
 	 */
-	introStinger: StingerSettings;
+	introSequence: IntroSequenceSettings;
 	/** The generated ending, over the last `durationSec` seconds. */
-	outroStinger: StingerSettings;
+	outroSequence: IntroSequenceSettings;
 
 	/**
 	 * Named bookmarks that curate which images and audio tracks are active

@@ -42,6 +42,7 @@ import { LyricsTab } from '@/features/lyrics/ui';
 import EditorTab from './tabs/main/EditorTab';
 import DiagnosticsTab from './tabs/main/DiagnosticsTab';
 import ExportTab from './tabs/main/OutputTab';
+import IntroTab from './tabs/main/IntroTab';
 import PerfTab from './tabs/main/PerformanceTab';
 import { BackgroundTab as BackgroundPanel } from '@/features/background/ui';
 import LayersTab from './tabs/main/layers/LayerStackPanel';
@@ -82,6 +83,7 @@ type SectionId =
 	| 'motion'
 	| 'logo'
 	| 'track'
+	| 'intro'
 	| 'lyrics'
 	| 'audio'
 	| 'editor'
@@ -412,6 +414,8 @@ export default function EditorOverlay({ onClose }: { onClose: () => void }) {
 				return (
 					<TrackTitleTab onReset={() => void makeReset('track')} />
 				);
+			case 'intro':
+				return <IntroTab />;
 			case 'lyrics':
 				return <LyricsTab onReset={() => void makeReset('lyrics')} />;
 			case 'audio':

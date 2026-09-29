@@ -544,11 +544,11 @@ export function createBackgroundSlice(
 						: img
 				)
 			})),
-		setStinger: (kind, patch) =>
+		setIntroSequence: (kind, patch) =>
 			set(state =>
 				kind === 'intro'
-					? { introStinger: { ...state.introStinger, ...patch } }
-					: { outroStinger: { ...state.outroStinger, ...patch } }
+					? { introSequence: { ...state.introSequence, ...patch } }
+					: { outroSequence: { ...state.outroSequence, ...patch } }
 			),
 		captureImageLogoOverride: () =>
 			set(state => ({

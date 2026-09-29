@@ -11,6 +11,7 @@ export type MainTabId =
 
 export type AdvancedSubTab =
 	| 'track'
+	| 'intro'
 	| 'lyrics'
 	| 'logo'
 	| 'diagnostics'
@@ -648,6 +649,7 @@ export const ADVANCED_RESET_KEYS: Record<
 	(keyof WallpaperState)[]
 > = {
 	track: LEGACY_TAB_KEYS.track ?? [],
+	intro: ['introSequence', 'outroSequence'],
 	lyrics: LEGACY_TAB_KEYS.lyrics ?? [],
 	logo: LEGACY_TAB_KEYS.logo ?? [],
 	diagnostics: LEGACY_TAB_KEYS.diagnostics ?? [],

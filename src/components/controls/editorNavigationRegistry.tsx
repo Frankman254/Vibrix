@@ -2,6 +2,7 @@ import {
 	Activity,
 	AudioWaveform,
 	Circle,
+	Clapperboard,
 	Download,
 	FileText,
 	Film,
@@ -44,6 +45,7 @@ export type EditorNavId =
 	| 'motion'
 	| 'logo'
 	| 'track'
+	| 'intro'
 	| 'lyrics'
 	| 'audio'
 	| 'editor'
@@ -164,6 +166,14 @@ export const EDITOR_NAV_ENTRIES: ReadonlyArray<EditorNavEntry> = [
 		id: 'track',
 		labelKey: 'tab_track',
 		icon: Type,
+		group: 'branding',
+		compactPlacement: 'advanced-sub',
+		showInMaximized: true
+	},
+	{
+		id: 'intro',
+		labelKey: 'tab_intro',
+		icon: Clapperboard,
 		group: 'branding',
 		compactPlacement: 'advanced-sub',
 		showInMaximized: true

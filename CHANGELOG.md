@@ -17,6 +17,29 @@ the version scheme in `src/lib/version.ts`.
 
 ### Añadido
 
+- **Módulo de intro y ending.** El intro/ending deja de ser un ajuste del
+  exportador y pasa a ser un módulo con pestaña propia (**Intro y ending**) y
+  claves propias (`introSequence` / `outroSequence`). Sigue armándose con las
+  imágenes del **setlist seleccionado** y en su orden, pero ahora monta una
+  composición encima y la **desmonta** al cerrar, pieza por pieza y en orden
+  inverso, todo en función de la duración configurada:
+    - **7 montajes**: mosaico (todas a la vez), mosaico en ráfaga (del centro
+      hacia fuera), encadenado, tira de film, persiana, Ken Burns y corte glitch.
+    - **Título configurable en el centro** con marco opcional que se dibuja del
+      centro hacia fuera, y **frase debajo**. Las dos líneas tienen sus **25
+      fuentes**, su tamaño, su color por el sistema de colores (manual / imagen /
+      tema) y **5 entradas**, entre ellas **letra a letra**: se escriben una a una
+      al abrir y se borran una a una al cerrar.
+    - **Logo en el centro**: el de Vibrix o el del proyecto, con tamaño propio.
+    - **Spectrum propio de la ventana** (barras, espejo, anillo u onda) que crece
+      del centro hacia fuera al montarse y se recoge al cerrar, leyendo el audio
+      que suena de verdad.
+      Las ventanas siguen sin añadir duración al vídeo.
+      `STORE_PERSIST_VERSION` is at **130**; la migración traslada lo que hubiera
+      en v129 y borra sus claves. Ambas ventanas siguen llegando apagadas.
+
+### Añadido
+
 - **Intro y ending generados por el sistema.** El sistema arma los dos con las
   imágenes del **setlist seleccionado**, en el orden del setlist, y los renderiza
   como un montaje de imágenes: la intro cubre los primeros segundos del vídeo y
@@ -27,8 +50,8 @@ the version scheme in `src/lib/version.ts`.
   punta del setlist se toman (la intro abre con las primeras, el ending cierra
   con las últimas). Mandos en Export → «Intro y ending». Todo el reparto es puro
   (`stingerPlan`), así que la previsualización y el vídeo exportado coinciden
-  fotograma a fotograma. `STORE_PERSIST_VERSION` is at **129**; ambos llegan
-  apagados, así que un proyecto existente exporta exactamente el mismo vídeo.
+  fotograma a fotograma. Ambos llegan apagados, así que un proyecto existente
+  exporta exactamente el mismo vídeo.
 - **Slots de composición global.** La sección Composición global ya no tiene el
   botón que escribía la composición actual en las 229 imágenes: ahora se captura
   en un **slot global** (`globalCompositionSlots`, 6 de fábrica, hasta 24) y el

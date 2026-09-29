@@ -5,7 +5,7 @@ Este documento ordena tres ideas que el usuario dejó pedidas la misma noche:
 1. **Menos controles**: _"propon alguna manera de configurar las cosas ya que son
    demasiados controles para el usuario, puedes crear plantillas guardadas en el
    propio sistema para luego usarlas"_.
-2. **Intro y ending animados** del propio sistema (§2, ya construido: los genera con las imágenes del setlist).
+2. **Intro y ending animados** del propio sistema (§2, ya construido como módulo propio: los genera con las imágenes del setlist).
 3. **Dinamismo total**: _"cambiar el spectrum o filtros o lo que sea sin cambiar
    de imagen, configurable… al final va a ser como un script activando y
    desactivando slots guardados del sistema o las mismas configuraciones"_.
@@ -123,73 +123,73 @@ mantener): `Neon Tokyo`, `Vinyl Warm`, `Minimal Mono`, `Rave Strobe`,
 
 ---
 
-## 2. Intro y ending generados — HECHO (store v129)
+## 2. Módulo de intro y ending — HECHO (store v130)
 
-Lo que se pidió al final no fue el logo de Vibrix: fue que **el sistema los
-genere con las imágenes del setlist seleccionado**, que el ending se arme con una
-duración determinada, que se rendericen **como si fueran imágenes** y que el
-orden sea el del setlist. Eso es lo que está construido.
+No es un ajuste del exportador: es un **módulo con pestaña propia** (Intro y
+ending, grupo Branding) y **claves propias** (`introSequence` /
+`outroSequence`). Lo arma el sistema con las imágenes del **setlist
+seleccionado**, en el orden del setlist, y encima monta una composición que
+**se desmonta** al cerrar, pieza por pieza y en orden inverso.
 
-### 2.1 Modelo (`src/types/wallpaper.ts`)
+### 2.1 La idea que lo ordena todo: montar y desmontar
 
-```ts
-type StingerStyle = 'fade-stack' | 'film-strip' | 'grid-reveal';
-type StingerOrder = 'setlist' | 'setlist-reverse';
+Una ventana tiene tres fases sobre su propia duración: **montaje** (`buildPct`),
+sostenimiento y **desmontaje** (`releasePct`). Seis piezas —montaje, spectrum,
+logo, marco, título, frase— entran escalonadas durante el montaje y salen en
+orden inverso durante el desmontaje, así que lo último que aparece es lo primero
+que se va. Eso es lo que hace que lea como "componentes creados en tiempo real y
+desmontados al final" en lugar de un fundido.
 
-interface StingerSettings {
-	enabled: boolean;
-	durationSec: number; // 0.5–20
-	style: StingerStyle;
-	imageCount: number; // 1–12
-	order: StingerOrder;
-}
-```
+`resolveSlotMount(settings, progress, slot)` devuelve `0..1` para cada pieza;
+`INTRO_MOUNT_ORDER` es el orden. El fondo va aparte y es **asimétrico a
+propósito**: el intro es dueño de la pantalla desde el primer fotograma y la
+entrega al final; el ending sube desde el proyecto y ya se queda, porque
+después de él no hay nada.
 
-Dos claves persistidas: `introStinger` y `outroStinger`, ambas **apagadas** por
-defecto, así que un proyecto que ya existía exporta exactamente el mismo vídeo.
+### 2.2 Los siete montajes
 
-### 2.2 Ventanas, no tiempo extra
+| Modo           | Qué hace                                                |
+| -------------- | ------------------------------------------------------- |
+| `mosaic-grid`  | **Todas las imágenes a la vez**, como un muro.          |
+| `mosaic-burst` | El mismo mosaico, cayendo del centro hacia fuera.       |
+| `fade-stack`   | Una imagen cada vez, encadenadas.                       |
+| `film-strip`   | Una tira que cruza la pantalla durante toda la ventana. |
+| `shutter-wipe` | Paneles verticales entrando por bordes alternos.        |
+| `ken-burns`    | Una imagen cada vez con empuje lento, de cine.          |
+| `glitch-cut`   | Cortes secos con desplazamiento, determinista.          |
 
-La decisión de diseño que importa: la intro y el ending **no alargan el vídeo**.
-Son una ventana sobre la propia línea de tiempo — la intro es dueña de
-`[0, introSec)`, el ending de `[max(introSec, total - outroSec), total]`, y cada
-una se recorta a la mitad del tema para que nunca se solapen. Así el audio no se
-desfasa ni un fotograma y nada más abajo (planificador de exportación, recorder,
-HUD) tiene que aprender un reloj nuevo.
+### 2.3 Texto, logo y spectrum
 
-`resolveStingerWindow(state, timeSec, totalSec)` en
-`src/features/stinger/stingerPlan.ts` devuelve la ventana activa con su progreso
-`0→1`, o `null` cuando el tiempo cae fuera de las dos.
+- **Título** centrado y configurable, con **marco opcional** que se dibuja del
+  centro hacia fuera (el recuadro de la referencia).
+- **Frase** debajo. Las dos líneas tienen las **25 fuentes** del sistema, tamaño
+  en % del alto, color por **fuente de color** (manual / imagen / tema) y cinco
+  entradas: `typewriter` (**letra a letra**, se escribe al abrir y se borra al
+  cerrar), `fade`, `rise`, `pop` y `wipe`.
+- **Logo** en el centro: el de Vibrix o el del proyecto.
+- **Spectrum propio de la ventana** (`bars`, `mirror`, `ring`, `wave`) que crece
+  del centro hacia fuera al montarse y se recoge al cerrar, leyendo los bins
+  reales. Es suyo y no el motor de Spectrum: una ventana de cinco segundos no
+  tiene por qué arrastrar un subsistema entero y su máquina de estados.
 
-### 2.3 Cómo se dibuja
+### 2.4 Dónde vive el código
 
-Todo el reparto es **puro**: `pickStingerImages` (las primeras N del pool del
-setlist, o las últimas N invertidas), `resolveStingerCards(kind, style, progress,
-count, viewport)` → cajas con alfa, y `resolveStingerBackdropAlpha`. El pool es
-`resolveSlideshowPool(...)`, es decir el setlist ya filtrado y en orden.
-
-Un solo pintor, `paintStinger(...)` en `stingerPaint.ts`, consume ese plan, y lo
-comparten los dos caminos:
-
-- **En vivo**: `StingerLayer` (rAF sobre canvas propio, zIndex 95) leyendo el
-  reloj del tema de `useAudioContext()`.
-- **En el vídeo**: el subsistema `stinger` de `RENDER_SUBSYSTEM_ORDER`, justo
-  antes del HUD y **fuera** de `SUBSYSTEM_CAMERA_LAYER` — el montaje cubre la
-  composición entera, la cámara no lo mueve.
-
-Por eso la previsualización y el archivo coinciden fotograma a fotograma, y por
-eso las 15 pruebas de `stingerPlan.test.ts` cubren la función sin DOM.
-
-### 2.4 Mandos
-
-Export → «Intro y ending»: dos tarjetas (intro / ending) con interruptor,
-duración, estilo, número de imágenes y de qué punta del setlist se toman, más un
-pie que dice cuántas usa de cuántas hay en el pool.
+- `src/features/intro/introPlan.ts` — **el tiempo**: ventana, orden de montaje,
+  cartas de los siete montajes, revelado de texto, barras del spectrum. Puro y
+  cubierto por 22 pruebas.
+- `introPaint.ts` — **el espacio**: un solo pintor, porque maquetar un título
+  necesita métricas de fuente que sólo da un canvas.
+- `introColors.ts` — colores y logo, compartidos por los dos caminos.
+- `IntroLayer.tsx` (vivo, rAF, zIndex 95, fuera de la capa de cámara) y el
+  subsistema `introSequence` del exportador, justo antes del HUD. Los dos comen
+  el mismo plan y el mismo pintor, así que coinciden fotograma a fotograma.
+- `controls/IntroSequenceTab.tsx` — la pestaña, con las dos ventanas separadas.
 
 ### 2.5 Qué NO se hizo
 
-No hay línea de tiempo con keyframes. Tres montajes con duración, número de
-imágenes y orden cubren el encargo y se amplían después sin romper datos.
+No hay línea de tiempo con keyframes. Siete montajes × cinco entradas de texto,
+con duración, montaje y desmontaje configurables, cubren el encargo y se amplían
+sin romper datos.
 
 ---
 

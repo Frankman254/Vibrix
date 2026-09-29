@@ -94,8 +94,9 @@ import type { WallpaperStore } from '@/store/wallpaperStoreTypes';
 import type { ProfileSlot } from '@/types/wallpaper';
 import type { LyricsLayerColorMode } from '@/features/lyrics';
 import type { ColorSourceMode } from '@/types/wallpaper';
+import type { IntroSequenceSettings } from '@/types/wallpaper';
 import { mergeTransitionPresets } from '@/features/background/transitionPresets';
-import { createDefaultStinger } from '@/features/stinger/stingerPlan';
+import { createDefaultIntroSequence } from '@/features/intro';
 
 function normalizeParticleColorMode(
 	raw: unknown,
@@ -3202,14 +3203,59 @@ export function migrateWallpaperStore(
 			migratedState.activeGlobalCompositionSlotId ?? null;
 	}
 
-	if (fromVersion < 129) {
-		// The generated intro and ending arrive off: turning them on is a
-		// decision about the video, and a migration must not change what an
-		// existing project exports.
-		migratedState.introStinger =
-			migratedState.introStinger ?? createDefaultStinger('intro');
-		migratedState.outroStinger =
-			migratedState.outroStinger ?? createDefaultStinger('outro');
+	if (fromVersion < 130) {
+		// The intro / ending became a module of its own (`introSequence` /
+		// `outroSequence`) with a composition on top of the montage, so the
+		// short-lived v129 keys are re-seeded here and dropped.
+		//
+		// They arrive off either way: turning a window on is a decision about
+		// the video, and a migration must not change what an existing project
+		// exports.
+		const legacy = migratedState as Record<string, unknown>;
+		const carryOver = (
+			kind: 'intro' | 'outro',
+			previous: unknown
+		): IntroSequenceSettings => {
+			const base = createDefaultIntroSequence(kind);
+			if (!previous || typeof previous !== 'object') return base;
+			const old = previous as Record<string, unknown>;
+			const montage: IntroSequenceSettings['montage'] =
+				old.style === 'slide-strip'
+					? 'film-strip'
+					: old.style === 'grid-reveal'
+						? 'mosaic-grid'
+						: old.style === 'fade-stack'
+							? 'fade-stack'
+							: base.montage;
+			return {
+				...base,
+				enabled:
+					typeof old.enabled === 'boolean'
+						? old.enabled
+						: base.enabled,
+				durationSec:
+					typeof old.durationSec === 'number'
+						? old.durationSec
+						: base.durationSec,
+				imageCount:
+					typeof old.imageCount === 'number'
+						? old.imageCount
+						: base.imageCount,
+				order:
+					old.order === 'setlist' || old.order === 'setlist-reverse'
+						? old.order
+						: base.order,
+				montage
+			};
+		};
+		migratedState.introSequence =
+			migratedState.introSequence ??
+			carryOver('intro', legacy.introStinger);
+		migratedState.outroSequence =
+			migratedState.outroSequence ??
+			carryOver('outro', legacy.outroStinger);
+		delete legacy.introStinger;
+		delete legacy.outroStinger;
 	}
 
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;

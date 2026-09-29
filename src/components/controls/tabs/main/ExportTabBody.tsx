@@ -28,7 +28,6 @@ import {
 	useOfflineAudioAnalysis,
 	useOfflineVideoExport
 } from '@/features/export/ui';
-import { StingerSection } from '@/features/stinger/ui';
 import { createOfflineBackgroundSubsystem } from '@/components/wallpaper/layers/imageCanvasOfflineSubsystem';
 import { createProjectHealthReport } from '@/lib/projectHealth';
 import SectionDivider from '@/ui/SectionDivider';
@@ -279,9 +278,6 @@ export default function ExportTabBody() {
 				}
 				onImportProject={() => projectImportRef.current?.click()}
 			/>
-
-			<SectionDivider label={t.section_stinger} />
-			<StingerSection />
 
 			<SectionDivider label={t.section_offline_export} />
 			<OfflineExportSection

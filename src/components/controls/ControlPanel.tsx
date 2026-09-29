@@ -82,6 +82,7 @@ import TrackTitleTab from './tabs/main/TrackTitleTab';
 import EditorTab from './tabs/main/EditorTab';
 import { LyricsTab } from '@/features/lyrics/ui';
 import OutputTab from './tabs/main/OutputTab';
+import IntroTab from './tabs/main/IntroTab';
 import { CalibrationTab } from '@/features/calibration/ui';
 import {
 	getCompactAdvancedSubEntries,
@@ -1332,6 +1333,10 @@ export default function ControlPanel({
 																void handleResetTab()
 															}
 														/>
+													)}
+												{tab === 'advanced' &&
+													advancedSub === 'intro' && (
+														<IntroTab />
 													)}
 												{tab === 'advanced' &&
 													advancedSub ===

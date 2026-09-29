@@ -10,7 +10,7 @@ import { backgroundSubsystem, hudSubsystem } from './stubs';
 import { createGlobalBackgroundSubsystem } from './globalBackground';
 import { createOverlaysSubsystem } from './overlays';
 import { createSceneGlSubsystems } from './sceneGl';
-import { createStingerSubsystem } from './stinger';
+import { createIntroSubsystem } from './intro';
 import {
 	createFlashLightSubsystem,
 	createStageLightsSubsystem
@@ -34,6 +34,6 @@ export function installDefaultRenderSubsystems(): void {
 	registerRenderSubsystem(lyricsSubsystem);
 	registerRenderSubsystem(createOverlaysSubsystem());
 	registerRenderSubsystem(createFlashLightSubsystem());
-	registerRenderSubsystem(createStingerSubsystem());
+	registerRenderSubsystem(createIntroSubsystem());
 	registerRenderSubsystem(hudSubsystem);
 }

@@ -143,4 +143,10 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // v129: `introStinger` + `outroStinger` — the generated video intro and ending,
 // built from the selected setlist's images. Both disabled by default, so an
 // existing project exports exactly the same video until they are turned on.
-export const STORE_PERSIST_VERSION = 129;
+// v130: `introSequence` + `outroSequence` replace them. The intro / ending is
+// now a module of its own: seven montage modes, a configurable title and
+// tagline with their own fonts, reveals and colour sources, a centred logo and
+// the window's own spectrum, every piece mounted and taken apart again on the
+// configured duration. Migration carries the v129 values over and drops the old
+// keys; both windows stay off.
+export const STORE_PERSIST_VERSION = 130;

@@ -9,7 +9,7 @@ import {
 	FlashLightCanvas,
 	StageLightsCanvas
 } from '@/features/stageFx/ui';
-import { StingerLayer } from '@/features/stinger/ui';
+import { IntroLayer } from '@/features/intro/ui';
 import OverlayInteractionStage from '@/components/wallpaper/OverlayInteractionStage';
 import SceneLayerCanvas from '@/components/wallpaper/layers/SceneLayerCanvas';
 import BackgroundImageLayerView from '@/components/wallpaper/layers/BackgroundImageLayerView';
@@ -60,8 +60,8 @@ export default function WallpaperViewport({
 	);
 	const flashLightEnabled = useWallpaperStore(s => s.flashLightEnabled);
 	// One rAF loop only while a generated intro or ending exists to draw.
-	const stingerEnabled = useWallpaperStore(
-		s => s.introStinger.enabled || s.outroStinger.enabled
+	const introSequenceEnabled = useWallpaperStore(
+		s => s.introSequence.enabled || s.outroSequence.enabled
 	);
 	const sceneLayerState = useWallpaperStore(
 		useShallow(
@@ -266,7 +266,7 @@ export default function WallpaperViewport({
 
 				{/* Above the camera stage on purpose: the generated intro and
 				    ending frame the composition, they are not part of it. */}
-				{stingerEnabled && <StingerLayer zIndex={95} />}
+				{introSequenceEnabled && <IntroLayer zIndex={95} />}
 
 				{showEditorChrome && <FirstRunEmptyState />}
 				{/* Inside <main> on purpose: this element has `isolation:
