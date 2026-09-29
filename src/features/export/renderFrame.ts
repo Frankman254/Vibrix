@@ -14,7 +14,19 @@ import {
  * by (`tx`, `ty`), then scale about the frame centre — the CSS
  * `translate3d(…) scale(…)` Camera FX puts on the live layer root.
  */
-export type LayerTransform = { tx: number; ty: number; scale: number };
+export type LayerTransform = {
+	tx: number;
+	ty: number;
+	scale: number;
+	/**
+	 * The movement halo as a Canvas2D `filter` string (a stack of
+	 * `drop-shadow`s), already in output pixels. Canvas2D applies a filter per
+	 * draw call rather than to the finished layer, so the halo follows each
+	 * shape the subsystem paints instead of one silhouette — the same smear,
+	 * read shape by shape.
+	 */
+	trailFilter?: string | null;
+};
 
 export type RenderFrameOptions = {
 	includeHud?: boolean;
@@ -61,6 +73,7 @@ export function renderFrameAt(
 			);
 			target.scale(transform.scale, transform.scale);
 			target.translate(-width / 2, -height / 2);
+			if (transform.trailFilter) target.filter = transform.trailFilter;
 		}
 		try {
 			subsystem.render(ctx);

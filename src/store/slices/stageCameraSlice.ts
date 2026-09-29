@@ -138,6 +138,10 @@ export function createStageCameraSlice(
 			set({ cameraMotionAmplitudeAudio: v }),
 		setCameraMotionAudioChannel: v => set({ cameraMotionAudioChannel: v }),
 		setCameraMotionDirection: v => set({ cameraMotionDirection: v }),
+		setCameraMotionEdgeZoom: v => set({ cameraMotionEdgeZoom: v }),
+		setCameraMotionSmoothing: v => set({ cameraMotionSmoothing: v }),
+		setCameraMotionTrail: v => set({ cameraMotionTrail: v }),
+		setCameraMotionTrailColor: v => set({ cameraMotionTrailColor: v }),
 		setCameraMotionTarget: v =>
 			set({ cameraMotionTarget: v, cameraMotionTargets: [v] }),
 		setCameraMotionTargets: v =>

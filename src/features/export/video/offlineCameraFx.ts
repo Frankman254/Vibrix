@@ -5,6 +5,7 @@
  */
 import type { AudioSnapshot } from '@/lib/audio/audioChannels';
 import {
+	cameraTrailFilter,
 	createCameraFxRuntime,
 	isCameraFxActive,
 	resolveCameraLayerOffset,
@@ -77,7 +78,8 @@ export function createOfflineCameraFx(viewportMin: number): OfflineCameraFx {
 				return {
 					tx: offset.tx * pixelScale,
 					ty: offset.ty * pixelScale,
-					scale: offset.scale
+					scale: offset.scale,
+					trailFilter: cameraTrailFilter(offset.trail, pixelScale)
 				};
 			};
 		}

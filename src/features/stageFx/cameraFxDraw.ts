@@ -21,8 +21,12 @@ import {
 } from './motionAudioResponse';
 import {
 	CAMERA_FX_CAPS,
+	CAMERA_MOTION_SMOOTHING_MAX_SEC,
 	cameraMotionSlackMode,
+	resolveCameraMotionEdgeZoom,
 	resolveCameraMotionRange,
+	resolveCameraMotionSmoothing,
+	resolveCameraMotionTrail,
 	cameraMotionTargetIncludes,
 	readFxChannel,
 	resolveFxThreshold,
@@ -42,6 +46,10 @@ export type CameraFxSettings = Pick<
 	| 'cameraMotionAudioChannel'
 	| 'cameraMotionAudioInfluence'
 	| 'cameraMotionAmplitudeAudio'
+	| 'cameraMotionEdgeZoom'
+	| 'cameraMotionSmoothing'
+	| 'cameraMotionTrail'
+	| 'cameraMotionTrailColor'
 	| 'cameraMotionTargets'
 	| 'motionLayers'
 	| 'activeMotionLayerId'
@@ -73,6 +81,17 @@ export type CameraFxRuntime = {
 	 * two movements listening to different channels never share a brake.
 	 */
 	motionAudio: Record<string, MotionAudioFollower>;
+	/**
+	 * Per-layer smoothed offset: what the layer is actually showing, chasing
+	 * the path the shape describes. The dial is the lag between the two.
+	 */
+	motionSmoothed: Record<string, CameraOffset>;
+	/**
+	 * Per-layer trailing position, always lagging further behind than the
+	 * smoothed one. The gap between them IS the trail vector: it grows with
+	 * speed, points where the layer came from and collapses when it stops.
+	 */
+	motionLag: Record<string, { tx: number; ty: number }>;
 	shakeTime: number;
 	shakeEnergy: number;
 	lastShakeLevel: number;
@@ -84,6 +103,8 @@ export function createCameraFxRuntime(): CameraFxRuntime {
 	return {
 		motionTimes: {},
 		motionAudio: {},
+		motionSmoothed: {},
+		motionLag: {},
 		shakeTime: 0,
 		shakeEnergy: 0,
 		lastShakeLevel: 0,
@@ -92,7 +113,68 @@ export function createCameraFxRuntime(): CameraFxRuntime {
 	};
 }
 
-export type CameraOffset = { tx: number; ty: number; scale: number };
+/**
+ * The halo a moving layer drags behind it, in CSS pixels of the viewport it
+ * was stepped for. `dx`/`dy` point BACKWARDS along the movement (where the
+ * layer came from), which is where the ghosts are drawn.
+ */
+export type CameraMotionTrail = {
+	dx: number;
+	dy: number;
+	blur: number;
+	alpha: number;
+	color: string;
+};
+
+export type CameraOffset = {
+	tx: number;
+	ty: number;
+	scale: number;
+	/** `null` when the layer asks for no trail, or is not moving. */
+	trail?: CameraMotionTrail | null;
+};
+
+/** How many ghosts the halo is drawn with. Three reads as a smear, not a copy. */
+const TRAIL_GHOSTS = 3;
+
+/**
+ * The trail as a CSS/Canvas2D `filter` string, or `null` when there is nothing
+ * to draw. Shared by the live stage (element style) and the offline export
+ * (`ctx.filter`), so the halo is the same effect in both.
+ *
+ * `scale` converts the stepped CSS pixels into the caller's own pixels.
+ */
+export function cameraTrailFilter(
+	trail: CameraMotionTrail | null | undefined,
+	scale = 1
+): string | null {
+	if (!trail || trail.alpha <= 0.002) return null;
+	const parts: string[] = [];
+	for (let i = 1; i <= TRAIL_GHOSTS; i += 1) {
+		const step = i / TRAIL_GHOSTS;
+		const alpha = trail.alpha * (1 - (i - 1) / TRAIL_GHOSTS);
+		if (alpha <= 0.002) continue;
+		const dx = trail.dx * step * scale;
+		const dy = trail.dy * step * scale;
+		const blur = Math.max(0, trail.blur * step * scale);
+		parts.push(
+			`drop-shadow(${dx.toFixed(2)}px ${dy.toFixed(2)}px ${blur.toFixed(2)}px ${withAlpha(trail.color, alpha)})`
+		);
+	}
+	return parts.length > 0 ? parts.join(' ') : null;
+}
+
+/** `#rrggbb` (or any CSS colour) with an explicit alpha, for the ghost stack. */
+function withAlpha(color: string, alpha: number): string {
+	const hex = color.trim();
+	const match = /^#([0-9a-f]{6})$/i.exec(hex);
+	if (!match) return hex;
+	const value = parseInt(match[1], 16);
+	const r = (value >> 16) & 255;
+	const g = (value >> 8) & 255;
+	const b = value & 255;
+	return `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(3)})`;
+}
 
 /** One motion layer's contribution this frame, in the same order as the stack. */
 export type CameraMotionFrameEntry = {
@@ -130,6 +212,52 @@ export function isCameraFxActive(settings: CameraFxSettings): boolean {
 
 /** How many discrete stops `beat-jump` snaps between on its way round. */
 const BEAT_JUMP_STEPS = 8;
+
+const TAU = Math.PI * 2;
+
+/** The phase as a 0..1 lap, negative phases included. */
+function lap(phase: number): number {
+	const u = (phase / TAU) % 1;
+	return u < 0 ? u + 1 : u;
+}
+
+/**
+ * A closed polygon path: the lap walks the vertices and the position is the
+ * straight line between the two it currently sits on, so the movement holds a
+ * direction and then turns a corner — «formas triangulares, cuadradas etc».
+ *
+ * `rotation` decides which way the shape points (a triangle on its point, a
+ * square with flat sides). `innerRatio` under 1 pulls every other vertex in,
+ * which is all a star is.
+ */
+function polygonOffset(
+	phase: number,
+	amp: number,
+	sides: number,
+	rotation: number,
+	innerRatio = 1
+): { tx: number; ty: number; zoom: number } {
+	const count = innerRatio < 1 ? sides * 2 : sides;
+	const t = lap(phase) * count;
+	const index = Math.floor(t);
+	const f = t - index;
+	const radiusAt = (i: number) =>
+		innerRatio < 1 && i % 2 === 1 ? amp * innerRatio : amp;
+	const angleAt = (i: number) => rotation + ((i % count) / count) * TAU;
+	const a0 = angleAt(index);
+	const a1 = angleAt(index + 1);
+	const r0 = radiusAt(index);
+	const r1 = radiusAt(index + 1);
+	const x0 = Math.cos(a0) * r0;
+	const y0 = Math.sin(a0) * r0;
+	const x1 = Math.cos(a1) * r1;
+	const y1 = Math.sin(a1) * r1;
+	return {
+		tx: x0 + (x1 - x0) * f,
+		ty: y0 + (y1 - y0) * f,
+		zoom: 0
+	};
+}
 
 /**
  * The path shape for a phase and amplitude.
@@ -213,6 +341,37 @@ function motionOffsetForMode(
 				ty: Math.sin(phase * 2) * amp,
 				zoom: 0
 			};
+		// Polygons. The rotation puts the flat side where it reads best: a
+		// triangle standing on its base, a diamond on its point.
+		case 'triangle':
+			return polygonOffset(phase, amp, 3, -Math.PI / 2);
+		case 'diamond':
+			return polygonOffset(phase, amp, 4, -Math.PI / 2);
+		case 'pentagon':
+			return polygonOffset(phase, amp, 5, -Math.PI / 2);
+		case 'hexagon':
+			return polygonOffset(phase, amp, 6, -Math.PI / 2);
+		case 'star':
+			return polygonOffset(phase, amp, 5, -Math.PI / 2, 0.42);
+		case 'zigzag': {
+			// Left to right and back, sawing up and down on the way: a ribbon
+			// across the frame rather than a loop around its centre.
+			const u = lap(phase);
+			const sweep = (u < 0.5 ? u * 4 - 1 : 3 - u * 4) * amp;
+			const saw = Math.asin(Math.sin(phase * 6)) / (Math.PI / 2);
+			return { tx: sweep, ty: saw * amp * 0.5, zoom: 0 };
+		}
+		case 'spiral': {
+			// The circle with a radius that winds in and back out, so the path
+			// fills the area instead of retracing one ring.
+			const radius =
+				amp * (0.25 + 0.75 * (0.5 - 0.5 * Math.cos(phase / 4)));
+			return {
+				tx: Math.cos(phase) * radius,
+				ty: Math.sin(phase) * radius,
+				zoom: 0
+			};
+		}
 		default:
 			return { tx: 0, ty: 0, zoom: 0 };
 	}
@@ -281,21 +440,29 @@ function stepMotionLayer(
 		amp
 	);
 	const slackMode = cameraMotionSlackMode(targets);
-	const bounded = slackMode !== 'free';
-	// The zoom that hides the exposed edge. A frame target only has to cover
-	// what it uncovers; a full-bleed canvas has to cover the amplitude on both
-	// sides of centre, or the translation cuts its own border into view.
-	// `zoom-pulse` asks for its own zoom and moves nothing, so it never pays
-	// for slack it does not use.
-	// `zoom-pulse` never translates, so it needs no translation slack at all.
+	// `zoom-pulse` asks for its own zoom and never translates, so it needs no
+	// translation slack at all.
 	const translates = settings.cameraMotionMode !== 'zoom-pulse';
+	const edgeZoom = resolveCameraMotionEdgeZoom(settings.cameraMotionEdgeZoom);
+	// The zoom that hides the exposed edge.
+	//   • frame — automatic and mandatory: without it the background uncovers
+	//     black bars as it slides, which is not a look, it is a bug.
+	//   • full-bleed — only what the Edge cover dial asks for, zero by default.
+	//     «Movement scale esta influyendo en la escala del propio logo mas
+	//     spectrum cuando no deberia»: this zoom was automatic and tied to the
+	//     reach, so widening the path enlarged the figure. The reach now widens
+	//     the path alone, and covering the canvas border is an opt-in.
 	const slackAmp = !translates
 		? 0
-		: slackMode === 'full-bleed'
-			? amp * 2
-			: slackMode === 'frame'
-				? amp
+		: slackMode === 'frame'
+			? amp
+			: slackMode === 'full-bleed'
+				? amp * 2 * edgeZoom
 				: 0;
+	// Only a frame target is clamped to its own zoom: there the zoom is what
+	// keeps the edge covered, so the translation may not outrun it. A
+	// full-bleed or free layer keeps the whole path it asked for.
+	const bounded = slackMode === 'frame';
 	// The slack ceiling grows with the reach for the same reason the amplitude
 	// does: at `range` 1 this is exactly the historical cap.
 	const maxScale = 1 + (CAMERA_FX_CAPS.maxScale - 1) * range;
@@ -305,11 +472,63 @@ function stepMotionLayer(
 	);
 	const limitX = bounded ? ((scale - 1) * viewport.width) / 2 : amp;
 	const limitY = bounded ? ((scale - 1) * viewport.height) / 2 : amp;
-	return {
-		tx: clamp(offset.tx, limitX),
-		ty: clamp(offset.ty, limitY),
-		scale
-	};
+	const targetTx = clamp(offset.tx, limitX);
+	const targetTy = clamp(offset.ty, limitY);
+
+	// «se ven muy bruscos los saltos»: the shape is what it is — a jump snaps,
+	// a polygon turns a hard corner — so the smoothing is not in the path but
+	// in how the layer follows it. The layer chases the path with a lag, which
+	// rounds the corner without changing where the corner is.
+	const smoothing = resolveCameraMotionSmoothing(
+		settings.cameraMotionSmoothing
+	);
+	const shown = runtime.motionSmoothed[layerId];
+	let tx = targetTx;
+	let ty = targetTy;
+	let appliedScale = scale;
+	if (paused && shown) {
+		tx = shown.tx;
+		ty = shown.ty;
+		appliedScale = shown.scale;
+	} else if (smoothing > 0 && shown && dtSec > 0) {
+		const tau = Math.max(1e-3, smoothing * CAMERA_MOTION_SMOOTHING_MAX_SEC);
+		const k = 1 - Math.exp(-dtSec / tau);
+		tx = shown.tx + (targetTx - shown.tx) * k;
+		ty = shown.ty + (targetTy - shown.ty) * k;
+		appliedScale = shown.scale + (scale - shown.scale) * k;
+	}
+
+	// The halo. A second, slower follower trails behind the position; the gap
+	// between them is the smear, so it stretches with speed and collapses to
+	// nothing the moment the layer stops — «una estela o halo del spectrum
+	// cuando se desplace».
+	const trailAmount = resolveCameraMotionTrail(settings.cameraMotionTrail);
+	const lag = (runtime.motionLag[layerId] ??= { tx, ty });
+	if (!paused && dtSec > 0) {
+		const tau = 0.06 + trailAmount * 0.18;
+		const k = 1 - Math.exp(-dtSec / tau);
+		lag.tx += (tx - lag.tx) * k;
+		lag.ty += (ty - lag.ty) * k;
+	}
+	let trail: CameraMotionTrail | null = null;
+	if (trailAmount > 0) {
+		const dx = lag.tx - tx;
+		const dy = lag.ty - ty;
+		const length = Math.hypot(dx, dy);
+		if (length > 0.4) {
+			trail = {
+				dx,
+				dy,
+				blur: Math.min(64, 4 + length * 0.9),
+				alpha: trailAmount * Math.min(1, length / 24),
+				color: settings.cameraMotionTrailColor
+			};
+		}
+	}
+
+	const result: CameraOffset = { tx, ty, scale: appliedScale, trail };
+	runtime.motionSmoothed[layerId] = result;
+	return result;
 }
 
 export function stepCameraFx(
@@ -483,6 +702,8 @@ export function resolveCameraLayerOffset(
 	return {
 		tx: (motion?.tx ?? 0) + (shakeApplies ? frame.shake.tx : 0),
 		ty: (motion?.ty ?? 0) + (shakeApplies ? frame.shake.ty : 0),
-		scale: (motion?.scale ?? 1) * (shakeApplies ? frame.shake.scale : 1)
+		scale: (motion?.scale ?? 1) * (shakeApplies ? frame.shake.scale : 1),
+		// The halo belongs to the movement, so shake alone never draws one.
+		trail: motion?.trail ?? null
 	};
 }

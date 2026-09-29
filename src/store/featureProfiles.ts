@@ -214,6 +214,10 @@ export const CAMERA_FX_PROFILE_KEYS = [
 	'cameraMotionAmplitudeAudio',
 	'cameraMotionAudioChannel',
 	'cameraMotionDirection',
+	'cameraMotionEdgeZoom',
+	'cameraMotionSmoothing',
+	'cameraMotionTrail',
+	'cameraMotionTrailColor',
 	'cameraMotionTargets',
 	// The whole stack from day one: a slot that restored only the flat keys
 	// would restore the layer being edited instead of the composition.

@@ -17,6 +17,33 @@ the version scheme in `src/lib/version.ts`.
 
 ### Añadido
 
+- **Movimiento (Camera Motion): el recorrido crece, la figura no.** La
+  **Escala de movimiento** compraba además el zoom que tapa el borde de una capa
+  a pantalla completa, y ese zoom agrandaba lo dibujado: subir la escala inflaba
+  el logo y su spectrum en vez de sólo ensanchar el área por la que se pasean. El
+  zoom pasa a ser un control aparte, **Zoom para tapar el borde** (avanzado), que
+  viene **apagado**: el recorrido se ensancha y la figura mantiene su tamaño. El
+  fondo no cambia — ahí el zoom no es opcional porque sin él se ven barras
+  negras.
+    - **Suavizado** (0–1): la capa persigue el recorrido con retardo en vez de ir
+      pegada a él, así el salto deja de ser seco y el triángulo entra girando en
+      la esquina. La forma no cambia, sólo lo brusco del trayecto.
+    - **7 patrones nuevos**: triángulo, rombo, pentágono, hexágono, estrella,
+      zigzag y espiral, todos del mismo generador de polígonos (el recorrido va
+      de vértice a vértice, con esquinas de verdad). «Marco» pasa a llamarse
+      **Cuadrado**, que es exactamente lo que recorría.
+    - **Estela del movimiento** con color propio: un halo difuso de la propia
+      forma de la capa, estirado hacia donde venía. Crece con la velocidad y
+      desaparece al detenerse. Va en el directo (filtro CSS en la raíz de la
+      capa) y en el **exportador** (`ctx.filter` por capa; Canvas2D aplica el
+      filtro por trazo, así que el halo sigue cada figura dibujada en vez de una
+      única silueta).
+    - `STORE_PERSIST_VERSION` is at **140**, con migración: las cuatro claves
+      nuevas (`cameraMotionEdgeZoom`, `cameraMotionSmoothing`,
+      `cameraMotionTrail`, `cameraMotionTrailColor`) entran también en cada capa
+      de `motionLayers`. El zoom de borde entra en **0** a propósito: los
+      proyectos guardados dejan de inflar la figura, que era el bug reportado.
+
 - **Módulo de intro y ending.** El intro/ending deja de ser un ajuste del
   exportador y pasa a ser un módulo con pestaña propia (**Intro y ending**) y
   claves propias (`introSequence` / `outroSequence`). Sigue armándose con las
@@ -40,7 +67,7 @@ the version scheme in `src/lib/version.ts`.
       configurables. Así la animación es idéntica en cada render y es fluida
       aunque la pista empiece en silencio o con fade-in.
       Las ventanas siguen sin añadir duración al vídeo.
-      `STORE_PERSIST_VERSION` is at **139**; la migración traslada lo que hubiera
+      `STORE_PERSIST_VERSION` pasó a **139**; la migración traslada lo que hubiera
       en v129, y la de v131 cambia las claves viejas del spectrum del intro
       (`spectrumShape` / `spectrumSizePct` / `spectrumColorSource` /
       `spectrumColor`) por las nuevas (`spectrumSource`, `spectrumSlotIndex`,

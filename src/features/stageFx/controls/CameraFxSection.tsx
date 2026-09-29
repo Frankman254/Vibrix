@@ -2,6 +2,7 @@ import { useShallow } from 'zustand/react/shallow';
 import {
 	Button,
 	Caption,
+	ColorInput,
 	SectionCard,
 	SegmentedControl,
 	ToggleSwitch
@@ -16,7 +17,12 @@ import type {
 	CameraMotionMode,
 	CameraMotionTarget
 } from '@/features/stageFx/stageFxConfig';
-import { CAMERA_MOTION_RANGE_RANGE } from '@/features/stageFx/stageFxConfig';
+import {
+	CAMERA_MOTION_EDGE_ZOOM_RANGE,
+	CAMERA_MOTION_RANGE_RANGE,
+	CAMERA_MOTION_SMOOTHING_RANGE,
+	CAMERA_MOTION_TRAIL_RANGE
+} from '@/features/stageFx/stageFxConfig';
 import { formatDecimal } from '@/editor/motionTabUtils';
 import { MotionSlider as Slider } from '@/editor/MotionSharedControls';
 import {
@@ -44,6 +50,10 @@ export function CameraMotionSection() {
 			amplitudeAudio: state.cameraMotionAmplitudeAudio,
 			audioChannel: state.cameraMotionAudioChannel,
 			direction: state.cameraMotionDirection,
+			edgeZoom: state.cameraMotionEdgeZoom,
+			smoothing: state.cameraMotionSmoothing,
+			trail: state.cameraMotionTrail,
+			trailColor: state.cameraMotionTrailColor,
 			targets: state.cameraMotionTargets,
 			motionLayers: state.motionLayers,
 			activeMotionLayerId: state.activeMotionLayerId,
@@ -64,6 +74,10 @@ export function CameraMotionSection() {
 			amplitudeAudio: state.setCameraMotionAmplitudeAudio,
 			audioChannel: state.setCameraMotionAudioChannel,
 			direction: state.setCameraMotionDirection,
+			edgeZoom: state.setCameraMotionEdgeZoom,
+			smoothing: state.setCameraMotionSmoothing,
+			trail: state.setCameraMotionTrail,
+			trailColor: state.setCameraMotionTrailColor,
 			targets: state.setCameraMotionTargets,
 			claim: state.claimMotionTarget
 		}))
@@ -183,7 +197,26 @@ export function CameraMotionSection() {
 							{
 								value: 'lissajous',
 								label: t.sfx_cam_mode_lissajous
-							}
+							},
+							{
+								value: 'triangle',
+								label: t.sfx_cam_mode_triangle
+							},
+							{
+								value: 'diamond',
+								label: t.sfx_cam_mode_diamond
+							},
+							{
+								value: 'pentagon',
+								label: t.sfx_cam_mode_pentagon
+							},
+							{
+								value: 'hexagon',
+								label: t.sfx_cam_mode_hexagon
+							},
+							{ value: 'star', label: t.sfx_cam_mode_star },
+							{ value: 'zigzag', label: t.sfx_cam_mode_zigzag },
+							{ value: 'spiral', label: t.sfx_cam_mode_spiral }
 						]}
 						size="sm"
 						full
@@ -211,6 +244,39 @@ export function CameraMotionSection() {
 						formatValue={formatDecimal}
 					/>
 					<Caption>{t.sfx_motion_range_hint}</Caption>
+					<Slider
+						label={t.sfx_motion_smoothing}
+						value={s.smoothing}
+						min={CAMERA_MOTION_SMOOTHING_RANGE.min}
+						max={CAMERA_MOTION_SMOOTHING_RANGE.max}
+						step={0.01}
+						onChange={set.smoothing}
+						defaultValue={
+							FACTORY_DEFAULT_STATE.cameraMotionSmoothing
+						}
+						variant="compact"
+						formatValue={formatDecimal}
+					/>
+					<Caption>{t.sfx_motion_smoothing_hint}</Caption>
+					<Slider
+						label={t.sfx_motion_trail}
+						value={s.trail}
+						min={CAMERA_MOTION_TRAIL_RANGE.min}
+						max={CAMERA_MOTION_TRAIL_RANGE.max}
+						step={0.01}
+						onChange={set.trail}
+						defaultValue={FACTORY_DEFAULT_STATE.cameraMotionTrail}
+						variant="compact"
+						formatValue={formatDecimal}
+					/>
+					{s.trail > 0 ? (
+						<ColorInput
+							label={t.sfx_motion_trail_color}
+							value={s.trailColor}
+							onChange={set.trailColor}
+						/>
+					) : null}
+					<Caption>{t.sfx_motion_trail_hint}</Caption>
 					<Slider
 						label={t.sfx_motion_amount_audio}
 						value={s.amplitudeAudio}
@@ -276,6 +342,20 @@ export function CameraMotionSection() {
 										/>
 									) : null}
 								</div>
+								<Slider
+									label={t.sfx_motion_edge_zoom}
+									value={s.edgeZoom}
+									min={CAMERA_MOTION_EDGE_ZOOM_RANGE.min}
+									max={CAMERA_MOTION_EDGE_ZOOM_RANGE.max}
+									step={0.01}
+									onChange={set.edgeZoom}
+									defaultValue={
+										FACTORY_DEFAULT_STATE.cameraMotionEdgeZoom
+									}
+									variant="compact"
+									formatValue={formatDecimal}
+								/>
+								<Caption>{t.sfx_motion_edge_zoom_hint}</Caption>
 								<SegmentedControl<CameraMotionDirection>
 									value={s.direction}
 									onChange={set.direction}

@@ -6,6 +6,7 @@ import {
 	type CameraMotionLayer
 } from '@/features/stageFx/stageFxConfig';
 import {
+	cameraTrailFilter,
 	createCameraFxRuntime,
 	resolveCameraLayerOffset,
 	stepCameraFx
@@ -16,6 +17,7 @@ function clearMotionTargets(targets: HTMLElement[]) {
 		target.style.transform = '';
 		target.style.transformOrigin = '';
 		target.style.willChange = '';
+		target.style.filter = '';
 	}
 }
 
@@ -93,6 +95,7 @@ export default function CameraFxStage({ children }: { children: ReactNode }) {
 						target.style.transform = '';
 						target.style.transformOrigin = '';
 						target.style.willChange = '';
+						target.style.filter = '';
 						animatedTargetsRef.current.delete(target);
 					}
 					continue;
@@ -100,6 +103,15 @@ export default function CameraFxStage({ children }: { children: ReactNode }) {
 
 				const { tx, ty, scale } = offset;
 				target.style.transform = `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, 0) scale(${scale.toFixed(4)})`;
+				// The halo is a stack of drop-shadows behind the layer: a blurred
+				// copy of its own silhouette, offset where it came from. Writing
+				// '' when there is none keeps the cheap path cheap — a layer with
+				// the trail dial at zero never pays for a filter.
+				const filter = cameraTrailFilter(offset.trail);
+				const nextFilter = filter ?? '';
+				if (target.style.filter !== nextFilter) {
+					target.style.filter = nextFilter;
+				}
 				if (!wasAnimated) {
 					// Set these compositor hints once when the target first becomes
 					// active — no need to re-assign the same string every frame.

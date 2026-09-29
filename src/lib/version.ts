@@ -170,4 +170,4 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // slot bank and by stable id instead of an array position. The single
 // `spectrumSource` / `spectrumSlotIndex` pair is dropped; migration points the
 // old index at the same Spectrum 1 slot, so nothing changes on screen.
-export const STORE_PERSIST_VERSION = 139;
+export const STORE_PERSIST_VERSION = 140;

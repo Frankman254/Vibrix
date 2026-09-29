@@ -53,7 +53,22 @@ export type CameraMotionMode =
 	| 'path-trace'
 	/** No translation at all — the zoom breathes. */
 	| 'zoom-pulse'
-	| 'lissajous';
+	| 'lissajous'
+	// ── Polygon paths ──────────────────────────────────────────────────────
+	// «poner mas patrones de movimiento, como formas triangulares, cuadradas
+	// etc etc». They share one generator (`polygonOffset`): the phase walks the
+	// vertices and the position is the straight line between two of them, so
+	// the movement has real corners instead of a rounded orbit. The square is
+	// `path-trace`, which already traced exactly that.
+	| 'triangle'
+	| 'diamond'
+	| 'pentagon'
+	| 'hexagon'
+	| 'star'
+	/** A horizontal sweep with a saw on top — a ribbon, not a loop. */
+	| 'zigzag'
+	/** The circle with a radius that breathes: it winds in and back out. */
+	| 'spiral';
 export type CameraMotionDirection = 'cw' | 'ccw';
 export type CameraMotionDrive = 'fixed' | 'audio' | 'fixed-audio';
 /**
@@ -121,6 +136,53 @@ export function resolveCameraMotionRange(value: number | undefined): number {
 		CAMERA_MOTION_RANGE_RANGE.max,
 		Math.max(CAMERA_MOTION_RANGE_RANGE.min, value as number)
 	);
+}
+
+/**
+ * Edge cover zoom: how much of the automatic zoom a full-bleed layer is given
+ * while it travels.
+ *
+ * «Movement scale esta influyendo en la escala del propio logo mas spectrum
+ * cuando no deberia, lo que crece es el area de movimiento». It was: the zoom
+ * that keeps a full-screen canvas from sliding its own border into view scaled
+ * the DRAWN figure with it, so widening the path made the logo and its spectrum
+ * grow. Now that zoom is this dial and it is **off by default** — the path
+ * widens, the figure keeps its size, and a layer whose content reaches the edge
+ * may show that edge, which is the trade the user asked for. Frame targets (the
+ * background) are not affected: there the zoom is what stops black bars, so it
+ * stays automatic and mandatory.
+ */
+export const CAMERA_MOTION_EDGE_ZOOM_RANGE = { min: 0, max: 1 } as const;
+
+/** Smoothing: seconds of lag between the path and the layer that follows it. */
+export const CAMERA_MOTION_SMOOTHING_RANGE = { min: 0, max: 1 } as const;
+
+/** The longest lag the smoothing dial can ask for, in seconds. */
+export const CAMERA_MOTION_SMOOTHING_MAX_SEC = 0.6;
+
+/** Trail: how strong the halo dragged behind a moving layer is. */
+export const CAMERA_MOTION_TRAIL_RANGE = { min: 0, max: 1 } as const;
+
+function clamp01Range(
+	value: number | undefined,
+	range: { min: number; max: number }
+): number {
+	if (!Number.isFinite(value)) return range.min;
+	return Math.min(range.max, Math.max(range.min, value as number));
+}
+
+export function resolveCameraMotionEdgeZoom(value: number | undefined): number {
+	return clamp01Range(value, CAMERA_MOTION_EDGE_ZOOM_RANGE);
+}
+
+export function resolveCameraMotionSmoothing(
+	value: number | undefined
+): number {
+	return clamp01Range(value, CAMERA_MOTION_SMOOTHING_RANGE);
+}
+
+export function resolveCameraMotionTrail(value: number | undefined): number {
+	return clamp01Range(value, CAMERA_MOTION_TRAIL_RANGE);
 }
 
 /**

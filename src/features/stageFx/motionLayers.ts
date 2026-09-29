@@ -66,7 +66,11 @@ export function extractMotionLayerSettingsFromState(
 		cameraMotionAudioInfluence: state.cameraMotionAudioInfluence,
 		cameraMotionAmplitudeAudio: state.cameraMotionAmplitudeAudio,
 		cameraMotionAudioChannel: state.cameraMotionAudioChannel,
-		cameraMotionDirection: state.cameraMotionDirection
+		cameraMotionDirection: state.cameraMotionDirection,
+		cameraMotionEdgeZoom: state.cameraMotionEdgeZoom,
+		cameraMotionSmoothing: state.cameraMotionSmoothing,
+		cameraMotionTrail: state.cameraMotionTrail,
+		cameraMotionTrailColor: state.cameraMotionTrailColor
 	};
 }
 

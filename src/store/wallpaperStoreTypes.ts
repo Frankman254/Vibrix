@@ -1145,6 +1145,10 @@ export type WallpaperStore = WallpaperState & {
 	setCameraMotionDirection: (
 		v: import('@/features/stageFx/stageFxConfig').CameraMotionDirection
 	) => void;
+	setCameraMotionEdgeZoom: (v: number) => void;
+	setCameraMotionSmoothing: (v: number) => void;
+	setCameraMotionTrail: (v: number) => void;
+	setCameraMotionTrailColor: (v: string) => void;
 	setCameraMotionTarget: (
 		v: import('@/features/stageFx/stageFxConfig').CameraMotionTarget
 	) => void;

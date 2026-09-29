@@ -24,6 +24,7 @@ export type {
 	StageLightsSettings
 } from './stageLightsDraw';
 export {
+	cameraTrailFilter,
 	createCameraFxRuntime,
 	isCameraFxActive,
 	resolveCameraLayerOffset,
@@ -33,5 +34,6 @@ export type {
 	CameraFxFrame,
 	CameraFxRuntime,
 	CameraFxSettings,
+	CameraMotionTrail,
 	CameraOffset
 } from './cameraFxDraw';

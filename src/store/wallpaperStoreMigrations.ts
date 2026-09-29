@@ -3564,6 +3564,33 @@ export function migrateWallpaperStore(
 		}
 	}
 
+	if (fromVersion < 140) {
+		// Motion: the edge-cover zoom, the smoothing and the trail.
+		//
+		// `cameraMotionEdgeZoom` lands at 0 on purpose, which is a deliberate
+		// change of look for saved projects: the zoom it replaces was automatic
+		// and scaled the DRAWN figure with the path, which is the bug the user
+		// reported («Movement scale esta influyendo en la escala del propio logo
+		// mas spectrum cuando no deberia»). A project that wants its border
+		// covered again raises the dial.
+		const motionDefaults = {
+			cameraMotionEdgeZoom: 0,
+			cameraMotionSmoothing: 0,
+			cameraMotionTrail: 0,
+			cameraMotionTrailColor: '#ffffff'
+		} as const;
+		for (const [key, value] of Object.entries(motionDefaults)) {
+			const record = migratedState as unknown as Record<string, unknown>;
+			if (typeof record[key] !== typeof value) record[key] = value;
+		}
+		migratedState.motionLayers = (migratedState.motionLayers ?? []).map(
+			layer => ({
+				...layer,
+				settings: { ...motionDefaults, ...layer.settings }
+			})
+		);
+	}
+
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;
 }
 

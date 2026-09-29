@@ -373,6 +373,21 @@ export type MotionLayerSettings = {
 	cameraMotionAmplitudeAudio: number;
 	cameraMotionAudioChannel: import('@/features/stageFx/stageFxConfig').FxAudioChannel;
 	cameraMotionDirection: import('@/features/stageFx/stageFxConfig').CameraMotionDirection;
+	/**
+	 * 0..1 — how much of the automatic zoom a FULL-BLEED target (a spectrum, the
+	 * lyrics, the rain) is given so its own canvas border stays out of frame
+	 * while it travels. `0` is the default and the honest one: the path widens
+	 * and the figure keeps its size. Frame targets ignore it — there the zoom is
+	 * what stops black bars.
+	 */
+	cameraMotionEdgeZoom: number;
+	/** 0..1 — the lag between the path and the layer following it, in a fraction
+	 *  of `CAMERA_MOTION_SMOOTHING_MAX_SEC`. `0` follows the path exactly. */
+	cameraMotionSmoothing: number;
+	/** 0..1 — the strength of the halo dragged behind the moving layer. */
+	cameraMotionTrail: number;
+	/** The halo's colour (`#rrggbb`). */
+	cameraMotionTrailColor: string;
 };
 /**
  * Where a manual timestamp sits inside its transition.
@@ -2166,6 +2181,14 @@ export type WallpaperState = {
 	cameraMotionAmplitudeAudio: number;
 	cameraMotionAudioChannel: import('@/features/stageFx/stageFxConfig').FxAudioChannel;
 	cameraMotionDirection: import('@/features/stageFx/stageFxConfig').CameraMotionDirection;
+	/** Edge cover zoom for full-bleed targets (the flat live value of the active
+	 *  motion layer). */
+	cameraMotionEdgeZoom: number;
+	/** Movement smoothing (the flat live value of the active motion layer). */
+	cameraMotionSmoothing: number;
+	/** Movement trail strength (the flat live value of the active motion layer). */
+	cameraMotionTrail: number;
+	cameraMotionTrailColor: string;
 	/** @deprecated Use `cameraMotionTargets` for multi-layer targeting. */
 	cameraMotionTarget: import('@/features/stageFx/stageFxConfig').CameraMotionTarget;
 	cameraMotionTargets: import('@/features/stageFx/stageFxConfig').CameraMotionTarget[];

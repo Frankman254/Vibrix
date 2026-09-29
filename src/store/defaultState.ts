@@ -518,6 +518,12 @@ const BASE_STATE: Omit<
 	cameraMotionMode: 'none',
 	cameraMotionAmount: 0.3,
 	cameraMotionRange: 1,
+	// The zoom that covers a full-bleed layer's own border is opt-in: by
+	// default the path widens and the figure keeps its size.
+	cameraMotionEdgeZoom: 0,
+	cameraMotionSmoothing: 0,
+	cameraMotionTrail: 0,
+	cameraMotionTrailColor: '#ffffff',
 	cameraMotionSpeed: 0.4,
 	cameraMotionDrive: 'fixed-audio',
 	cameraMotionAudioInfluence: 0.3,
