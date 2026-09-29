@@ -614,6 +614,28 @@ export type IntroMontageMode =
 	| 'glitch-cut';
 
 /**
+ * How the screen is CUT UP between the montage's images.
+ *
+ * A montage is a tiling, not a wall of boxes: the pattern decides the shape of
+ * the separators between the images. `grid`/`columns`/`rows` are the straight
+ * cuts, `diagonal`/`wave`/`lightning` are bands with a shaped border,
+ * `triangles`/`diamonds`/`starburst` are figures, and `irregular` is a
+ * hand-torn grid (deterministic — same cut every time). The geometry itself
+ * lives in `features/intro/introDivisions.ts`.
+ */
+export type IntroDivisionPattern =
+	| 'grid'
+	| 'columns'
+	| 'rows'
+	| 'diagonal'
+	| 'triangles'
+	| 'diamonds'
+	| 'wave'
+	| 'lightning'
+	| 'starburst'
+	| 'irregular';
+
+/**
  * How a line of text is mounted and unmounted.
  *  - `typewriter` letters appear one by one and are taken away one by one.
  *  - `fade` / `rise` / `pop` the line moves as a whole.
@@ -650,6 +672,12 @@ export interface IntroSequenceSettings {
 	releaseSec: number;
 
 	montage: IntroMontageMode;
+	/**
+	 * The shape of the cuts between the images, and how much that pattern is
+	 * tilted (degrees, `-90..90`). Only the band patterns read the angle.
+	 */
+	divisionPattern: IntroDivisionPattern;
+	divisionAngleDeg: number;
 	/** How many setlist images the montage composes. */
 	imageCount: number;
 	order: IntroSequenceOrder;

@@ -121,11 +121,40 @@ function paintCards(
 		ctx.globalAlpha = Math.min(1, card.alpha) * windowAlpha;
 		ctx.translate(card.x, card.y);
 		if (card.rotationRad !== 0) ctx.rotate(card.rotationRad);
-		// The card clips to its own box, so a covered image never bleeds into
-		// the neighbouring cell of a mosaic.
+		// The card clips to its own outline, so a covered image never bleeds
+		// into the neighbouring cell of a mosaic. A tiled montage carries a
+		// polygon — the division pattern's cell — and everything else its box.
 		ctx.beginPath();
-		ctx.rect(-card.width / 2, -card.height / 2, card.width, card.height);
+		if (card.polygon && card.polygon.length >= 3) {
+			card.polygon.forEach((point, i) => {
+				if (i === 0) ctx.moveTo(point.x, point.y);
+				else ctx.lineTo(point.x, point.y);
+			});
+			ctx.closePath();
+		} else {
+			ctx.rect(
+				-card.width / 2,
+				-card.height / 2,
+				card.width,
+				card.height
+			);
+		}
 		ctx.clip();
+		// A wipe inside the clip: the shutter uncovers its cell from one edge
+		// without the cell itself moving.
+		if (card.reveal && card.reveal.pct < 1) {
+			const revealed = card.height * Math.max(0, card.reveal.pct);
+			ctx.beginPath();
+			ctx.rect(
+				-card.width / 2,
+				card.reveal.fromTop
+					? -card.height / 2
+					: card.height / 2 - revealed,
+				card.width,
+				revealed
+			);
+			ctx.clip();
+		}
 		drawCovered(ctx, source, cardW, cardH, focus?.get(card.index));
 		ctx.restore();
 	}

@@ -32,6 +32,7 @@ import {
 	TRACK_TITLE_FONT_LABELS
 } from '@/lib/canvasText/trackTitleOptions';
 import type {
+	IntroDivisionPattern,
 	IntroLogoSource,
 	IntroMontageMode,
 	IntroSequenceKind,
@@ -39,6 +40,11 @@ import type {
 	IntroTextReveal,
 	TrackTitleFontStyle
 } from '@/types/wallpaper';
+import {
+	INTRO_ANGLED_PATTERNS,
+	INTRO_DIVISION_ANGLE_RANGE,
+	INTRO_DIVISION_PATTERNS
+} from '../introDivisions';
 import {
 	INTRO_DURATION_RANGE,
 	INTRO_IMAGE_COUNT_RANGE,
@@ -61,6 +67,21 @@ const FONT_OPTIONS = TRACK_TITLE_FONTS.map(value => ({
 function formatPct(value: number): string {
 	return `${Math.round(value * 100)}%`;
 }
+
+function formatDeg(value: number): string {
+	return `${Math.round(value)}°`;
+}
+
+/**
+ * The montages that CUT the screen up. The rest show one image at a time (or a
+ * travelling strip), so a division pattern would have nothing to divide — the
+ * controls are hidden instead of sitting there doing nothing.
+ */
+const TILED_MONTAGES: readonly IntroMontageMode[] = [
+	'mosaic-grid',
+	'mosaic-burst',
+	'shutter-wipe'
+];
 
 function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 	const t = useT();
@@ -235,6 +256,45 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 									}
 								]}
 							/>
+							{TILED_MONTAGES.includes(settings.montage) && (
+								<>
+									<Select<IntroDivisionPattern>
+										value={settings.divisionPattern}
+										onChange={divisionPattern =>
+											patch({ divisionPattern })
+										}
+										ariaLabel={t.intro_division_pattern}
+										full
+										options={INTRO_DIVISION_PATTERNS.map(
+											value => ({
+												value,
+												label: t[
+													`intro_division_${value}`
+												]
+											})
+										)}
+									/>
+									{INTRO_ANGLED_PATTERNS.includes(
+										settings.divisionPattern
+									) && (
+										<Slider
+											label={t.intro_division_angle}
+											value={settings.divisionAngleDeg}
+											min={INTRO_DIVISION_ANGLE_RANGE.min}
+											max={INTRO_DIVISION_ANGLE_RANGE.max}
+											step={1}
+											onChange={divisionAngleDeg =>
+												patch({ divisionAngleDeg })
+											}
+											defaultValue={
+												factory.divisionAngleDeg
+											}
+											variant="compact"
+											formatValue={formatDeg}
+										/>
+									)}
+								</>
+							)}
 							<Slider
 								label={t.intro_image_count}
 								value={settings.imageCount}

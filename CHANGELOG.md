@@ -40,7 +40,7 @@ the version scheme in `src/lib/version.ts`.
       configurables. Así la animación es idéntica en cada render y es fluida
       aunque la pista empiece en silencio o con fade-in.
       Las ventanas siguen sin añadir duración al vídeo.
-      `STORE_PERSIST_VERSION` is at **133**; la migración traslada lo que hubiera
+      `STORE_PERSIST_VERSION` is at **134**; la migración traslada lo que hubiera
       en v129, y la de v131 cambia las claves viejas del spectrum del intro
       (`spectrumShape` / `spectrumSizePct` / `spectrumColorSource` /
       `spectrumColor`) por las nuevas (`spectrumSource`, `spectrumSlotIndex`,
@@ -64,6 +64,23 @@ the version scheme in `src/lib/version.ts`.
       siguen aplicando encima. El punto guardado está en espacio de imagen, así
       que pasa por la geometría real de la imagen antes de convertirse en
       posición de pantalla: sobrevive al zoom y al paneo.
+
+- **Geometría de las divisiones del montaje.** Un montaje deja de ser «cajas en
+  una rejilla»: ahora es un **teselado**. Se elige un **patrón de divisiones** y
+  una **inclinación**, y el pintor recorta cada imagen a su propio polígono
+  (`src/features/intro/introDivisions.ts`, con tests). Diez patrones: rejilla,
+  franjas verticales, franjas horizontales, franjas diagonales, triángulos,
+  rombos, ondulado, rayo, media estrella e irregular. La inclinación
+  (`-90°..90°`) solo la leen los patrones de franjas, así que el control se
+  esconde para los demás en vez de quedarse ahí sin hacer nada.
+    - Dos reglas que los tests obligan: **el teselado cubre toda la pantalla**
+      (un hueco es fondo negro asomando, justo lo que se veía) y es
+      **determinista**, `irregular` incluido, que salta desde un hash del índice
+      y nunca de `Math.random`: la previsualización y el vídeo exportado cortan
+      igual.
+    - Lo usan mosaico, mosaico en ráfaga y persiana. La persiana ahora **revela
+      dentro de la celda** en vez de mover la celda: una celda que se desplaza
+      se lleva su recorte y deja ver el fondo por el hueco.
 
 - **Arreglado: pantalla negra al abrir Intro y ending.** El selector del slot de
   spectrum construía los objetos de opción **dentro** del selector del store, así

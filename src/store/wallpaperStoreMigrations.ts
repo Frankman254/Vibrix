@@ -3365,6 +3365,24 @@ export function migrateWallpaperStore(
 		}
 	}
 
+	if (fromVersion < 134) {
+		// The montage became a TILING: a pattern and a tilt decide the shape of
+		// the cuts between the images. `grid` is the old behaviour exactly, so
+		// nobody's intro changes on upgrade.
+		const migrateWindowDivisions = (window_: unknown): void => {
+			if (!window_ || typeof window_ !== 'object') return;
+			const settings = window_ as Record<string, unknown>;
+			if (typeof settings.divisionPattern !== 'string') {
+				settings.divisionPattern = 'grid';
+			}
+			if (typeof settings.divisionAngleDeg !== 'number') {
+				settings.divisionAngleDeg = 0;
+			}
+		};
+		migrateWindowDivisions(migratedState.introSequence);
+		migrateWindowDivisions(migratedState.outroSequence);
+	}
+
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;
 }
 

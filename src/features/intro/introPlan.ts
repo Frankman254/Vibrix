@@ -17,6 +17,7 @@
  * far along each piece is this frame.
  */
 import type {
+	IntroDivisionPattern,
 	IntroLogoSource,
 	IntroMontageMode,
 	IntroSequenceKind,
@@ -28,6 +29,12 @@ import {
 	INTRO_WAVE_INTENSITY_RANGE,
 	INTRO_WAVE_SPEED_RANGE
 } from './introSpectrum';
+import {
+	INTRO_DIVISION_ANGLE_RANGE,
+	resolveIntroDivisions,
+	type IntroDivisionCell,
+	type Point as DivisionPoint
+} from './introDivisions';
 
 export type IntroSequenceState = Pick<
 	WallpaperState,
@@ -55,6 +62,8 @@ export type IntroWindow = {
 
 export type IntroViewport = { width: number; height: number };
 
+export type IntroDivisionPoint = DivisionPoint;
+
 /**
  * One image of the montage, placed in viewport pixels. `x`/`y` are the CENTRE
  * so a rotation turns the card and not its corner.
@@ -69,6 +78,18 @@ export type IntroCard = {
 	alpha: number;
 	scale: number;
 	rotationRad: number;
+	/**
+	 * The clip outline, in pixels relative to (`x`, `y`). Absent means "the
+	 * card's own box", which is what the non-tiled montages want.
+	 */
+	polygon?: IntroDivisionPoint[];
+	/**
+	 * A wipe INSIDE the clip: `pct` of the cell is uncovered, growing from the
+	 * top edge or the bottom one. The shutter uses it so a panel can arrive
+	 * without opening a hole where it has not arrived yet — a moving card would
+	 * drag its own clip along and show the backdrop through the gap.
+	 */
+	reveal?: { pct: number; fromTop: boolean };
 };
 
 /** How far along one line of text is, however it is being revealed. */
@@ -164,6 +185,8 @@ export function createDefaultIntroSequence(
 		releaseSec: 2.5,
 
 		montage: intro ? 'mosaic-grid' : 'mosaic-burst',
+		divisionPattern: 'grid',
+		divisionAngleDeg: 0,
 		imageCount: intro ? 9 : 9,
 		order: intro ? 'setlist' : 'setlist-reverse',
 		backdropColorSource: 'manual',
@@ -458,6 +481,9 @@ function sequentialSlice(
  */
 export function resolveIntroCards(options: {
 	montage: IntroMontageMode;
+	/** The shape of the cuts; the tiled montages build their cells from it. */
+	pattern?: IntroDivisionPattern;
+	angleDeg?: number;
 	count: number;
 	viewport: IntroViewport;
 	/** The `cards` slot mount — `1` through the hold. */
@@ -471,33 +497,45 @@ export function resolveIntroCards(options: {
 	const cards: IntroCard[] = [];
 	const m = clamp01(mount);
 	const p = clamp01(progress);
+	/**
+	 * The tiling, built once and shared by the montages that cut the screen up.
+	 * Cells always cover the whole viewport, which is what keeps the backdrop
+	 * from showing through between the images.
+	 */
+	const cells = (): IntroDivisionCell[] =>
+		resolveIntroDivisions({
+			pattern: options.pattern ?? 'grid',
+			count: total,
+			viewport,
+			angleDeg: clampRange(
+				options.angleDeg ?? 0,
+				INTRO_DIVISION_ANGLE_RANGE
+			)
+		});
+	const fromCell = (cell: IntroDivisionCell) => ({
+		index: cell.index,
+		x: cell.x,
+		y: cell.y,
+		width: cell.width,
+		height: cell.height,
+		polygon: cell.polygon
+	});
 	// Sequential montages use the mount only as a global fade, because their
 	// image cycling belongs to the whole window (see `sequentialSlice`).
 	const envelope = easeInOut(m);
-
-	/** Grid geometry shared by the two mosaics. */
-	const columns = Math.ceil(Math.sqrt(total));
-	const rows = Math.ceil(total / columns);
 
 	switch (montage) {
 		case 'mosaic-grid': {
 			// Every image at once, as asked: the whole wall arrives together
 			// and breathes as one piece.
 			const eased = easeInOut(m);
-			const cellW = width / columns;
-			const cellH = height / rows;
-			for (let index = 0; index < total; index += 1) {
-				const column = index % columns;
-				const row = Math.floor(index / columns);
+			for (const cell of cells()) {
 				cards.push({
-					index,
-					x: cellW * (column + 0.5),
-					y: cellH * (row + 0.5),
-					width: cellW,
-					height: cellH,
+					...fromCell(cell),
 					alpha: eased,
 					// A slow push that never stops, so the wall is alive even
-					// while nothing is mounting.
+					// while nothing is mounting. It never drops below 1: a card
+					// smaller than its cell would uncover the backdrop.
 					scale: 1.08 - 0.06 * eased + 0.04 * p,
 					rotationRad: 0
 				});
@@ -505,29 +543,20 @@ export function resolveIntroCards(options: {
 			return cards;
 		}
 		case 'mosaic-burst': {
-			// The same mosaic, landing from the middle outwards.
-			const cellW = width / columns;
-			const cellH = height / rows;
-			const centreCol = (columns - 1) / 2;
-			const centreRow = (rows - 1) / 2;
-			const ranked = Array.from({ length: total }, (_, index) => {
-				const column = index % columns;
-				const row = Math.floor(index / columns);
-				return {
-					index,
-					distance: Math.hypot(column - centreCol, row - centreRow)
-				};
-			}).sort((a, b) => a.distance - b.distance);
+			// The same tiling, landing from the middle outwards: the cells
+			// nearest the centre of the screen are ranked first.
+			const cx = width / 2;
+			const cy = height / 2;
+			const ranked = cells()
+				.map(cell => ({
+					cell,
+					distance: Math.hypot(cell.x - cx, cell.y - cy)
+				}))
+				.sort((a, b) => a.distance - b.distance);
 			ranked.forEach((entry, rank) => {
 				const t = easeInOut(staggered(m, rank, total));
-				const column = entry.index % columns;
-				const row = Math.floor(entry.index / columns);
 				cards.push({
-					index: entry.index,
-					x: cellW * (column + 0.5),
-					y: cellH * (row + 0.5),
-					width: cellW,
-					height: cellH,
+					...fromCell(entry.cell),
 					alpha: t,
 					scale: 1.18 - 0.16 * t,
 					rotationRad: 0
@@ -566,21 +595,18 @@ export function resolveIntroCards(options: {
 			return cards;
 		}
 		case 'shutter-wipe': {
-			// Vertical panels sliding in from alternating edges.
-			const panelW = width / total;
-			for (let index = 0; index < total; index += 1) {
-				const t = easeInOut(staggered(m, index, total));
-				const fromTop = index % 2 === 0;
-				const travel = height * (1 - t);
+			// Panels wiping in from alternating edges. The wipe happens INSIDE
+			// the cell (`reveal`) instead of sliding the cell itself: a moving
+			// cell drags its clip along and the backdrop shows through the gap,
+			// which is exactly the black the user reported.
+			for (const cell of cells()) {
+				const t = easeInOut(staggered(m, cell.index, total));
 				cards.push({
-					index,
-					x: panelW * (index + 0.5),
-					y: height / 2 + (fromTop ? -travel : travel),
-					width: panelW,
-					height,
+					...fromCell(cell),
 					alpha: 1,
 					scale: 1,
-					rotationRad: 0
+					rotationRad: 0,
+					reveal: { pct: t, fromTop: cell.index % 2 === 0 }
 				});
 			}
 			return cards;
@@ -734,6 +760,8 @@ export function resolveIntroFrame(options: {
 		imageDim: clamp01(settings.imageDim),
 		cards: resolveIntroCards({
 			montage: settings.montage,
+			pattern: settings.divisionPattern,
+			angleDeg: settings.divisionAngleDeg,
 			count: cardCount,
 			viewport,
 			mount: mountOf('cards'),

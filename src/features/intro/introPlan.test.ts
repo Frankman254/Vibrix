@@ -176,6 +176,92 @@ describe('resolveIntroBackdropAlpha', () => {
 	});
 });
 
+describe('resolveIntroCards — divisions', () => {
+	it("gives the tiled montages the pattern's polygons", () => {
+		for (const montage of [
+			'mosaic-grid',
+			'mosaic-burst',
+			'shutter-wipe'
+		] as const) {
+			const cards = resolveIntroCards({
+				montage,
+				pattern: 'triangles',
+				count: 6,
+				viewport: VIEWPORT,
+				mount: 1,
+				progress: 0.5
+			});
+			expect(cards).toHaveLength(6);
+			for (const card of cards) {
+				expect(card.polygon?.length ?? 0).toBeGreaterThanOrEqual(3);
+			}
+		}
+	});
+
+	it('never shrinks a tiled card below its cell', () => {
+		// A card smaller than its polygon uncovers the backdrop: that is the
+		// black the user reported.
+		for (const progress of [0, 0.25, 0.5, 0.75, 1]) {
+			for (const mount of [0, 0.4, 1]) {
+				const cards = resolveIntroCards({
+					montage: 'mosaic-burst',
+					pattern: 'grid',
+					count: 9,
+					viewport: VIEWPORT,
+					mount,
+					progress
+				});
+				for (const card of cards) {
+					expect(card.scale).toBeGreaterThanOrEqual(1);
+				}
+			}
+		}
+	});
+
+	it('wipes the shutter inside its cell instead of moving it', () => {
+		const cards = resolveIntroCards({
+			montage: 'shutter-wipe',
+			pattern: 'columns',
+			count: 4,
+			viewport: VIEWPORT,
+			mount: 0.5,
+			progress: 0.5
+		});
+		// Every panel sits where the tiling put it, and what animates is the
+		// share of the cell that is uncovered.
+		expect(cards.every(card => card.y === VIEWPORT.height / 2)).toBe(true);
+		expect(cards.some(card => (card.reveal?.pct ?? 1) < 1)).toBe(true);
+		const full = resolveIntroCards({
+			montage: 'shutter-wipe',
+			pattern: 'columns',
+			count: 4,
+			viewport: VIEWPORT,
+			mount: 1,
+			progress: 0.5
+		});
+		expect(full.every(card => card.reveal?.pct === 1)).toBe(true);
+	});
+
+	it('leaves the non-tiled montages without a polygon', () => {
+		for (const montage of [
+			'fade-stack',
+			'film-strip',
+			'ken-burns',
+			'glitch-cut'
+		] as const) {
+			const cards = resolveIntroCards({
+				montage,
+				pattern: 'triangles',
+				count: 5,
+				viewport: VIEWPORT,
+				mount: 1,
+				progress: 0.4
+			});
+			expect(cards.every(card => card.polygon === undefined)).toBe(true);
+		}
+	});
+});
+
 describe('resolveIntroCards', () => {
 	it('brings the whole mosaic in at once', () => {
 		const cards = resolveIntroCards({
