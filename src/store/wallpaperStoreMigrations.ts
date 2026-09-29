@@ -3278,10 +3278,13 @@ export function migrateWallpaperStore(
 						? 'slot'
 						: 'none';
 			}
+			// The legacy index shape is what v139 reads and converts; writing a
+			// literal 0 here keeps this block honest now that the settings type
+			// no longer carries the key.
 			settings.spectrumSlotIndex =
 				typeof settings.spectrumSlotIndex === 'number'
 					? settings.spectrumSlotIndex
-					: base.spectrumSlotIndex;
+					: 0;
 			settings.spectrumCentered =
 				typeof settings.spectrumCentered === 'boolean'
 					? settings.spectrumCentered
@@ -3511,6 +3514,54 @@ export function migrateWallpaperStore(
 				introSlotId: setlist.introSlotId ?? null
 			})
 		);
+	}
+
+	if (fromVersion < 139) {
+		// The window's spectrum stopped being ONE picker over a mixed list and
+		// became what the wallpaper already models: Spectrum 1 and Spectrum 2,
+		// each with its own switch and its own slot bank, both drawable at once.
+		// The old `spectrumSlotIndex` pointed into Spectrum 1's list, so it
+		// converts to that slot's stable id — a project that asked for a figure
+		// keeps drawing the same figure.
+		const primarySlots = migratedState.spectrumProfileSlots ?? [];
+		const migrateWindowSpectrumBanks = (window_: unknown): void => {
+			if (!window_ || typeof window_ !== 'object') return;
+			const settings = window_ as Record<string, unknown>;
+			// The legacy pair wins whenever it is present: a project saved with
+			// the old shape must keep drawing the figure it asked for, even if
+			// some other path already wrote the new defaults over it.
+			const hasLegacyPair =
+				settings.spectrumSource !== undefined ||
+				typeof settings.spectrumSlotIndex === 'number';
+			if (
+				hasLegacyPair ||
+				settings.spectrumPrimaryEnabled === undefined
+			) {
+				const index =
+					typeof settings.spectrumSlotIndex === 'number'
+						? Math.round(settings.spectrumSlotIndex)
+						: -1;
+				const slot = index >= 0 ? primarySlots[index] : undefined;
+				settings.spectrumPrimaryEnabled =
+					settings.spectrumSource === 'slot' && !!slot?.values;
+				settings.spectrumPrimarySlotId = slot?.values
+					? slot.id
+					: (primarySlots.find(entry => entry.values)?.id ?? null);
+			}
+			settings.spectrumSecondEnabled ??= false;
+			settings.spectrumSecondSlotId ??= null;
+			delete settings.spectrumSource;
+			delete settings.spectrumSlotIndex;
+		};
+		migrateWindowSpectrumBanks(migratedState.introSequence);
+		migrateWindowSpectrumBanks(migratedState.outroSequence);
+		// Saved intro animations carry both windows, so they need the same
+		// conversion or loading a slot would write the old shape back.
+		for (const slot of migratedState.introProfileSlots ?? []) {
+			if (!slot.values) continue;
+			migrateWindowSpectrumBanks(slot.values.introSequence);
+			migrateWindowSpectrumBanks(slot.values.outroSequence);
+		}
 	}
 
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;

@@ -16,20 +16,51 @@
  */
 import {
 	applySpectrumPlacementToState,
+	createDefaultSpectrumInstanceSettings,
 	hydrateSpectrumProfileValues,
 	resolveMainSpectrumState
 } from '@/features/spectrum';
 import { drawSpectrum } from '@/features/spectrum/render';
 import { resolveResponsiveSpectrumSettings } from '@/features/layout/responsiveLayout';
 import type { BackgroundPalette } from '@/lib/backgroundPalette';
-import type { WallpaperState } from '@/types/wallpaper';
+import type {
+	ProfileSlot,
+	SpectrumProfileSettings,
+	WallpaperState
+} from '@/types/wallpaper';
 import type { IntroSpectrumPlan } from './introPlan';
 import type { PaintIntroSpectrum } from './introPaint';
 import { resolveIntroSpectrumWave } from './introSpectrum';
 
-/** Per-window runtime key, so intro and ending keep separate smoothing. */
-function runtimeKey(kind: 'intro' | 'outro'): string {
-	return `intro-sequence-${kind}`;
+/**
+ * Per-window, per-bank runtime key, so intro and ending — and the two figures
+ * inside one window — keep separate smoothing.
+ */
+function runtimeKey(kind: 'intro' | 'outro', bank: string): string {
+	return `intro-sequence-${kind}-${bank}`;
+}
+
+/**
+ * The look a slot actually carries.
+ *
+ * Spectrum 1's slots keep their figure in the main-named keys. Spectrum 2's
+ * slots keep theirs in `spectrumInstances[0]` (the editor writes only that
+ * portion), and those are main-named keys too — so lifting them over the
+ * hydrated values renders the second figure through the exact main code path,
+ * the same trick the live overlay registry uses for extra instances.
+ */
+function resolveSlotLook(
+	values: NonNullable<ProfileSlot<SpectrumProfileSettings>['values']>,
+	bank: IntroSpectrumPlan['bank']
+): Partial<WallpaperState> {
+	const hydrated = hydrateSpectrumProfileValues(values);
+	if (bank === 'primary') return hydrated as Partial<WallpaperState>;
+	const instance = hydrated.spectrumInstances?.[0];
+	return {
+		...hydrated,
+		...createDefaultSpectrumInstanceSettings(),
+		...(instance ?? {})
+	} as Partial<WallpaperState>;
 }
 
 export type IntroSpectrumContext = {
@@ -51,10 +82,19 @@ export function createIntroSpectrumPainter(
 	context: IntroSpectrumContext
 ): PaintIntroSpectrum | null {
 	const { state } = context;
-	if (state.spectrumProfileSlots.length === 0) return null;
+	if (
+		state.spectrumProfileSlots.length === 0 &&
+		state.spectrumSecondProfileSlots.length === 0
+	) {
+		return null;
+	}
 
 	return (ctx, plan, windowAlpha) => {
-		const slot = state.spectrumProfileSlots[plan.slotIndex];
+		const bank =
+			plan.bank === 'second'
+				? state.spectrumSecondProfileSlots
+				: state.spectrumProfileSlots;
+		const slot = bank.find(entry => entry.id === plan.slotId);
 		if (!slot?.values) return;
 		const alpha = Math.min(1, plan.alpha) * windowAlpha;
 		if (alpha <= 0.001) return;
@@ -64,7 +104,7 @@ export function createIntroSpectrumPainter(
 
 		const merged = {
 			...state,
-			...hydrateSpectrumProfileValues(slot.values),
+			...resolveSlotLook(slot.values, plan.bank),
 			// The window owns visibility: a slot saved with the main figure
 			// hidden would render nothing here.
 			spectrumEnabled: true,
@@ -123,7 +163,7 @@ export function createIntroSpectrumPainter(
 				// The flourish is not the place to read a diagnostics overlay.
 				showDiagnosticsHud: false
 			},
-			runtimeKey(context.kind)
+			runtimeKey(context.kind, plan.bank)
 		);
 	};
 }

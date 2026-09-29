@@ -642,9 +642,12 @@ export const en = {
 	intro_logo_hint:
 		'In the column it is the first row above the title and the offsets nudge it from there; free it is placed from the centre of the screen and the title recentres itself.',
 	intro_section_spectrum: 'Spectrum',
-	intro_spectrum_enabled: 'Show a spectrum',
-	intro_spectrum_enabled_tooltip:
-		'Mounts one of your saved spectrum slots during the window and takes it apart again at the end.',
+	intro_spectrum_primary: 'Spectrum 1',
+	intro_spectrum_primary_tooltip:
+		"Mounts one of Spectrum 1's saved slots during the window and takes it apart again at the end.",
+	intro_spectrum_second: 'Spectrum 2',
+	intro_spectrum_second_tooltip:
+		"Mounts one of Spectrum 2's own saved slots. Independent of Spectrum 1 — both figures can run at once.",
 	intro_spectrum_slot: 'Saved slot',
 	intro_spectrum_no_slots:
 		'No saved spectrum slots yet. Save one from the Spectrum tab and it will show up here.',
@@ -654,7 +657,14 @@ export const en = {
 	intro_spectrum_wave_speed: 'Wave speed',
 	intro_spectrum_wave_intensity: 'Wave height',
 	intro_spectrum_hint:
-		'The figure is your saved slot drawn by the real spectrum engine, moved by its own fixed wave — never by the track — so it animates smoothly even over silence or a fade-in.',
+		'Each figure is your saved slot drawn by the real spectrum engine, moved by its own fixed wave — never by the track — so it animates smoothly even over silence or a fade-in.',
+	intro_sections_title: 'Window settings',
+	intro_aria_sections: 'Intro window sections',
+	intro_view_timing: 'Timing',
+	intro_view_montage: 'Montage',
+	intro_view_text: 'Text',
+	intro_view_logo: 'Logo',
+	intro_view_spectrum: 'Spectrum',
 	global_composition_hud_title: 'Global composition',
 	global_composition_hud_note: 'per-image ignored',
 	global_composition_hud_exit: 'Turn the global composition mode off',

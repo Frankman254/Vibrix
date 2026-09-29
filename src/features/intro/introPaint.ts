@@ -553,8 +553,10 @@ export function paintIntro({
 	const centreX = width / 2;
 
 	// Behind the stack: the figure is scenery, the title is the message.
-	if (frame.spectrum && paintSpectrum) {
-		paintSpectrum(ctx, frame.spectrum, windowAlpha);
+	if (paintSpectrum) {
+		for (const plan of frame.spectrums) {
+			paintSpectrum(ctx, plan, windowAlpha);
+		}
 	}
 
 	if (frame.logo && logoH > 0) {

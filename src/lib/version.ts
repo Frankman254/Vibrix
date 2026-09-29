@@ -164,4 +164,10 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // `logoFocusX/Y` + `logoFocusSource`, seeded as "not measured yet" so the
 // estimator owns them — plus the global `logoFollowImageFocus`, which takes the
 // logo's base position from the active image's own mark focus.
-export const STORE_PERSIST_VERSION = 138;
+// v139: the intro / ending window draws Spectrum 1 and Spectrum 2 as two
+// independent figures (`spectrumPrimaryEnabled` + `spectrumPrimarySlotId`,
+// `spectrumSecondEnabled` + `spectrumSecondSlotId`), each picked from ITS OWN
+// slot bank and by stable id instead of an array position. The single
+// `spectrumSource` / `spectrumSlotIndex` pair is dropped; migration points the
+// old index at the same Spectrum 1 slot, so nothing changes on screen.
+export const STORE_PERSIST_VERSION = 139;

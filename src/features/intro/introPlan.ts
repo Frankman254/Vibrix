@@ -25,6 +25,7 @@ import type {
 	IntroMontageMove,
 	IntroSequenceKind,
 	IntroSequenceSettings,
+	IntroSpectrumBank,
 	IntroTextReveal,
 	IntroTitleFrameAnimation,
 	WallpaperState
@@ -128,8 +129,10 @@ export type IntroTextPlan = {
  * how opaque it is. `introSpectrumDraw` turns that into a slot render.
  */
 export type IntroSpectrumPlan = {
-	/** Which saved spectrum slot, by position in `spectrumProfileSlots`. */
-	slotIndex: number;
+	/** Which of the two figures this is — each bank owns its own slot list. */
+	bank: IntroSpectrumBank;
+	/** Which saved slot, by stable id inside that bank. */
+	slotId: string;
 	centered: boolean;
 	/** `0..1` — feeds both the generated wave's height and the opacity. */
 	mount: number;
@@ -172,7 +175,8 @@ export type IntroFrame = {
 	/** How much the montage is darkened under the composition, `0..1`. */
 	imageDim: number;
 	cards: IntroCard[];
-	spectrum: IntroSpectrumPlan | null;
+	/** Every figure the window draws, in bank order. Empty → no spectrum. */
+	spectrums: IntroSpectrumPlan[];
 	logo: IntroLogoPlan | null;
 	title: IntroTextPlan | null;
 	/** The rectangle around the title: how wide it has drawn itself. */
@@ -270,8 +274,10 @@ export function createDefaultIntroSequence(
 		logoStretch: 1,
 		logoOpacity: 1,
 
-		spectrumSource: 'none',
-		spectrumSlotIndex: 0,
+		spectrumPrimaryEnabled: false,
+		spectrumPrimarySlotId: null,
+		spectrumSecondEnabled: false,
+		spectrumSecondSlotId: null,
 		spectrumCentered: true,
 		spectrumWaveSpeed: 1,
 		spectrumWaveIntensity: 1
@@ -287,6 +293,46 @@ function clampRange(
 	range: { min: number; max: number }
 ): number {
 	return Math.max(range.min, Math.min(range.max, value));
+}
+
+/**
+ * The figures the window draws.
+ *
+ * Spectrum 1 and Spectrum 2 are independent switches over two independent slot
+ * banks, so a window can mount one, the other, or both at once — the wallpaper's
+ * own model, not a single "which spectrum" picker. A bank with no slot chosen
+ * draws nothing instead of falling back to a slot the user never asked for.
+ */
+function resolveIntroSpectrums(
+	settings: IntroSequenceSettings,
+	mount: number
+): IntroSpectrumPlan[] {
+	if (mount <= 0) return [];
+	const shared = {
+		centered: settings.spectrumCentered,
+		mount,
+		alpha: clamp01(mount * 1.4),
+		waveSpeed: clampRange(
+			settings.spectrumWaveSpeed,
+			INTRO_WAVE_SPEED_RANGE
+		),
+		waveIntensity: clampRange(
+			settings.spectrumWaveIntensity,
+			INTRO_WAVE_INTENSITY_RANGE
+		)
+	};
+	const plans: IntroSpectrumPlan[] = [];
+	const add = (bank: IntroSpectrumBank, slotId: string | null): void => {
+		if (!slotId) return;
+		plans.push({ bank, slotId, ...shared });
+	};
+	if (settings.spectrumPrimaryEnabled) {
+		add('primary', settings.spectrumPrimarySlotId);
+	}
+	if (settings.spectrumSecondEnabled) {
+		add('second', settings.spectrumSecondSlotId);
+	}
+	return plans;
 }
 
 /** Smooth ease-in-out, so nothing starts or stops on a hard edge. */
@@ -1020,25 +1066,7 @@ export function resolveIntroFrame(options: {
 			mount: mountOf('cards'),
 			progress
 		}),
-		spectrum:
-			settings.spectrumSource === 'none' ||
-			settings.spectrumSlotIndex < 0 ||
-			spectrumMount <= 0
-				? null
-				: {
-						slotIndex: Math.round(settings.spectrumSlotIndex),
-						centered: settings.spectrumCentered,
-						mount: spectrumMount,
-						alpha: clamp01(spectrumMount * 1.4),
-						waveSpeed: clampRange(
-							settings.spectrumWaveSpeed,
-							INTRO_WAVE_SPEED_RANGE
-						),
-						waveIntensity: clampRange(
-							settings.spectrumWaveIntensity,
-							INTRO_WAVE_INTENSITY_RANGE
-						)
-					},
+		spectrums: resolveIntroSpectrums(settings, spectrumMount),
 		logo:
 			settings.logoSource === 'none' || logoMount <= 0
 				? null

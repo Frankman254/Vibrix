@@ -646,9 +646,12 @@ export const es: Record<TranslationKey, string> = {
 	intro_logo_hint:
 		'En la columna es la primera fila encima del título y los desplazamientos lo corren desde ahí; libre se coloca desde el centro de la pantalla y el título se recentra.',
 	intro_section_spectrum: 'Spectrum',
-	intro_spectrum_enabled: 'Mostrar un spectrum',
-	intro_spectrum_enabled_tooltip:
-		'Monta uno de tus slots de spectrum guardados durante la ventana y lo desmonta al final.',
+	intro_spectrum_primary: 'Spectrum 1',
+	intro_spectrum_primary_tooltip:
+		'Monta uno de los slots guardados de Spectrum 1 durante la ventana y lo desmonta al final.',
+	intro_spectrum_second: 'Spectrum 2',
+	intro_spectrum_second_tooltip:
+		'Monta uno de los slots propios de Spectrum 2. Es independiente de Spectrum 1: las dos figuras pueden salir a la vez.',
 	intro_spectrum_slot: 'Slot guardado',
 	intro_spectrum_no_slots:
 		'Todavía no hay slots de spectrum guardados. Guarda uno en la pestaña Spectrum y aparecerá aquí.',
@@ -658,7 +661,14 @@ export const es: Record<TranslationKey, string> = {
 	intro_spectrum_wave_speed: 'Velocidad de la onda',
 	intro_spectrum_wave_intensity: 'Altura de la onda',
 	intro_spectrum_hint:
-		'La figura es tu slot guardado dibujado por el motor real del spectrum, movido por su propia onda fija —nunca por la pista—, así que la animación es fluida incluso sobre silencio o un fade-in.',
+		'Cada figura es tu slot guardado dibujado por el motor real del spectrum, movido por su propia onda fija —nunca por la pista—, así que la animación es fluida incluso sobre silencio o un fade-in.',
+	intro_sections_title: 'Ajustes de la ventana',
+	intro_aria_sections: 'Secciones de la ventana de intro',
+	intro_view_timing: 'Tiempo',
+	intro_view_montage: 'Montaje',
+	intro_view_text: 'Texto',
+	intro_view_logo: 'Logo',
+	intro_view_spectrum: 'Spectrum',
 	global_composition_hud_title: 'Composición global',
 	global_composition_hud_note: 'per-imagen ignorado',
 	global_composition_hud_exit: 'Desactivar el modo de composición global',

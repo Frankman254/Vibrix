@@ -536,7 +536,8 @@ describe('resolveIntroFrame', () => {
 				titleText: '',
 				taglineText: '',
 				logoSource: 'none',
-				spectrumSource: 'none'
+				spectrumPrimaryEnabled: false,
+				spectrumSecondEnabled: false
 			}),
 			progress: 0.5,
 			viewport: VIEWPORT,
@@ -546,7 +547,7 @@ describe('resolveIntroFrame', () => {
 		expect(frame.tagline).toBeNull();
 		expect(frame.titleFrame).toBeNull();
 		expect(frame.logo).toBeNull();
-		expect(frame.spectrum).toBeNull();
+		expect(frame.spectrums).toEqual([]);
 		expect(frame.cards).toHaveLength(4);
 	});
 
@@ -557,7 +558,10 @@ describe('resolveIntroFrame', () => {
 				titleText: 'CLUBLioNx',
 				taglineText: 'For you and your waifu',
 				logoSource: 'vibrix',
-				spectrumSource: 'slot'
+				spectrumPrimaryEnabled: true,
+				spectrumPrimarySlotId: 'slot-a',
+				spectrumSecondEnabled: true,
+				spectrumSecondSlotId: 'slot-b'
 			}),
 			progress: 0.5,
 			viewport: VIEWPORT,
@@ -569,10 +573,18 @@ describe('resolveIntroFrame', () => {
 		);
 		expect(frame.titleFrame?.widthPct).toBe(1);
 		expect(frame.logo?.alpha).toBe(1);
-		expect(frame.spectrum?.slotIndex).toBe(0);
-		expect(frame.spectrum?.centered).toBe(true);
-		expect(frame.spectrum?.mount).toBe(1);
-		expect(frame.spectrum?.alpha).toBe(1);
+		// Both figures at once, each from its own bank, in bank order.
+		expect(frame.spectrums.map(plan => plan.bank)).toEqual([
+			'primary',
+			'second'
+		]);
+		expect(frame.spectrums.map(plan => plan.slotId)).toEqual([
+			'slot-a',
+			'slot-b'
+		]);
+		expect(frame.spectrums[0]?.centered).toBe(true);
+		expect(frame.spectrums[0]?.mount).toBe(1);
+		expect(frame.spectrums[0]?.alpha).toBe(1);
 		expect(frame.backdropAlpha).toBe(1);
 	});
 
@@ -583,7 +595,8 @@ describe('resolveIntroFrame', () => {
 				titleText: 'CLUBLioNx',
 				taglineText: 'For you and your waifu',
 				logoSource: 'vibrix',
-				spectrumSource: 'slot'
+				spectrumPrimaryEnabled: true,
+				spectrumPrimarySlotId: 'slot-a'
 			}),
 			progress: 1,
 			viewport: VIEWPORT,
@@ -593,7 +606,7 @@ describe('resolveIntroFrame', () => {
 		expect(frame.title?.frame.alpha).toBe(0);
 		expect(frame.tagline?.frame.visibleChars).toBe(0);
 		expect(frame.logo).toBeNull();
-		expect(frame.spectrum).toBeNull();
+		expect(frame.spectrums).toEqual([]);
 		expect(frame.cards.every(card => card.alpha === 0)).toBe(true);
 	});
 });

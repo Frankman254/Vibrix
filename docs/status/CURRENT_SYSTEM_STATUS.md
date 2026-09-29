@@ -1,6 +1,6 @@
 # Current System Status
 
-**As of:** `chore/fase-0-higiene` (`main`) · App `0.7.0-alpha` · Store persist **v138**
+**As of:** `chore/fase-0-higiene` (`main`) · App `0.7.0-alpha` · Store persist **v139**
 
 This document describes the product **as implemented in code**, not aspirational roadmaps.
 
@@ -25,7 +25,7 @@ This document describes the product **as implemented in code**, not aspirational
 | -------------------------------- | ------ | ----------------------------------------------------------- |
 | Vite + React 19 SPA              | Stable | HashRouter (`#/edit`, `#/present`, `#/record`, `#/preview`) |
 | Shared `WallpaperAppProviders`   | Stable | Single `AudioDataProvider` above route shells               |
-| Zustand + `localStorage` persist | Stable | `STORE_PERSIST_VERSION = 138`                               |
+| Zustand + `localStorage` persist | Stable | `STORE_PERSIST_VERSION = 139`                               |
 | IndexedDB assets                 | Stable | Images, audio blobs                                         |
 | Vitest + GitHub Actions CI       | Stable | format, lint, types, tests, docs:check, build               |
 
@@ -172,7 +172,7 @@ See `docs/features/SPECTRUM_ENGINE.md` (ownership model) and
 | Constant                  | Value         | Location                                    |
 | ------------------------- | ------------- | ------------------------------------------- |
 | `APP_VERSION`             | `0.7.0-alpha` | `src/lib/version.ts`, `package.json`        |
-| `STORE_PERSIST_VERSION`   | **138**       | Migrations in `wallpaperStoreMigrations.ts` |
+| `STORE_PERSIST_VERSION`   | **139**       | Migrations in `wallpaperStoreMigrations.ts` |
 | `PROJECT_SCHEMA_VERSION`  | 1             |                                             |
 | `SETTINGS_SCHEMA_VERSION` | 1             |                                             |
 
@@ -214,6 +214,7 @@ Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 | v132    | El tiempo del intro en segundos (`buildSec`/`releaseSec`) + `backdropColorSource`                                                                                                                                                                                 |
 | v133    | Foco de cara y de logo por imagen (`faceFocus*`, `logoFocus*`) + `logoFollowImageFocus`                                                                                                                                                                           |
 | v138    | Slots de animaciones de intro (`introProfileSlots`) + `Setlist.introSlotId`                                                                                                                                                                                       |
+| v139    | Spectrum 1 y 2 independientes en la ventana de intro (`spectrumPrimaryEnabled` / `spectrumPrimarySlotId` / `spectrumSecondEnabled` / `spectrumSecondSlotId`), por id de slot                                                                                      |
 | v137    | Tipografía de las líneas de la intro tomada de Track Info (`titleTextStyleSource`, `taglineTextStyleSource`)                                                                                                                                                      |
 | v136    | Escala de movimiento por capa de Camera Motion (`cameraMotionRange`)                                                                                                                                                                                              |
 | v135    | Logo de la intro con colocación, desplazamientos, ancho y opacidad (`logoPlacement`, `logoOffsetX/Y`, `logoStretch`, `logoOpacity`)                                                                                                                               |

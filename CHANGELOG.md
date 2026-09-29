@@ -40,7 +40,7 @@ the version scheme in `src/lib/version.ts`.
       configurables. Así la animación es idéntica en cada render y es fluida
       aunque la pista empiece en silencio o con fade-in.
       Las ventanas siguen sin añadir duración al vídeo.
-      `STORE_PERSIST_VERSION` is at **138**; la migración traslada lo que hubiera
+      `STORE_PERSIST_VERSION` is at **139**; la migración traslada lo que hubiera
       en v129, y la de v131 cambia las claves viejas del spectrum del intro
       (`spectrumShape` / `spectrumSizePct` / `spectrumColorSource` /
       `spectrumColor`) por las nuevas (`spectrumSource`, `spectrumSlotIndex`,
@@ -144,6 +144,30 @@ the version scheme in `src/lib/version.ts`.
       Todo sigue montándose y desmontándose con la ventana.
       `STORE_PERSIST_VERSION` pasa a **135**; la migración siembra los valores
       que reproducen exactamente el comportamiento anterior.
+
+- **Spectrum 1 y Spectrum 2 en la ventana, cada uno con sus slots de verdad.**
+  El intro tenía **un solo** interruptor y **una sola** lista, así que los slots
+  propios de Spectrum 2 (`spectrumSecondProfileSlots`) no aparecían y no había
+  forma de pedir las dos figuras. Ahora cada spectrum tiene **su interruptor y su
+  banco**: se puede montar el 1, el 2 o **los dos a la vez**, y cada lista sólo
+  muestra los slots de su propio spectrum que de verdad tienen algo guardado.
+    - El slot se guarda por **id estable** (`spectrumPrimarySlotId` /
+      `spectrumSecondSlotId`), no por posición, así que borrar otro slot ya no
+      reapunta la ventana a una figura que no elegiste.
+    - Un slot de Spectrum 2 guarda su figura en su porción de instancia, y se
+      dibuja levantándola por encima del estado —la misma vía que usa el
+      wallpaper para las instancias extra—, con clave de smoothing propia por
+      ventana y por spectrum.
+    - El centrado, la velocidad y la altura de la onda siguen siendo **de la
+      ventana** y valen para las dos figuras.
+      `STORE_PERSIST_VERSION` pasa a **139**; la migración apunta el índice viejo
+      al mismo slot de Spectrum 1 (por id) y deja Spectrum 2 apagado, así que
+      ningún proyecto cambia en pantalla.
+
+- **La ventana de intro se configura por sub-pestañas.** Había crecido a seis
+  acordeones en una columna; ahora se divide como la pestaña de Spectrum:
+  **Tiempo · Montaje · Texto · Logo · Spectrum**, y cada ventana (intro y ending)
+  recuerda en qué sub-pestaña la dejaste.
 
 - **Slots de animaciones de intro, globales o por setlist.** La pestaña
   **Intro y ending** tiene su propio banco de slots (`introProfileSlots`, 3 al

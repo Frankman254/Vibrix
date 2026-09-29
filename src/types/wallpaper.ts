@@ -679,7 +679,8 @@ export type IntroTextStyleSource = 'own' | 'track-info';
  * spectrum profile slots with the real spectrum renderer, so the flourish is
  * the same figure the wallpaper uses — not a lookalike.
  */
-export type IntroSpectrumSource = 'none' | 'slot';
+/** Which of the two spectrum figures a window draws. Both can run at once. */
+export type IntroSpectrumBank = 'primary' | 'second';
 
 /** Which end of the setlist the cards come from, and in which direction. */
 export type IntroSequenceOrder = 'setlist' | 'setlist-reverse';
@@ -849,12 +850,17 @@ export interface IntroSequenceSettings {
 	/** Peak opacity of the logo once it is fully mounted (`0.1..1`). */
 	logoOpacity: number;
 
-	spectrumSource: IntroSpectrumSource;
+	/** Draw Spectrum 1's figure in the window. */
+	spectrumPrimaryEnabled: boolean;
 	/**
-	 * Which saved spectrum slot is drawn, by position. `-1` (or an index past
-	 * the end) means "no slot picked yet" and nothing is drawn.
+	 * Which of Spectrum 1's OWN saved slots (`spectrumProfileSlots`) is drawn,
+	 * by stable id. `null` means "no slot picked yet" and nothing is drawn.
 	 */
-	spectrumSlotIndex: number;
+	spectrumPrimarySlotId: string | null;
+	/** Draw Spectrum 2's figure in the window — independently of Spectrum 1. */
+	spectrumSecondEnabled: boolean;
+	/** Which of Spectrum 2's OWN saved slots (`spectrumSecondProfileSlots`). */
+	spectrumSecondSlotId: string | null;
 	/** Draw the slot's figure in the middle of the screen, ignoring its own
 	 *  stored position — the intro is a centred composition. */
 	spectrumCentered: boolean;
