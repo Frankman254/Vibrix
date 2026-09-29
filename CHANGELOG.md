@@ -48,6 +48,21 @@ the version scheme in `src/lib/version.ts`.
       ventana que pedía figura sigue pidiéndola, con el slot 0 y centrada. Ambas
       ventanas siguen llegando apagadas.
 
+- **HUD al día con las features nuevas.** Se añadieron los atajos que faltaban y
+  se quitó una segmentación molesta:
+    - **Capas**: cada **capa de efectos** (Looks) y cada **overlay** se enciende
+      y se apaga desde el HUD, y el **intro** y el **ending** tienen su
+      interruptor ahí mismo.
+    - **Looks**: **Encuadre manual** como atajo — es lo que más se toca al
+      encuadrar una imagen y estaba solo en la pestaña.
+    - **Motion**: nueva subsección **Capas de cámara** con un interruptor por
+      movimiento de Camera Motion (el interruptor maestro dice si la cámara se
+      mueve; estos dicen **cuáles** movimientos entran).
+    - **Motion deja de segmentarse**: abrir un banco de slots (partículas,
+      lluvia, luces o cámara) ya **no reemplaza** el panel de Motion; el banco se
+      abre debajo y los interruptores siguen a la vista. Antes había que volver a
+      pulsar MOTION después de cargar un slot.
+
 - **Manual Framing calcula bien en los dos sentidos.** Al **activarlo** la imagen
   se siembra ya en la escala mínima que cubre la pantalla (antes había que mover
   el slider a mano), y al **desactivarlo** el cálculo interno ya no mete zoom de

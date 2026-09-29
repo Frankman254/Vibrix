@@ -351,6 +351,30 @@ export function useQuickActionsViewModel({
 		[state]
 	);
 
+	const effectLayerShortcuts = useMemo(
+		() =>
+			state.effectLayers.map(layer => ({
+				id: layer.id,
+				label: (layer.name || 'FX').slice(0, 10).toUpperCase(),
+				active: layer.enabled,
+				onClick: () =>
+					state.setEffectLayerEnabled(layer.id, !layer.enabled)
+			})),
+		[state]
+	);
+
+	const cameraLayerShortcuts = useMemo(
+		() =>
+			state.motionLayers.map(layer => ({
+				id: layer.id,
+				label: (layer.name || 'CAM').slice(0, 10).toUpperCase(),
+				active: layer.enabled,
+				onClick: () =>
+					state.setMotionLayerEnabled(layer.id, !layer.enabled)
+			})),
+		[state]
+	);
+
 	const layerActions = useMemo(
 		() =>
 			buildLayerActions({
@@ -377,9 +401,17 @@ export function useQuickActionsViewModel({
 					setParticleLayerEnabled('foreground', value),
 				rainEnabled: state.rainEnabled,
 				setRainEnabled: state.setRainEnabled,
-				overlayLayers
+				overlayLayers,
+				effectLayers: effectLayerShortcuts,
+				introEnabled: state.introSequence.enabled,
+				setIntroEnabled: enabled =>
+					state.setIntroSequence('intro', { enabled }),
+				outroEnabled: state.outroSequence.enabled,
+				setOutroEnabled: enabled =>
+					state.setIntroSequence('outro', { enabled })
 			}),
 		[
+			effectLayerShortcuts,
 			overlayLayers,
 			particleBgEnabled,
 			particleFgEnabled,
@@ -398,6 +430,8 @@ export function useQuickActionsViewModel({
 			setImageMirror: state.setImageMirror,
 			imageMirrorFill: state.imageMirrorFill,
 			setImageMirrorFill: state.setImageMirrorFill,
+			imageFramingManualEnabled: state.imageFramingManualEnabled,
+			setImageFramingManualEnabled: state.setImageFramingManualEnabled,
 			imageOpacityReactive: state.imageOpacityReactive,
 			setImageOpacityReactive: state.setImageOpacityReactive,
 			rgbShiftAudioReactive: state.rgbShiftAudioReactive,
@@ -501,7 +535,8 @@ export function useQuickActionsViewModel({
 			particleAudioDriftEnabled: state.particleAudioDriftEnabled,
 			setParticleAudioDriftEnabled: state.setParticleAudioDriftEnabled,
 			particleDepthFlowEnabled: state.particleDepthFlowEnabled,
-			setParticleDepthFlowEnabled: state.setParticleDepthFlowEnabled
+			setParticleDepthFlowEnabled: state.setParticleDepthFlowEnabled,
+			cameraLayers: cameraLayerShortcuts
 		});
 		// Saved-profile loaders live in their own subsection so the toggles
 		// above stay focused on real on/off feature controls. Mirrors the
@@ -551,7 +586,7 @@ export function useQuickActionsViewModel({
 			groups.push({ label: t.qa_grp_sub_slots, actions: slotActions });
 		}
 		return groups;
-	}, [expandPanel, state, toggleExpand, t]);
+	}, [cameraLayerShortcuts, expandPanel, state, toggleExpand, t]);
 
 	const audioActions = useMemo(
 		() =>

@@ -439,7 +439,18 @@ export default function QuickActionsPanel() {
 							/>
 						)}
 
-					{expandPanel === 'motion' && (
+					{/*
+					 * The Motion shortcuts stay on screen while one of its slot
+					 * banks is open. Opening "Camera slots" used to REPLACE this
+					 * panel, so picking a slot meant losing the toggles and
+					 * clicking MOTION again — the segmentation the user
+					 * complained about. Now the bank opens underneath it.
+					 */}
+					{(expandPanel === 'motion' ||
+						expandPanel === 'particles_slots' ||
+						expandPanel === 'rain_slots' ||
+						expandPanel === 'lights_slots' ||
+						expandPanel === 'camera_slots') && (
 						<QuickActionsGroupedPanel
 							groups={motionActions}
 							isRainbow={usesRainbowChrome}

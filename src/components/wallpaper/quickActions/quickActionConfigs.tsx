@@ -50,7 +50,11 @@ import {
 	Move,
 	Wind,
 	Crosshair as CrosshairIcon,
-	ListChecks
+	ListChecks,
+	PlayCircle,
+	StopCircle,
+	Frame,
+	Video
 } from 'lucide-react';
 
 const ICON_SZ = 11;
@@ -93,6 +97,17 @@ type BuildLayerActionsOptions = {
 		active: boolean;
 		onClick: () => void;
 	}>;
+	/** Effect layers (Looks): same shape, same treatment as the overlays. */
+	effectLayers: Array<{
+		id: string;
+		label: string;
+		active: boolean;
+		onClick: () => void;
+	}>;
+	introEnabled: boolean;
+	setIntroEnabled: (value: boolean) => void;
+	outroEnabled: boolean;
+	setOutroEnabled: (value: boolean) => void;
 };
 
 export function buildLayerActions({
@@ -117,7 +132,12 @@ export function buildLayerActions({
 	setParticleFgEnabled,
 	rainEnabled,
 	setRainEnabled,
-	overlayLayers
+	overlayLayers,
+	effectLayers,
+	introEnabled,
+	setIntroEnabled,
+	outroEnabled,
+	setOutroEnabled
 }: BuildLayerActionsOptions): QuickActionButtonProps[] {
 	return [
 		{
@@ -214,7 +234,39 @@ export function buildLayerActions({
 					small: true,
 					onClick: layer.onClick
 				}) satisfies QuickActionButtonProps
-		)
+		),
+		// Effect layers had no shortcut at all: the only way to mute one was to
+		// open the Looks tab, which is exactly what the HUD exists to avoid.
+		...effectLayers.map(
+			layer =>
+				({
+					label: layer.label,
+					title: layer.label,
+					icon: makeIcon(Wand2),
+					active: layer.active,
+					small: true,
+					onClick: layer.onClick
+				}) satisfies QuickActionButtonProps
+		),
+		// The intro / ending belong here because this panel answers "what will
+		// be on screen": they are two more pieces of the video to switch on and
+		// off, and their tab is three clicks away.
+		{
+			label: t.qa_intro,
+			title: t.qa_intro_t,
+			icon: makeIcon(PlayCircle),
+			active: introEnabled,
+			small: true,
+			onClick: () => setIntroEnabled(!introEnabled)
+		},
+		{
+			label: t.qa_ending,
+			title: t.qa_ending_t,
+			icon: makeIcon(StopCircle),
+			active: outroEnabled,
+			small: true,
+			onClick: () => setOutroEnabled(!outroEnabled)
+		}
 	];
 }
 
@@ -230,6 +282,8 @@ type BuildLooksActionsOptions = {
 	setImageMirror: (value: boolean) => void;
 	imageMirrorFill: boolean;
 	setImageMirrorFill: (value: boolean) => void;
+	imageFramingManualEnabled: boolean;
+	setImageFramingManualEnabled: (value: boolean) => void;
 	imageOpacityReactive: boolean;
 	setImageOpacityReactive: (value: boolean) => void;
 	rgbShiftAudioReactive: boolean;
@@ -263,6 +317,18 @@ export function buildLooksActions(
 			active: o.imageMirrorFill,
 			small: true,
 			onClick: () => o.setImageMirrorFill(!o.imageMirrorFill)
+		},
+		{
+			// Switched constantly while framing an image, and the switch now
+			// seeds the exact covered framing in both directions — so it earns
+			// a shortcut instead of a trip to the Background tab.
+			label: o.t.qa_manual_framing,
+			title: o.t.qa_manual_framing_t,
+			icon: makeIcon(Frame),
+			active: o.imageFramingManualEnabled,
+			small: true,
+			onClick: () =>
+				o.setImageFramingManualEnabled(!o.imageFramingManualEnabled)
 		},
 		{
 			label: o.t.qa_img_opac,
@@ -428,6 +494,13 @@ type BuildMotionActionsOptions = {
 	setParticleAudioDriftEnabled: (value: boolean) => void;
 	particleDepthFlowEnabled: boolean;
 	setParticleDepthFlowEnabled: (value: boolean) => void;
+	/** One entry per Camera Motion layer, top-down as the tab lists them. */
+	cameraLayers: Array<{
+		id: string;
+		label: string;
+		active: boolean;
+		onClick: () => void;
+	}>;
 };
 
 /**
@@ -543,7 +616,25 @@ export function buildMotionActions(
 						o.setCameraShakeEnabled(!o.cameraShakeEnabled)
 				}
 			]
-		}
+		},
+		// Camera Motion layers: the master switch above says whether the camera
+		// moves at all, these say WHICH movements are in play. Muting one while
+		// watching is the whole point, so it cannot live only in the tab.
+		...(o.cameraLayers.length > 0
+			? [
+					{
+						label: o.t.qa_grp_sub_camera_layers,
+						actions: o.cameraLayers.map(layer => ({
+							label: layer.label,
+							title: layer.label,
+							icon: makeIcon(Video),
+							active: layer.active,
+							small: true,
+							onClick: layer.onClick
+						}))
+					}
+				]
+			: [])
 	];
 }
 
