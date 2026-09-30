@@ -269,7 +269,7 @@ VideoEncoder (H.264)  +  AudioEncoder (AAC)  ──►  muxer MP4  ──►  ar
 
 - [ ] Export 1080p30 de 3 min en **≤ 1,5× la duración** en un portátil medio (M1 / Ryzen 5 + iGPU).
 - [ ] Export de 1 h no crece la memoria (streaming de chunks, sin acumular frames).
-- [ ] La grabación por `getDisplayMedia` queda como "Legacy" y OBS sigue igual.
+- [x] La grabación por `getDisplayMedia` fue **eliminada** (2026-09-30); OBS sigue igual.
 - [ ] `docs/architecture` actualizado con el pipeline real.
 
 ### Riesgos

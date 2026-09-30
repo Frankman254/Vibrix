@@ -1,7 +1,7 @@
 /**
  * Export domain — React surface.
  *
- * The eight panels of the Export tab plus the four hooks that drive them.
+ * The seven panels of the Export tab plus the four hooks that drive them.
  * Only `tabs/main/ExportTabBody` consumes this: that shell composes the
  * sections and owns the tab's layout, which is editor furniture, while
  * everything it stacks now belongs to the domain.
@@ -15,15 +15,9 @@ export { default as OutputModeLaunchSection } from './controls/OutputModeLaunchS
 export { default as ProjectHealthSection } from './controls/ProjectHealthSection';
 export { default as ProjectLibrarySection } from './controls/ProjectLibrarySection';
 export { default as ProjectPackageSection } from './controls/ProjectPackageSection';
-export { default as RecordingToolsSection } from './controls/RecordingToolsSection';
 export { default as SettingsExportSection } from './controls/SettingsExportSection';
 export { default as VirtualFoldersSection } from './controls/VirtualFoldersSection';
 
-export {
-	RECORDING_FPS_OPTIONS,
-	useRecordingExport
-} from './controls/useRecordingExport';
-export type { RecorderStatus } from './controls/useRecordingExport';
 export { useProjectPackageExport } from './controls/useProjectPackageExport';
 export type {
 	ProjectStatus,

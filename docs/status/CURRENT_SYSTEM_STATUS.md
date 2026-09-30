@@ -111,7 +111,7 @@ Does **not** include an internal video encoder — see Recording subsystem.
 | Camera FX                     | CSS transform stage            | Stable |
 | Editor chrome                 | DOM                            | Stable |
 
-**No master compositor canvas** — browser composites multiple canvases. Implication: internal recording uses `getDisplayMedia`, not `canvas.captureStream()`.
+**No master compositor canvas** — browser composites multiple canvases. Implication: video output is produced by the offline exporter, which redraws every layer into one frame (`renderFrameAt`), not by capturing the live page.
 
 ---
 
@@ -231,7 +231,7 @@ Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 
 - Vitest: ~98+ unit tests (version, output modes, pixel helpers, spectrum, recording MIME, etc.)
 - CI: `format:check`, `lint`, `test:types`, `test:run`, `docs:check`, `build`
-- DEV harness: `#/dev/recording-smoke`, `#/dev/spectrum-fx`
+- DEV harness: `#/dev/spectrum-fx`
 
 ---
 
@@ -248,7 +248,6 @@ Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 
 | Feature                               | Status             |
 | ------------------------------------- | ------------------ |
-| Internal `getDisplayMedia` recorder   | Experimental       |
 | Virtual folders (local FS API)        | Experimental       |
 | Offline export planner                | Experimental (MVP) |
 | Offline video export (MP4/WebM)       | Experimental (MVP) |

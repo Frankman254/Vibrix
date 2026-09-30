@@ -83,7 +83,7 @@ this proves which path delivered the event.
 
 - **`#/present`** — live output for OBS
 - **`#/record`** — same clean shell with recording-oriented session settings (render scale cap, target FPS metadata)
-- Legacy **screen recording** in Export tab uses `getDisplayMedia` and captures whatever is on screen — prefer OBS + `#/present` for production live output.
+- The legacy **screen recording** panel in the Export tab was removed (2026-09-30). For a file, use the offline video export; for live output, OBS + `#/present`.
 
 ## Known limitations
 

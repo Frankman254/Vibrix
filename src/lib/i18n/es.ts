@@ -1134,7 +1134,6 @@ export const es: Record<TranslationKey, string> = {
 		'El orden no se edita en este controlador o pass compartido',
 	section_export: 'Exportar / Grabar',
 	section_live_output: 'Salida en vivo',
-	section_recording_tools: 'Grabación',
 	label_presentation_mode: 'Modo presentación',
 	qa_presentation_short: 'PRES',
 	label_output_hide_cursor: 'Ocultar cursor tras inactividad',
@@ -1149,7 +1148,7 @@ export const es: Record<TranslationKey, string> = {
 	hint_presentation_mode:
 		'Salida limpia solo render para OBS y directos. Ctrl+Shift+E vuelve al editor.',
 	hint_recording_mode:
-		'Misma salida limpia con ajustes de sesión orientados a grabación. Usa captura de ventana OBS o la grabación legacy abajo.',
+		'Misma salida limpia con ajustes de sesión orientados a grabación. Captúrala con OBS, o usa el export de vídeo offline de abajo para un archivo determinista.',
 	section_window_tools: 'Modos de Ventana',
 	section_project_package: 'Paquete de Proyecto (.vibrix)',
 	section_project_library: 'Biblioteca local de proyectos',
@@ -1217,7 +1216,7 @@ export const es: Record<TranslationKey, string> = {
 	offline_readiness_blocked:
 		'Exportación bloqueada hasta cumplir los requisitos de abajo',
 	offline_caption:
-		'Renderiza el proyecto fotograma a fotograma contra el audio del archivo o la playlist, así el vídeo no depende de que la pestaña esté visible. La grabación de pantalla sigue disponible abajo.',
+		'Renderiza el proyecto fotograma a fotograma contra el audio del archivo o la playlist, así el vídeo no depende de que la pestaña esté visible.',
 	offline_label_target: 'Destino',
 	offline_label_audio: 'Audio',
 	offline_btn_analyzing: 'Analizando audio offline...',
@@ -1257,7 +1256,7 @@ export const es: Record<TranslationKey, string> = {
 	offline_issue_web_audio:
 		'Hace falta Web Audio para analizar el audio del export.',
 	offline_issue_webcodecs:
-		'Este navegador no puede codificar vídeo (WebCodecs). Usa Chrome, Edge o Safari recientes, o la grabación de pantalla de abajo.',
+		'Este navegador no puede codificar vídeo (WebCodecs). Usa Chrome, Edge o Safari recientes.',
 	// Selección del paquete de proyecto
 	project_pkg_selective_caption:
 		'La exportación selectiva omite los módulos deseleccionados y sus blobs de assets correspondientes del paquete `.vibrix`.',
@@ -1307,27 +1306,6 @@ export const es: Record<TranslationKey, string> = {
 		'Al importar un paquete de proyecto se limpiará la escena actual, sus assets y el audio antes de aplicar el nuevo proyecto.',
 	label_open_clean_preview: 'Abrir Preview Limpio',
 	label_open_editor_workspace: 'Expandir Editor',
-	label_record_fps: 'FPS de Grabación',
-	label_record_bitrate: 'Bitrate de Video',
-	label_record_format: 'Formato',
-	label_record_audio: 'Incluir Audio',
-	label_start_recording: 'Empezar Grabación',
-	label_stop_recording: 'Detener Grabación',
-	status_record_idle: 'Listo para grabar',
-	status_recording: 'Grabando',
-	status_record_saved: 'Grabación guardada',
-	status_record_error: 'Error de grabación',
-	hint_record_preview:
-		'Pulsa Empezar Grabación y confirma esta pestaña en el selector del navegador (no la pantalla entera). La pantalla completa se activa sola tras confirmar — no uses el botón manual mientras grabas.',
-	hint_record_format:
-		'WebM (VP9) suele verse mejor en Chrome. MP4 solo si MediaRecorder lo soporta y a veces se ve peor que WebM.',
-	label_record_fullscreen_after: 'Pantalla completa tras capturar',
-	hint_record_fullscreen_after:
-		'Sale de pantalla completa antes del selector del navegador y vuelve a entrar al confirmar esta pestaña. Evita el botón manual mientras grabas.',
-	status_capture_ended_early:
-		'La captura terminó antes de tiempo (suele pasar al cambiar pantalla completa o al dejar de compartir). Se guardó un archivo parcial.',
-	status_screen_capture_denied: 'Captura de pantalla cancelada o denegada.',
-	label_window_modes: 'Modos de Ventana',
 	label_enter_fullscreen: 'Entrar en Pantalla Completa',
 	label_exit_fullscreen: 'Salir de Pantalla Completa',
 	label_open_mini_player: 'Abrir Mini Player',

@@ -129,7 +129,7 @@ Implementation: `src/runtime/outputRenderQuality.ts`
 
 ### Internal recorder (Export tab)
 
-Legacy `getDisplayMedia` + `MediaRecorder` — see `docs/audits/RECORDING_SUBSYSTEM_AUDIT.md`.
+Removed (2026-09-30). The offline exporter is the only video path; live output is Presentation Mode + OBS. Historical record: `docs/archive/RECORDING_SUBSYSTEM_AUDIT.md`.
 
 ---
 

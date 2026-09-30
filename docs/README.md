@@ -40,12 +40,11 @@
 | Doc                                                                        | Topic                       |
 | -------------------------------------------------------------------------- | --------------------------- |
 | [guides/OBS_PRESENTATION_MODE.md](guides/OBS_PRESENTATION_MODE.md)         | OBS workflow                |
-| [audits/RECORDING_SUBSYSTEM_AUDIT.md](audits/RECORDING_SUBSYSTEM_AUDIT.md) | Internal recorder audit     |
 | [performance/PERFORMANCE_BASELINE.md](performance/PERFORMANCE_BASELINE.md) | FPS measurement methodology |
 
 ## Onboarding (developer)
 
-`onboarding/` — deep dives; verify `STORE_PERSIST_VERSION` against `src/lib/version.ts` (currently **133**).
+`onboarding/` — deep dives; verify `STORE_PERSIST_VERSION` against `src/lib/version.ts` (currently **142**).
 
 ## Archive
 

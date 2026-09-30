@@ -1,7 +1,6 @@
 import { useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useT } from '@/lib/i18n';
-import { useWindowPresentationControls } from '@/hooks/useWindowPresentationControls';
 import { useDialog } from '@/editor/DialogProvider';
 import { useAudioContext } from '@/context/useAudioContext';
 import { useWallpaperStore } from '@/store/wallpaperStore';
@@ -9,7 +8,6 @@ import {
 	createOfflineExportPlan,
 	resolveOfflineExportAudioAsset,
 	getEnabledProjectExportSectionCount,
-	formatDuration,
 	type ExportNamingState
 } from '@/features/export';
 import {
@@ -18,11 +16,8 @@ import {
 	ProjectHealthSection,
 	ProjectLibrarySection,
 	ProjectPackageSection,
-	RecordingToolsSection,
 	SettingsExportSection,
 	VirtualFoldersSection,
-	RECORDING_FPS_OPTIONS,
-	useRecordingExport,
 	useProjectPackageExport,
 	useSettingsExport,
 	useOfflineAudioAnalysis,
@@ -40,16 +35,6 @@ const OFFLINE_EXPORT_SUBSYSTEMS = [createOfflineBackgroundSubsystem()];
 export default function ExportTabBody() {
 	const t = useT();
 	const { confirm } = useDialog();
-	const {
-		isFullscreen,
-		fullscreenSupported,
-		miniPlayerSupport,
-		isMiniPlayerOpen,
-		canExpandMiniPlayer,
-		expandMiniPlayer,
-		toggleFullscreen,
-		toggleMiniPlayer
-	} = useWindowPresentationControls();
 	const { stopCapture } = useAudioContext();
 	const importRef = useRef<HTMLInputElement | null>(null);
 	const projectImportRef = useRef<HTMLInputElement | null>(null);
@@ -141,7 +126,6 @@ export default function ExportTabBody() {
 		() => createProjectHealthReport(offlineExportState),
 		[offlineExportState]
 	);
-	const recording = useRecordingExport(exportNamingState);
 	const projectPackage = useProjectPackageExport({
 		exportNamingState,
 		confirm,
@@ -172,20 +156,6 @@ export default function ExportTabBody() {
 		canExport: offlineExportPlan.status !== 'blocked'
 	});
 
-	const statusLabel = {
-		idle: t.status_record_idle,
-		recording: `${t.status_recording} ${formatDuration(recording.elapsedSeconds)}`,
-		saved: t.status_record_saved,
-		error: t.status_record_error
-	}[recording.status];
-
-	const recordingErrorLabel =
-		recording.errorMessage === 'capture-ended-early'
-			? t.status_capture_ended_early
-			: recording.errorMessage === 'screen-capture-denied'
-				? t.status_screen_capture_denied
-				: recording.errorMessage;
-
 	const settingsLabel = {
 		idle: t.status_settings_idle,
 		saved: t.status_settings_saved,
@@ -201,12 +171,6 @@ export default function ExportTabBody() {
 		error: t.status_project_error
 	}[projectPackage.projectStatus];
 
-	const miniPlayerHint =
-		miniPlayerSupport === 'document-pip'
-			? t.hint_mini_player_document_pip
-			: miniPlayerSupport === 'popup'
-				? t.hint_mini_player_popup
-				: t.hint_mini_player_unavailable;
 	const offlineExportToneClass =
 		offlineExportPlan.status === 'ready'
 			? 'text-green-400'
@@ -305,59 +269,6 @@ export default function ExportTabBody() {
 				canStart={videoExport.canStart}
 				onStartExport={() => void videoExport.startExport()}
 				onCancelExport={videoExport.cancelExport}
-			/>
-
-			<RecordingToolsSection
-				status={recording.status}
-				statusLabel={statusLabel}
-				errorMessage={recordingErrorLabel}
-				hintRecordPreview={t.hint_record_preview}
-				hintRecordFormat={t.hint_record_format}
-				sectionRecordingToolsLabel={t.section_recording_tools}
-				sectionWindowToolsLabel={t.section_window_tools}
-				labelWindowModes={t.label_window_modes}
-				miniPlayerHint={miniPlayerHint}
-				fullscreenSupported={fullscreenSupported}
-				isFullscreen={isFullscreen}
-				isMiniPlayerOpen={isMiniPlayerOpen}
-				canExpandMiniPlayer={canExpandMiniPlayer}
-				labelEnterFullscreen={t.label_enter_fullscreen}
-				labelExitFullscreen={t.label_exit_fullscreen}
-				labelOpenMiniPlayer={t.label_open_mini_player}
-				labelCloseMiniPlayer={t.label_close_mini_player}
-				labelExpandMiniPlayer={t.label_expand_mini_player}
-				labelRecordFormat={t.label_record_format}
-				supportedFormats={recording.supportedFormats}
-				formatId={recording.formatId}
-				onFormatIdChange={recording.setFormatId}
-				labelRecordFps={t.label_record_fps}
-				fpsOptions={RECORDING_FPS_OPTIONS}
-				fps={recording.fps}
-				onFpsChange={value =>
-					recording.setFps(
-						value as (typeof RECORDING_FPS_OPTIONS)[number]
-					)
-				}
-				labelRecordBitrate={t.label_record_bitrate}
-				bitrateMbps={recording.bitrateMbps}
-				onBitrateChange={recording.setBitrateMbps}
-				labelRecordAudio={t.label_record_audio}
-				includeAudio={recording.includeAudio}
-				onIncludeAudioChange={recording.setIncludeAudio}
-				fullscreenAfterCapture={recording.fullscreenAfterCapture}
-				onFullscreenAfterCaptureChange={
-					recording.setFullscreenAfterCapture
-				}
-				labelRecordFullscreenAfter={t.label_record_fullscreen_after}
-				hintRecordFullscreenAfter={t.hint_record_fullscreen_after}
-				labelStartRecording={t.label_start_recording}
-				labelStopRecording={t.label_stop_recording}
-				hasMediaRecorder={recording.hasMediaRecorder}
-				onToggleFullscreen={() => void toggleFullscreen()}
-				onToggleMiniPlayer={() => void toggleMiniPlayer()}
-				onExpandMiniPlayer={() => void expandMiniPlayer()}
-				onStartRecording={() => void recording.startRecording()}
-				onStopRecording={recording.stopRecording}
 			/>
 		</>
 	);

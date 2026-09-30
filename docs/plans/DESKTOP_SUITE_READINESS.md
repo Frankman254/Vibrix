@@ -39,7 +39,7 @@ es el único que **todavía no existe de verdad** (§3).
 
 | API                              | Dónde                                                                 | Electron (Chromium)                    | Tauri (WebView2 / WKWebView)                  |
 | -------------------------------- | --------------------------------------------------------------------- | -------------------------------------- | --------------------------------------------- |
-| `getDisplayMedia` **con audio**  | `DesktopAudioAnalyzer`, `displayMediaCapture` (7 archivos)            | OK vía `setDisplayMediaRequestHandler` | Win: parcial · **mac: no** (ver §3.1)         |
+| `getDisplayMedia` **con audio**  | `DesktopAudioAnalyzer`                                                | OK vía `setDisplayMediaRequestHandler` | Win: parcial · **mac: no** (ver §3.1)         |
 | `getUserMedia` (micrófono)       | `MicrophoneAnalyzer`                                                  | OK (permiso del sistema)               | OK                                            |
 | **File System Access** (handles) | `useLocalFolders`, `exportFileUtils`                                  | OK                                     | Win OK · **mac WKWebView: no la soporta**     |
 | IndexedDB                        | store persistido, assets, caché de firmas (41 archivos tocan storage) | OK, sin cuota práctica                 | OK                                            |

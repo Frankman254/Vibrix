@@ -8,9 +8,7 @@ import type { BrowserOfflineExportCapabilities } from './offlineExportTypes';
 const CAPABLE: BrowserOfflineExportCapabilities = {
 	hasWebCodecs: true,
 	hasWebAudio: true,
-	hasOffscreenCanvas: true,
-	hasMediaRecorder: true,
-	hasNativeMp4Recorder: false
+	hasOffscreenCanvas: true
 };
 
 function baseState(

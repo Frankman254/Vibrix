@@ -97,7 +97,7 @@ is the bug. The three panels that still fail that test are listed in
 | Import/Export             | `src/features/export/`, `src/store/featureProfiles.ts`                            |
 | Stage FX                  | `src/features/stageFx/` (fachadas: `@/features/stageFx/ui`, `/render`)            |
 | Particles / Rain          | `src/features/particles/`, `src/features/rain/`                                   |
-| Output / Recording        | `tabs/main/OutputTab.tsx` + `src/runtime/` + `src/features/recording/`            |
+| Output / Recording        | `tabs/main/OutputTab.tsx` + `src/runtime/`                                        |
 | AI Director               | `src/features/aiDirector/` (fachadas: `@/features/aiDirector`, `.../ui`)          |
 | Calibración               | `src/features/calibration/` (fachadas: `@/features/calibration`, `.../ui`)        |
 | Track Title / Now Playing | `src/features/audioLayers/` + `tabs/main/TrackTitleTab.tsx` (§6.9)                |

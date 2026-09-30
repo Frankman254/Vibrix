@@ -15,15 +15,6 @@ const SpectrumFxLabPage = import.meta.env.DEV
 			}))
 	: null;
 
-const RecordingSmokeHarnessPage = import.meta.env.DEV
-	? () =>
-			import('@/dev/recordingSmokeHarness/RecordingSmokeHarnessPage').then(
-				m => ({
-					default: m.default
-				})
-			)
-	: null;
-
 function DevLazyRoute({
 	loader
 }: {
@@ -61,14 +52,6 @@ export default function App() {
 								path="/dev/spectrum-fx"
 								element={
 									<DevLazyRoute loader={SpectrumFxLabPage} />
-								}
-							/>
-							<Route
-								path="/dev/recording-smoke"
-								element={
-									<DevLazyRoute
-										loader={RecordingSmokeHarnessPage}
-									/>
 								}
 							/>
 						</>

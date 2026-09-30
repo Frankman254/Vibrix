@@ -186,8 +186,9 @@ medición de "≤ 1,5× duración" (paso 2) dependen del usuario.
 
 ## Why the current recorder is not an offline renderer
 
-The current internal recorder (`useRecordingExport` + `displayMediaCapture`)
-uses `getDisplayMedia` + `MediaRecorder`. That pipeline is **realtime**:
+The former internal recorder (`useRecordingExport` + `displayMediaCapture`,
+removed 2026-09-30) used `getDisplayMedia` + `MediaRecorder`. That pipeline was
+**realtime**:
 
 - It captures whatever the screen/window actually paints, in wall-clock time.
 - Output FPS is a _hint_ (`frameRate: { ideal, max }`), never a guarantee. If

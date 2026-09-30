@@ -60,7 +60,6 @@ const requiredDocs = [
 	'docs/architecture/BACKEND_OPTIONS.md',
 	'docs/features/SPECTRUM_ENGINE.md',
 	'docs/features/SPECTRUM_PIXEL_ART.md',
-	'docs/audits/RECORDING_SUBSYSTEM_AUDIT.md',
 	'docs/guides/OBS_PRESENTATION_MODE.md',
 	'docs/performance/PERFORMANCE_BASELINE.md'
 ];

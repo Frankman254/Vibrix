@@ -37,17 +37,12 @@ function hasGlobalConstructor(name: string): boolean {
 }
 
 export function detectBrowserOfflineExportCapabilities(): BrowserOfflineExportCapabilities {
-	const hasMediaRecorder = typeof MediaRecorder !== 'undefined';
 	return {
 		hasWebCodecs: hasGlobalConstructor('VideoEncoder'),
 		hasWebAudio:
 			hasGlobalConstructor('AudioContext') ||
 			hasGlobalConstructor('webkitAudioContext'),
-		hasOffscreenCanvas: hasGlobalConstructor('OffscreenCanvas'),
-		hasMediaRecorder,
-		hasNativeMp4Recorder:
-			hasMediaRecorder &&
-			MediaRecorder.isTypeSupported('video/mp4;codecs=h264,aac')
+		hasOffscreenCanvas: hasGlobalConstructor('OffscreenCanvas')
 	};
 }
 
@@ -147,20 +142,6 @@ function buildCapabilities(
 			available: capabilities.hasOffscreenCanvas,
 			requiredForMvp: false,
 			note: 'Useful for scalability, but HTMLCanvas can be the first path.'
-		},
-		{
-			id: 'media-recorder',
-			label: 'Legacy preview recorder',
-			available: capabilities.hasMediaRecorder,
-			requiredForMvp: false,
-			note: 'Screen/stream recording fallback, not the target offline path.'
-		},
-		{
-			id: 'mp4-muxing',
-			label: 'Native MP4 muxing',
-			available: capabilities.hasNativeMp4Recorder,
-			requiredForMvp: false,
-			note: 'MP4/WebM muxing runs in JavaScript (mediabunny); this flag only reports native MediaRecorder MP4.'
 		}
 	];
 }

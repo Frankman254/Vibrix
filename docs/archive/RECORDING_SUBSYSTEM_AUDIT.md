@@ -1,4 +1,11 @@
-# Recording Subsystem Audit
+# Recording Subsystem Audit (ARCHIVED)
+
+> **Archivado 2026-09-30.** El grabador in-app (`getDisplayMedia` +
+> `MediaRecorder`) fue **eliminado**: `src/features/recording/`,
+> `RecordingToolsSection` y `useRecordingExport` ya no existen. La única ruta
+> de vídeo es el exportador offline determinista (`useOfflineVideoExport`), y
+> la salida en vivo sigue siendo Presentation Mode + OBS. Este documento se
+> conserva sólo como registro histórico.
 
 **Date:** 2026-06-20 (re-audit)  
 **HEAD:** `0bf9d914` · prior audit 2026-06-19  

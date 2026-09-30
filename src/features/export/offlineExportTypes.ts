@@ -62,12 +62,7 @@ export type OfflineExportAudioPlan =
 	  };
 
 export type OfflineExportCapability = {
-	id:
-		| 'webcodecs'
-		| 'web-audio'
-		| 'offscreen-canvas'
-		| 'media-recorder'
-		| 'mp4-muxing';
+	id: 'webcodecs' | 'web-audio' | 'offscreen-canvas';
 	label: string;
 	available: boolean;
 	requiredForMvp: boolean;
@@ -95,8 +90,6 @@ export type BrowserOfflineExportCapabilities = {
 	hasWebCodecs: boolean;
 	hasWebAudio: boolean;
 	hasOffscreenCanvas: boolean;
-	hasMediaRecorder: boolean;
-	hasNativeMp4Recorder: boolean;
 };
 
 export type OfflineRenderFrameContext = {

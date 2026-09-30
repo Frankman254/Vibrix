@@ -211,17 +211,14 @@ la misma idea: configuración con dueño claro y aplicación explícita.
 ## 5. Export: sacar tu trabajo de la app
 
 **Dónde:** `src/features/export/` (13 archivos) + la pestaña Export
-(`components/controls/tabs/export/`). Hay **tres caminos de export**
+(`components/controls/tabs/export/`). Hay **dos caminos de export**
 distintos, no uno:
 
-### 5.1 Grabación en vivo (`useRecordingExport`)
+> Hubo un tercero — grabación en vivo con `MediaRecorder`, tiempo real y a
+> merced de los FPS de la máquina. Se **eliminó el 2026-09-30**: no era
+> determinista y el render offline lo supera en todo.
 
-El camino simple: graba lo que está pasando en pantalla usando
-`MediaRecorder` (la grabadora nativa del navegador) a **WebM o MP4** según lo
-que soporte tu navegador. Es tiempo real: si la máquina va a 23 FPS, el vídeo
-sale a 23 FPS.
-
-### 5.2 Render offline (`offlineExportPlanner` + `renderFrame`)
+### 5.1 Render offline (`offlineExportPlanner` + `renderFrame`)
 
 El camino serio, y la razón de la arquitectura interesante:
 
@@ -240,7 +237,7 @@ El camino serio, y la razón de la arquitectura interesante:
   `renderSubsystems/stubs.ts`): el export offline todavía no cubre todas las
   capas.
 
-### 5.3 Paquete de proyecto (`useProjectPackageExport`)
+### 5.2 Paquete de proyecto (`useProjectPackageExport`)
 
 Exporta **tu proyecto entero** (configuración + imágenes + audios) a un
 archivo, e importa el de otra persona. Detalles con cicatrices:

@@ -40,6 +40,29 @@ the version scheme in `src/lib/version.ts`.
     nuevas apagadas, también en las instantáneas de cada capa guardada, así que
     ningún proyecto cambia de coreografía al abrirse.
 
+### Eliminado
+
+- **La grabación en vivo de la pestaña Export.** El panel «Recording» que vivía
+  debajo del exportador capturaba la pantalla con `getDisplayMedia` +
+  `MediaRecorder`: grababa lo que el navegador alcanzara a dibujar, así que el
+  vídeo salía a los FPS reales de la máquina, con el compositor del navegador de
+  por medio y sin forma de repetir el mismo resultado dos veces. El exportador
+  offline hace lo contrario — redibuja cada cuadro con calma, a FPS constantes y
+  de forma determinista — y no hay nada que el grabador hiciera mejor.
+
+    Se van con él `src/features/recording/` entero (captura y detección de
+    formatos), `RecordingToolsSection`, `useRecordingExport`, el harness de
+    desarrollo `#/dev/recording-smoke` y 18 claves de i18n en ambos idiomas. El
+    bloque duplicado de «Window tools» que el panel arrastraba tampoco se pierde:
+    esos mismos botones ya viven en la pestaña Performance.
+
+    También caen dos diagnósticos del planificador que sólo describían al
+    grabador muerto (`media-recorder` y `mp4-muxing`): el muxing real lo hace
+    mediabunny en JavaScript, como decía su propia nota.
+
+    No se toca nada del Recording **Mode** (`#/record`) ni de la captura de audio
+    del sistema, que usa `getDisplayMedia` por otra razón y sigue viva.
+
 ### Corregido
 
 - **Las partículas ya no muestran su propio borde cuando Camera Motion las

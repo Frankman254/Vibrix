@@ -1122,7 +1122,6 @@ export const en = {
 		'Layer order is not editable for this controller/shared pass',
 	section_export: 'Export / Recording',
 	section_live_output: 'Live Output',
-	section_recording_tools: 'Recording',
 	label_presentation_mode: 'Presentation Mode',
 	qa_presentation_short: 'PRES',
 	label_output_hide_cursor: 'Hide cursor after inactivity',
@@ -1137,7 +1136,7 @@ export const en = {
 	hint_presentation_mode:
 		'Clean render-only output for OBS and live shows. Ctrl+Shift+E returns to the editor.',
 	hint_recording_mode:
-		'Same clean output shell with recording-oriented session settings. Use OBS window capture or the legacy screen recorder below.',
+		'Same clean output shell with recording-oriented session settings. Capture it with OBS, or use the offline video export below for a deterministic file.',
 	section_window_tools: 'Window Tools',
 	label_export_settings: 'Export Settings JSON',
 	label_import_settings: 'Import Settings JSON',
@@ -1209,7 +1208,7 @@ export const en = {
 	offline_readiness_blocked:
 		'Export blocked until the requirements below are met',
 	offline_caption:
-		'Renders the project frame by frame against the file or playlist audio, so the video does not depend on the tab being visible. Screen recording remains available below.',
+		'Renders the project frame by frame against the file or playlist audio, so the video does not depend on the tab being visible.',
 	offline_label_target: 'Target',
 	offline_label_audio: 'Audio',
 	offline_btn_analyzing: 'Analyzing offline audio...',
@@ -1248,7 +1247,7 @@ export const en = {
 	offline_issue_web_audio:
 		'Web Audio is required to analyse the audio for export.',
 	offline_issue_webcodecs:
-		'This browser cannot encode video (WebCodecs). Use a recent Chrome, Edge or Safari, or the screen recorder below.',
+		'This browser cannot encode video (WebCodecs). Use a recent Chrome, Edge or Safari.',
 	// Project package selection
 	project_pkg_selective_caption:
 		'Selective export omits deselected modules and their matching asset blobs from the `.vibrix` package.',
@@ -1294,27 +1293,6 @@ export const en = {
 		'Importing a project package will clear the current scene, assets, and audio before applying the new one.',
 	label_open_clean_preview: 'Open Clean Preview',
 	label_open_editor_workspace: 'Expand Editor',
-	label_record_fps: 'Recording FPS',
-	label_record_bitrate: 'Video Bitrate',
-	label_record_format: 'Format',
-	label_record_audio: 'Include Audio',
-	label_start_recording: 'Start Recording',
-	label_stop_recording: 'Stop Recording',
-	status_record_idle: 'Ready to record',
-	status_recording: 'Recording',
-	status_record_saved: 'Recording saved',
-	status_record_error: 'Recording error',
-	hint_record_preview:
-		'Click Start Recording, then confirm this tab in the browser picker (not the whole screen). Fullscreen is entered automatically after you confirm — do not toggle fullscreen manually while recording.',
-	hint_record_format:
-		'WebM (VP9) usually looks best in Chrome. MP4 only works when MediaRecorder supports it and may look worse than WebM.',
-	label_record_fullscreen_after: 'Enter fullscreen after capture',
-	hint_record_fullscreen_after:
-		'Exits fullscreen before the browser picker, then re-enters once this tab is confirmed. Avoid the manual fullscreen button while recording.',
-	status_capture_ended_early:
-		'Capture stopped early (often caused by changing fullscreen or stopping share). Partial file was saved.',
-	status_screen_capture_denied: 'Screen capture was denied or cancelled.',
-	label_window_modes: 'Window Modes',
 	label_enter_fullscreen: 'Enter Fullscreen',
 	label_exit_fullscreen: 'Exit Fullscreen',
 	label_open_mini_player: 'Open Mini Player',
