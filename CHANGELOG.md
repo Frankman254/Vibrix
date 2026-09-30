@@ -63,6 +63,16 @@ the version scheme in `src/lib/version.ts`.
     No se toca nada del Recording **Mode** (`#/record`) ni de la captura de audio
     del sistema, que usa `getDisplayMedia` por otra razón y sigue viva.
 
+### Rendimiento
+
+- **La intro resuelve su reparto una vez por ventana, no una vez por cuadro.**
+  El bucle rehacía el pool de imágenes, volvía a elegir los ids y hacía un
+  `find` lineal por carta sesenta veces por segundo, justo en los segundos más
+  caros del render. Ninguna de esas cuatro entradas puede cambiar dentro de una
+  ventana, así que ahora se memorizan por identidad y por cuadro sólo se busca
+  la imagen ya decodificada — que es lo único que va llegando mientras el
+  montaje ya se está reproduciendo.
+
 ### Corregido
 
 - **La intro ligada a un setlist ya no se come la del proyecto.** Un setlist es
