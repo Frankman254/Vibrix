@@ -3613,6 +3613,30 @@ export function migrateWallpaperStore(
 		}));
 	}
 
+	if (fromVersion < 142) {
+		// Motion: «invert on low energy» — the movement retraces its path while
+		// the music is quiet, the direct analogue of the spectrum's radial
+		// rotation invert. Off for every saved project: it changes the
+		// choreography, so nobody gets it without asking.
+		const invertDefaults = {
+			cameraMotionInvertOnLowEnergy: false,
+			cameraMotionInvertThreshold: 0.08,
+			cameraMotionInvertHoldMs: 180
+		} as const;
+		for (const [key, value] of Object.entries(invertDefaults)) {
+			const record = migratedState as unknown as Record<string, unknown>;
+			if (typeof record[key] !== typeof value) record[key] = value;
+		}
+		// The per-layer snapshots too, or switching to a stored layer would
+		// write the missing keys back as `undefined`.
+		migratedState.motionLayers = (migratedState.motionLayers ?? []).map(
+			layer => ({
+				...layer,
+				settings: { ...invertDefaults, ...layer.settings }
+			})
+		);
+	}
+
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;
 }
 

@@ -2452,6 +2452,11 @@ export const es: Record<TranslationKey, string> = {
 		'Nunca se para: la velocidad base es el suelo y la música suma encima.',
 	sfx_dir_cw: 'Horario',
 	sfx_dir_ccw: 'Antihorario',
+	sfx_motion_invert_low: 'Invertir con energía baja',
+	sfx_motion_invert_threshold: 'Umbral de energía baja',
+	sfx_motion_invert_hold: 'Retención de dirección',
+	sfx_motion_invert_hint:
+		'Mientras el canal del movimiento se queda por debajo de este nivel el recorrido va al revés, y la retención es cuánto tiene que durar el silencio antes de que gire.',
 	// Capas afectadas por Camera FX
 	sfx_target_global_bg: 'Fondo Global',
 	sfx_target_background: 'Fondo',

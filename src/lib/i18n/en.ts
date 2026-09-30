@@ -2423,6 +2423,11 @@ export const en = {
 		'Never stops: the base speed is the floor and the music adds on top.',
 	sfx_dir_cw: 'Clockwise',
 	sfx_dir_ccw: 'Counter',
+	sfx_motion_invert_low: 'Invert on low energy',
+	sfx_motion_invert_threshold: 'Low energy threshold',
+	sfx_motion_invert_hold: 'Direction hold',
+	sfx_motion_invert_hint:
+		'While the movement\u2019s channel stays below this level the path runs backwards, and the hold is how long the quiet must last before it turns.',
 	// Camera FX affected-layer targets
 	sfx_target_global_bg: 'Global BG',
 	sfx_target_background: 'Background',

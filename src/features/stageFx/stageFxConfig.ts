@@ -163,7 +163,23 @@ export const CAMERA_MOTION_SMOOTHING_MAX_SEC = 0.6;
 /** Trail: how strong the halo dragged behind a moving layer is. */
 export const CAMERA_MOTION_TRAIL_RANGE = { min: 0, max: 1 } as const;
 
-function clamp01Range(
+/**
+ * Invert on low energy: the level the movement's channel must fall below for
+ * the path to run backwards. Same scale as the spectrum's radial rotation
+ * invert, so a user who has tuned one already knows this one.
+ */
+export const CAMERA_MOTION_INVERT_THRESHOLD_RANGE = {
+	min: 0,
+	max: 1
+} as const;
+
+/** How long the quiet (or the return) must hold before the sign flips, in ms. */
+export const CAMERA_MOTION_INVERT_HOLD_MS_RANGE = {
+	min: 0,
+	max: 1000
+} as const;
+
+function clampToRange(
 	value: number | undefined,
 	range: { min: number; max: number }
 ): number {
@@ -172,17 +188,29 @@ function clamp01Range(
 }
 
 export function resolveCameraMotionEdgeZoom(value: number | undefined): number {
-	return clamp01Range(value, CAMERA_MOTION_EDGE_ZOOM_RANGE);
+	return clampToRange(value, CAMERA_MOTION_EDGE_ZOOM_RANGE);
 }
 
 export function resolveCameraMotionSmoothing(
 	value: number | undefined
 ): number {
-	return clamp01Range(value, CAMERA_MOTION_SMOOTHING_RANGE);
+	return clampToRange(value, CAMERA_MOTION_SMOOTHING_RANGE);
 }
 
 export function resolveCameraMotionTrail(value: number | undefined): number {
-	return clamp01Range(value, CAMERA_MOTION_TRAIL_RANGE);
+	return clampToRange(value, CAMERA_MOTION_TRAIL_RANGE);
+}
+
+export function resolveCameraMotionInvertThreshold(
+	value: number | undefined
+): number {
+	return clampToRange(value, CAMERA_MOTION_INVERT_THRESHOLD_RANGE);
+}
+
+export function resolveCameraMotionInvertHoldMs(
+	value: number | undefined
+): number {
+	return clampToRange(value, CAMERA_MOTION_INVERT_HOLD_MS_RANGE);
 }
 
 /**

@@ -374,6 +374,20 @@ export type MotionLayerSettings = {
 	cameraMotionAudioChannel: import('@/features/stageFx/stageFxConfig').FxAudioChannel;
 	cameraMotionDirection: import('@/features/stageFx/stageFxConfig').CameraMotionDirection;
 	/**
+	 * Flip the movement's direction while the audio is quiet.
+	 *
+	 * Same idea as the spectrum's radial rotation: the path keeps its shape but
+	 * runs backwards in the gaps, so a loop reads as a breath instead of a
+	 * carousel. Off by default — it changes the choreography, so nobody gets it
+	 * without asking.
+	 */
+	cameraMotionInvertOnLowEnergy: boolean;
+	/** 0..1 — the level the movement's channel must fall below to invert. */
+	cameraMotionInvertThreshold: number;
+	/** How long the new state must hold before the direction actually flips, in
+	 *  ms. Without it the sign chatters on every transient. */
+	cameraMotionInvertHoldMs: number;
+	/**
 	 * 0..1 — how much of the automatic zoom a FULL-BLEED target (a spectrum, the
 	 * lyrics, the rain) is given so its own canvas border stays out of frame
 	 * while it travels. `0` is the default and the honest one: the path widens
@@ -2194,6 +2208,11 @@ export type WallpaperState = {
 	cameraMotionAmplitudeAudio: number;
 	cameraMotionAudioChannel: import('@/features/stageFx/stageFxConfig').FxAudioChannel;
 	cameraMotionDirection: import('@/features/stageFx/stageFxConfig').CameraMotionDirection;
+	/** Invert the movement on low energy (the flat live value of the active
+	 *  motion layer). */
+	cameraMotionInvertOnLowEnergy: boolean;
+	cameraMotionInvertThreshold: number;
+	cameraMotionInvertHoldMs: number;
 	/** Edge cover zoom for full-bleed targets (the flat live value of the active
 	 *  motion layer). */
 	cameraMotionEdgeZoom: number;

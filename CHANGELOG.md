@@ -15,6 +15,31 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Añadido
+
+- **Camera Motion: «Invertir con energía baja».** El movimiento deshace su
+  recorrido mientras la música calla y lo retoma cuando vuelve a sonar — el
+  análogo directo del invertido que ya tenía la rotación radial del spectrum.
+  Vive por capa de movimiento (cada capa tiene su interruptor, su umbral y su
+  retención), así que un fondo que respira y un logo que orbita pueden decidirlo
+  por separado.
+
+    Dos decisiones que se notan: el signo se aplica **al reloj**, no a la
+    posición leída de él, de modo que la capa vuelve por donde vino en vez de
+    teletransportarse al punto espejo del recorrido; y el nivel que se compara es
+    el **ya normalizado** contra los extremos del propio tema, así que un mismo
+    umbral significa lo mismo en una mezcla apagada y en una fuerte. La retención
+    (0–1000 ms) es lo que evita que un transitorio dé media vuelta al recorrido.
+
+    Un movimiento de velocidad fija que tenga esto encendido ahora sí pide audio:
+    era el único dial que escucha sin que el audio mande la velocidad, y sin eso
+    el nivel habría sido un 0 constante y la dirección se habría quedado
+    invertida para siempre.
+
+    `STORE_PERSIST_VERSION` is at **142**; la migración siembra las tres claves
+    nuevas apagadas, también en las instantáneas de cada capa guardada, así que
+    ningún proyecto cambia de coreografía al abrirse.
+
 ### Corregido
 
 - **La pila de Looks ya no dibuja un rectángulo recto sobre la capa cuando la

@@ -176,4 +176,4 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // ACTIVE image's live values, like every other `image*` key. Both switches live
 // inside the per-image card and as globals they leaked from one picture to the
 // next. Migration copies the old global into every stored image.
-export const STORE_PERSIST_VERSION = 141;
+export const STORE_PERSIST_VERSION = 142;

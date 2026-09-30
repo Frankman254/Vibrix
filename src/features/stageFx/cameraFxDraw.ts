@@ -24,6 +24,8 @@ import {
 	CAMERA_MOTION_SMOOTHING_MAX_SEC,
 	cameraMotionSlackMode,
 	resolveCameraMotionEdgeZoom,
+	resolveCameraMotionInvertHoldMs,
+	resolveCameraMotionInvertThreshold,
 	resolveCameraMotionRange,
 	resolveCameraMotionSmoothing,
 	resolveCameraMotionTrail,
@@ -46,6 +48,9 @@ export type CameraFxSettings = Pick<
 	| 'cameraMotionAudioChannel'
 	| 'cameraMotionAudioInfluence'
 	| 'cameraMotionAmplitudeAudio'
+	| 'cameraMotionInvertOnLowEnergy'
+	| 'cameraMotionInvertThreshold'
+	| 'cameraMotionInvertHoldMs'
 	| 'cameraMotionEdgeZoom'
 	| 'cameraMotionSmoothing'
 	| 'cameraMotionTrail'
@@ -92,6 +97,14 @@ export type CameraFxRuntime = {
 	 * speed, points where the layer came from and collapses when it stops.
 	 */
 	motionLag: Record<string, { tx: number; ty: number }>;
+	/**
+	 * Per-layer direction sign for «invert on low energy»: the sign actually
+	 * applied, the sign the audio is currently asking for, and how long it has
+	 * been asking. The pending sign plus the clock are the debounce — without
+	 * them the movement stutters backwards on every transient instead of
+	 * turning around in the gaps.
+	 */
+	motionInvert: Record<string, MotionInvertState>;
 	shakeTime: number;
 	shakeEnergy: number;
 	lastShakeLevel: number;
@@ -105,6 +118,7 @@ export function createCameraFxRuntime(): CameraFxRuntime {
 		motionAudio: {},
 		motionSmoothed: {},
 		motionLag: {},
+		motionInvert: {},
 		shakeTime: 0,
 		shakeEnergy: 0,
 		lastShakeLevel: 0,
@@ -377,6 +391,63 @@ function motionOffsetForMode(
 	}
 }
 
+type MotionInvertState = {
+	sign: 1 | -1;
+	pendingSign: 1 | -1;
+	elapsedMs: number;
+};
+
+/**
+ * The direction sign a layer should run with this frame.
+ *
+ * Mirrors the spectrum's radial `spectrumRotationInvertOnLowEnergy` exactly:
+ * the sign goes negative while the movement's own channel sits at or below the
+ * threshold, and only after the new state has held for `holdMs`.
+ *
+ * `level` is the SHAPED drive, not the raw channel: it is already normalised
+ * against the track's own loud and quiet ends and gated to exactly 0 in the
+ * gaps, so one threshold reads the same on a quiet mix and a loud one.
+ */
+function stepMotionInvertSign(
+	runtime: CameraFxRuntime,
+	layerId: string,
+	settings: MotionLayerSettings,
+	level: number,
+	dtSec: number
+): 1 | -1 {
+	if (!settings.cameraMotionInvertOnLowEnergy) {
+		// Dropped rather than reset: turning the toggle back on must start from
+		// a clean sign, never resume a half-debounced flip.
+		delete runtime.motionInvert[layerId];
+		return 1;
+	}
+	const state = (runtime.motionInvert[layerId] ??= {
+		sign: 1,
+		pendingSign: 1,
+		elapsedMs: 0
+	});
+	const threshold = resolveCameraMotionInvertThreshold(
+		settings.cameraMotionInvertThreshold
+	);
+	const target: 1 | -1 = level <= threshold ? -1 : 1;
+	const holdMs = resolveCameraMotionInvertHoldMs(
+		settings.cameraMotionInvertHoldMs
+	);
+	if (target !== state.pendingSign) {
+		state.pendingSign = target;
+		state.elapsedMs = 0;
+	} else if (target !== state.sign) {
+		state.elapsedMs += dtSec * 1000;
+		if (state.elapsedMs >= holdMs) {
+			state.sign = target;
+			state.elapsedMs = 0;
+		}
+	} else {
+		state.elapsedMs = 0;
+	}
+	return state.sign;
+}
+
 /**
  * One motion layer stepped and turned into an offset.
  *
@@ -430,15 +501,19 @@ function stepMotionLayer(
 		settings.cameraMotionAudioInfluence,
 		shaped
 	);
+	// The sign rides the CLOCK, not the position read from it. A sign applied
+	// to the result would teleport the layer to the mirrored point of the path
+	// the instant it flipped; applied to the clock, the layer simply retraces
+	// the way it came — which is what «invert on low energy» has to look like.
+	const invertSign = paused
+		? (runtime.motionInvert[layerId]?.sign ?? 1)
+		: stepMotionInvertSign(runtime, layerId, settings, shaped, dtSec);
+	const direction =
+		(settings.cameraMotionDirection === 'ccw' ? -1 : 1) * invertSign;
 	const previous = runtime.motionTimes[layerId] ?? 0;
-	const time = paused ? previous : previous + dtSec * rate;
+	const time = paused ? previous : previous + dtSec * rate * direction;
 	runtime.motionTimes[layerId] = time;
-	const direction = settings.cameraMotionDirection === 'ccw' ? -1 : 1;
-	const offset = motionOffsetForMode(
-		settings.cameraMotionMode,
-		time * direction,
-		amp
-	);
+	const offset = motionOffsetForMode(settings.cameraMotionMode, time, amp);
 	const slackMode = cameraMotionSlackMode(targets);
 	// `zoom-pulse` asks for its own zoom and never translates, so it needs no
 	// translation slack at all.
@@ -552,7 +627,12 @@ export function stepCameraFx(
 		layer =>
 			layer.settings.cameraMotionDrive === 'audio' ||
 			layer.settings.cameraMotionDrive === 'fixed-audio' ||
-			layer.settings.cameraMotionAmplitudeAudio > 0
+			layer.settings.cameraMotionAmplitudeAudio > 0 ||
+			// A fixed-speed movement can still be listening: this is the only
+			// dial that reads the audio without the audio driving the speed,
+			// and without it here the level would be a constant 0 and the
+			// direction would sit inverted forever.
+			layer.settings.cameraMotionInvertOnLowEnergy
 	);
 	const snapshot =
 		motionNeedsAudio || state.cameraShakeEnabled ? readAudio() : null;

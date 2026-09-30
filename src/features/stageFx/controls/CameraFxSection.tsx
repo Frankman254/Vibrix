@@ -19,12 +19,17 @@ import type {
 } from '@/features/stageFx/stageFxConfig';
 import {
 	CAMERA_MOTION_EDGE_ZOOM_RANGE,
+	CAMERA_MOTION_INVERT_HOLD_MS_RANGE,
+	CAMERA_MOTION_INVERT_THRESHOLD_RANGE,
 	CAMERA_MOTION_RANGE_RANGE,
 	CAMERA_MOTION_SMOOTHING_RANGE,
 	CAMERA_MOTION_TRAIL_RANGE
 } from '@/features/stageFx/stageFxConfig';
 import { formatDecimal } from '@/editor/motionTabUtils';
-import { MotionSlider as Slider } from '@/editor/MotionSharedControls';
+import {
+	MotionSlider as Slider,
+	SwitchRow
+} from '@/editor/MotionSharedControls';
 import {
 	CAMERA_FX_TARGETS,
 	isCameraFxTargetAvailable,
@@ -50,6 +55,9 @@ export function CameraMotionSection() {
 			amplitudeAudio: state.cameraMotionAmplitudeAudio,
 			audioChannel: state.cameraMotionAudioChannel,
 			direction: state.cameraMotionDirection,
+			invertOnLowEnergy: state.cameraMotionInvertOnLowEnergy,
+			invertThreshold: state.cameraMotionInvertThreshold,
+			invertHoldMs: state.cameraMotionInvertHoldMs,
 			edgeZoom: state.cameraMotionEdgeZoom,
 			smoothing: state.cameraMotionSmoothing,
 			trail: state.cameraMotionTrail,
@@ -74,6 +82,9 @@ export function CameraMotionSection() {
 			amplitudeAudio: state.setCameraMotionAmplitudeAudio,
 			audioChannel: state.setCameraMotionAudioChannel,
 			direction: state.setCameraMotionDirection,
+			invertOnLowEnergy: state.setCameraMotionInvertOnLowEnergy,
+			invertThreshold: state.setCameraMotionInvertThreshold,
+			invertHoldMs: state.setCameraMotionInvertHoldMs,
 			edgeZoom: state.setCameraMotionEdgeZoom,
 			smoothing: state.setCameraMotionSmoothing,
 			trail: state.setCameraMotionTrail,
@@ -366,6 +377,54 @@ export function CameraMotionSection() {
 									size="sm"
 									full
 								/>
+								<SwitchRow
+									label={t.sfx_motion_invert_low}
+									checked={s.invertOnLowEnergy}
+									onChange={set.invertOnLowEnergy}
+								/>
+								{s.invertOnLowEnergy ? (
+									<>
+										<Slider
+											label={
+												t.sfx_motion_invert_threshold
+											}
+											value={s.invertThreshold}
+											min={
+												CAMERA_MOTION_INVERT_THRESHOLD_RANGE.min
+											}
+											max={
+												CAMERA_MOTION_INVERT_THRESHOLD_RANGE.max
+											}
+											step={0.01}
+											onChange={set.invertThreshold}
+											defaultValue={
+												FACTORY_DEFAULT_STATE.cameraMotionInvertThreshold
+											}
+											variant="compact"
+											formatValue={formatDecimal}
+										/>
+										<Slider
+											label={t.sfx_motion_invert_hold}
+											value={s.invertHoldMs}
+											min={
+												CAMERA_MOTION_INVERT_HOLD_MS_RANGE.min
+											}
+											max={
+												CAMERA_MOTION_INVERT_HOLD_MS_RANGE.max
+											}
+											step={10}
+											onChange={set.invertHoldMs}
+											defaultValue={
+												FACTORY_DEFAULT_STATE.cameraMotionInvertHoldMs
+											}
+											unit="ms"
+											variant="compact"
+										/>
+										<Caption>
+											{t.sfx_motion_invert_hint}
+										</Caption>
+									</>
+								) : null}
 								{hasAudioDrive ? (
 									<SegmentedControl<'kick' | 'bass' | 'full'>
 										value={s.audioChannel}
