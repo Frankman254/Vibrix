@@ -65,6 +65,53 @@ the version scheme in `src/lib/version.ts`.
 
 ### Corregido
 
+- **La intro ligada a un setlist ya no se come la del proyecto.** Un setlist es
+  una curación, no una edición destructiva — desactivarlo devuelve el pool
+  entero — y su intro no obedecía esa regla: activar un setlist con slot de
+  intro ligado **sobrescribía** las ventanas del proyecto sin vuelta atrás. Al
+  desactivarlo te quedabas con la intro del show, el siguiente setlist heredaba
+  la del anterior, y la configuración global estaba perdida para siempre.
+
+    Ahora las ventanas del proyecto se **aparcan** en `setlistIntroFallback`
+    mientras un setlist ligado manda, y vuelven en cuanto se sale de él:
+    desactivarlo, pasar a uno sin ligar, desligarlo o borrarlo. El aparcado
+    ocurre una sola vez, así que encadenar dos setlists ligados no pisa lo
+    global con lo del primero.
+
+    De paso, ligar un slot **surte efecto en el momento**. El selector sólo
+    aparece para el setlist activo, así que apuntarle una intro y no ver nada
+    cambiar hacía que el control pareciera muerto: había que desactivar y
+    reactivar el setlist para que se aplicara.
+
+    `STORE_PERSIST_VERSION` is at **143**; la migración siembra la clave a
+    `null` — «nada está sobrescribiendo» — que es justo lo correcto para
+    cualquier proyecto guardado.
+
+- **El montaje de la intro recortaba por el centro imágenes que sí tenían
+  foco.** El punto de la cara es la anotación hecha justo para esto, pero la
+  intro arma su pool desde el setlist sin preguntar: en un proyecto donde nadie
+  recorrió el panel de Puntos imagen por imagen, ninguna carta tenía cara medida
+  y todas se recortaban por el centro — el recorte que el punto existe para
+  evitar — mientras el foco de encuadre que el usuario sí había colocado a mano,
+  en ese mismo panel, se quedaba sin leer. Ahora la cadena es cara → encuadre →
+  centro.
+
+- **La intro se dibujaba casi al fondo del vídeo exportado.** En el viewport la
+  ventana va en z 95, por encima de todo menos del HUD. En el export no era una
+  capa de escena, así que caía al `?? 0` del ordenador de z y terminaba en la
+  cuarta posición: el spectrum, el logo y las letras se pintaban **encima** de
+  una cortina que debe ser opaca. Ahora ambos leen la misma constante
+  (`INTRO_LAYER_Z_INDEX`), de modo que no pueden divergir.
+
+- **Los slots de Camera FX guardaban una instantánea vieja de la capa activa.**
+  Las capas de movimiento comparten la regla de las capas de efectos: los
+  valores vivos de la capa activa son las claves planas `cameraMotion*`, y su
+  entrada en `motionLayers` es una instantánea que sólo se refresca al cambiar
+  de capa. `extractCameraFxProfileSettings` copiaba el array tal cual, así que
+  el slot — y la escena que lo captura — guardaba lo que la capa era la última
+  vez que dejaste de editarla, no los diales que acababas de mover. Lo mismo
+  que ya hacía Looks con `syncActiveEffectLayer`.
+
 - **Las partículas ya no muestran su propio borde cuando Camera Motion las
   mueve.** El campo de partículas se dibujaba en un lienzo del tamaño exacto de
   la pantalla y el movimiento **desplazaba el lienzo entero**: al apartarlo,

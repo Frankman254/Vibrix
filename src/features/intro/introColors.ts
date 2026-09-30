@@ -162,14 +162,20 @@ export function resolveIntroLogoUrl(
 /**
  * Card index → the point of that image the montage must keep in frame.
  *
- * The face focus the pool already carries per image, so a tall shutter panel
- * crops around the face instead of through it. An image nobody has measured
- * simply is not in the map, and the painter crops from the centre.
+ * The face focus first: that is the annotation made for exactly this, so a
+ * tall shutter panel crops around the face instead of through it.
+ *
+ * Unmeasured, the image's own framing focus stands in. The montage builds its
+ * pool from the setlist without asking, so a project where nobody walked the
+ * Points panel image by image would otherwise crop every card dead centre —
+ * the very crop the face point exists to avoid — while the user's framing
+ * decision, made by hand in the same panel, sat there unread. Only with
+ * neither does the painter fall back to the centre.
  */
 export function resolveIntroFocusMap(
 	pool: readonly Pick<
 		BackgroundImageItem,
-		'assetId' | 'faceFocusX' | 'faceFocusY'
+		'assetId' | 'faceFocusX' | 'faceFocusY' | 'focusX' | 'focusY'
 	>[],
 	ids: readonly string[]
 ): Map<number, IntroFocusPoint> {
@@ -177,7 +183,8 @@ export function resolveIntroFocusMap(
 	ids.forEach((assetId, index) => {
 		const item = pool.find(entry => entry.assetId === assetId);
 		if (!item) return;
-		const { faceFocusX: x, faceFocusY: y } = item;
+		const x = item.faceFocusX ?? item.focusX;
+		const y = item.faceFocusY ?? item.focusY;
 		if (typeof x !== 'number' || typeof y !== 'number') return;
 		focus.set(index, { x, y });
 	});

@@ -2067,6 +2067,21 @@ export type WallpaperState = {
 	outroSequence: IntroSequenceSettings;
 
 	/**
+	 * The project's OWN windows, parked here while a setlist bound to an intro
+	 * slot is active and its windows sit in `introSequence` / `outroSequence`.
+	 *
+	 * A setlist is a curation, never a destructive edit — deactivating reveals
+	 * the whole pool again — and its intro has to obey the same rule. Without
+	 * somewhere to come back to, activating a bound setlist overwrote the
+	 * project's intro for good, and every later setlist inherited whatever the
+	 * previous one installed. `null` means no setlist is overriding.
+	 */
+	setlistIntroFallback: {
+		introSequence: IntroSequenceSettings;
+		outroSequence: IntroSequenceSettings;
+	} | null;
+
+	/**
 	 * Named bookmarks that curate which images and audio tracks are active
 	 * for a given mix / video / theme. The global pool stays whole; each
 	 * setlist just stores ID references. When `activeSetlistId` is set the

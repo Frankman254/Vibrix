@@ -10,6 +10,7 @@ import {
 	StageLightsCanvas
 } from '@/features/stageFx/ui';
 import { IntroLayer } from '@/features/intro/ui';
+import { INTRO_LAYER_Z_INDEX } from '@/features/intro/introPlan';
 import OverlayInteractionStage from '@/components/wallpaper/OverlayInteractionStage';
 import SceneLayerCanvas from '@/components/wallpaper/layers/SceneLayerCanvas';
 import BackgroundImageLayerView from '@/components/wallpaper/layers/BackgroundImageLayerView';
@@ -266,7 +267,9 @@ export default function WallpaperViewport({
 
 				{/* Above the camera stage on purpose: the generated intro and
 				    ending frame the composition, they are not part of it. */}
-				{introSequenceEnabled && <IntroLayer zIndex={95} />}
+				{introSequenceEnabled && (
+					<IntroLayer zIndex={INTRO_LAYER_Z_INDEX} />
+				)}
 
 				{showEditorChrome && <FirstRunEmptyState />}
 				{/* Inside <main> on purpose: this element has `isolation:

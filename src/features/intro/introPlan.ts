@@ -184,6 +184,18 @@ export type IntroFrame = {
 	tagline: IntroTextPlan | null;
 };
 
+/**
+ * Where the intro window sits in the stack, live and exported.
+ *
+ * Above every visual layer and below the HUD: the window is a composition of
+ * its own that covers the frame, so anything painted over it — a spectrum, the
+ * logo, the lyrics — would be showing through a curtain that is supposed to be
+ * opaque. The offline exporter reads this same number (`FIXED_Z` in
+ * `features/export/frameComposition`) so the file cannot stack it differently
+ * from the preview.
+ */
+export const INTRO_LAYER_Z_INDEX = 95;
+
 export const INTRO_DURATION_RANGE = { min: 0.5, max: 20 } as const;
 export const INTRO_IMAGE_COUNT_RANGE = { min: 1, max: 16 } as const;
 export const INTRO_PHASE_SEC_RANGE = { min: 0.2, max: 10 } as const;

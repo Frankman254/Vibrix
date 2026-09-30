@@ -440,6 +440,7 @@ const BASE_STATE: Omit<
 	globalCompositionOverride: false,
 	globalCompositionSlots: createDefaultGlobalCompositionSlots(),
 	activeGlobalCompositionSlotId: null,
+	setlistIntroFallback: null,
 	introSequence: createDefaultIntroSequence('intro'),
 	outroSequence: createDefaultIntroSequence('outro'),
 	setlists: [],

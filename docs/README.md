@@ -44,7 +44,7 @@
 
 ## Onboarding (developer)
 
-`onboarding/` — deep dives; verify `STORE_PERSIST_VERSION` against `src/lib/version.ts` (currently **142**).
+`onboarding/` — deep dives; verify `STORE_PERSIST_VERSION` against `src/lib/version.ts` (currently **143**).
 
 ## Archive
 

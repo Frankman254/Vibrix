@@ -530,3 +530,32 @@ describe('migrateWallpaperStore v141 per-image framing switches', () => {
 		expect(migrated.backgroundImages[0]?.logoFollowsFocus).toBe(true);
 	});
 });
+
+describe('migrateWallpaperStore v143 setlist intro fallback', () => {
+	it('seeds the park as "nothing is overriding"', () => {
+		const migrated = migrateWallpaperStore(
+			{
+				introSequence: { titleText: 'MINE' },
+				activeSetlistId: 'set-1'
+			} as never,
+			142
+		);
+		// Whatever is on the windows IS the project's own intro, even if a
+		// bound setlist put it there: parking it now would make the next
+		// deactivation restore a duplicate.
+		expect(migrated.setlistIntroFallback).toBeNull();
+		expect(migrated.introSequence.titleText).toBe('MINE');
+	});
+
+	it('leaves a park that is already there alone', () => {
+		const parked = {
+			introSequence: { titleText: 'PARKED' },
+			outroSequence: { titleText: 'PARKED END' }
+		};
+		const migrated = migrateWallpaperStore(
+			{ setlistIntroFallback: parked } as never,
+			142
+		);
+		expect(migrated.setlistIntroFallback).toEqual(parked);
+	});
+});

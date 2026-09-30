@@ -5,7 +5,7 @@ import {
 } from '@/lib/backgroundPalette';
 import type { IntroSequenceSettings } from '@/types/wallpaper';
 import { createDefaultIntroSequence } from './introPlan';
-import { resolveIntroColors } from './introColors';
+import { resolveIntroColors, resolveIntroFocusMap } from './introColors';
 
 const IMAGE_PALETTE = {
 	...DEFAULT_BACKGROUND_PALETTE,
@@ -73,5 +73,61 @@ describe('resolveIntroColors — fills', () => {
 			backdropFillMode: 'rainbow'
 		}).backdrop;
 		expect(fill.rainbow).toEqual(['#ff0000', '#00ff00', '#0000ff']);
+	});
+});
+
+describe('resolveIntroFocusMap', () => {
+	const image = (
+		assetId: string,
+		patch: Partial<{
+			faceFocusX: number | null;
+			faceFocusY: number | null;
+			focusX: number | null;
+			focusY: number | null;
+		}> = {}
+	) => ({
+		assetId,
+		faceFocusX: null,
+		faceFocusY: null,
+		focusX: null,
+		focusY: null,
+		...patch
+	});
+
+	it('prefers the face annotation', () => {
+		const map = resolveIntroFocusMap(
+			[
+				image('a', {
+					faceFocusX: 0.3,
+					faceFocusY: 0.2,
+					focusX: 0.9,
+					focusY: 0.9
+				})
+			],
+			['a']
+		);
+		expect(map.get(0)).toEqual({ x: 0.3, y: 0.2 });
+	});
+
+	it('falls back to the framing focus the user placed by hand', () => {
+		const map = resolveIntroFocusMap(
+			[image('a', { focusX: 0.75, focusY: 0.25 })],
+			['a']
+		);
+		expect(map.get(0)).toEqual({ x: 0.75, y: 0.25 });
+	});
+
+	it('leaves an image with neither point out, so the painter centres it', () => {
+		const map = resolveIntroFocusMap([image('a')], ['a']);
+		expect(map.has(0)).toBe(false);
+	});
+
+	it('keys by card position, not by pool position', () => {
+		const map = resolveIntroFocusMap(
+			[image('a'), image('b', { faceFocusX: 0.1, faceFocusY: 0.9 })],
+			['b', 'a']
+		);
+		expect(map.get(0)).toEqual({ x: 0.1, y: 0.9 });
+		expect(map.has(1)).toBe(false);
 	});
 });

@@ -33,13 +33,18 @@ import {
 	selectIntroSequence
 } from './introColors';
 import {
+	INTRO_LAYER_Z_INDEX,
 	pickIntroImages,
 	resolveIntroFrame,
 	resolveIntroWindow
 } from './introPlan';
 import { createIntroSpectrumPainter } from './introSpectrumDraw';
 
-export default function IntroLayer({ zIndex = 95 }: { zIndex?: number }) {
+export default function IntroLayer({
+	zIndex = INTRO_LAYER_Z_INDEX
+}: {
+	zIndex?: number;
+}) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const rafRef = useRef<number>(0);
 	const paintedRef = useRef(false);

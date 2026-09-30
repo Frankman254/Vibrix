@@ -18,6 +18,7 @@ import {
 	createDefaultEffectLayer,
 	syncActiveEffectLayer
 } from '@/features/filterLooks/effectLayers';
+import { syncActiveMotionLayer } from '@/features/stageFx/motionLayers';
 
 export const BACKGROUND_PROFILE_SLOT_COUNT = 3;
 export const LOGO_PROFILE_SLOT_COUNT = 3;
@@ -954,10 +955,21 @@ export function extractLightsProfileSettings(
 	return pickState(state, LIGHTS_PROFILE_KEYS);
 }
 
+/**
+ * A Camera FX slot is the WHOLE motion stack, for the same reason a Looks slot
+ * is the whole effect stack — and with the same trap: the active layer's live
+ * values are the flat `cameraMotion*` keys, so its entry in `motionLayers` is
+ * whatever it looked like the last time the user switched away from it. Copy
+ * the array raw and the slot stores that stale snapshot instead of the dials
+ * the user just moved.
+ */
 export function extractCameraFxProfileSettings(
 	state: WallpaperState
 ): CameraFxProfileSettings {
-	return pickState(state, CAMERA_FX_PROFILE_KEYS);
+	return {
+		...pickState(state, CAMERA_FX_PROFILE_KEYS),
+		motionLayers: syncActiveMotionLayer(state)
+	};
 }
 
 export function extractTrackTitleProfileSettings(

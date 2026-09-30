@@ -6,6 +6,7 @@
  * Pure: no canvas, no registry, so it is tested by value.
  */
 import { buildOverlayLayers, buildSceneLayers } from '@/lib/layers';
+import { INTRO_LAYER_Z_INDEX } from '@/features/intro/introPlan';
 import type { CameraMotionLayer } from '@/features/stageFx/stageFxConfig';
 import { visualTransitionProgress } from '@/features/visualTransition/visualTransitionCoordinator';
 import type {
@@ -53,6 +54,10 @@ const FIXED_Z: Partial<Record<RenderSubsystemId, number>> = {
 	globalBackground: -Infinity,
 	stageLights: 1,
 	flashLight: 90,
+	// The intro window is never a scene layer, so without this it fell through
+	// to `?? 0` and the export buried it under the spectrum, the logo and the
+	// lyrics while the preview drew it over everything.
+	introSequence: INTRO_LAYER_Z_INDEX,
 	hud: Infinity
 };
 

@@ -3637,6 +3637,14 @@ export function migrateWallpaperStore(
 		);
 	}
 
+	if (fromVersion < 143) {
+		// Nothing is overriding the windows in a stored project: whatever is
+		// in `introSequence` / `outroSequence` IS the project's own intro,
+		// even if a bound setlist put it there before this key existed. Parking
+		// it now would make the next deactivation restore a duplicate.
+		migratedState.setlistIntroFallback ??= null;
+	}
+
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;
 }
 

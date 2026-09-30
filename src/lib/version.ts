@@ -176,4 +176,9 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // ACTIVE image's live values, like every other `image*` key. Both switches live
 // inside the per-image card and as globals they leaked from one picture to the
 // next. Migration copies the old global into every stored image.
-export const STORE_PERSIST_VERSION = 142;
+// v143: `setlistIntroFallback` — the project's own intro / ending, parked
+// while a setlist bound to an intro slot is active. Activating such a setlist
+// used to overwrite the windows with no way back, so deactivating it left the
+// show's intro behind and the next setlist inherited it. Seeded `null`, which
+// is exactly "nothing is overriding" for every stored project.
+export const STORE_PERSIST_VERSION = 143;

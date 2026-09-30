@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { Setlist } from '@/types/wallpaper';
+import type { Setlist, WallpaperState } from '@/types/wallpaper';
 import type { WallpaperStore } from '@/store/wallpaperStoreTypes';
 
 type WallpaperSet = Parameters<StateCreator<WallpaperStore>>[0];
@@ -23,6 +23,58 @@ type WallpaperApi = Parameters<StateCreator<WallpaperStore>>[2];
  */
 
 const MAX_SETLISTS = 100;
+
+type IntroWindowState = Pick<
+	WallpaperState,
+	'introSequence' | 'outroSequence' | 'setlistIntroFallback'
+>;
+
+/**
+ * The intro / ending a given setlist puts on screen, and what to do with the
+ * project's own windows while it does.
+ *
+ * A setlist is a curation, not a destructive edit: deactivating one reveals
+ * the whole pool again, and its intro obeys the same rule. So activating a
+ * setlist bound to an intro slot PARKS the project's windows in
+ * `setlistIntroFallback` before installing the slot's, and anything that
+ * leaves a bound setlist — deactivating, switching to an unbound one, deleting
+ * it, unbinding the slot — puts them back and clears the park.
+ *
+ * Parking only ever happens once: switching straight from one bound setlist to
+ * another must not overwrite the project's windows with the first setlist's.
+ *
+ * Every entry point routes through here, because the three bugs this closes
+ * were three call sites that each handled a different part of it.
+ */
+function resolveSetlistIntroWindows(
+	state: IntroWindowState & Pick<WallpaperState, 'introProfileSlots'>,
+	setlist: Setlist | null
+): Partial<IntroWindowState> {
+	const bound = setlist?.introSlotId
+		? (state.introProfileSlots.find(slot => slot.id === setlist.introSlotId)
+				?.values ?? null)
+		: null;
+
+	if (!bound) {
+		// Unbound, or no setlist at all: restore whatever was parked. With
+		// nothing parked the windows are already the project's own.
+		if (!state.setlistIntroFallback) return {};
+		return {
+			introSequence: { ...state.setlistIntroFallback.introSequence },
+			outroSequence: { ...state.setlistIntroFallback.outroSequence },
+			setlistIntroFallback: null
+		};
+	}
+
+	return {
+		introSequence: { ...bound.introSequence },
+		outroSequence: { ...bound.outroSequence },
+		setlistIntroFallback: state.setlistIntroFallback ?? {
+			introSequence: { ...state.introSequence },
+			outroSequence: { ...state.outroSequence }
+		}
+	};
+}
 
 function makeId(): string {
 	if (
@@ -101,13 +153,25 @@ export function createSetlistsSlice(
 				// Auto-deactivate if the deleted setlist was active to avoid
 				// the engine pointing at a phantom id.
 				activeSetlistId:
-					state.activeSetlistId === id ? null : state.activeSetlistId
+					state.activeSetlistId === id ? null : state.activeSetlistId,
+				// Deleting the show that installed its intro leaves the
+				// project's own windows behind, same as deactivating it.
+				...(state.activeSetlistId === id
+					? resolveSetlistIntroWindows(state, null)
+					: {})
 			})),
 		setActiveSetlistId: (id: string | null) =>
 			set(state => {
-				if (id === null) return { activeSetlistId: null };
-				const setlist = state.setlists.find(s => s.id === id);
-				if (!setlist) return { activeSetlistId: null };
+				const setlist =
+					id === null
+						? null
+						: (state.setlists.find(s => s.id === id) ?? null);
+				if (!setlist) {
+					return {
+						activeSetlistId: null,
+						...resolveSetlistIntroWindows(state, null)
+					};
+				}
 				// If the currently-active image or track isn't a member of
 				// the newly-activated setlist, snap to the first member so
 				// the user doesn't land on a hidden item.
@@ -123,24 +187,14 @@ export function createSetlistsSlice(
 						? state.activeAudioTrackId
 						: (setlist.trackIds[0] ?? null);
 				// A setlist is a show, so it may carry its own opening and
-				// ending: activating it loads the intro slot it is bound to.
-				// Unbound (the default) the windows are left exactly as
-				// configured globally.
-				const boundIntro = setlist.introSlotId
-					? state.introProfileSlots.find(
-							slot => slot.id === setlist.introSlotId
-						)?.values
-					: null;
+				// ending: activating it loads the intro slot it is bound to
+				// and parks the project's own. Unbound, the project's windows
+				// come back.
 				return {
-					activeSetlistId: id,
+					activeSetlistId: setlist.id,
 					activeImageId: nextActiveImageId,
 					activeAudioTrackId: nextActiveAudioTrackId,
-					...(boundIntro
-						? {
-								introSequence: { ...boundIntro.introSequence },
-								outroSequence: { ...boundIntro.outroSequence }
-							}
-						: {})
+					...resolveSetlistIntroWindows(state, setlist)
 				};
 			}),
 		toggleSetlistImage: (id: string, assetId: string) =>
@@ -178,11 +232,20 @@ export function createSetlistsSlice(
 				)
 			})),
 		bindSetlistIntroSlot: (setlistId: string, slotId: string | null) =>
-			set(state => ({
-				setlists: state.setlists.map(s =>
+			set(state => {
+				const setlists = state.setlists.map(s =>
 					s.id === setlistId ? { ...s, introSlotId: slotId } : s
-				)
-			})),
+				);
+				// Binding is only ever offered for the ACTIVE setlist, so it
+				// has to take effect now — recording the id and waiting for a
+				// deactivate/reactivate round trip looked like a dead control.
+				if (state.activeSetlistId !== setlistId) return { setlists };
+				const bound = setlists.find(s => s.id === setlistId) ?? null;
+				return {
+					setlists,
+					...resolveSetlistIntroWindows(state, bound)
+				};
+			}),
 		setShowSetlistHud: (v: boolean) => set({ showSetlistHud: v })
 	} satisfies Partial<WallpaperStore>;
 }

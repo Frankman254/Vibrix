@@ -21,10 +21,19 @@ function freshState() {
 		introProfileSlots: DEFAULT_STATE.introProfileSlots.map(slot => ({
 			...slot
 		})),
+		setlistIntroFallback: null,
 		setlists: [
 			{
 				id: 'set-1',
 				name: 'Show',
+				imageAssetIds: [],
+				trackIds: [],
+				createdAt: 0,
+				introSlotId: null
+			},
+			{
+				id: 'set-2',
+				name: 'Other show',
 				imageAssetIds: [],
 				trackIds: [],
 				createdAt: 0,
@@ -81,5 +90,96 @@ describe('intro profile slots', () => {
 		store().setIntroSequence('intro', { titleText: 'global' });
 		store().setActiveSetlistId('set-1');
 		expect(store().introSequence.titleText).toBe('global');
+	});
+});
+
+/**
+ * A setlist is a curation, never a destructive edit. Its intro has to obey the
+ * same rule: whatever the show installs, leaving it gives the project back.
+ */
+describe('a bound setlist never eats the project intro', () => {
+	beforeEach(() => {
+		useWallpaperStore.setState(freshState());
+	});
+
+	/** Slot 0 = 'THE SHOW', bound to set-1, with 'global' left on screen. */
+	function bindShowToSet1() {
+		store().setIntroSequence('intro', { titleText: 'THE SHOW' });
+		store().setIntroSequence('outro', { titleText: 'THE END' });
+		store().saveIntroProfileSlot(0);
+		store().setIntroSequence('intro', { titleText: 'global' });
+		store().setIntroSequence('outro', { titleText: 'global end' });
+		store().bindSetlistIntroSlot('set-1', store().introProfileSlots[0].id);
+	}
+
+	it('gives the project windows back when the setlist is deactivated', () => {
+		bindShowToSet1();
+		store().setActiveSetlistId('set-1');
+		expect(store().introSequence.titleText).toBe('THE SHOW');
+
+		store().setActiveSetlistId(null);
+		expect(store().introSequence.titleText).toBe('global');
+		expect(store().outroSequence.titleText).toBe('global end');
+		expect(store().setlistIntroFallback).toBeNull();
+	});
+
+	it('does not leak one setlist intro into the next, unbound one', () => {
+		bindShowToSet1();
+		store().setActiveSetlistId('set-1');
+		store().setActiveSetlistId('set-2');
+		expect(store().introSequence.titleText).toBe('global');
+	});
+
+	it('parks the project windows once across a chain of bound setlists', () => {
+		bindShowToSet1();
+		store().setIntroSequence('intro', { titleText: 'ENCORE' });
+		store().saveIntroProfileSlot(1);
+		store().setIntroSequence('intro', { titleText: 'global' });
+		store().bindSetlistIntroSlot('set-2', store().introProfileSlots[1].id);
+
+		store().setActiveSetlistId('set-1');
+		store().setActiveSetlistId('set-2');
+		expect(store().introSequence.titleText).toBe('ENCORE');
+		// The park still holds the PROJECT's windows, not set-1's.
+		expect(store().setlistIntroFallback?.introSequence.titleText).toBe(
+			'global'
+		);
+
+		store().setActiveSetlistId(null);
+		expect(store().introSequence.titleText).toBe('global');
+	});
+
+	it('applies a binding made while its setlist is already active', () => {
+		store().setIntroSequence('intro', { titleText: 'THE SHOW' });
+		store().saveIntroProfileSlot(0);
+		store().setIntroSequence('intro', { titleText: 'global' });
+		store().setActiveSetlistId('set-1');
+
+		store().bindSetlistIntroSlot('set-1', store().introProfileSlots[0].id);
+		expect(store().introSequence.titleText).toBe('THE SHOW');
+
+		// Unbinding it puts the project's windows straight back.
+		store().bindSetlistIntroSlot('set-1', null);
+		expect(store().introSequence.titleText).toBe('global');
+		expect(store().setlistIntroFallback).toBeNull();
+	});
+
+	it('does not touch the windows when binding an inactive setlist', () => {
+		store().setIntroSequence('intro', { titleText: 'THE SHOW' });
+		store().saveIntroProfileSlot(0);
+		store().setIntroSequence('intro', { titleText: 'global' });
+		store().setActiveSetlistId('set-2');
+
+		store().bindSetlistIntroSlot('set-1', store().introProfileSlots[0].id);
+		expect(store().introSequence.titleText).toBe('global');
+	});
+
+	it('restores the project windows when the active setlist is deleted', () => {
+		bindShowToSet1();
+		store().setActiveSetlistId('set-1');
+		store().deleteSetlist('set-1');
+		expect(store().activeSetlistId).toBeNull();
+		expect(store().introSequence.titleText).toBe('global');
+		expect(store().setlistIntroFallback).toBeNull();
 	});
 });

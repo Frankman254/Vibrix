@@ -24,6 +24,18 @@ describe('resolveSubsystemDrawOrder', () => {
 		expect(order[order.length - 1]).toBe('hud');
 	});
 
+	it('draws the intro over every visual layer, under the HUD', () => {
+		const order = resolveSubsystemDrawOrder(state());
+		const at = (id: string) => order.indexOf(id as never);
+		// The window covers the whole composition: anything painted after it
+		// would show through a curtain meant to be opaque.
+		expect(at('introSequence')).toBeGreaterThan(at('spectrum'));
+		expect(at('introSequence')).toBeGreaterThan(at('logo'));
+		expect(at('introSequence')).toBeGreaterThan(at('lyrics'));
+		expect(at('introSequence')).toBeGreaterThan(at('flashLight'));
+		expect(at('introSequence')).toBeLessThan(at('hud'));
+	});
+
 	it('keeps the two spectrum canvases together, instances above', () => {
 		const order = resolveSubsystemDrawOrder(state());
 		expect(order.indexOf('spectrum2')).toBe(order.indexOf('spectrum') + 1);
