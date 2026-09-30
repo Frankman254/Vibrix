@@ -21,13 +21,24 @@ import {
 	createParticleBuffers,
 	createParticleRuntime,
 	createParticleUniforms,
+	DEFAULT_PARTICLE_FIELD_BOUNDS,
 	PARTICLE_BACKGROUND_Z,
+	PARTICLE_CAMERA_FOV,
+	PARTICLE_CAMERA_Z,
 	PARTICLE_FOREGROUND_Z,
 	resolveParticleCanvasFilter,
+	resolveParticleFieldBounds,
 	resolveParticleRotationPalette,
+	resolveParticleVisibleHalfExtent,
 	stepParticles,
-	type ParticleBuffers
+	type ParticleBuffers,
+	type ParticleFieldBounds
 } from '@/features/particles/render/particleSimulation';
+import { cameraMotionOverscanPx } from '@/features/stageFx/motionLayers';
+import {
+	blitInFrameSpace,
+	readCameraDrawSpace
+} from '@/features/stageFx/cameraDrawOffset';
 import {
 	applyRainUniforms,
 	RAIN_MESH_OVERSCALE,
@@ -48,8 +59,8 @@ import type { RenderSubsystem } from '../renderSubsystem';
 
 /** Delta above this is a seek or first frame, not a step (matches live). */
 const MAX_STEP_SEC = 0.1;
-const CAMERA_FOV = 75;
-const CAMERA_Z = 1;
+const CAMERA_FOV = PARTICLE_CAMERA_FOV;
+const CAMERA_Z = PARTICLE_CAMERA_Z;
 
 /**
  * One WebGL context for every scene layer of an export: created on the first
@@ -146,6 +157,29 @@ function hasParticleFilter(state: Readonly<WallpaperState>): boolean {
 	);
 }
 
+function resolveExportFieldBounds(
+	ctx: RenderFrameContext,
+	zPosition: number,
+	liveViewportHeight: number
+): ParticleFieldBounds {
+	const { width, height } = ctx.resolution;
+	const overscanPx = cameraMotionOverscanPx(
+		ctx.state as WallpaperState,
+		'particles'
+	);
+	const worldHeight = resolveWorldViewport(1).height;
+	const depthScale = Math.max(0.01, CAMERA_Z - zPosition);
+	const overscanWorld =
+		(overscanPx * depthScale * worldHeight) / liveViewportHeight;
+	return resolveParticleFieldBounds(
+		resolveParticleVisibleHalfExtent(
+			height > 0 ? width / height : 1,
+			zPosition
+		),
+		overscanWorld
+	);
+}
+
 function createParticleLayerSubsystem(
 	id: 'particles' | 'particlesForeground',
 	host: SceneGlHost
@@ -174,8 +208,10 @@ function createParticleLayerSubsystem(
 	let buffers: ParticleBuffers | null = null;
 	let seedKey = '';
 	let viewportMin = 1;
+	let liveViewportHeight = 1;
 	let liveDpr = 1;
 	let retained = false;
+	let bounds: ParticleFieldBounds = DEFAULT_PARTICLE_FIELD_BOUNDS;
 
 	const reseed = (ctx: RenderFrameContext) => {
 		const state = ctx.state;
@@ -193,13 +229,14 @@ function createParticleLayerSubsystem(
 			state.particleSizeMax,
 			state.particleColorMode,
 			state.particleColorSource,
-			colors
+			colors,
+			bounds
 		]);
 		if (buffers && key === seedKey) return { colors, changed: false };
 		seedKey = key;
 		// Live reseeds the field whenever these change (a slideshow image
 		// switch repaints an image-sourced palette), so the export does too.
-		buffers = createParticleBuffers(state, colors, zPosition);
+		buffers = createParticleBuffers(state, colors, zPosition, bounds);
 		const attribute = (array: Float32Array, size: number) =>
 			new THREE.BufferAttribute(array, size).setUsage(
 				THREE.DynamicDrawUsage
@@ -216,6 +253,10 @@ function createParticleLayerSubsystem(
 		id,
 		async prepare() {
 			viewportMin = readViewportMin();
+			liveViewportHeight = Math.max(
+				1,
+				getCurrentViewportResolution().height
+			);
 			liveDpr = readLiveParticleDpr();
 		},
 		render(ctx: RenderFrameContext) {
@@ -227,6 +268,17 @@ function createParticleLayerSubsystem(
 			const target = ctx.canvas.getContext('2d');
 			if (!target) return;
 
+			// Same field the live canvas builds: Camera Motion slides this
+			// layer's whole image, so the field has to exist where the movement
+			// takes it or its empty edge rides into the video. Offsets are
+			// expressed in live-viewport pixels (`createOfflineCameraFx`), so
+			// the conversion to world units uses the live viewport too, while
+			// the visible extent follows the export's own aspect.
+			bounds = resolveExportFieldBounds(
+				ctx,
+				zPosition,
+				liveViewportHeight
+			);
 			const { colors } = reseed(ctx);
 			if (!buffers || buffers.count === 0) return;
 			const result = stepParticles(
@@ -235,7 +287,8 @@ function createParticleLayerSubsystem(
 				ctx.state,
 				ctx.audio,
 				Math.min(ctx.deltaMs / 1000, MAX_STEP_SEC),
-				resolveParticleRotationPalette(ctx.state, colors)
+				resolveParticleRotationPalette(ctx.state, colors),
+				bounds
 			);
 			applyParticleUniforms(uniforms, result.uniforms);
 			const { width, height } = ctx.resolution;
@@ -251,19 +304,38 @@ function createParticleLayerSubsystem(
 				host.retain();
 				retained = true;
 			}
+			// The camera moves the POINTS, not the frame, exactly as the live
+			// canvas does: the GL canvas is the size of the output, so blitting
+			// it through the camera transform would slide its own edge into the
+			// video and leave the rest of the frame empty. The field is seeded
+			// past the frame for this, so what scrolls in is more field.
+			const space = readCameraDrawSpace(target);
+			const zoom = space?.scale ?? 1;
+			const worldPerPx =
+				((CAMERA_Z - zPosition) * resolveWorldViewport(1).height) /
+				Math.max(1, height);
+			// Divided by the zoom for the same reason the live stage divides it:
+			// the zoom is replayed on the blit below and multiplies whatever the
+			// canvas painted, so the points land on the pixel the movement asked
+			// for.
+			points.position.x = ((space?.tx ?? 0) / zoom) * worldPerPx;
+			points.position.y = -((space?.ty ?? 0) / zoom) * worldPerPx;
 			const glCanvas = host.draw(scene, width, height);
 			if (!glCanvas) return;
-			if (!hasParticleFilter(ctx.state)) {
-				target.drawImage(glCanvas, 0, 0);
-				return;
-			}
-			target.save();
-			target.filter = resolveParticleCanvasFilter(
-				ctx.state,
-				outputMin / viewportMin
-			);
-			target.drawImage(glCanvas, 0, 0);
-			target.restore();
+			blitInFrameSpace(target, blitCtx => {
+				if (zoom !== 1) {
+					blitCtx.translate(width / 2, height / 2);
+					blitCtx.scale(zoom, zoom);
+					blitCtx.translate(-width / 2, -height / 2);
+				}
+				if (hasParticleFilter(ctx.state)) {
+					blitCtx.filter = resolveParticleCanvasFilter(
+						ctx.state,
+						outputMin / viewportMin
+					);
+				}
+				blitCtx.drawImage(glCanvas, 0, 0);
+			});
 		},
 		reset() {
 			runtime = createParticleRuntime();

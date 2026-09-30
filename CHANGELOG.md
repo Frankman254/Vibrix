@@ -42,6 +42,26 @@ the version scheme in `src/lib/version.ts`.
 
 ### Corregido
 
+- **Las partículas ya no muestran su propio borde cuando Camera Motion las
+  mueve.** El campo de partículas se dibujaba en un lienzo del tamaño exacto de
+  la pantalla y el movimiento **desplazaba el lienzo entero**: al apartarlo,
+  descubría la pantalla que había detrás, y lo que entraba en el cuadro era una
+  franja vacía con un borde recto. Con el alcance al máximo el lienzo llegaba a
+  salirse casi por completo.
+
+    Ahora el campo se genera **más allá del cuadro** — la parte visible más todo
+    el recorrido que el movimiento puede pedir — y son los puntos los que se
+    desplazan dentro de la escena, no el lienzo. Así lo que entra es más campo, no
+    vacío, y no hay ningún borde que tapar. El campo siembra partículas de más en
+    proporción al área que gana, de modo que un campo mayor no se ve más ralo; sin
+    movimiento el tamaño y el conteo son exactamente los de siempre, así que
+    ningún proyecto existente cambia de aspecto. De paso, el campo también cubre
+    ya una pantalla ultrapanorámica (3440x1080 es más ancha que la caja fija que
+    tenía, que se le quedaba corta incluso parado).
+
+    El exportador de vídeo hace lo mismo con la misma cuenta, así que el vídeo
+    reproduce lo que muestra la vista previa.
+
 - **El osciloscopio radial ya no deja una franja del fósforo sin apagar.** El
   búfer de fósforo (la persistencia tipo CRT) es un lienzo del tamaño del
   cuadro, y su desvanecido por frame — un rectángulo que cubre todo el búfer —

@@ -136,10 +136,94 @@ const PARTICLE_DEPTH_MODE_SCALE: Record<ParticleDepthFlowMode, number> = {
 	snowRush: 0.65
 };
 
+/**
+ * The field the particles live in, in world units, and how far past it they may
+ * drift before wrapping. This is the HISTORICAL box: wider and taller than a
+ * 16:9 frame at the background plane, which is why the field has always looked
+ * edgeless standing still.
+ *
+ * It is a floor, not a fixed size — see `resolveParticleFieldBounds`.
+ */
 const WORLD_HALF_WIDTH = 2;
 const WORLD_HALF_HEIGHT = 1;
 const WORLD_WRAP_X = 2.1;
 const WORLD_WRAP_Y = 1.1;
+const WORLD_WRAP_RATIO_X = WORLD_WRAP_X / WORLD_HALF_WIDTH;
+const WORLD_WRAP_RATIO_Y = WORLD_WRAP_Y / WORLD_HALF_HEIGHT;
+
+/** The R3F scene the live particle canvas and the export both set up. */
+export const PARTICLE_CAMERA_FOV = 75;
+export const PARTICLE_CAMERA_Z = 1;
+
+/**
+ * A ceiling on how many extra particles an enlarged field may seed. The field
+ * grows with the square of the camera reach, and the count has per-performance
+ * caps for a reason; past this the density drops instead of the frame rate.
+ */
+const MAX_FIELD_COUNT_SCALE = 4;
+
+export type ParticleFieldBounds = {
+	halfWidth: number;
+	halfHeight: number;
+	wrapX: number;
+	wrapY: number;
+	/** Extra particles the enlarged field needs to keep the on-screen density. */
+	countScale: number;
+};
+
+/** The historical field: what every caller gets when nothing moves the layer. */
+export const DEFAULT_PARTICLE_FIELD_BOUNDS: ParticleFieldBounds = {
+	halfWidth: WORLD_HALF_WIDTH,
+	halfHeight: WORLD_HALF_HEIGHT,
+	wrapX: WORLD_WRAP_X,
+	wrapY: WORLD_WRAP_Y,
+	countScale: 1
+};
+
+/** Half the world the camera sees at the plane a particle layer sits on. */
+export function resolveParticleVisibleHalfExtent(
+	aspect: number,
+	zPosition: number
+): { halfWidth: number; halfHeight: number } {
+	const distance = Math.max(0.01, PARTICLE_CAMERA_Z - zPosition);
+	const halfHeight =
+		Math.tan(((PARTICLE_CAMERA_FOV / 2) * Math.PI) / 180) * distance;
+	return { halfWidth: halfHeight * Math.max(0.01, aspect), halfHeight };
+}
+
+/**
+ * The field a particle layer has to cover.
+ *
+ * Camera Motion translates this layer's whole canvas — it has no figure whose
+ * drawing could be offset instead — so whatever the field does not reach slides
+ * into the frame as a straight, empty edge. The fix is not to hide that edge
+ * with a zoom (that would scale the particles) but to put it out of reach: the
+ * field is the visible world plus the furthest the movement can ever travel,
+ * and it never shrinks below the historical box, so a project with no movement
+ * renders exactly as it did.
+ *
+ * `countScale` keeps the density honest: a field twice the area with the same
+ * particle count reads as half as busy, which would be a silent look change.
+ */
+export function resolveParticleFieldBounds(
+	visible: { halfWidth: number; halfHeight: number },
+	overscanWorld: number
+): ParticleFieldBounds {
+	const margin = Math.max(0, overscanWorld);
+	const halfWidth = Math.max(WORLD_HALF_WIDTH, visible.halfWidth + margin);
+	const halfHeight = Math.max(WORLD_HALF_HEIGHT, visible.halfHeight + margin);
+	const countScale = Math.min(
+		MAX_FIELD_COUNT_SCALE,
+		(halfWidth * halfHeight) / (WORLD_HALF_WIDTH * WORLD_HALF_HEIGHT)
+	);
+	return {
+		halfWidth,
+		halfHeight,
+		wrapX: halfWidth * WORLD_WRAP_RATIO_X,
+		wrapY: halfHeight * WORLD_WRAP_RATIO_Y,
+		countScale
+	};
+}
 
 /** Background particles sit just in front of the image plane. */
 export const PARTICLE_BACKGROUND_Z = 0.02;
@@ -208,10 +292,15 @@ export type ParticleBuffers = {
 export function createParticleBuffers(
 	settings: ParticleSeedSettings,
 	colors: ParticleColors,
-	zPosition: number
+	zPosition: number,
+	bounds: ParticleFieldBounds = DEFAULT_PARTICLE_FIELD_BOUNDS
 ): ParticleBuffers {
 	const caps = resolveParticleCaps(settings.performanceMode);
-	const count = resolveParticleCount(settings);
+	// The cap is per performance mode; the scale on top of it is what keeps the
+	// density unchanged when the field has to reach past the frame.
+	const count = Math.round(
+		resolveParticleCount(settings) * Math.max(1, bounds.countScale)
+	);
 	// Defensive ordering: if the user drags sizeMin past sizeMax (or vice
 	// versa) `randomBetween(sizeMin, sizeMax)` returns NaN for every
 	// particle. Swap so we always have a valid range.
@@ -244,10 +333,10 @@ export function createParticleBuffers(
 			: colors.rainbowColors;
 
 	for (let i = 0; i < count; i++) {
-		positions[i * 3] = randomBetween(-WORLD_HALF_WIDTH, WORLD_HALF_WIDTH);
+		positions[i * 3] = randomBetween(-bounds.halfWidth, bounds.halfWidth);
 		positions[i * 3 + 1] = randomBetween(
-			-WORLD_HALF_HEIGHT,
-			WORLD_HALF_HEIGHT
+			-bounds.halfHeight,
+			bounds.halfHeight
 		);
 		positions[i * 3 + 2] = zPosition;
 		velocities[i * 3] = randomBetween(-0.0008, 0.0008);
@@ -423,7 +512,8 @@ function respawnParticlePosition(
 	origin: ParticleDepthFlowSpawnOrigin,
 	focusX: number,
 	focusY: number,
-	spread: number
+	spread: number,
+	bounds: ParticleFieldBounds
 ) {
 	const focusRadiusX = Math.min(0.55, 0.1 + spread * 0.08);
 	const focusRadiusY = Math.min(0.3, 0.06 + spread * 0.05);
@@ -431,35 +521,35 @@ function respawnParticlePosition(
 		case 'fromFocus':
 			pos[idx] = clamp(
 				focusX + randomBetween(-focusRadiusX, focusRadiusX),
-				-WORLD_HALF_WIDTH,
-				WORLD_HALF_WIDTH
+				-bounds.halfWidth,
+				bounds.halfWidth
 			);
 			pos[idx + 1] = clamp(
 				focusY + randomBetween(-focusRadiusY, focusRadiusY),
-				-WORLD_HALF_HEIGHT,
-				WORLD_HALF_HEIGHT
+				-bounds.halfHeight,
+				bounds.halfHeight
 			);
 			return;
 		case 'fromEdges': {
 			const edge = Math.floor(randomBetween(0, 4));
 			if (edge === 0) {
-				pos[idx] = -WORLD_WRAP_X;
+				pos[idx] = -bounds.wrapX;
 				pos[idx + 1] = randomBetween(
-					-WORLD_HALF_HEIGHT,
-					WORLD_HALF_HEIGHT
+					-bounds.halfHeight,
+					bounds.halfHeight
 				);
 			} else if (edge === 1) {
-				pos[idx] = WORLD_WRAP_X;
+				pos[idx] = bounds.wrapX;
 				pos[idx + 1] = randomBetween(
-					-WORLD_HALF_HEIGHT,
-					WORLD_HALF_HEIGHT
+					-bounds.halfHeight,
+					bounds.halfHeight
 				);
 			} else if (edge === 2) {
-				pos[idx] = randomBetween(-WORLD_HALF_WIDTH, WORLD_HALF_WIDTH);
-				pos[idx + 1] = WORLD_WRAP_Y;
+				pos[idx] = randomBetween(-bounds.halfWidth, bounds.halfWidth);
+				pos[idx + 1] = bounds.wrapY;
 			} else {
-				pos[idx] = randomBetween(-WORLD_HALF_WIDTH, WORLD_HALF_WIDTH);
-				pos[idx + 1] = -WORLD_WRAP_Y;
+				pos[idx] = randomBetween(-bounds.halfWidth, bounds.halfWidth);
+				pos[idx + 1] = -bounds.wrapY;
 			}
 			return;
 		}
@@ -468,17 +558,17 @@ function respawnParticlePosition(
 			pos[idx + 1] = randomBetween(-0.18, 0.18);
 			return;
 		case 'fromTop':
-			pos[idx] = randomBetween(-WORLD_HALF_WIDTH, WORLD_HALF_WIDTH);
-			pos[idx + 1] = WORLD_WRAP_Y;
+			pos[idx] = randomBetween(-bounds.halfWidth, bounds.halfWidth);
+			pos[idx + 1] = bounds.wrapY;
 			return;
 		case 'fromBottom':
-			pos[idx] = randomBetween(-WORLD_HALF_WIDTH, WORLD_HALF_WIDTH);
-			pos[idx + 1] = -WORLD_WRAP_Y;
+			pos[idx] = randomBetween(-bounds.halfWidth, bounds.halfWidth);
+			pos[idx + 1] = -bounds.wrapY;
 			return;
 		case 'randomScreen':
 		default:
-			pos[idx] = randomBetween(-WORLD_HALF_WIDTH, WORLD_HALF_WIDTH);
-			pos[idx + 1] = randomBetween(-WORLD_HALF_HEIGHT, WORLD_HALF_HEIGHT);
+			pos[idx] = randomBetween(-bounds.halfWidth, bounds.halfWidth);
+			pos[idx + 1] = randomBetween(-bounds.halfHeight, bounds.halfHeight);
 	}
 }
 
@@ -498,7 +588,8 @@ export function stepParticles(
 	settings: ParticleSettings,
 	audio: AudioSnapshot,
 	dtSec: number,
-	rotationPalette: Vec3[] | null
+	rotationPalette: Vec3[] | null,
+	bounds: ParticleFieldBounds = DEFAULT_PARTICLE_FIELD_BOUNDS
 ): ParticleStepResult {
 	const s = settings;
 	const caps = resolveParticleCaps(s.performanceMode);
@@ -768,8 +859,8 @@ export function stepParticles(
 				const nearFocus =
 					focusDx * focusDx + focusDy * focusDy < 0.035 * 0.035;
 				const hitEdge =
-					Math.abs(nextX) > WORLD_WRAP_X ||
-					Math.abs(nextY) > WORLD_WRAP_Y;
+					Math.abs(nextX) > bounds.wrapX ||
+					Math.abs(nextY) > bounds.wrapY;
 				const shouldRespawn =
 					(depthDirectionSign > 0 && hitEdge) ||
 					(depthDirectionSign < 0 && nearFocus);
@@ -781,25 +872,26 @@ export function stepParticles(
 							s.particleDepthFlowSpawnOrigin,
 							focusX,
 							focusY,
-							depthSpread
+							depthSpread,
+							bounds
 						);
 					} else {
 						pos[idx] = randomBetween(
-							-WORLD_HALF_WIDTH,
-							WORLD_HALF_WIDTH
+							-bounds.halfWidth,
+							bounds.halfWidth
 						);
 						pos[idx + 1] = randomBetween(
-							-WORLD_HALF_HEIGHT,
-							WORLD_HALF_HEIGHT
+							-bounds.halfHeight,
+							bounds.halfHeight
 						);
 					}
 					lifeArr[i] = 0;
 				}
 			} else {
-				if (pos[idx] > WORLD_WRAP_X) pos[idx] = -WORLD_WRAP_X;
-				if (pos[idx] < -WORLD_WRAP_X) pos[idx] = WORLD_WRAP_X;
-				if (pos[idx + 1] > WORLD_WRAP_Y) pos[idx + 1] = -WORLD_WRAP_Y;
-				if (pos[idx + 1] < -WORLD_WRAP_Y) pos[idx + 1] = WORLD_WRAP_Y;
+				if (pos[idx] > bounds.wrapX) pos[idx] = -bounds.wrapX;
+				if (pos[idx] < -bounds.wrapX) pos[idx] = bounds.wrapX;
+				if (pos[idx + 1] > bounds.wrapY) pos[idx + 1] = -bounds.wrapY;
+				if (pos[idx + 1] < -bounds.wrapY) pos[idx + 1] = bounds.wrapY;
 			}
 		}
 		positionsChanged = true;
@@ -820,13 +912,14 @@ export function stepParticles(
 					s.particleDepthFlowSpawnOrigin,
 					focusX,
 					focusY,
-					depthSpread
+					depthSpread,
+					bounds
 				);
 			} else {
-				pos[i * 3] = randomBetween(-WORLD_HALF_WIDTH, WORLD_HALF_WIDTH);
+				pos[i * 3] = randomBetween(-bounds.halfWidth, bounds.halfWidth);
 				pos[i * 3 + 1] = randomBetween(
-					-WORLD_HALF_HEIGHT,
-					WORLD_HALF_HEIGHT
+					-bounds.halfHeight,
+					bounds.halfHeight
 				);
 			}
 			positionsChanged = true;

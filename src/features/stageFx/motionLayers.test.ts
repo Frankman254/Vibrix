@@ -11,10 +11,12 @@ import {
 	DEFAULT_MOTION_LAYER_ID,
 	extractMotionLayerSettingsFromState,
 	findMotionLayerForTarget,
+	cameraMotionOverscanPx,
 	motionLayerToStatePatch,
 	resolveMotionLayerStack,
 	syncActiveMotionLayer
 } from './motionLayers';
+import { CAMERA_FX_CAPS } from './stageFxConfig';
 
 const silence: AudioSnapshot = {
 	bins: new Uint8Array(8),
@@ -348,5 +350,84 @@ describe('Fase C — new movements, reactive amplitude, clamp per layer type', (
 		const pumped = offsetAfter(reactive, 1, 'logo', loud)!;
 		expect(flat.tx).toBeCloseTo(19.2, 1);
 		expect(pumped.tx).toBeGreaterThan(flat.tx);
+	});
+});
+
+describe('camera motion overscan — how far past the frame a layer must reach', () => {
+	it('is zero for a target nothing moves', () => {
+		const s = state({
+			cameraMotionTargets: ['spectrum'],
+			activeMotionLayerId: 'a',
+			motionLayers: [layer({ id: 'a', targets: ['spectrum'] })]
+		});
+		expect(cameraMotionOverscanPx(s, 'particles')).toBe(0);
+		expect(cameraMotionOverscanPx(s, 'spectrum')).toBeGreaterThan(0);
+	});
+
+	it('is zero while Camera Motion is off, whatever the dials say', () => {
+		const s = state({
+			cameraMotionEnabled: false,
+			cameraMotionAmount: 1.5,
+			cameraMotionRange: 6,
+			cameraMotionTargets: ['particles'],
+			activeMotionLayerId: 'a',
+			motionLayers: [layer({ id: 'a', targets: ['particles'] })]
+		});
+		expect(cameraMotionOverscanPx(s, 'particles')).toBe(0);
+	});
+
+	it('is the settings ceiling: amount x range x the audio swell', () => {
+		const s = state({
+			cameraMotionAmount: 1,
+			cameraMotionRange: 3,
+			cameraMotionAmplitudeAudio: 1,
+			cameraMotionTargets: ['particles'],
+			activeMotionLayerId: 'a',
+			motionLayers: [layer({ id: 'a', targets: ['particles'] })]
+		});
+		expect(cameraMotionOverscanPx(s, 'particles')).toBeCloseTo(
+			CAMERA_FX_CAPS.maxMotionPx * 1 * 3 * 2,
+			5
+		);
+	});
+
+	it('asks for nothing when the movement only zooms', () => {
+		const s = state({
+			cameraMotionMode: 'zoom-pulse',
+			cameraMotionAmount: 1.5,
+			cameraMotionRange: 6,
+			cameraMotionTargets: ['particles'],
+			activeMotionLayerId: 'a',
+			motionLayers: [layer({ id: 'a', targets: ['particles'] })]
+		});
+		expect(cameraMotionOverscanPx(s, 'particles')).toBe(0);
+	});
+
+	it('follows the first layer that owns the target, not the widest one', () => {
+		// Layers never blend: the top-most layer that names the target moves it,
+		// so the margin has to be that layer's, not the largest in the stack.
+		const s = state({
+			cameraMotionAmount: 1,
+			cameraMotionRange: 1,
+			cameraMotionTargets: ['particles'],
+			activeMotionLayerId: 'a',
+			motionLayers: [
+				layer({ id: 'a', targets: ['particles'] }),
+				layer({
+					id: 'b',
+					targets: ['particles'],
+					settings: {
+						...extractMotionLayerSettingsFromState(DEFAULT_STATE),
+						cameraMotionMode: 'circle',
+						cameraMotionAmount: 1.5,
+						cameraMotionRange: 6
+					}
+				})
+			]
+		});
+		expect(cameraMotionOverscanPx(s, 'particles')).toBeCloseTo(
+			CAMERA_FX_CAPS.maxMotionPx,
+			5
+		);
 	});
 });

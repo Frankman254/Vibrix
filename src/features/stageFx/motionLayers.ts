@@ -17,6 +17,7 @@
  * multiplied into one transform is not something a user can predict, so the
  * first layer that names a target owns it, top-down.
  */
+import { cameraMotionMaxOffsetPx } from '@/features/stageFx/stageFxConfig';
 import type {
 	MotionLayer,
 	MotionLayerSettings,
@@ -178,4 +179,29 @@ export function resolveMotionLayerStack(state: MotionLayerStateSource): Array<{
 		stack.push({ id: layer.id, targets, settings });
 	}
 	return stack;
+}
+
+/**
+ * How far beyond the frame a target has to reach so Camera Motion never slides
+ * its own boundary into view, in pixels. Zero when nothing moves it.
+ *
+ * The Edge cover dial solves the same problem by ZOOMING, which is the right
+ * answer for a layer whose figure is the drawing (zooming a spectrum is a look)
+ * and the wrong one for a field that is generated to fill the frame: a particle
+ * field can simply be generated bigger, and then there is no boundary to hide
+ * and nothing is scaled. This is what a generated layer asks for instead.
+ *
+ * First match wins, exactly as the stepper resolves it: layers never blend, so
+ * the top-most layer that names the target is the one that moves it.
+ */
+export function cameraMotionOverscanPx(
+	state: MotionLayerStateSource & Pick<WallpaperState, 'cameraMotionEnabled'>,
+	target: MotionLayer['targets'][number]
+): number {
+	if (!state.cameraMotionEnabled) return 0;
+	for (const layer of resolveMotionLayerStack(state)) {
+		if (!layer.targets.includes(target)) continue;
+		return cameraMotionMaxOffsetPx(layer.settings);
+	}
+	return 0;
 }

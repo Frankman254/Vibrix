@@ -99,6 +99,14 @@ export default function SceneLayerCanvas({ layer }: { layer: SceneLayer }) {
 							? 'rain'
 							: 'background'
 			}
+			// A particle field moves what it DRAWS, never itself. Sliding the
+			// element is what put a straight empty edge in the frame: the canvas
+			// is the size of the screen, so translating it uncovers the screen
+			// underneath. The field is generated past the frame instead
+			// (`resolveParticleFieldBounds`) and the points are offset inside
+			// the scene, so there is nothing to uncover — the same trade the
+			// spectrum canvases already make.
+			{...(particleFilterActive ? { 'data-camera-motion-draw': '' } : {})}
 			style={{
 				position: 'fixed',
 				inset: 0,

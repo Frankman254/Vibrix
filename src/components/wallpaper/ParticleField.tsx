@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { useShallow } from 'zustand/react/shallow';
 import * as THREE from 'three';
 import {
@@ -14,9 +14,13 @@ import {
 	createParticleBuffers,
 	createParticleRuntime,
 	createParticleUniforms,
+	resolveParticleFieldBounds,
 	resolveParticleRotationPalette,
+	resolveParticleVisibleHalfExtent,
 	stepParticles
 } from '@/features/particles/render/particleSimulation';
+import { cameraMotionOverscanPx } from '@/features/stageFx/motionLayers';
+import { readCameraDrawOffset } from '@/features/stageFx/cameraDrawOffset';
 import vertexShader from '@/shaders/particleVertex.glsl';
 import fragmentShader from '@/shaders/particleFragment.glsl';
 
@@ -95,6 +99,39 @@ export default function ParticleField({
 	const rotationPaletteRef = useRef(rotationPalette);
 	rotationPaletteRef.current = rotationPalette;
 
+	// How far past the frame the field has to reach. Camera Motion translates
+	// this layer's whole canvas (a particle field has no figure whose drawing
+	// could be offset instead), so anything the field does not cover arrives in
+	// the picture as a straight, empty edge. Read from the settings and
+	// quantised, never from the live offset: this decides the buffer size, and
+	// resizing it per frame would reseed the field sixty times a second.
+	const cameraOverscanPx = useWallpaperStore(s =>
+		cameraMotionOverscanPx(s, 'particles')
+	);
+	const viewportFactor = useThree(s => s.viewport.factor);
+	const viewportAspect = useThree(s => s.viewport.aspect);
+	const bounds = useMemo(() => {
+		const depthScale = Math.max(0.01, 1 - zPosition);
+		const overscanWorld =
+			viewportFactor > 0
+				? (cameraOverscanPx * depthScale) / viewportFactor
+				: 0;
+		const visible = resolveParticleVisibleHalfExtent(
+			viewportAspect,
+			zPosition
+		);
+		// Quantised so that dragging a window edge does not reseed the field on
+		// every resize event.
+		const quantise = (value: number) => Math.ceil(value * 10) / 10;
+		return resolveParticleFieldBounds(
+			{
+				halfWidth: quantise(visible.halfWidth),
+				halfHeight: quantise(visible.halfHeight)
+			},
+			quantise(overscanWorld)
+		);
+	}, [cameraOverscanPx, viewportAspect, viewportFactor, zPosition]);
+
 	const buffers = useMemo(
 		() =>
 			createParticleBuffers(
@@ -107,9 +144,11 @@ export default function ParticleField({
 					particleColorSource
 				},
 				resolvedColors,
-				zPosition
+				zPosition,
+				bounds
 			),
 		[
+			bounds,
 			particleCount,
 			performanceMode,
 			particleSizeMin,
@@ -122,6 +161,8 @@ export default function ParticleField({
 	);
 	const buffersRef = useRef(buffers);
 	buffersRef.current = buffers;
+	const boundsRef = useRef(bounds);
+	boundsRef.current = bounds;
 
 	const uniforms = useMemo(() => createParticleUniforms(), []);
 
@@ -138,6 +179,20 @@ export default function ParticleField({
 
 	useFrame((_, dt) => {
 		if (!pointsRef.current) return;
+		// Camera Motion moves the points inside the scene, not the canvas: the
+		// canvas is exactly the screen, so translating it would uncover the
+		// screen behind it — the straight empty edge the user saw. The field is
+		// seeded past the frame for precisely this, so what scrolls in is more
+		// field instead of nothing. Applied before the pause check so a paused
+		// project still sits where the movement left it.
+		const drawOffset = readCameraDrawOffset('particles');
+		const worldPerPx =
+			viewportFactor > 0
+				? Math.max(0.01, 1 - zPosition) / viewportFactor
+				: 0;
+		pointsRef.current.position.x = (drawOffset?.tx ?? 0) * worldPerPx;
+		// Screen Y grows downward, world Y upward.
+		pointsRef.current.position.y = -(drawOffset?.ty ?? 0) * worldPerPx;
 		if (motionPaused || sleepModeActive) return;
 		const mat = pointsRef.current.material as THREE.ShaderMaterial;
 		const geometry = pointsRef.current.geometry;
@@ -148,7 +203,8 @@ export default function ParticleField({
 			useWallpaperStore.getState(),
 			getAudioSnapshot(),
 			dt,
-			rotationPaletteRef.current
+			rotationPaletteRef.current,
+			boundsRef.current
 		);
 		applyParticleUniforms(mat.uniforms, result.uniforms);
 		if (result.positionsChanged) {

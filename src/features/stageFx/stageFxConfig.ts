@@ -1,5 +1,9 @@
 import type { AudioSnapshot } from '@/lib/audio/audioChannels';
-import type { FilterTarget, PerformanceMode } from '@/types/wallpaper';
+import type {
+	FilterTarget,
+	MotionLayerSettings,
+	PerformanceMode
+} from '@/types/wallpaper';
 
 // ── Shared option types ───────────────────────────────────────────────────────
 
@@ -377,6 +381,38 @@ export function cameraMotionSlackMode(
 	if (targets.some(target => FULL_BLEED_TARGETS.includes(target)))
 		return 'full-bleed';
 	return 'free';
+}
+
+/**
+ * The largest translation a movement can ever ask for, in pixels.
+ *
+ * This is the ceiling the SETTINGS allow, not the live position, and that is
+ * the point: a layer that has to exist beyond the frame so the camera never
+ * slides its own boundary into view needs a margin that stays put while the
+ * movement runs. Sized from the live offset it would resize its drawing area
+ * every frame — reseeding a particle field sixty times a second.
+ *
+ * `zoom-pulse` never translates, so it exposes no boundary and needs none.
+ */
+export function cameraMotionMaxOffsetPx(
+	settings: Pick<
+		MotionLayerSettings,
+		| 'cameraMotionMode'
+		| 'cameraMotionAmount'
+		| 'cameraMotionRange'
+		| 'cameraMotionAmplitudeAudio'
+	>
+): number {
+	if (
+		settings.cameraMotionMode === 'none' ||
+		settings.cameraMotionMode === 'zoom-pulse'
+	) {
+		return 0;
+	}
+	const amount = Math.min(1.5, Math.max(0, settings.cameraMotionAmount));
+	const range = resolveCameraMotionRange(settings.cameraMotionRange);
+	const audio = Math.max(0, settings.cameraMotionAmplitudeAudio);
+	return CAMERA_FX_CAPS.maxMotionPx * amount * range * (1 + audio);
 }
 
 export function cameraMotionTargetIncludes(

@@ -4,8 +4,11 @@ import { DEFAULT_STATE } from '@/store/defaultState';
 import {
 	createParticleBuffers,
 	createParticleRuntime,
+	DEFAULT_PARTICLE_FIELD_BOUNDS,
 	resolveParticleCount,
+	resolveParticleFieldBounds,
 	resolveParticleRotationPalette,
+	resolveParticleVisibleHalfExtent,
 	stepParticles
 } from './particleSimulation';
 
@@ -104,5 +107,99 @@ describe('particle simulation', () => {
 				colors
 			)
 		).toHaveLength(3);
+	});
+});
+
+describe('particle field bounds — the field Camera Motion moves', () => {
+	const visible16x9 = resolveParticleVisibleHalfExtent(16 / 9, 0.02);
+
+	it('never shrinks below the historical field', () => {
+		// A project with no movement on a normal frame has to render exactly as
+		// it did: same box, same wrap, same count.
+		const bounds = resolveParticleFieldBounds(visible16x9, 0);
+		expect(bounds).toEqual(DEFAULT_PARTICLE_FIELD_BOUNDS);
+	});
+
+	it('covers an ultrawide frame the historical box already fell short of', () => {
+		// 3440x1080 is wider than the 2:1 box, so the field edge was on screen
+		// standing still.
+		const visible = resolveParticleVisibleHalfExtent(3440 / 1080, 0.02);
+		expect(visible.halfWidth).toBeGreaterThan(
+			DEFAULT_PARTICLE_FIELD_BOUNDS.halfWidth
+		);
+		const bounds = resolveParticleFieldBounds(visible, 0);
+		expect(bounds.halfWidth).toBeCloseTo(visible.halfWidth, 5);
+	});
+
+	it('grows by the whole travel the movement can ask for', () => {
+		const bounds = resolveParticleFieldBounds(visible16x9, 0.9);
+		expect(bounds.halfWidth).toBeCloseTo(visible16x9.halfWidth + 0.9, 5);
+		expect(bounds.halfHeight).toBeCloseTo(visible16x9.halfHeight + 0.9, 5);
+		// The whole field, visible part included, has to be past the frame edge
+		// by the travel or the empty edge still arrives.
+		expect(bounds.halfHeight - visible16x9.halfHeight).toBeCloseTo(0.9, 5);
+	});
+
+	it('keeps the wrap outside the field, in the same proportion as before', () => {
+		const bounds = resolveParticleFieldBounds(visible16x9, 1.5);
+		expect(bounds.wrapX / bounds.halfWidth).toBeCloseTo(
+			DEFAULT_PARTICLE_FIELD_BOUNDS.wrapX /
+				DEFAULT_PARTICLE_FIELD_BOUNDS.halfWidth,
+			5
+		);
+		expect(bounds.wrapY / bounds.halfHeight).toBeCloseTo(
+			DEFAULT_PARTICLE_FIELD_BOUNDS.wrapY /
+				DEFAULT_PARTICLE_FIELD_BOUNDS.halfHeight,
+			5
+		);
+	});
+
+	it('seeds more particles so a bigger field is not a thinner one', () => {
+		const bounds = resolveParticleFieldBounds(visible16x9, 1);
+		expect(bounds.countScale).toBeGreaterThan(1);
+		const wide = createParticleBuffers(settings, colors, 0.02, bounds);
+		const plain = createParticleBuffers(settings, colors, 0.02);
+		expect(wide.count).toBe(Math.round(plain.count * bounds.countScale));
+	});
+
+	it('caps how many extra particles an enormous field may seed', () => {
+		const bounds = resolveParticleFieldBounds(visible16x9, 40);
+		expect(bounds.countScale).toBe(4);
+	});
+
+	it('seeds and wraps inside the enlarged field', () => {
+		const bounds = resolveParticleFieldBounds(visible16x9, 2);
+		const buffers = createParticleBuffers(settings, colors, 0.02, bounds);
+		let maxX = 0;
+		let maxY = 0;
+		for (let i = 0; i < buffers.count; i++) {
+			maxX = Math.max(maxX, Math.abs(buffers.positions[i * 3]));
+			maxY = Math.max(maxY, Math.abs(buffers.positions[i * 3 + 1]));
+		}
+		expect(maxX).toBeLessThanOrEqual(bounds.halfWidth);
+		expect(maxY).toBeLessThanOrEqual(bounds.halfHeight);
+		// Past the historical box: the whole point of the enlarged field.
+		expect(maxX).toBeGreaterThan(DEFAULT_PARTICLE_FIELD_BOUNDS.halfWidth);
+
+		const runtime = createParticleRuntime();
+		for (let frame = 0; frame < 240; frame++) {
+			stepParticles(
+				runtime,
+				buffers,
+				{ ...settings, particleSpeed: 5 },
+				silence,
+				1 / 60,
+				null,
+				bounds
+			);
+		}
+		for (let i = 0; i < buffers.count; i++) {
+			expect(Math.abs(buffers.positions[i * 3])).toBeLessThanOrEqual(
+				bounds.wrapX + 1e-6
+			);
+			expect(Math.abs(buffers.positions[i * 3 + 1])).toBeLessThanOrEqual(
+				bounds.wrapY + 1e-6
+			);
+		}
 	});
 });
