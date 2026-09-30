@@ -310,17 +310,20 @@ export function drawOscilloscope(
 		: null;
 	const renderCtx = phosphor ? phosphor.getContext('2d') : null;
 	const drawCtx = phosphor && renderCtx ? renderCtx : ctx;
-	// The phosphor buffer is a full-viewport tile: it must be traced in the same
-	// camera space as the output and blitted back untranslated, or its bitmap
-	// edge slides into the frame while the camera moves.
-	const phosphorSpaceMirrored =
-		renderCtx !== null && mirrorCameraDrawSpace(renderCtx, ctx);
 
 	if (phosphor && renderCtx) {
 		// Decay: paint a transparent black over the phosphor at (1 - decay)
 		// alpha so previous strokes get darker each frame instead of holding
 		// forever. Higher `decay` → quicker fade. Clamped so a misconfigured
 		// 0 doesn't freeze the trail on screen forever.
+		//
+		// This runs BEFORE the camera space is mirrored, and that order is the
+		// whole point: the buffer is maintenance, not drawing. Painted through
+		// the camera the decay rectangle is itself translated, so a strip as
+		// wide as the offset never fades — the old trace stays at full
+		// brightness there and the rectangle's own border shows up in the
+		// picture as a straight line that breathes with the movement. Same
+		// rule as every other tile: only the tracing belongs in camera space.
 		const decay = Math.max(
 			0.02,
 			Math.min(0.6, settings.spectrumOscilloscopePhosphorDecay)
@@ -331,6 +334,12 @@ export function drawOscilloscope(
 		renderCtx.fillRect(0, 0, canvas.width, canvas.height);
 		renderCtx.restore();
 	}
+
+	// The phosphor buffer is a full-viewport tile: it must be traced in the same
+	// camera space as the output and blitted back untranslated, or its bitmap
+	// edge slides into the frame while the camera moves.
+	const phosphorSpaceMirrored =
+		renderCtx !== null && mirrorCameraDrawSpace(renderCtx, ctx);
 
 	drawCtx.save();
 	drawCtx.lineCap = 'round';

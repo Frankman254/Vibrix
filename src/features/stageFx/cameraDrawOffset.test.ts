@@ -260,17 +260,22 @@ describe('the tile rule as one shared calculation', () => {
 	});
 });
 
-/** A ctx that also records blits, so the dev tripwire can be exercised. */
+/** A ctx that also records blits and fills, so the tripwire can be exercised. */
 function fakeBlitCtx() {
 	const blits: unknown[] = [];
+	const fills: string[] = [];
 	const ctx = {
 		save: () => {},
 		restore: () => {},
 		translate: () => {},
 		scale: () => {},
-		drawImage: (image: unknown) => blits.push(image)
+		drawImage: (image: unknown) => blits.push(image),
+		fillRect: (x: number, y: number, w: number, h: number) =>
+			fills.push(`fill ${x} ${y} ${w} ${h}`),
+		clearRect: (x: number, y: number, w: number, h: number) =>
+			fills.push(`clear ${x} ${y} ${w} ${h}`)
 	} as unknown as CanvasRenderingContext2D;
-	return { ctx, blits };
+	return { ctx, blits, fills };
 }
 
 describe('the dev tripwire for the tile rule', () => {
@@ -299,6 +304,45 @@ describe('the dev tripwire for the tile rule', () => {
 			0,
 			0
 		);
+		expect(warn).not.toHaveBeenCalled();
+		warn.mockRestore();
+	});
+
+	it("warns when a tile's own decay is painted through the camera", () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const output = fakeSpaceCtx();
+		const tile = fakeBlitCtx();
+		beginCameraDrawSpace(output.ctx, { tx: 9, ty: 9, scale: 1, ...FRAME });
+		mirrorCameraDrawSpace(tile.ctx, output.ctx);
+		// The phosphor's per-frame decay: a moved rectangle leaves a strip of
+		// the buffer that never fades.
+		tile.ctx.fillRect(0, 0, FRAME.width, FRAME.height);
+		expect(warn).toHaveBeenCalledOnce();
+		// The tripwire only watches: the fill itself still happens.
+		expect(tile.fills).toEqual([`fill 0 0 ${FRAME.width} ${FRAME.height}`]);
+		warn.mockRestore();
+	});
+
+	it('stays quiet when the tile is cleared before the space is mirrored', () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const output = fakeSpaceCtx();
+		const tile = fakeBlitCtx();
+		beginCameraDrawSpace(output.ctx, { tx: 9, ty: 9, scale: 1, ...FRAME });
+		tile.ctx.clearRect(0, 0, FRAME.width, FRAME.height);
+		mirrorCameraDrawSpace(tile.ctx, output.ctx);
+		// A partial fill inside the space is ordinary painting, not maintenance.
+		tile.ctx.fillRect(10, 10, 40, 40);
+		expect(warn).not.toHaveBeenCalled();
+		warn.mockRestore();
+	});
+
+	it('leaves a full-frame fill on the OUTPUT alone', () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const { ctx } = fakeBlitCtx();
+		beginCameraDrawSpace(ctx, { tx: 9, ty: 9, scale: 1, ...FRAME });
+		// Film grain, scanlines, the energy bloom: these legitimately fill the
+		// output inside the camera space.
+		ctx.fillRect(0, 0, FRAME.width, FRAME.height);
 		expect(warn).not.toHaveBeenCalled();
 		warn.mockRestore();
 	});

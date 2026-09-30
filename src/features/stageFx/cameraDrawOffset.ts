@@ -122,6 +122,7 @@ export function beginCameraDrawSpace(
 /** Undo `beginCameraDrawSpace`: forget the space, then restore the transform. */
 export function endCameraDrawSpace(ctx: CanvasRenderingContext2D): void {
 	appliedSpaces.delete(ctx);
+	mirroredTiles.delete(ctx);
 	ctx.restore();
 }
 
@@ -146,7 +147,9 @@ export function mirrorCameraDrawSpace(
 ): boolean {
 	const space = appliedSpaces.get(source);
 	if (!space) return false;
-	return beginCameraDrawSpace(target, space);
+	const mirrored = beginCameraDrawSpace(target, space);
+	if (mirrored) mirroredTiles.add(target);
+	return mirrored;
 }
 
 /**
@@ -233,6 +236,9 @@ const cancelledDepth = new WeakMap<CanvasRenderingContext2D, number>();
 
 const guardedContexts = new WeakSet<CanvasRenderingContext2D>();
 
+/** Contexts whose camera space was mirrored from an output: scratch tiles. */
+const mirroredTiles = new WeakSet<CanvasRenderingContext2D>();
+
 /**
  * Dev-only tripwire for the tile rule.
  *
@@ -249,6 +255,7 @@ const guardedContexts = new WeakSet<CanvasRenderingContext2D>();
 function guardFrameTileBlits(ctx: CanvasRenderingContext2D): void {
 	if (guardedContexts.has(ctx)) return;
 	guardedContexts.add(ctx);
+	guardFrameTileFills(ctx);
 	const original = ctx.drawImage;
 	if (typeof original !== 'function') return;
 	let warned = false;
@@ -275,6 +282,60 @@ function guardFrameTileBlits(ctx: CanvasRenderingContext2D): void {
 			args
 		);
 	} as CanvasRenderingContext2D['drawImage'];
+}
+
+/**
+ * The other half of the tripwire: a tile's own MAINTENANCE — the clear, or the
+ * phosphor's per-frame decay — painted inside the camera space.
+ *
+ * It fails differently from a bad blit and is easier to miss: the rectangle is
+ * translated with everything else, so a strip as wide as the camera offset is
+ * never cleared. Whatever was there stays at full brightness and the
+ * rectangle's own border shows up in the picture as a straight line that
+ * breathes with the movement. Only scratch tiles are watched: a full-frame fill
+ * on the OUTPUT inside the camera space is legitimate (film grain, scanlines,
+ * the energy bloom), which is why `blitInFrameSpace` exists for the ones that
+ * must cover the real frame.
+ */
+function guardFrameTileFills(ctx: CanvasRenderingContext2D): void {
+	let warned = false;
+	const watch = (name: 'fillRect' | 'clearRect') => {
+		const original = ctx[name];
+		if (typeof original !== 'function') return;
+		ctx[name] = function patchedRect(
+			this: CanvasRenderingContext2D,
+			x: number,
+			y: number,
+			width: number,
+			height: number
+		) {
+			const space = appliedSpaces.get(ctx);
+			if (
+				!warned &&
+				space !== undefined &&
+				mirroredTiles.has(ctx) &&
+				(cancelledDepth.get(ctx) ?? 0) === 0 &&
+				x <= 0 &&
+				y <= 0 &&
+				width >= space.width &&
+				height >= space.height
+			) {
+				warned = true;
+				console.warn(
+					`[cameraDrawOffset] ${name} covered a whole scratch tile inside the camera transform: the rectangle moves too, so a strip as wide as the camera offset is never cleared. Do the clear or decay BEFORE mirroring the space.`
+				);
+			}
+			return (original as CanvasRenderingContext2D['fillRect']).call(
+				this,
+				x,
+				y,
+				width,
+				height
+			);
+		} as CanvasRenderingContext2D['fillRect'];
+	};
+	watch('fillRect');
+	watch('clearRect');
 }
 
 export function publishCameraDrawOffset(

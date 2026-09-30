@@ -42,6 +42,27 @@ the version scheme in `src/lib/version.ts`.
 
 ### Corregido
 
+- **El osciloscopio radial ya no deja una franja del fósforo sin apagar.** El
+  búfer de fósforo (la persistencia tipo CRT) es un lienzo del tamaño del
+  cuadro, y su desvanecido por frame — un rectángulo que cubre todo el búfer —
+  se pintaba **dentro** del espacio de cámara. Con **Camera Motion** apuntando
+  al spectrum ese rectángulo se desplazaba también, así que una franja tan ancha
+  como el desplazamiento de la cámara no se apagaba nunca: el trazo viejo se
+  quedaba ahí a pleno brillo y el borde del propio rectángulo aparecía en la
+  imagen como una línea recta que respiraba con el movimiento. Es el borde que
+  se veía en la familia scope radial.
+
+    El mantenimiento del lienzo (el borrado, el desvanecido) va ahora **antes**
+    de espejar el espacio de cámara; sólo el trazado se pinta en espacio de
+    cámara. Era el único sitio que quedaba con ese orden: liquid y el pixelado
+    global ya limpiaban antes.
+
+    El vigilante de desarrollo aprendió este caso: además de los estampados,
+    avisa cuando un `fillRect`/`clearRect` cubre un lienzo intermedio entero
+    dentro de la transformación de cámara. Un relleno a pantalla completa sobre
+    la SALIDA (grano, scanlines, el bloom de energía) sigue siendo legítimo y no
+    avisa.
+
 - **La pila de Looks ya no dibuja un rectángulo recto sobre la capa cuando la
   cámara la mueve.** Cuando un _effect layer_ apunta a spectrum, logo, track o
   lyrics, la capa se pinta en un lienzo del tamaño del cuadro, se filtra y se
