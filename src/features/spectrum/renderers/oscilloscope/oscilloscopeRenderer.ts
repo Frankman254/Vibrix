@@ -1,8 +1,8 @@
 import type { SpectrumSettings } from '@/features/spectrum/runtime/spectrumRuntime';
 import {
+	blitInFrameSpace,
 	endCameraDrawSpace,
-	mirrorCameraDrawSpace,
-	unapplyCameraDrawSpace
+	mirrorCameraDrawSpace
 } from '@/features/stageFx/render';
 import type { SpectrumRuntimeState } from '@/features/spectrum/runtime/spectrumRuntime';
 import { createWaveGradient } from '@/features/spectrum/color/spectrumColor';
@@ -358,10 +358,7 @@ export function drawOscilloscope(
 
 	if (phosphor && renderCtx) {
 		if (phosphorSpaceMirrored) endCameraDrawSpace(renderCtx);
-		ctx.save();
-		unapplyCameraDrawSpace(ctx);
-		ctx.drawImage(phosphor, 0, 0);
-		ctx.restore();
+		blitInFrameSpace(ctx, frame => frame.drawImage(phosphor, 0, 0));
 	}
 }
 

@@ -1,10 +1,12 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
 	beginCameraDrawOffset,
 	beginCameraDrawSpace,
+	blitInFrameSpace,
 	clearCameraDrawOffsets,
 	endCameraDrawSpace,
 	mirrorCameraDrawSpace,
+	paintIntoCameraTile,
 	publishCameraDrawOffset,
 	readCameraDrawOffset,
 	readCameraDrawSpace,
@@ -187,5 +189,117 @@ describe('camera draw space on a context', () => {
 		const { ctx, calls } = fakeSpaceCtx();
 		expect(unapplyCameraDrawSpace(ctx)).toBe(false);
 		expect(calls).toEqual([]);
+	});
+});
+
+describe('the tile rule as one shared calculation', () => {
+	it("paints a tile in its output's space and leaves it clean", () => {
+		const output = fakeSpaceCtx();
+		const tile = fakeSpaceCtx();
+		beginCameraDrawSpace(output.ctx, {
+			tx: 12,
+			ty: -30,
+			scale: 1,
+			...FRAME
+		});
+		paintIntoCameraTile(tile.ctx, output.ctx, ctx => ctx.translate(1, 2));
+		expect(tile.calls).toEqual([
+			'save',
+			'translate 12 -30',
+			'translate 1 2',
+			'restore'
+		]);
+		// The space must not outlive the paint, or the next frame stacks another.
+		expect(readCameraDrawSpace(tile.ctx)).toBeNull();
+	});
+
+	it('paints straight through when the camera is still', () => {
+		const output = fakeSpaceCtx();
+		const tile = fakeSpaceCtx();
+		paintIntoCameraTile(tile.ctx, output.ctx, ctx => ctx.translate(1, 2));
+		// No motion, no save/restore: a still layer pays nothing for the rule.
+		expect(tile.calls).toEqual(['translate 1 2']);
+	});
+
+	it('blits with the camera cancelled and restores it after', () => {
+		const { ctx, calls } = fakeSpaceCtx();
+		beginCameraDrawSpace(ctx, { tx: 12, ty: -30, scale: 1, ...FRAME });
+		calls.length = 0;
+		blitInFrameSpace(ctx, frame => frame.translate(5, 5));
+		expect(calls).toEqual([
+			'save',
+			'translate -12 30',
+			'translate 5 5',
+			'restore'
+		]);
+		// Still inside the camera space for whatever the effect draws next.
+		expect(readCameraDrawSpace(ctx)).toEqual({
+			tx: 12,
+			ty: -30,
+			scale: 1,
+			...FRAME
+		});
+	});
+
+	it('restores the context even when the blit throws', () => {
+		const { ctx, calls } = fakeSpaceCtx();
+		beginCameraDrawSpace(ctx, { tx: 4, ty: 4, scale: 1, ...FRAME });
+		calls.length = 0;
+		expect(() =>
+			blitInFrameSpace(ctx, () => {
+				throw new Error('boom');
+			})
+		).toThrow('boom');
+		expect(calls).toEqual(['save', 'translate -4 -4', 'restore']);
+	});
+
+	it('still saves and restores when there is no camera to cancel', () => {
+		const { ctx, calls } = fakeSpaceCtx();
+		blitInFrameSpace(ctx, frame => frame.translate(5, 5));
+		expect(calls).toEqual(['save', 'translate 5 5', 'restore']);
+	});
+});
+
+/** A ctx that also records blits, so the dev tripwire can be exercised. */
+function fakeBlitCtx() {
+	const blits: unknown[] = [];
+	const ctx = {
+		save: () => {},
+		restore: () => {},
+		translate: () => {},
+		scale: () => {},
+		drawImage: (image: unknown) => blits.push(image)
+	} as unknown as CanvasRenderingContext2D;
+	return { ctx, blits };
+}
+
+describe('the dev tripwire for the tile rule', () => {
+	it('warns when a frame-sized tile goes through the camera', () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const { ctx, blits } = fakeBlitCtx();
+		beginCameraDrawSpace(ctx, { tx: 9, ty: 9, scale: 1, ...FRAME });
+		const tile = { width: FRAME.width, height: FRAME.height };
+		ctx.drawImage(tile as unknown as HTMLCanvasElement, 0, 0);
+		expect(warn).toHaveBeenCalledOnce();
+		// The tripwire only watches: the blit itself still happens.
+		expect(blits).toEqual([tile]);
+		warn.mockRestore();
+	});
+
+	it('stays quiet for a correct blit and for a smaller source', () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const { ctx } = fakeBlitCtx();
+		beginCameraDrawSpace(ctx, { tx: 9, ty: 9, scale: 1, ...FRAME });
+		const tile = { width: FRAME.width, height: FRAME.height };
+		blitInFrameSpace(ctx, frame =>
+			frame.drawImage(tile as unknown as HTMLCanvasElement, 0, 0)
+		);
+		ctx.drawImage(
+			{ width: 32, height: 32 } as unknown as HTMLCanvasElement,
+			0,
+			0
+		);
+		expect(warn).not.toHaveBeenCalled();
+		warn.mockRestore();
 	});
 });

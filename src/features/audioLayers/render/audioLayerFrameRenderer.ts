@@ -25,6 +25,10 @@ import {
 	drawScanlines,
 	getScanlineAmount
 } from '@/lib/canvas/imageEffects';
+import {
+	blitInFrameSpace,
+	paintIntoCameraTile
+} from '@/features/stageFx/render';
 
 export type RenderableAudioLayer =
 	| LogoLayer
@@ -190,55 +194,67 @@ export function renderAudioLayerFrame(
 		return true;
 	}
 
+	// The tile rule (see `cameraDrawOffset`): the Looks stack renders the layer
+	// into a full-frame tile and composites it back, so the tile is painted in
+	// the SAME camera space as the output and blitted with that space cancelled.
+	// Without this the tile moved twice and its own bitmap edge crossed the
+	// picture as a straight line — brighter on the inside, because the filter
+	// only applies within the tile. The clear stays outside the space: a
+	// `clearRect` through the camera clears a moved rectangle.
 	snapshotCtx.clearRect(0, 0, snapshotCanvas.width, snapshotCanvas.height);
-	drawOverlayLayer(nextLayer, {
-		ctx: snapshotCtx,
-		...drawContext
+	paintIntoCameraTile(snapshotCtx, input.ctx, ctx => {
+		drawOverlayLayer(nextLayer, {
+			ctx,
+			...drawContext
+		});
 	});
 
-	input.ctx.save();
-	input.ctx.globalAlpha = Math.max(0, Math.min(1, stack.filterOpacity));
-	input.ctx.filter = `brightness(${stack.filterBrightness}) contrast(${stack.filterContrast}) saturate(${stack.filterSaturation}) blur(${stack.filterBlur}px) hue-rotate(${stack.filterHueRotate}deg)`;
-	input.ctx.drawImage(snapshotCanvas, 0, 0);
-	input.ctx.filter = 'none';
-	input.ctx.globalCompositeOperation = 'source-atop';
-	if (stack.rgbShift > 0.0001) {
-		input.ctx.save();
-		input.ctx.translate(input.canvas.width / 2, input.canvas.height / 2);
-		drawRgbShift(
-			input.ctx,
-			snapshotCanvas,
+	// Everything composited from here is already in frame space: the tile holds
+	// the moved figure, and the grain/scanline fills must cover the real frame,
+	// so the camera is cancelled for the whole composite.
+	blitInFrameSpace(input.ctx, frame => {
+		frame.globalAlpha = Math.max(0, Math.min(1, stack.filterOpacity));
+		frame.filter = `brightness(${stack.filterBrightness}) contrast(${stack.filterContrast}) saturate(${stack.filterSaturation}) blur(${stack.filterBlur}px) hue-rotate(${stack.filterHueRotate}deg)`;
+		frame.drawImage(snapshotCanvas, 0, 0);
+		frame.filter = 'none';
+		frame.globalCompositeOperation = 'source-atop';
+		if (stack.rgbShift > 0.0001) {
+			frame.save();
+			frame.translate(input.canvas.width / 2, input.canvas.height / 2);
+			drawRgbShift(
+				frame,
+				snapshotCanvas,
+				input.canvas.width,
+				input.canvas.height,
+				stack.rgbShift *
+					Math.min(input.canvas.width, input.canvas.height) *
+					0.65,
+				'brightness(1) contrast(1) saturate(1) hue-rotate(0deg)',
+				input.timeMs,
+				stack.filterOpacity
+			);
+			frame.restore();
+		}
+		frame.save();
+		frame.translate(input.canvas.width / 2, input.canvas.height / 2);
+		drawFilmNoise(
+			frame,
 			input.canvas.width,
 			input.canvas.height,
-			stack.rgbShift *
-				Math.min(input.canvas.width, input.canvas.height) *
-				0.65,
-			'brightness(1) contrast(1) saturate(1) hue-rotate(0deg)',
+			stack.noiseIntensity,
 			input.timeMs,
 			stack.filterOpacity
 		);
-		input.ctx.restore();
-	}
-	input.ctx.save();
-	input.ctx.translate(input.canvas.width / 2, input.canvas.height / 2);
-	drawFilmNoise(
-		input.ctx,
-		input.canvas.width,
-		input.canvas.height,
-		stack.noiseIntensity,
-		input.timeMs,
-		stack.filterOpacity
-	);
-	drawScanlines(
-		input.ctx,
-		input.canvas.width,
-		input.canvas.height,
-		scanlineAmount,
-		stack.scanlineSpacing,
-		stack.scanlineThickness,
-		stack.filterOpacity
-	);
-	input.ctx.restore();
-	input.ctx.restore();
+		drawScanlines(
+			frame,
+			input.canvas.width,
+			input.canvas.height,
+			scanlineAmount,
+			stack.scanlineSpacing,
+			stack.scanlineThickness,
+			stack.filterOpacity
+		);
+		frame.restore();
+	});
 	return true;
 }

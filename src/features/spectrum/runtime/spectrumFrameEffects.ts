@@ -14,7 +14,7 @@ import {
 } from '@/features/spectrum/geometry/radialGeometry';
 import { getSpectrumFamilyCapabilities } from '@/features/spectrum/domain/spectrumFamilyCapabilities';
 import { resolveRadialSharpness } from './spectrumPlacement';
-import { unapplyCameraDrawSpace } from '@/features/stageFx/render';
+import { blitInFrameSpace } from '@/features/stageFx/render';
 import type {
 	PerformanceMode,
 	ResolvedAudioReactiveChannel
@@ -302,21 +302,21 @@ export function drawSpectrumFrameMemoryUnderlay(
 	const motionTrails = clamp(settings.spectrumMotionTrails, 0, 1);
 
 	if (afterglow > 0.001 && runtime.feedbackCanvas) {
-		ctx.save();
-		ctx.globalCompositeOperation = 'lighter';
-		ctx.globalAlpha = 0.08 + afterglow * 0.22;
+		const feedbackCanvas = runtime.feedbackCanvas;
 		// Low perf used to hard-zero the blur which hid the slider entirely —
 		// keep a reduced amount instead so the user sees their input have an
 		// effect, just at a lower GPU cost.
 		const blurScale = performanceMode === 'low' ? 0.3 : 1;
 		const blurPx = Math.max(0, afterglow * 10 * blurQuality * blurScale);
-		if (blurPx > 0.5) {
-			ctx.filter = `blur(${blurPx.toFixed(1)}px)`;
-		}
 		// Captured from the canvas: frame space, never through the camera again.
-		unapplyCameraDrawSpace(ctx);
-		ctx.drawImage(runtime.feedbackCanvas, 0, 0, width, height);
-		ctx.restore();
+		blitInFrameSpace(ctx, frame => {
+			frame.globalCompositeOperation = 'lighter';
+			frame.globalAlpha = 0.08 + afterglow * 0.22;
+			if (blurPx > 0.5) {
+				frame.filter = `blur(${blurPx.toFixed(1)}px)`;
+			}
+			frame.drawImage(feedbackCanvas, 0, 0, width, height);
+		});
 	}
 
 	if (ghostFrames <= 0.001 && motionTrails <= 0.001) return;
@@ -348,10 +348,6 @@ export function drawSpectrumFrameMemoryUnderlay(
 		const offsetX = Math.cos(trailAngle) * drift;
 		const offsetY = Math.sin(trailAngle) * drift;
 
-		ctx.save();
-		ctx.globalCompositeOperation =
-			motionTrails > 0.001 ? 'lighter' : 'source-over';
-		ctx.globalAlpha = clamp(alpha, 0, 0.42);
 		// Low perf used to hard-zero the trail blur which made Motion Trails
 		// look identical to Ghost Frames — keep 30% so the slider still has
 		// a visible identity on low-end GPUs.
@@ -362,13 +358,18 @@ export function drawSpectrumFrameMemoryUnderlay(
 				blurQuality *
 				trailBlurScale
 		);
-		if (blurPx > 0.5) {
-			ctx.filter = `blur(${blurPx.toFixed(1)}px)`;
-		}
-		unapplyCameraDrawSpace(ctx);
-		ctx.translate(offsetX, offsetY);
-		ctx.drawImage(historyCanvas, 0, 0, width, height);
-		ctx.restore();
+		// Each history frame was captured from the canvas, so it already holds
+		// frame-space pixels: only the ghost's own drift may move it.
+		blitInFrameSpace(ctx, frame => {
+			frame.globalCompositeOperation =
+				motionTrails > 0.001 ? 'lighter' : 'source-over';
+			frame.globalAlpha = clamp(alpha, 0, 0.42);
+			if (blurPx > 0.5) {
+				frame.filter = `blur(${blurPx.toFixed(1)}px)`;
+			}
+			frame.translate(offsetX, offsetY);
+			frame.drawImage(historyCanvas, 0, 0, width, height);
+		});
 	}
 }
 

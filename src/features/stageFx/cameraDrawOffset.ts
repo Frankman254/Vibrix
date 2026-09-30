@@ -28,15 +28,25 @@
  * own, so it has to follow one rule:
  *
  * - the tile is PAINTED in the same camera space as its output
- *   (`mirrorCameraDrawSpace`), or it already holds frame-space pixels because it
+ *   (`paintIntoCameraTile`), or it already holds frame-space pixels because it
  *   was captured from the canvas;
- * - the tile is BLITTED with the camera space cancelled
- *   (`unapplyCameraDrawSpace`).
+ * - the tile is BLITTED with the camera space cancelled (`blitInFrameSpace`).
  *
  * Break it and the tile is moved twice: its straight bitmap edge crosses into
  * the picture and the figure is cut along it — exactly the «límites del canvas»
  * the draw-offset model exists to remove, and the reason a scratch canvas must
  * never be blitted through a camera transform.
+ *
+ * The same applies to a fill that is supposed to cover the whole frame rather
+ * than the figure — the Looks stack's film grain and scanlines — because a
+ * camera-space fill of exactly frame size leaves an uncovered band on the side
+ * it came from.
+ *
+ * `mirrorCameraDrawSpace` / `unapplyCameraDrawSpace` are the primitives behind
+ * the two helpers, for effects that paint incrementally and cannot hand a
+ * callback. In dev, `beginCameraDrawSpace` installs a tripwire that warns the
+ * first time a frame-sized canvas is blitted through a camera transform, so
+ * breaking the rule is noisy instead of silent.
  */
 import type { CameraMotionLayer } from './stageFxConfig';
 
@@ -105,6 +115,7 @@ export function beginCameraDrawSpace(
 	ctx.save();
 	applyCameraDrawSpace(ctx, space);
 	appliedSpaces.set(ctx, space);
+	if (import.meta.env?.DEV) guardFrameTileBlits(ctx);
 	return true;
 }
 
@@ -161,6 +172,109 @@ export function unapplyCameraDrawSpace(ctx: CanvasRenderingContext2D): boolean {
 	ctx.scale(1 / space.scale, 1 / space.scale);
 	ctx.translate(-cx - space.tx, -cy - space.ty);
 	return true;
+}
+
+/**
+ * Paint a full-frame scratch tile in the same camera space as the context it
+ * will be blitted onto.
+ *
+ * This is the first half of the tile rule, and it is a function rather than a
+ * comment so no effect can do only half of it: whatever `paint` draws lands at
+ * the same place inside the tile as it would have landed on the output, so the
+ * tile can then be composited without moving anything a second time.
+ *
+ * Clear the tile OUTSIDE this call: a `clearRect` inside the camera space
+ * clears a moved rectangle and leaves the previous frame along one edge.
+ */
+export function paintIntoCameraTile(
+	tileCtx: CanvasRenderingContext2D,
+	outputCtx: CanvasRenderingContext2D,
+	paint: (ctx: CanvasRenderingContext2D) => void
+): void {
+	const mirrored = mirrorCameraDrawSpace(tileCtx, outputCtx);
+	try {
+		paint(tileCtx);
+	} finally {
+		if (mirrored) endCameraDrawSpace(tileCtx);
+	}
+}
+
+/**
+ * Composite pixels that are already in frame space — a full-frame tile, or a
+ * fill that must cover the real frame such as film grain or scanlines.
+ *
+ * The second half of the tile rule. Inside `blit` the camera is cancelled, so a
+ * draw at (0, 0) lands on the frame's own origin and the tile's straight bitmap
+ * edge stays on the frame's edge instead of sliding into the picture. The
+ * context is saved around the call, so the caller's alpha, filter and composite
+ * mode survive it.
+ */
+export function blitInFrameSpace(
+	ctx: CanvasRenderingContext2D,
+	blit: (ctx: CanvasRenderingContext2D) => void
+): void {
+	ctx.save();
+	const cancelled = unapplyCameraDrawSpace(ctx);
+	if (cancelled) cancelledDepth.set(ctx, (cancelledDepth.get(ctx) ?? 0) + 1);
+	try {
+		blit(ctx);
+	} finally {
+		if (cancelled) {
+			const depth = (cancelledDepth.get(ctx) ?? 1) - 1;
+			if (depth > 0) cancelledDepth.set(ctx, depth);
+			else cancelledDepth.delete(ctx);
+		}
+		ctx.restore();
+	}
+}
+
+/** How many `blitInFrameSpace` calls are open on a context right now. */
+const cancelledDepth = new WeakMap<CanvasRenderingContext2D, number>();
+
+const guardedContexts = new WeakSet<CanvasRenderingContext2D>();
+
+/**
+ * Dev-only tripwire for the tile rule.
+ *
+ * Every regression of this bug looks the same from the outside — a straight
+ * edge crossing the picture — and the same from the inside: a frame-sized
+ * canvas blitted while a camera space is still applied. So instead of trusting
+ * the next author to read the rule, the registry watches for it: in dev, a
+ * context that takes a camera space gets its `drawImage` wrapped once and warns
+ * the first time a frame-sized source goes through the camera transform.
+ *
+ * Painting is untouched (the original call always runs), and production never
+ * installs the wrapper.
+ */
+function guardFrameTileBlits(ctx: CanvasRenderingContext2D): void {
+	if (guardedContexts.has(ctx)) return;
+	guardedContexts.add(ctx);
+	const original = ctx.drawImage;
+	if (typeof original !== 'function') return;
+	let warned = false;
+	ctx.drawImage = function patchedDrawImage(
+		this: CanvasRenderingContext2D,
+		...args: Parameters<CanvasRenderingContext2D['drawImage']>
+	) {
+		const space = appliedSpaces.get(ctx);
+		const source = args[0] as { width?: number; height?: number };
+		if (
+			!warned &&
+			space !== undefined &&
+			(cancelledDepth.get(ctx) ?? 0) === 0 &&
+			source?.width === space.width &&
+			source?.height === space.height
+		) {
+			warned = true;
+			console.warn(
+				'[cameraDrawOffset] a frame-sized canvas was blitted through the camera transform: its bitmap edge will cross the picture. Wrap the composite in blitInFrameSpace().'
+			);
+		}
+		return (original as CanvasRenderingContext2D['drawImage']).apply(
+			this,
+			args
+		);
+	} as CanvasRenderingContext2D['drawImage'];
 }
 
 export function publishCameraDrawOffset(

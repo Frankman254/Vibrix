@@ -33,10 +33,12 @@ export {
 export {
 	beginCameraDrawOffset,
 	beginCameraDrawSpace,
+	blitInFrameSpace,
 	clearCameraDrawOffsets,
 	endCameraDrawOffset,
 	endCameraDrawSpace,
 	mirrorCameraDrawSpace,
+	paintIntoCameraTile,
 	publishCameraDrawOffset,
 	readCameraDrawOffset,
 	readCameraDrawSpace,

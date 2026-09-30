@@ -9,9 +9,9 @@ import {
 } from '@/features/spectrum/domain/pixelArtHelpers';
 import { getColor } from '@/features/spectrum/color/spectrumColor';
 import {
+	blitInFrameSpace,
 	endCameraDrawSpace,
-	mirrorCameraDrawSpace,
-	unapplyCameraDrawSpace
+	mirrorCameraDrawSpace
 } from '@/features/stageFx/render';
 import {
 	createGlowGradient,
@@ -195,15 +195,18 @@ function beginLiquidLayer(
 				sw,
 				sh
 			);
-			ctx.save();
-			// The layer baked its own opacity into the scratch; blitting under
-			// the outer spectrum alpha again would darken it twice.
-			ctx.globalAlpha = 1;
-			ctx.shadowBlur = 0;
-			ctx.shadowColor = 'rgba(0,0,0,0)';
-			unapplyCameraDrawSpace(ctx);
-			blitPixelated(ctx, scratch, runtime.pixelateSmallCanvas ?? null);
-			ctx.restore();
+			blitInFrameSpace(ctx, frame => {
+				// The layer baked its own opacity into the scratch; blitting
+				// under the outer spectrum alpha again would darken it twice.
+				frame.globalAlpha = 1;
+				frame.shadowBlur = 0;
+				frame.shadowColor = 'rgba(0,0,0,0)';
+				blitPixelated(
+					frame,
+					scratch,
+					runtime.pixelateSmallCanvas ?? null
+				);
+			});
 		}
 	};
 }

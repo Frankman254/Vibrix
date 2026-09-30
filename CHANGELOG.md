@@ -17,6 +17,27 @@ the version scheme in `src/lib/version.ts`.
 
 ### Corregido
 
+- **La pila de Looks ya no dibuja un rectángulo recto sobre la capa cuando la
+  cámara la mueve.** Cuando un _effect layer_ apunta a spectrum, logo, track o
+  lyrics, la capa se pinta en un lienzo del tamaño del cuadro, se filtra y se
+  estampa de vuelta. Ese lienzo se pintaba recto y se estampaba a través del
+  contexto ya trasladado por **Camera Motion**: se movía dos veces y su borde
+  entraba en el cuadro como una línea recta, con el interior más claro (o más
+  oscuro) que el resto, porque el filtro sólo se aplica dentro del lienzo. Es el
+  rectángulo que se veía en producción.
+
+    Ahora ese sitio sigue la misma regla que el resto de efectos con lienzo
+    intermedio, y la regla dejó de ser un comentario para ser **una sola llamada
+    compartida**: `paintIntoCameraTile` pinta el lienzo en el espacio de cámara
+    de su salida y `blitInFrameSpace` lo estampa con la cámara anulada. Ningún
+    efecto puede volver a hacer sólo la mitad. El grano de película, las
+    scanlines y el RGB shift van también en espacio de pantalla: son rellenos que
+    deben cubrir el cuadro real, no acompañar a la figura.
+
+    Además, en desarrollo el registro vigila la regla: la primera vez que un
+    lienzo del tamaño del cuadro se estampa a través de la cámara, la consola lo
+    avisa con el nombre del ayudante que falta. Con eso se localizó este caso.
+
 - **El spectrum ya no se corta contra el borde de su propio canvas cuando la
   cámara lo mueve.** Con una figura más grande que la pantalla (escala alta) y
   **Camera Motion** apuntando al spectrum, aparecía un corte recto —vertical u

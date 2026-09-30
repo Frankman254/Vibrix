@@ -56,9 +56,9 @@ import {
 	resolveScaledSpectrumSettings
 } from '../domain/spectrumScale';
 import {
+	blitInFrameSpace,
 	endCameraDrawSpace,
-	mirrorCameraDrawSpace,
-	unapplyCameraDrawSpace
+	mirrorCameraDrawSpace
 } from '@/features/stageFx/render';
 
 export type { SpectrumSettings };
@@ -642,18 +642,12 @@ export function drawSpectrum(
 		const eased = progress * progress * (3 - 2 * progress);
 		const alpha = 1 - eased;
 		if (alpha > 0.001) {
-			ctx.save();
-			ctx.globalAlpha = alpha;
+			const snapshot = runtime.modeTransitionSnapshotCanvas;
 			// A snapshot of the canvas is already in frame space.
-			unapplyCameraDrawSpace(ctx);
-			ctx.drawImage(
-				runtime.modeTransitionSnapshotCanvas,
-				0,
-				0,
-				canvas.width,
-				canvas.height
-			);
-			ctx.restore();
+			blitInFrameSpace(ctx, frame => {
+				frame.globalAlpha = alpha;
+				frame.drawImage(snapshot, 0, 0, canvas.width, canvas.height);
+			});
 		} else {
 			runtime.modeTransitionSnapshotCanvas = null;
 		}
@@ -685,10 +679,10 @@ export function drawSpectrum(
 	// carries the camera translation, so it is blitted in frame space.
 	if (pixelateActive && canvas !== outputCanvas) {
 		if (sceneSpaceMirrored) endCameraDrawSpace(ctx);
-		outputCtx.save();
-		unapplyCameraDrawSpace(outputCtx);
-		blitPixelatedScene(outputCtx, canvas, runtime, pixelScale);
-		outputCtx.restore();
+		const scene = canvas;
+		blitInFrameSpace(outputCtx, frame =>
+			blitPixelatedScene(frame, scene, runtime, pixelScale)
+		);
 	}
 }
 
