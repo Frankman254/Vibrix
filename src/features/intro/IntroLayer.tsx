@@ -11,6 +11,7 @@
  * with the camera would read as part of the scene instead of framing it.
  */
 import { useEffect, useRef, useState } from 'react';
+import type { IntroSequenceSettings, WallpaperState } from '@/types/wallpaper';
 import { useWallpaperStore } from '@/store/wallpaperStore';
 import { useAudioContext } from '@/context/useAudioContext';
 import { useBackgroundPalette } from '@/hooks/useBackgroundPalette';
@@ -104,6 +105,60 @@ export default function IntroLayer({
 			return null;
 		}
 
+		/**
+		 * WHICH images this window draws, and where each one must be cropped.
+		 *
+		 * Pure in the four things it reads, none of which can change during a
+		 * window, so it is resolved once per cast instead of once per frame.
+		 * It used to run inside the loop: rebuilding the pool, re-picking the
+		 * ids and doing a linear `pool.find` per card, sixty times a second,
+		 * through the most expensive seconds of the video. Only the decoded
+		 * `HTMLImageElement`s are looked up per frame — they arrive one by one
+		 * while the montage is already playing.
+		 */
+		let cast: {
+			key: readonly unknown[];
+			/** Card index → source URL. */
+			urls: Map<number, string>;
+			focus: ReturnType<typeof resolveIntroFocusMap>;
+			cardCount: number;
+		} | null = null;
+
+		function resolveCast(
+			state: WallpaperState,
+			settings: IntroSequenceSettings
+		) {
+			const key = [
+				state.backgroundImages,
+				state.setlists,
+				state.activeSetlistId,
+				settings
+			] as const;
+			if (
+				cast &&
+				cast.key.length === key.length &&
+				cast.key.every((value, i) => value === key[i])
+			) {
+				return cast;
+			}
+			const pool = resolveIntroPool(state, settings);
+			const ids = pickIntroImages(pool, settings);
+			const byId = new Map(pool.map(item => [item.assetId, item]));
+			const urls = new Map<number, string>();
+			ids.forEach((assetId, index) => {
+				const url = byId.get(assetId)?.url;
+				if (url) urls.set(index, url);
+			});
+			const next = {
+				key,
+				urls,
+				focus: resolveIntroFocusMap(pool, ids),
+				cardCount: ids.length
+			};
+			cast = next;
+			return next;
+		}
+
 		function frame() {
 			const c = canvasRef.current;
 			if (!c || !ctx) {
@@ -126,15 +181,12 @@ export default function IntroLayer({
 			}
 
 			const settings = selectIntroSequence(state, window_.kind);
-			const pool = resolveIntroPool(state, settings);
-			const ids = pickIntroImages(pool, settings);
+			const { urls, focus, cardCount } = resolveCast(state, settings);
 			const images = new Map<number, HTMLImageElement>();
-			ids.forEach((assetId, index) => {
-				const url = pool.find(item => item.assetId === assetId)?.url;
-				if (!url) return;
+			for (const [index, url] of urls) {
 				const image = imageFor(url);
 				if (image) images.set(index, image);
-			});
+			}
 			const nowMs = performance.now();
 			const dt = lastFrameMsRef.current
 				? Math.min(0.1, (nowMs - lastFrameMsRef.current) / 1000)
@@ -154,11 +206,11 @@ export default function IntroLayer({
 					settings,
 					progress: window_.progress,
 					viewport,
-					cardCount: Math.max(1, ids.length),
+					cardCount: Math.max(1, cardCount),
 					durationSec: window_.durationSec
 				}),
 				images,
-				focus: resolveIntroFocusMap(pool, ids),
+				focus,
 				logo,
 				colors: resolveIntroColors(
 					settings,

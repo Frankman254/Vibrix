@@ -125,7 +125,7 @@ Implementation: `src/runtime/outputRenderQuality.ts`
 
 - **Does not** record video to disk by itself
 - **Does not** create a master compositor
-- **Does not** force MediaRecorder FPS (export tab recorder is separate)
+- **Does not** set the offline export FPS (that lives in the Export tab)
 
 ### Internal recorder (Export tab)
 

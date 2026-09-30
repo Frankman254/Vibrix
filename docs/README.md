@@ -1,6 +1,6 @@
 # Project Documentation
 
-**Current product version:** `0.7.0-alpha` · **Store persist:** v133 · **HEAD:** see `git rev-parse HEAD`
+**Current product version:** `0.7.0-alpha` · **Store persist:** v143 · **HEAD:** see `git rev-parse HEAD`
 
 ## Start here
 

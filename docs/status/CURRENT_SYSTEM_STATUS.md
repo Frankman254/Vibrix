@@ -6,13 +6,13 @@ This document describes the product **as implemented in code**, not aspirational
 
 ## Product summary
 
-**Vibrix** is a browser-based, audio-reactive visual scene editor. Users compose scenes (backgrounds, spectrum, logo, particles, rain, stage FX), preview them in real time, and export clean output for OBS or experimental in-browser screen recording.
+**Vibrix** is a browser-based, audio-reactive visual scene editor. Users compose scenes (backgrounds, spectrum, logo, particles, rain, stage FX), preview them in real time, and export clean output for OBS or a deterministic offline video file.
 
 | Area                                   | Status                                   |
 | -------------------------------------- | ---------------------------------------- |
 | Editor + preview                       | **Stable**                               |
 | Presentation / Recording output shells | **Usable but needs QA**                  |
-| Internal screen recorder               | **Experimental**                         |
+| Offline video export (deterministic)   | **Usable but needs QA**                  |
 | OBS + Presentation Mode                | **Stable** (recommended production path) |
 | Cloud / login / backend                | **Planned / not implemented**            |
 | Electron desktop                       | **Not implemented**                      |
@@ -167,6 +167,31 @@ See `docs/features/SPECTRUM_ENGINE.md` (ownership model) and
 
 ---
 
+## Intro / ending windows
+
+**Status: Usable but needs QA**
+
+- One module, two windows: `introSequence` (opening) and `outroSequence`
+  (ending), both off by default. `introPlan.ts` decides how far each piece is
+  mounted; `introPaint.ts` places it; `IntroLayer.tsx` plays it live and the
+  offline exporter draws the same composition for the file.
+- The window is drawn at a single shared z-index, `INTRO_LAYER_Z_INDEX` (95) —
+  above every visual layer, under the HUD. The exporter reads that same
+  constant (`FIXED_Z` in `features/export/frameComposition.ts`) so the file
+  cannot stack it differently from the preview.
+- Montage framing per image: `faceFocusX/Y` if the image was measured,
+  otherwise the user's own framing (`focusX/Y`), and dead centre only when
+  neither exists.
+- **A setlist never eats the project's intro.** Activating a setlist bound to
+  an `introProfileSlots` entry parks the project's two windows in
+  `setlistIntroFallback` (store v143) and installs the slot's; leaving that
+  setlist, deleting it, or unbinding its slot gives the parked windows back and
+  clears the park. Chaining bound setlists parks once — the park always holds
+  the project's windows, never the previous show's. Binding a slot to the
+  setlist that is already active applies immediately.
+
+---
+
 ## Persistence and schemas
 
 | Constant                  | Value         | Location                                    |
@@ -217,6 +242,7 @@ Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 | v139    | Spectrum 1 y 2 independientes en la ventana de intro (`spectrumPrimaryEnabled` / `spectrumPrimarySlotId` / `spectrumSecondEnabled` / `spectrumSecondSlotId`), por id de slot                                                                                      |
 | v140    | Movimiento: zoom de borde, suavizado, estela y color de estela por capa (`cameraMotionEdgeZoom` / `cameraMotionSmoothing` / `cameraMotionTrail` / `cameraMotionTrailColor`)                                                                                       |
 | v142    | Camera Motion «invertir con energía baja» por capa de movimiento (`cameraMotionInvertOnLowEnergy` / `cameraMotionInvertThreshold` / `cameraMotionInvertHoldMs`)                                                                                                   |
+| v143    | `setlistIntroFallback`: dónde se aparcan las ventanas de intro/ending del proyecto mientras un setlist con slot ligado está activo                                                                                                                                |
 | v141    | Encuadre manual y «la marca sigue a la imagen» por imagen (`framingManual` / `logoFollowsFocus` en cada `BackgroundImageItem`; las claves planas son el valor vivo de la imagen activa)                                                                           |
 | v137    | Tipografía de las líneas de la intro tomada de Track Info (`titleTextStyleSource`, `taglineTextStyleSource`)                                                                                                                                                      |
 | v136    | Escala de movimiento por capa de Camera Motion (`cameraMotionRange`)                                                                                                                                                                                              |
@@ -229,7 +255,7 @@ Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 
 **Status: Stable**
 
-- Vitest: ~98+ unit tests (version, output modes, pixel helpers, spectrum, recording MIME, etc.)
+- Vitest: 144 files / 1603 tests (version, output modes, pixel helpers, spectrum, intro windows, store migrations, etc.)
 - CI: `format:check`, `lint`, `test:types`, `test:run`, `docs:check`, `build`
 - DEV harness: `#/dev/spectrum-fx`
 
@@ -278,17 +304,17 @@ Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 
 ## Known limitations
 
-1. **No master output canvas** — internal recording captures browser tab pixels, not a deterministic compositor.
+1. **No master output canvas in live mode** — Presentation Mode composes DOM layers; only the offline exporter draws a single deterministic frame.
 2. **Recording render scale + pixelate** — double resampling can soften pixel grids (documented in `SPECTRUM_PIXEL_ART.md`).
 3. **Pixel shape** — linear classic only; radial falls back to bars.
-4. **Fullscreen + screen capture** — browser security requires picker; fullscreen re-entry is automated but manual toggle during record can end capture.
-5. **MP4 in MediaRecorder** — browser-dependent; WebM VP9 preferred in Chrome.
+4. **Offline export needs WebCodecs** — Chromium only; Safari/Firefox fall back to OBS capture.
+5. **The offline export is not yet QA'd end to end** — the frame-by-frame pipeline is implemented and tested by unit, but no long full-track render has been signed off.
 
 ---
 
 ## Immediate priorities
 
-1. Recording reliability + OBS workflow documentation and QA
+1. Offline video export QA (a full track, end to end) + OBS workflow documentation
 2. Pixel Art visual polish and performance measurement (manual baselines)
 3. Public alpha documentation freeze (`docs:check` in CI)
 
