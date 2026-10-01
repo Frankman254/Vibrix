@@ -275,12 +275,15 @@ de Lyrixa va a mover **dónde vive** esa configuración.
 
 ## 6. Pendientes concretos que deja este informe
 
-| Pendiente                                                         | Tamaño                     |
-| ----------------------------------------------------------------- | -------------------------- |
-| QA del export offline con un tema completo (**bloquea congelar**) | manual                     |
-| Borrar el id muerto `motion` de `RenderSubsystemId` + el orden    | 1 línea                    |
-| Marcar en el picker las imágenes sin punto de cara                | pequeño                    |
-| Code-splitting del bundle de 2 564 kB                             | fase perf del plan maestro |
-| Lyrixa Fase A: `slotRevision` + manifiesto                        | mediano                    |
-| Lyrixa Fase C: `resolveVisualStateAt(base, score, T)`             | grande                     |
-| Pistas que faltan como slot de escena: `background`, `motion`     | mediano                    |
+| Pendiente                                                                                                                 | Tamaño                     |
+| ------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| QA del export offline con un tema completo (**bloquea congelar**)                                                         | manual                     |
+| Fricciones de UI que salgan probando → lista viva en [`.agents/TAREA_CONGELACION.md`](../../.agents/TAREA_CONGELACION.md) | —                          |
+| Ver la intro/ending sin mover el tiempo del tema (F1)                                                                     | mediano                    |
+| Flechas anterior/siguiente en los selectores de slot (F2)                                                                 | pequeño                    |
+| Borrar el id muerto `motion` de `RenderSubsystemId` + el orden                                                            | 1 línea                    |
+| Marcar en el picker las imágenes sin punto de cara                                                                        | pequeño                    |
+| Code-splitting del bundle de 2 564 kB                                                                                     | fase perf del plan maestro |
+| Lyrixa Fase A: `slotRevision` + manifiesto                                                                                | mediano                    |
+| Lyrixa Fase C: `resolveVisualStateAt(base, score, T)`                                                                     | grande                     |
+| Pistas que faltan como slot de escena: `background`, `motion`                                                             | mediano                    |

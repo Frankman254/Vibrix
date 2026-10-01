@@ -1,0 +1,79 @@
+# Congelación — fricciones encontradas probando
+
+> **Esta es la lista viva.** La auditoría
+> [docs/audits/AUDITORIA_CONGELACION_2026-09-30.md](../docs/audits/AUDITORIA_CONGELACION_2026-09-30.md)
+> es la foto del 2026-09-30 y no se toca; lo que aparece **probando el sistema a
+> mano** se apunta aquí y se tacha al arreglarse.
+>
+> Criterio de congelación, dicho por el usuario: _"para congelar tengo que
+> probar todo el sistema y que la mayoría de cosas pasen a mi juicio"_. Así que
+> esto no se cierra por agotar la lista, se cierra cuando él lo diga.
+
+## Regla de trabajo
+
+Cada fricción lleva **qué se siente**, **por qué pasa** (verificado en código, no
+supuesto) y **dónde se arregla**. Sin eso es un post-it, no una tarea.
+
+## Bloquea congelar
+
+| #   | Fricción                                                     | Estado                                 |
+| --- | ------------------------------------------------------------ | -------------------------------------- |
+| F0  | Export de vídeo offline probado de punta a punta con un tema | En curso (el usuario lo está probando) |
+| F1  | No se puede ver la intro/ending sin mover el tiempo del tema | Pendiente                              |
+| F2  | Los selectores de slot son una lista larga sin flechas       | Pendiente                              |
+
+## F1 · No hay forma de ver la intro o el ending sin cambiar el tiempo
+
+**Qué se siente.** Para comprobar un cambio en la intro hay que llevar el
+playhead al principio del tema, y para el ending al final. Configurar a ciegas y
+rebobinar por cada ajuste hace la pestaña inusable para iterar — que es
+justamente lo que hay que hacer para darla por buena.
+
+**Por qué pasa.** Verificado: no existe ningún disparador de preview.
+`IntroLayer` pregunta por la ventana con `resolveIntroWindow(state,
+getCurrentTime(), getDuration())` — el **reloj real del audio** y nada más
+([IntroLayer.tsx](../src/features/intro/IntroLayer.tsx)). No hay estado de
+«reproduce la ventana ahora»; el único camino es mover el tiempo de verdad.
+
+**Dónde se arregla.** Un reloj de preview que gane sobre el del audio mientras
+corre: un estado efímero (**no persistido**, es un gesto, no un ajuste) con la
+ventana y el momento de arranque, que `resolveIntroWindow` consulte antes del
+reloj real. Botón «Ver la intro» / «Ver el ending» en la cabecera de cada
+sub-pestaña, y se cancela solo al terminar o al tocar el transporte. Hay que
+cuidar que el exportador **no** lo lea nunca: el archivo se rige por el reloj
+del tema.
+
+## F2 · Los selectores de slot obligan a recorrer una lista larga cada vez
+
+**Qué se siente.** Para pasar de un slot al siguiente hay que abrir el
+desplegable, bajar por una lista larga y acertar el que toca. Comparar dos slots
+seguidos — el gesto normal al calibrar — cuesta dos viajes por la lista.
+
+**Por qué pasa.** Los topes son altos a propósito (spectrum 120, el resto 60,
+setlists 100), así que el desplegable es legítimamente largo. Y es **un solo
+primitivo**: `Select` ([src/ui/Select.tsx](../src/ui/Select.tsx)), un panel
+flotante con la lista entera, usado en 22 sitios de 9 ficheros. No hay
+navegación «anterior / siguiente» en ninguna parte.
+
+**Dónde se arregla.** En el primitivo, no en cada pestaña: un par de flechas
+opcionales (`◀ ▶`) pegadas al `Select` que salten al slot anterior/siguiente de
+`options` sin abrir la lista, saltándose los `disabled` y sin dar la vuelta en
+los extremos. Al ser compartido, entra de golpe en los 22 sitios. Para los
+bancos de slots conviene además que las flechas **carguen** el slot, no sólo lo
+seleccionen, que es lo que uno quiere al comparar.
+
+## Arregladas en este ciclo
+
+- La intro se dibujaba casi al fondo del vídeo exportado (`e1aafebf`).
+- La intro de un setlist se comía la del proyecto (`e1aafebf`, store v143).
+- El montaje recortaba por el centro imágenes con encuadre puesto (`e1aafebf`).
+- Los slots de Camera FX guardaban la capa activa rancia (`e1aafebf`).
+- La intro rehacía su reparto en cada cuadro (`4fce8b56`).
+- Fuera el grabador en vivo de la pestaña Export (`93486e2e`).
+
+## No hacer mientras esto esté abierto
+
+- Fases 1–3 de [PLAN_RENOVACION_2026-09](../docs/plans/PLAN_RENOVACION_2026-09.md):
+  son ampliación, y el sistema de Lyrixa va a mover dónde vive esa configuración.
+- Tocar `activeImageSelection` / `sceneSlot` por el refactor stateless de Lyrixa
+  (Fase C): no debe arrastrar features a medio probar.
