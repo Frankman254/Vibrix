@@ -9,6 +9,9 @@
 > probar todo el sistema y que la mayoría de cosas pasen a mi juicio"_. Así que
 > esto no se cierra por agotar la lista, se cierra cuando él lo diga.
 
+> Orden y reparto de ventanas:
+> [docs/plans/PLAN_ATAQUE_CONGELACION_Y_LYRIXA.md](../docs/plans/PLAN_ATAQUE_CONGELACION_Y_LYRIXA.md).
+
 ## Regla de trabajo
 
 Cada fricción lleva **qué se siente**, **por qué pasa** (verificado en código, no

@@ -37,14 +37,15 @@ web tienen el suyo propio.
 
 ## Documentos que mandan
 
-| Qué                                        | Dónde                                                                                                               |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| **Plan maestro de lanzamiento** (la suite) | `LiveWallpaperAnimeGlitch/docs/plans/PLAN_MAESTRO_LANZAMIENTO.md`                                                   |
-| **Plan de la web de venta**                | `LiveWallpaperAnimeGlitch/docs/plans/PLAN_WEB_VENTA.md`                                                             |
-| Contrato Lyrixa → Vibrix                   | `LiveWallpaperAnimeGlitch/docs/features/LYRIXA_CONTRACT.md`                                                         |
-| Contrato Transcriptor → Lyrixa             | `transcriptor/docs/contrato-lyrixa.md`                                                                              |
-| Lenguaje de efectos (capa 3)               | `transcriptor/docs/contrato-capa-fx.md`                                                                             |
-| Arquitectura de cada app                   | Vibrix `docs/architecture/ARCHITECTURE.md` · Lyrixa `docs/01-architecture.md` · Transcriptor `docs/arquitectura.md` |
+| Qué                                                     | Dónde                                                                                                               |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **Plan de ataque: congelar + arrancar el secuenciador** | `LiveWallpaperAnimeGlitch/docs/plans/PLAN_ATAQUE_CONGELACION_Y_LYRIXA.md`                                           |
+| **Plan maestro de lanzamiento** (la suite)              | `LiveWallpaperAnimeGlitch/docs/plans/PLAN_MAESTRO_LANZAMIENTO.md`                                                   |
+| **Plan de la web de venta**                             | `LiveWallpaperAnimeGlitch/docs/plans/PLAN_WEB_VENTA.md`                                                             |
+| Contrato Lyrixa → Vibrix                                | `LiveWallpaperAnimeGlitch/docs/features/LYRIXA_CONTRACT.md`                                                         |
+| Contrato Transcriptor → Lyrixa                          | `transcriptor/docs/contrato-lyrixa.md`                                                                              |
+| Lenguaje de efectos (capa 3)                            | `transcriptor/docs/contrato-capa-fx.md`                                                                             |
+| Arquitectura de cada app                                | Vibrix `docs/architecture/ARCHITECTURE.md` · Lyrixa `docs/01-architecture.md` · Transcriptor `docs/arquitectura.md` |
 
 Todos los paths de esta tabla son relativos a
 `/Users/frankman254/Desktop/Personal-Projects/`.
