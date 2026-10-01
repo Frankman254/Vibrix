@@ -19,11 +19,12 @@ supuesto) y **dónde se arregla**. Sin eso es un post-it, no una tarea.
 
 ## Bloquea congelar
 
-| #   | Fricción                                                     | Estado                                 |
-| --- | ------------------------------------------------------------ | -------------------------------------- |
-| F0  | Export de vídeo offline probado de punta a punta con un tema | En curso (el usuario lo está probando) |
-| F1  | No se puede ver la intro/ending sin mover el tiempo del tema | Pendiente                              |
-| F2  | Los selectores de slot son una lista larga sin flechas       | Pendiente                              |
+| #   | Fricción                                                     | Estado                             |
+| --- | ------------------------------------------------------------ | ---------------------------------- |
+| F0  | Export de vídeo offline probado de punta a punta con un tema | **Pasa** (probado por el usuario)  |
+| F1  | No se puede ver la intro/ending sin mover el tiempo del tema | **Hecha** (`15ac2439`, `88d2492e`) |
+| F2  | Los selectores de slot son una lista larga sin flechas       | **Siguiente**                      |
+| F3  | `NotFoundError` de IndexedDB no capturado en cada arranque   | Pendiente                          |
 
 ## F1 · No hay forma de ver la intro o el ending sin cambiar el tiempo
 
@@ -88,7 +89,9 @@ de congelar hay que saber qué transacción es y si pierde datos o no.
 - Los slots de Camera FX guardaban la capa activa rancia (`e1aafebf`).
 - La intro rehacía su reparto en cada cuadro (`4fce8b56`).
 - **F1**: ver la intro/ending sin mover el tema, con un reloj de preview
-  efímero que el exportador no puede leer.
+  efímero que el exportador no puede leer (`15ac2439`); y pausarlo, con el
+  cuadro congelado pero los ajustes vivos, más el zoom del mosaico
+  (`montageImageScale`, store v144) y cuatro movimientos más (`88d2492e`).
 - Fuera el grabador en vivo de la pestaña Export (`93486e2e`).
 
 ## No hacer mientras esto esté abierto
