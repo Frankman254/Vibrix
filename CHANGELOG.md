@@ -17,6 +17,53 @@ the version scheme in `src/lib/version.ts`.
 
 ### Añadido
 
+- **Ver la intro y el ending sin tocar el reloj del tema, y pausarlos.**
+  Configurar una ventana costaba llevar el playhead a la cabeza del tema (o a su
+  cola, para el ending) y rebobinar por cada ajuste; eso es lo que hacía la
+  pestaña inservible para iterar. Ahora hay transporte propio: un botón que
+  reproduce la ventana, que pasa a decir **Pause** mientras corre, y un **Stop**
+  al lado. La ventana se cierra sola al terminar, así que el botón vuelve a
+  «reproducir» sin que haya que parar lo que ya acabó.
+
+    Pausar congela el cuadro pero **no** congela los ajustes: el renderer sigue
+    leyendo el estado vivo, así que mover un dial se ve en ESE cuadro al
+    instante, en vez de esperar a que la ventana vuelva a pasar por ahí. El
+    cuadro congelado se queda incluso al final de la ventana, donde la versión
+    en marcha ya habría cerrado el preview. Reanudar sigue desde donde se quedó,
+    no desde el principio.
+
+    El reloj del preview es su PROPIO store y no se persiste a propósito: un
+    preview es un gesto, no un ajuste, así que no sobrevive a un reload, no viaja
+    en el fichero de proyecto y no cuesta un bump de `STORE_PERSIST_VERSION`.
+    `features/export` no lo importa y no debe hacerlo nunca — eso es lo que
+    garantiza que el fichero exportado se rija siempre por el reloj del tema, y
+    un test lo comprueba de forma estructural recorriendo la carpeta. El preview
+    resuelve su duración igual que la ventana real, recorte de «nunca más de la
+    mitad del vídeo» incluido, así que lo que muestra es la forma que tendrá el
+    fichero; la única excepción es no tener audio cargado, donde no hay mitad
+    contra la que recortar y la ventana aún tiene que verse.
+
+- **Zoom del mosaico y cuatro movimientos más para sus imágenes.** El nuevo dial
+  **Image zoom** (0.6–2.5) acerca o aleja las fotos **dentro** de su celda: la
+  celda no cambia de tamaño, cambia lo que se dibuja dentro. Por debajo de 1 la
+  imagen queda enmarcada sobre el fondo de la ventana —un aire de paspartú, a
+  propósito— y por eso el recorte deja de poder desplazarse: sin margen ganado
+  no hay nada hacia donde panear. Por encima de 1 el desplazamiento crece con el
+  margen y sigue sin poder pasarse de él, que es lo que mantiene el fondo
+  cubierto en un mosaico.
+
+    Los movimientos nuevos son **Pan vertical** (el espejo del pan de siempre),
+    **Drift** (diagonal, y cada celda elige su esquina, así que el mosaico se
+    desarma en vez de deslizarse en bloque), **Breathe** (un solo acercarse y
+    alejarse lento a lo largo de toda la ventana — `Pulse` es la versión
+    nerviosa, cuatro veces seguidas) y **Zoom + pan** (empujar hacia la foto
+    mientras recorre, como un documental). Los cinco de antes siguen intactos.
+
+    `STORE_PERSIST_VERSION` is at **144**; la migración siembra
+    `montageImageScale = 1` en las dos ventanas y en cada animación de intro
+    guardada, que es exactamente lo que ya estaban dibujando, así que ningún
+    proyecto cambia de aspecto al abrirse.
+
 - **Camera Motion: «Invertir con energía baja».** El movimiento deshace su
   recorrido mientras la música calla y lo retoma cuando vuelve a sonar — el
   análogo directo del invertido que ya tenía la rotación radial del spectrum.

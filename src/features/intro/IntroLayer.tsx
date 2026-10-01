@@ -40,7 +40,11 @@ import {
 	resolveIntroPreviewWindow,
 	resolveIntroWindow
 } from './introPlan';
-import { getIntroPreview, stopIntroPreview } from './introPreviewStore';
+import {
+	getIntroPreview,
+	introPreviewElapsedSec,
+	stopIntroPreview
+} from './introPreviewStore';
 import { createIntroSpectrumPainter } from './introSpectrumDraw';
 
 export default function IntroLayer({
@@ -180,8 +184,9 @@ export default function IntroLayer({
 				? resolveIntroPreviewWindow(
 						state,
 						preview.kind,
-						(nowMs - preview.startedAtMs) / 1000,
-						getDuration()
+						introPreviewElapsedSec(preview, nowMs),
+						getDuration(),
+						preview.pausedAtSec !== null
 					)
 				: resolveIntroWindow(
 						state,
@@ -207,10 +212,14 @@ export default function IntroLayer({
 				const image = imageFor(url);
 				if (image) images.set(index, image);
 			}
-			const dt = lastFrameMsRef.current
+			const elapsedDt = lastFrameMsRef.current
 				? Math.min(0.1, (nowMs - lastFrameMsRef.current) / 1000)
 				: 1 / 60;
 			lastFrameMsRef.current = nowMs;
+			// A frozen preview freezes the WHOLE frame: the window's own
+			// spectrum smooths on `dt`, so leaving it running would animate the
+			// one thing the user paused to look at.
+			const dt = preview && preview.pausedAtSec !== null ? 0 : elapsedDt;
 			const logoUrl = resolveIntroLogoUrl(settings, state);
 			const logo = logoUrl ? imageFor(logoUrl) : null;
 			const viewport = { width: c.width, height: c.height };

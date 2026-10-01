@@ -3645,6 +3645,29 @@ export function migrateWallpaperStore(
 		migratedState.setlistIntroFallback ??= null;
 	}
 
+	if (fromVersion < 144) {
+		// The montage's own zoom. 1 is exactly what every stored project was
+		// drawing before the dial existed — the card filled its cell — so the
+		// seed changes nothing on screen.
+		const seedImageScale = (
+			settings: Partial<IntroSequenceSettings> | null | undefined
+		) => {
+			if (!settings) return;
+			if (typeof settings.montageImageScale !== 'number') {
+				settings.montageImageScale = 1;
+			}
+		};
+		seedImageScale(migratedState.introSequence);
+		seedImageScale(migratedState.outroSequence);
+		// Saved intro animations carry both windows: without this, loading a
+		// slot would write the key back as `undefined`.
+		for (const slot of migratedState.introProfileSlots ?? []) {
+			if (!slot.values) continue;
+			seedImageScale(slot.values.introSequence);
+			seedImageScale(slot.values.outroSequence);
+		}
+	}
+
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;
 }
 

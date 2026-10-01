@@ -198,6 +198,12 @@ export const INTRO_LAYER_Z_INDEX = 95;
 
 export const INTRO_DURATION_RANGE = { min: 0.5, max: 20 } as const;
 export const INTRO_IMAGE_COUNT_RANGE = { min: 1, max: 16 } as const;
+/**
+ * How far the images sit in or out of their cell. The floor is deliberately
+ * below 1 — that is the matted look — and the ceiling is where a 1080p frame
+ * starts to show the image's own pixels.
+ */
+export const INTRO_IMAGE_SCALE_RANGE = { min: 0.6, max: 2.5 } as const;
 export const INTRO_PHASE_SEC_RANGE = { min: 0.2, max: 10 } as const;
 export const INTRO_TITLE_SIZE_RANGE = { min: 4, max: 22 } as const;
 export const INTRO_TAGLINE_SIZE_RANGE = { min: 2, max: 12 } as const;
@@ -241,6 +247,7 @@ export function createDefaultIntroSequence(
 		divisionAngleDeg: 0,
 		montageArrival: 'auto',
 		montageMove: 'auto',
+		montageImageScale: 1,
 		imageSourceMode: 'setlist',
 		imageAssetIds: [],
 		imageCount: intro ? 9 : 9,
@@ -433,7 +440,13 @@ export function resolveIntroPreviewWindow(
 	state: IntroSequenceState,
 	kind: IntroSequenceKind,
 	elapsedSec: number,
-	totalSec: number
+	totalSec: number,
+	/**
+	 * A FROZEN preview never ends by itself. Without this, dragging the
+	 * duration slider below the frozen second would close the preview — which
+	 * is the opposite of what pausing is for.
+	 */
+	paused = false
 ): IntroWindow | null {
 	const settings =
 		kind === 'intro' ? state.introSequence : state.outroSequence;
@@ -444,7 +457,9 @@ export function resolveIntroPreviewWindow(
 				? clampRange(settings.durationSec, INTRO_DURATION_RANGE)
 				: 0;
 	if (!(durationSec > 0)) return null;
-	const elapsed = Math.max(0, elapsedSec);
+	const elapsed = paused
+		? Math.min(Math.max(0, elapsedSec), durationSec * 0.999)
+		: Math.max(0, elapsedSec);
 	if (elapsed >= durationSec) return null;
 	return {
 		kind,
@@ -682,6 +697,28 @@ function resolveCardMotion(
 			const dir = index % 2 === 0 ? 1 : -1;
 			return afford(1.16, dir * (eased * 2 - 1), 0);
 		}
+		case 'pan-vertical': {
+			const dir = index % 2 === 0 ? 1 : -1;
+			return afford(1.16, 0, dir * (eased * 2 - 1));
+		}
+		case 'drift': {
+			// Diagonal, and each card picks its own corner out of the four, so
+			// a mosaic drifts apart instead of sliding as one block.
+			const dx = index % 2 === 0 ? 1 : -1;
+			const dy = index % 4 < 2 ? 1 : -1;
+			const travel = eased * 2 - 1;
+			return afford(1.14, dx * travel, dy * travel);
+		}
+		case 'breathe':
+			// ONE slow in-and-out across the whole window — `pulse` is the
+			// nervous version of this, four times over.
+			return afford(1 + 0.12 * Math.sin(p * Math.PI), 0, 0);
+		case 'zoom-pan': {
+			// The classic: zoom and travel at once, the way a documentary pushes
+			// into a photograph.
+			const dir = index % 2 === 0 ? 1 : -1;
+			return afford(1.06 + 0.22 * eased, dir * (eased * 2 - 1) * 0.7, 0);
+		}
 		case 'pulse':
 			return afford(1.06 + 0.06 * Math.sin(p * Math.PI * 4), 0, 0);
 		case 'auto':
@@ -742,6 +779,8 @@ export function resolveIntroCards(options: {
 	/** The animation variants; both default to the montage's own. */
 	arrival?: IntroMontageArrival;
 	move?: IntroMontageMove;
+	/** The user's own zoom on top of whatever the montage and the move do. */
+	imageScale?: number;
 	count: number;
 	viewport: IntroViewport;
 	/** The `cards` slot mount — `1` through the hold. */
@@ -783,17 +822,32 @@ export function resolveIntroCards(options: {
 	 * The variant's movement for one card, or the montage's own when the variant
 	 * is `auto`. `fallbackScale` is what the montage wrote for itself.
 	 */
+	const imageScale = clampRange(
+		options.imageScale ?? 1,
+		INTRO_IMAGE_SCALE_RANGE
+	);
 	const motion = (
 		t: number,
 		size: { width: number; height: number },
 		index: number,
 		fallbackScale: number
-	): CardMotion =>
-		resolveCardMotion(move, t, size, index) ?? {
+	): CardMotion => {
+		const base = resolveCardMotion(move, t, size, index) ?? {
 			scale: fallbackScale,
 			shiftX: 0,
 			shiftY: 0
 		};
+		if (imageScale === 1) return base;
+		const scale = base.scale * imageScale;
+		// The shift was sized against the margin the OLD scale bought, so it is
+		// rescaled against the new one: zooming in lets a pan travel further,
+		// and zooming past the cell's edge leaves nothing to travel in, which
+		// is exactly when the shift has to go to zero.
+		const before = Math.max(0, base.scale - 1);
+		const after = Math.max(0, scale - 1);
+		const k = before > 0 ? after / before : 0;
+		return { scale, shiftX: base.shiftX * k, shiftY: base.shiftY * k };
+	};
 	/** The arrival order for a tiled montage, with the montage's own default. */
 	const ranks = (
 		list: readonly IntroDivisionCell[],
@@ -1111,6 +1165,7 @@ export function resolveIntroFrame(options: {
 			angleDeg: settings.divisionAngleDeg,
 			arrival: settings.montageArrival,
 			move: settings.montageMove,
+			imageScale: settings.montageImageScale,
 			count: cardCount,
 			viewport,
 			mount: mountOf('cards'),

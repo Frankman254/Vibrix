@@ -564,9 +564,11 @@ export const es: Record<TranslationKey, string> = {
 	intro_division_irregular: 'Irregular',
 	intro_preview_intro: 'Ver la intro',
 	intro_preview_outro: 'Ver el ending',
+	intro_preview_pause: 'Pausar',
+	intro_preview_resume: 'Reanudar',
 	intro_preview_stop: 'Detener',
 	intro_preview_hint:
-		'Reproduce la ventana aquí mismo, sin mover el tema. Se detiene sola al terminar.',
+		'Reproduce la ventana aquí mismo, sin mover el tema. Pausa y cada cambio que hagas cae sobre ese cuadro congelado, al instante.',
 	intro_presets_title: 'Estilos rápidos',
 	intro_presets_hint:
 		'Un clic deja una composición terminada. No toca tu texto, tus imágenes elegidas ni tus slots de spectrum — sigue editando desde ahí.',
@@ -636,6 +638,13 @@ export const es: Record<TranslationKey, string> = {
 	intro_font: 'Fuente',
 	intro_title_size: 'Tamaño (% del alto)',
 	intro_reveal: 'Entrada',
+	intro_image_scale: 'Zoom de las imágenes',
+	intro_image_scale_hint:
+		'Cuánto se acercan o se alejan las imágenes dentro de su propia celda. Por debajo de 1 quedan metidas hacia dentro y la celda enseña su fondo alrededor — un look con paspartú, a propósito.',
+	intro_move_pan_vertical: 'Paneo vertical',
+	intro_move_drift: 'Deriva',
+	intro_move_breathe: 'Respiración',
+	intro_move_zoom_pan: 'Zoom + paneo',
 	intro_reveal_typewriter: 'Letra a letra',
 	intro_reveal_fade: 'Fundido',
 	intro_reveal_rise: 'Subiendo',

@@ -10,7 +10,7 @@
  * whatever is learned on the intro applies to the ending.
  */
 import { useMemo, useState } from 'react';
-import { Play, Square } from 'lucide-react';
+import { Pause, Play, Square } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import {
 	Button,
@@ -69,6 +69,7 @@ import {
 } from '../introDivisions';
 import {
 	INTRO_DURATION_RANGE,
+	INTRO_IMAGE_SCALE_RANGE,
 	INTRO_FRAME_THICKNESS_RANGE,
 	INTRO_IMAGE_COUNT_RANGE,
 	INTRO_LOGO_OFFSET_RANGE,
@@ -284,8 +285,11 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 	// buttons can never read as running at once.
 	const preview = useIntroPreviewStore(s => s.preview);
 	const startIntroPreview = useIntroPreviewStore(s => s.startIntroPreview);
+	const pauseIntroPreview = useIntroPreviewStore(s => s.pauseIntroPreview);
+	const resumeIntroPreview = useIntroPreviewStore(s => s.resumeIntroPreview);
 	const stopIntroPreview = useIntroPreviewStore(s => s.stopIntroPreview);
 	const previewing = preview?.kind === kind;
+	const paused = previewing && preview?.pausedAtSec !== null;
 
 	const [view, setView] = useTabViewState<IntroWindowView>(
 		`intro-${kind}`,
@@ -349,30 +353,57 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 					    into it, so iterating on the composition cost a rewind
 					    per change. */}
 					<div className="flex flex-col gap-1">
-						<Button
-							onClick={() =>
-								previewing
-									? stopIntroPreview()
-									: startIntroPreview(kind)
-							}
-							size="sm"
-							density="compact"
-							variant={previewing ? 'primary' : 'secondary'}
-							icon={
-								previewing ? (
-									<Square size={11} />
-								) : (
-									<Play size={11} />
-								)
-							}
-							full
-						>
-							{previewing
-								? t.intro_preview_stop
-								: kind === 'intro'
-									? t.intro_preview_intro
-									: t.intro_preview_outro}
-						</Button>
+						<div className="flex gap-1.5">
+							<Button
+								onClick={() => {
+									if (!previewing)
+										return startIntroPreview(kind);
+									if (paused) return resumeIntroPreview();
+									// The frozen second comes from the live
+									// clock, so pausing keeps the frame that is
+									// on screen rather than jumping anywhere.
+									pauseIntroPreview(
+										(performance.now() -
+											(preview?.startedAtMs ?? 0)) /
+											1000
+									);
+								}}
+								size="sm"
+								density="compact"
+								variant={
+									previewing && !paused
+										? 'primary'
+										: 'secondary'
+								}
+								icon={
+									previewing && !paused ? (
+										<Pause size={11} />
+									) : (
+										<Play size={11} />
+									)
+								}
+								full
+							>
+								{!previewing
+									? kind === 'intro'
+										? t.intro_preview_intro
+										: t.intro_preview_outro
+									: paused
+										? t.intro_preview_resume
+										: t.intro_preview_pause}
+							</Button>
+							{previewing && (
+								<Button
+									onClick={stopIntroPreview}
+									size="sm"
+									density="compact"
+									variant="secondary"
+									icon={<Square size={11} />}
+									title={t.intro_preview_stop}
+									aria-label={t.intro_preview_stop}
+								/>
+							)}
+						</div>
 						<Caption>{t.intro_preview_hint}</Caption>
 					</div>
 
@@ -542,10 +573,40 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 												label: t.intro_move_pan
 											},
 											{
+												value: 'pan-vertical',
+												label: t.intro_move_pan_vertical
+											},
+											{
+												value: 'drift',
+												label: t.intro_move_drift
+											},
+											{
+												value: 'zoom-pan',
+												label: t.intro_move_zoom_pan
+											},
+											{
+												value: 'breathe',
+												label: t.intro_move_breathe
+											},
+											{
 												value: 'pulse',
 												label: t.intro_move_pulse
 											}
 										]}
+									/>
+									<Slider
+										label={t.intro_image_scale}
+										value={settings.montageImageScale}
+										min={INTRO_IMAGE_SCALE_RANGE.min}
+										max={INTRO_IMAGE_SCALE_RANGE.max}
+										step={0.05}
+										onChange={montageImageScale =>
+											patch({ montageImageScale })
+										}
+										defaultValue={factory.montageImageScale}
+										variant="compact"
+										formatValue={formatDecimal}
+										hint={t.intro_image_scale_hint}
 									/>
 									{TILED_MONTAGES.includes(
 										settings.montage

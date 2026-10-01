@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	INTRO_IMAGE_SCALE_RANGE,
 	INTRO_LOGO_OFFSET_RANGE,
 	INTRO_LOGO_STRETCH_RANGE,
 	INTRO_MOUNT_ORDER,
@@ -14,7 +15,10 @@ import {
 	resolveSlotMount,
 	type IntroSequenceState
 } from './introPlan';
-import type { IntroSequenceSettings } from '@/types/wallpaper';
+import type {
+	IntroMontageMove,
+	IntroSequenceSettings
+} from '@/types/wallpaper';
 
 const VIEWPORT = { width: 1920, height: 1080 };
 
@@ -279,6 +283,10 @@ describe('resolveIntroCards — divisions', () => {
 			'zoom-in',
 			'zoom-out',
 			'pan',
+			'pan-vertical',
+			'drift',
+			'breathe',
+			'zoom-pan',
 			'pulse'
 		] as const) {
 			for (const montage of [
@@ -489,6 +497,86 @@ describe('resolveIntroCards', () => {
 			expect(left).toBeLessThanOrEqual(0.001);
 			expect(right).toBeGreaterThanOrEqual(VIEWPORT.width - 0.001);
 		}
+	});
+
+	it('gives each new variant a movement of its own', () => {
+		const at = (move: IntroMontageMove, progress: number) =>
+			resolveIntroCards({
+				montage: 'mosaic-grid',
+				pattern: 'grid',
+				move,
+				count: 6,
+				viewport: VIEWPORT,
+				mount: 1,
+				progress
+			});
+		// `pan-vertical` travels on Y and leaves X alone; `pan` is the mirror.
+		const vertical = at('pan-vertical', 0.9)[0];
+		expect(Math.abs(vertical?.shiftY ?? 0)).toBeGreaterThan(1);
+		expect(vertical?.shiftX ?? 0).toBeCloseTo(0);
+		const horizontal = at('pan', 0.9)[0];
+		expect(Math.abs(horizontal?.shiftX ?? 0)).toBeGreaterThan(1);
+		expect(horizontal?.shiftY ?? 0).toBeCloseTo(0);
+		// `drift` moves on both axes at once, and neighbours take different
+		// corners so the mosaic comes apart instead of sliding as one block.
+		const drift = at('drift', 0.9);
+		expect(Math.abs(drift[0]?.shiftX ?? 0)).toBeGreaterThan(1);
+		expect(Math.abs(drift[0]?.shiftY ?? 0)).toBeGreaterThan(1);
+		expect(Math.sign(drift[0]?.shiftX ?? 0)).not.toBe(
+			Math.sign(drift[1]?.shiftX ?? 0)
+		);
+		// `breathe` is ONE in-and-out: biggest in the middle, back home at both
+		// ends. `pulse` is the same shape four times over, so it is already
+		// back at the halfway point.
+		const breathe = (p: number) => at('breathe', p)[0]?.scale ?? 0;
+		expect(breathe(0.5)).toBeGreaterThan(breathe(0.02));
+		expect(breathe(0.98)).toBeLessThan(breathe(0.5));
+		// `zoom-pan` does both: it ends bigger AND somewhere else.
+		const start = at('zoom-pan', 0)[0];
+		const end = at('zoom-pan', 1)[0];
+		expect(end?.scale ?? 0).toBeGreaterThan(start?.scale ?? 1);
+		expect(end?.shiftX ?? 0).not.toBeCloseTo(start?.shiftX ?? 0);
+	});
+
+	it('scales the montage without ever uncovering the cell it pans in', () => {
+		const at = (imageScale: number) =>
+			resolveIntroCards({
+				montage: 'mosaic-grid',
+				pattern: 'grid',
+				move: 'pan',
+				count: 6,
+				viewport: VIEWPORT,
+				mount: 1,
+				progress: 0.9,
+				imageScale
+			});
+		const base = at(1)[0];
+		const closer = at(2)[0];
+		const further = at(0.7)[0];
+		// The cell itself never changes size — only what is drawn inside it.
+		expect(closer?.width).toBe(base?.width);
+		expect(closer?.height).toBe(base?.height);
+		expect(closer?.scale ?? 0).toBeGreaterThan(base?.scale ?? 0);
+		expect(further?.scale ?? 0).toBeLessThan(base?.scale ?? 0);
+		// Pushed away the card is matted inside its cell on purpose, so there
+		// is no margin left to pan into and the shift goes to zero.
+		expect(further?.shiftX ?? 1).toBeCloseTo(0);
+		// Pulled closer the shift grows with the margin and still never
+		// exceeds it, which is what keeps the backdrop covered.
+		expect(Math.abs(closer?.shiftX ?? 0)).toBeGreaterThan(
+			Math.abs(base?.shiftX ?? 0)
+		);
+		for (const card of at(2)) {
+			const marginX = ((card.scale - 1) * card.width) / 2;
+			expect(Math.abs(card.shiftX ?? 0)).toBeLessThanOrEqual(
+				marginX + 0.0001
+			);
+		}
+		// Out of range is clamped, not honoured.
+		expect(at(99)[0]?.scale).toBe(
+			at(INTRO_IMAGE_SCALE_RANGE.max)[0]?.scale
+		);
+		expect(at(0)[0]?.scale).toBe(at(INTRO_IMAGE_SCALE_RANGE.min)[0]?.scale);
 	});
 
 	it('shows nothing at all before anything has mounted', () => {

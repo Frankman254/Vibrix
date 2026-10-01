@@ -1,6 +1,6 @@
 # Current System Status
 
-**As of:** `chore/fase-0-higiene` (`main`) · App `0.7.0-alpha` · Store persist **v143**
+**As of:** `chore/fase-0-higiene` (`main`) · App `0.7.0-alpha` · Store persist **v144**
 
 This document describes the product **as implemented in code**, not aspirational roadmaps.
 
@@ -25,7 +25,7 @@ This document describes the product **as implemented in code**, not aspirational
 | -------------------------------- | ------ | ----------------------------------------------------------- |
 | Vite + React 19 SPA              | Stable | HashRouter (`#/edit`, `#/present`, `#/record`, `#/preview`) |
 | Shared `WallpaperAppProviders`   | Stable | Single `AudioDataProvider` above route shells               |
-| Zustand + `localStorage` persist | Stable | `STORE_PERSIST_VERSION = 143`                               |
+| Zustand + `localStorage` persist | Stable | `STORE_PERSIST_VERSION = 144`                               |
 | IndexedDB assets                 | Stable | Images, audio blobs                                         |
 | Vitest + GitHub Actions CI       | Stable | format, lint, types, tests, docs:check, build               |
 
@@ -189,6 +189,20 @@ See `docs/features/SPECTRUM_ENGINE.md` (ownership model) and
   clears the park. Chaining bound setlists parks once — the park always holds
   the project's windows, never the previous show's. Binding a slot to the
   setlist that is already active applies immediately.
+- **The tab has its own transport.** A play button runs the window from the
+  preview clock (`introPreviewStore.ts`, a standalone non-persisted store),
+  reads **Pause** while it runs, and a Stop sits beside it; the window closes
+  itself when it ends. Pausing freezes the frame but not the settings — the
+  renderer keeps reading live state, so a dial moves in that frozen frame. The
+  preview resolves its duration exactly like the real window, half-the-video
+  clamp included. `features/export` does not import the store and must not: that
+  is what keeps the file ruled by the track's clock, and a test walks the export
+  folder to assert it.
+- `montageImageScale` (store v144, 0.6–2.5) zooms the montage inside its cell.
+  Below 1 the image is matted over the window's backdrop on purpose, and the
+  pan shift goes to zero because there is no margin to travel into; above 1 the
+  shift grows with the margin and still never exceeds it, which is the invariant
+  that keeps a tiled montage from uncovering its backdrop.
 
 ---
 
@@ -197,7 +211,7 @@ See `docs/features/SPECTRUM_ENGINE.md` (ownership model) and
 | Constant                  | Value         | Location                                    |
 | ------------------------- | ------------- | ------------------------------------------- |
 | `APP_VERSION`             | `0.7.0-alpha` | `src/lib/version.ts`, `package.json`        |
-| `STORE_PERSIST_VERSION`   | **143**       | Migrations in `wallpaperStoreMigrations.ts` |
+| `STORE_PERSIST_VERSION`   | **144**       | Migrations in `wallpaperStoreMigrations.ts` |
 | `PROJECT_SCHEMA_VERSION`  | 1             |                                             |
 | `SETTINGS_SCHEMA_VERSION` | 1             |                                             |
 
@@ -242,6 +256,7 @@ Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 | v139    | Spectrum 1 y 2 independientes en la ventana de intro (`spectrumPrimaryEnabled` / `spectrumPrimarySlotId` / `spectrumSecondEnabled` / `spectrumSecondSlotId`), por id de slot                                                                                      |
 | v140    | Movimiento: zoom de borde, suavizado, estela y color de estela por capa (`cameraMotionEdgeZoom` / `cameraMotionSmoothing` / `cameraMotionTrail` / `cameraMotionTrailColor`)                                                                                       |
 | v142    | Camera Motion «invertir con energía baja» por capa de movimiento (`cameraMotionInvertOnLowEnergy` / `cameraMotionInvertThreshold` / `cameraMotionInvertHoldMs`)                                                                                                   |
+| v144    | `montageImageScale`: zoom del mosaico de la intro/ending dentro de su celda (por debajo de 1 la imagen queda enmarcada sobre el fondo, a propósito)                                                                                                               |
 | v143    | `setlistIntroFallback`: dónde se aparcan las ventanas de intro/ending del proyecto mientras un setlist con slot ligado está activo                                                                                                                                |
 | v141    | Encuadre manual y «la marca sigue a la imagen» por imagen (`framingManual` / `logoFollowsFocus` en cada `BackgroundImageItem`; las claves planas son el valor vivo de la imagen activa)                                                                           |
 | v137    | Tipografía de las líneas de la intro tomada de Track Info (`titleTextStyleSource`, `taglineTextStyleSource`)                                                                                                                                                      |

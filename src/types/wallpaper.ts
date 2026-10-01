@@ -774,6 +774,10 @@ export type IntroMontageMove =
 	| 'zoom-in'
 	| 'zoom-out'
 	| 'pan'
+	| 'pan-vertical'
+	| 'drift'
+	| 'breathe'
+	| 'zoom-pan'
 	| 'pulse';
 
 /** Whether the box is drawn, filled, or both. `brackets` is never filled. */
@@ -827,6 +831,17 @@ export interface IntroSequenceSettings {
 	/** The animation variants of the chosen montage. */
 	montageArrival: IntroMontageArrival;
 	montageMove: IntroMontageMove;
+	/**
+	 * How far in or out the images sit inside their own cell, `1` = exactly
+	 * covering it.
+	 *
+	 * Above 1 crops tighter — the way to push past a montage's own framing.
+	 * BELOW 1 the image is inset and the cell shows its backdrop around it: a
+	 * matted look, deliberate and not a bug, which is why the floor is well
+	 * above zero. The animated moves keep their own floor of 1 regardless, so a
+	 * pan can still never uncover anything it did not mean to.
+	 */
+	montageImageScale: number;
 	/**
 	 * `manual` draws exactly `imageAssetIds`, in the order they were picked, and
 	 * ignores both `imageCount` and `order`: "no las saque automáticamente".

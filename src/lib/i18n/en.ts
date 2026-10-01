@@ -560,9 +560,11 @@ export const en = {
 	intro_division_irregular: 'Irregular',
 	intro_preview_intro: 'Watch the intro',
 	intro_preview_outro: 'Watch the ending',
-	intro_preview_stop: 'Stop the preview',
+	intro_preview_pause: 'Pause',
+	intro_preview_resume: 'Resume',
+	intro_preview_stop: 'Stop',
 	intro_preview_hint:
-		'Plays the window right here, without moving the track. It stops on its own when it ends.',
+		'Plays the window right here, without moving the track. Pause it and every change you make lands on that frozen frame, live.',
 	intro_presets_title: 'Quick looks',
 	intro_presets_hint:
 		'One click sets a finished composition. Your text, your picked images and your spectrum slots are left alone — keep editing from there.',
@@ -631,6 +633,13 @@ export const en = {
 	intro_font: 'Font',
 	intro_title_size: 'Size (% of height)',
 	intro_reveal: 'Reveal',
+	intro_image_scale: 'Image zoom',
+	intro_image_scale_hint:
+		'How far in or out each image sits inside its own cell. Below 1 it is inset and the cell shows its backdrop around it — a matted look, on purpose.',
+	intro_move_pan_vertical: 'Vertical pan',
+	intro_move_drift: 'Drift',
+	intro_move_breathe: 'Breathe',
+	intro_move_zoom_pan: 'Zoom + pan',
 	intro_reveal_typewriter: 'Letter by letter',
 	intro_reveal_fade: 'Fade',
 	intro_reveal_rise: 'Rise',

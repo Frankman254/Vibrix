@@ -181,4 +181,8 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // used to overwrite the windows with no way back, so deactivating it left the
 // show's intro behind and the next setlist inherited it. Seeded `null`, which
 // is exactly "nothing is overriding" for every stored project.
-export const STORE_PERSIST_VERSION = 143;
+// v144: `montageImageScale` — the montage's own zoom, so the images can be
+// pushed away (below 1 the card is matted inside its cell, showing the
+// backdrop on purpose) or pulled closer. Seeded 1 in both windows and in every
+// saved intro animation, which is exactly what they were already drawing.
+export const STORE_PERSIST_VERSION = 144;

@@ -6,6 +6,7 @@ import type { IntroSequenceState } from './introPlan';
 import { resolveIntroPreviewWindow } from './introPlan';
 import {
 	getIntroPreview,
+	introPreviewElapsedSec,
 	stopIntroPreview,
 	useIntroPreviewStore
 } from './introPreviewStore';
@@ -40,7 +41,8 @@ describe('intro preview store', () => {
 		useIntroPreviewStore.getState().startIntroPreview('intro', 1000);
 		expect(getIntroPreview()).toEqual({
 			kind: 'intro',
-			startedAtMs: 1000
+			startedAtMs: 1000,
+			pausedAtSec: null
 		});
 	});
 
@@ -49,7 +51,8 @@ describe('intro preview store', () => {
 		useIntroPreviewStore.getState().startIntroPreview('outro', 2000);
 		expect(getIntroPreview()).toEqual({
 			kind: 'outro',
-			startedAtMs: 2000
+			startedAtMs: 2000,
+			pausedAtSec: null
 		});
 	});
 
@@ -57,6 +60,40 @@ describe('intro preview store', () => {
 		useIntroPreviewStore.getState().startIntroPreview('outro', 0);
 		stopIntroPreview();
 		expect(getIntroPreview()).toBeNull();
+	});
+
+	it('freezes the frame it was showing and reads it back unchanged', () => {
+		const store = useIntroPreviewStore.getState();
+		store.startIntroPreview('intro', 1000);
+		expect(introPreviewElapsedSec(getIntroPreview()!, 2500)).toBe(1.5);
+		store.pauseIntroPreview(1.5);
+		expect(getIntroPreview()?.pausedAtSec).toBe(1.5);
+		// Wall-clock keeps running; the frozen frame does not move with it.
+		expect(introPreviewElapsedSec(getIntroPreview()!, 99_000)).toBe(1.5);
+	});
+
+	it('resumes where it stopped instead of starting over', () => {
+		const store = useIntroPreviewStore.getState();
+		store.startIntroPreview('intro', 1000);
+		store.pauseIntroPreview(1.5);
+		store.resumeIntroPreview(50_000);
+		expect(getIntroPreview()?.pausedAtSec).toBeNull();
+		// Right after resuming it is still at 1.5 s, and it goes on from there.
+		expect(introPreviewElapsedSec(getIntroPreview()!, 50_000)).toBe(1.5);
+		expect(introPreviewElapsedSec(getIntroPreview()!, 51_000)).toBe(2.5);
+	});
+
+	it('ignores a pause with nothing running and a resume while running', () => {
+		const store = useIntroPreviewStore.getState();
+		store.pauseIntroPreview(2);
+		expect(getIntroPreview()).toBeNull();
+		store.startIntroPreview('intro', 1000);
+		store.resumeIntroPreview(5000);
+		expect(getIntroPreview()?.startedAtMs).toBe(1000);
+		// And pausing twice keeps the first frozen frame, not the second.
+		store.pauseIntroPreview(1);
+		store.pauseIntroPreview(3);
+		expect(getIntroPreview()?.pausedAtSec).toBe(1);
 	});
 });
 
@@ -120,6 +157,23 @@ describe('resolveIntroPreviewWindow', () => {
 		const window_ = resolveIntroPreviewWindow(introState(), 'intro', 2, 0);
 		expect(window_?.durationSec).toBe(4);
 		expect(window_?.progress).toBe(0.5);
+	});
+
+	/**
+	 * A frozen frame at the very end of the window must stay on screen: without
+	 * the clamp the window would resolve to `null` and the render loop would
+	 * close the preview the user just paused.
+	 */
+	it('keeps a frozen frame alive at the end of the window', () => {
+		const state = introState();
+		expect(
+			resolveIntroPreviewWindow(state, 'intro', 4, 200, true)?.progress
+		).toBeCloseTo(1, 2);
+		expect(
+			resolveIntroPreviewWindow(state, 'intro', 99, 200, true)
+		).not.toBeNull();
+		// Running, the same elapsed ends the preview.
+		expect(resolveIntroPreviewWindow(state, 'intro', 4, 200)).toBeNull();
 	});
 
 	it('clamps a negative elapsed to the start of the window', () => {
