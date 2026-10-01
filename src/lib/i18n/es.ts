@@ -562,6 +562,11 @@ export const es: Record<TranslationKey, string> = {
 	intro_division_lightning: 'Rayo',
 	intro_division_starburst: 'Media estrella',
 	intro_division_irregular: 'Irregular',
+	intro_preview_intro: 'Ver la intro',
+	intro_preview_outro: 'Ver el ending',
+	intro_preview_stop: 'Detener',
+	intro_preview_hint:
+		'Reproduce la ventana aquí mismo, sin mover el tema. Se detiene sola al terminar.',
 	intro_presets_title: 'Estilos rápidos',
 	intro_presets_hint:
 		'Un clic deja una composición terminada. No toca tu texto, tus imágenes elegidas ni tus slots de spectrum — sigue editando desde ahí.',

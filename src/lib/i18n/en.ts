@@ -558,6 +558,11 @@ export const en = {
 	intro_division_lightning: 'Lightning',
 	intro_division_starburst: 'Starburst',
 	intro_division_irregular: 'Irregular',
+	intro_preview_intro: 'Watch the intro',
+	intro_preview_outro: 'Watch the ending',
+	intro_preview_stop: 'Stop the preview',
+	intro_preview_hint:
+		'Plays the window right here, without moving the track. It stops on its own when it ends.',
 	intro_presets_title: 'Quick looks',
 	intro_presets_hint:
 		'One click sets a finished composition. Your text, your picked images and your spectrum slots are left alone — keep editing from there.',

@@ -10,6 +10,7 @@
  * whatever is learned on the intro applies to the ending.
  */
 import { useMemo, useState } from 'react';
+import { Play, Square } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import {
 	Button,
@@ -35,6 +36,7 @@ import { resolveSlideshowPool } from '@/features/background';
 import { MAX_INTRO_SLOT_COUNT } from '@/store/featureProfiles';
 import IntroImagePicker from './IntroImagePicker';
 import { INTRO_PRESETS } from '../introPresets';
+import { useIntroPreviewStore } from '../introPreviewStore';
 import {
 	TRACK_TITLE_FONTS,
 	TRACK_TITLE_FONT_LABELS
@@ -277,6 +279,14 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 					settings
 				).length;
 
+	// Ephemeral on purpose — see `introPreviewStore`. `previewing` is true only
+	// for THIS window: asking for the other one replaces the preview, so both
+	// buttons can never read as running at once.
+	const preview = useIntroPreviewStore(s => s.preview);
+	const startIntroPreview = useIntroPreviewStore(s => s.startIntroPreview);
+	const stopIntroPreview = useIntroPreviewStore(s => s.stopIntroPreview);
+	const previewing = preview?.kind === kind;
+
 	const [view, setView] = useTabViewState<IntroWindowView>(
 		`intro-${kind}`,
 		'timing',
@@ -332,6 +342,39 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 						full
 						ariaLabel={t.intro_aria_sections}
 					/>
+
+					{/* An ACTION, not a setting, so it sits bare beside the
+					    sub-tab row instead of inside a titled card. Before this
+					    the only way to look at a window was to drag the playhead
+					    into it, so iterating on the composition cost a rewind
+					    per change. */}
+					<div className="flex flex-col gap-1">
+						<Button
+							onClick={() =>
+								previewing
+									? stopIntroPreview()
+									: startIntroPreview(kind)
+							}
+							size="sm"
+							density="compact"
+							variant={previewing ? 'primary' : 'secondary'}
+							icon={
+								previewing ? (
+									<Square size={11} />
+								) : (
+									<Play size={11} />
+								)
+							}
+							full
+						>
+							{previewing
+								? t.intro_preview_stop
+								: kind === 'intro'
+									? t.intro_preview_intro
+									: t.intro_preview_outro}
+						</Button>
+						<Caption>{t.intro_preview_hint}</Caption>
+					</div>
 
 					{/* Above the sub-tabs on purpose: a quick look is the shortcut
 					    into the whole window, so it must not be buried inside

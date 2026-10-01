@@ -37,8 +37,10 @@ import {
 	INTRO_LAYER_Z_INDEX,
 	pickIntroImages,
 	resolveIntroFrame,
+	resolveIntroPreviewWindow,
 	resolveIntroWindow
 } from './introPlan';
+import { getIntroPreview, stopIntroPreview } from './introPreviewStore';
 import { createIntroSpectrumPainter } from './introSpectrumDraw';
 
 export default function IntroLayer({
@@ -166,12 +168,30 @@ export default function IntroLayer({
 				return;
 			}
 			const state = useWallpaperStore.getState();
-			const window_ = resolveIntroWindow(
-				state,
-				Math.max(0, getCurrentTime()),
-				getDuration()
-			);
+			const nowMs = performance.now();
+			/**
+			 * A preview wins over the track's clock while it runs: that is the
+			 * whole point of it. Nothing else in the app looks at this, and the
+			 * offline exporter deliberately never imports it, so the file always
+			 * comes out ruled by the track.
+			 */
+			const preview = getIntroPreview();
+			const window_ = preview
+				? resolveIntroPreviewWindow(
+						state,
+						preview.kind,
+						(nowMs - preview.startedAtMs) / 1000,
+						getDuration()
+					)
+				: resolveIntroWindow(
+						state,
+						Math.max(0, getCurrentTime()),
+						getDuration()
+					);
 			if (!window_) {
+				// A preview that ran out closes itself, so the button goes back
+				// to "play" without the user stopping what already ended.
+				if (preview) stopIntroPreview();
 				if (paintedRef.current) {
 					ctx.clearRect(0, 0, c.width, c.height);
 					paintedRef.current = false;
@@ -187,7 +207,6 @@ export default function IntroLayer({
 				const image = imageFor(url);
 				if (image) images.set(index, image);
 			}
-			const nowMs = performance.now();
 			const dt = lastFrameMsRef.current
 				? Math.min(0.1, (nowMs - lastFrameMsRef.current) / 1000)
 				: 1 / 60;

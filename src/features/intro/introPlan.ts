@@ -417,6 +417,44 @@ export function resolveIntroWindow(
 }
 
 /**
+ * The window a PREVIEW is showing, `elapsedSec` after it opened.
+ *
+ * Answers the same question `resolveIntroWindow` does — which window, how far
+ * along — but from a standalone clock instead of the track's, so the editor can
+ * look at a window without dragging the playhead into it. Returns `null` the
+ * moment the window is over, which is how a preview ends by itself.
+ *
+ * The duration is resolved exactly like the real window's, clamp included, so
+ * what the preview shows is the shape the FILE will have and not an idealized
+ * one. The exception is having no track loaded at all: there is no half to clamp
+ * against, and a window still has to be visible before any audio is picked.
+ */
+export function resolveIntroPreviewWindow(
+	state: IntroSequenceState,
+	kind: IntroSequenceKind,
+	elapsedSec: number,
+	totalSec: number
+): IntroWindow | null {
+	const settings =
+		kind === 'intro' ? state.introSequence : state.outroSequence;
+	const durationSec =
+		totalSec > 0
+			? effectiveDuration(settings, totalSec)
+			: settings.enabled
+				? clampRange(settings.durationSec, INTRO_DURATION_RANGE)
+				: 0;
+	if (!(durationSec > 0)) return null;
+	const elapsed = Math.max(0, elapsedSec);
+	if (elapsed >= durationSec) return null;
+	return {
+		kind,
+		progress: clamp01(elapsed / durationSec),
+		elapsedSec: elapsed,
+		durationSec
+	};
+}
+
+/**
  * The asset ids the montage shows, in the order it shows them.
  *
  * The pool arrives already filtered to the active setlist and in setlist order

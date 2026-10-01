@@ -65,6 +65,21 @@ los extremos. Al ser compartido, entra de golpe en los 22 sitios. Para los
 bancos de slots conviene además que las flechas **carguen** el slot, no sólo lo
 seleccionen, que es lo que uno quiere al comparar.
 
+## F3 · Un `NotFoundError` de IndexedDB salta en cada arranque
+
+**Qué se siente.** Nada, todavía: la app funciona. Pero la consola abre con una
+excepción **no capturada** en cada carga.
+
+**Por qué pasa.** Sin diagnosticar. El mensaje es `Failed to execute
+'transaction' on 'IDBDatabase': One of the specified object stores was not
+found`, y salta en una carga limpia sin tocar nada — verificado recargando la
+página sin interactuar. Huele a un `objectStore` que se abre antes de que una
+migración de la base lo haya creado.
+
+**Por qué está en la lista.** Un error no capturado al arrancar es exactamente
+lo que convierte «no se guardó mi proyecto» en un misterio de media tarde. Antes
+de congelar hay que saber qué transacción es y si pierde datos o no.
+
 ## Arregladas en este ciclo
 
 - La intro se dibujaba casi al fondo del vídeo exportado (`e1aafebf`).
@@ -72,6 +87,8 @@ seleccionen, que es lo que uno quiere al comparar.
 - El montaje recortaba por el centro imágenes con encuadre puesto (`e1aafebf`).
 - Los slots de Camera FX guardaban la capa activa rancia (`e1aafebf`).
 - La intro rehacía su reparto en cada cuadro (`4fce8b56`).
+- **F1**: ver la intro/ending sin mover el tema, con un reloj de preview
+  efímero que el exportador no puede leer.
 - Fuera el grabador en vivo de la pestaña Export (`93486e2e`).
 
 ## No hacer mientras esto esté abierto
