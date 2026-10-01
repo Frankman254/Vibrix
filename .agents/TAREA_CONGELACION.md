@@ -23,8 +23,8 @@ supuesto) y **dónde se arregla**. Sin eso es un post-it, no una tarea.
 | --- | ------------------------------------------------------------ | ---------------------------------- |
 | F0  | Export de vídeo offline probado de punta a punta con un tema | **Pasa** (probado por el usuario)  |
 | F1  | No se puede ver la intro/ending sin mover el tiempo del tema | **Hecha** (`15ac2439`, `88d2492e`) |
-| F2  | Los selectores de slot son una lista larga sin flechas       | **Siguiente**                      |
-| F3  | `NotFoundError` de IndexedDB no capturado en cada arranque   | Pendiente                          |
+| F2  | Los selectores de slot son una lista larga sin flechas       | **Hecha** (ver abajo)              |
+| F3  | `NotFoundError` de IndexedDB no capturado en cada arranque   | **Siguiente**                      |
 
 ## F1 · No hay forma de ver la intro o el ending sin cambiar el tiempo
 
@@ -59,12 +59,14 @@ primitivo**: `Select` ([src/ui/Select.tsx](../src/ui/Select.tsx)), un panel
 flotante con la lista entera, usado en 22 sitios de 9 ficheros. No hay
 navegación «anterior / siguiente» en ninguna parte.
 
-**Dónde se arregla.** En el primitivo, no en cada pestaña: un par de flechas
-opcionales (`◀ ▶`) pegadas al `Select` que salten al slot anterior/siguiente de
-`options` sin abrir la lista, saltándose los `disabled` y sin dar la vuelta en
-los extremos. Al ser compartido, entra de golpe en los 22 sitios. Para los
-bancos de slots conviene además que las flechas **carguen** el slot, no sólo lo
-seleccionen, que es lo que uno quiere al comparar.
+**Dónde se arregló.** En el primitivo, no en cada pestaña: `Select` acepta
+`steppers` y entonces se flanquea con `◀ ▶` que saltan al vecino de `options`
+sin abrir la lista. Se saltan los `disabled` y no dan la vuelta en los extremos
+— con 120 slots, un «siguiente» que salte al primero es un brinco por todo el
+banco. Al ser compartido entró de golpe en los 15 sitios donde se usa. La
+búsqueda del vecino vive aparte en `src/ui/lib/stepOption.ts` con cinco tests,
+porque no hay harness de DOM en el repo. Verificado también en el navegador:
+avanza, aplica, y la flecha se apaga al llegar al extremo.
 
 ## F3 · Un `NotFoundError` de IndexedDB salta en cada arranque
 
@@ -92,6 +94,13 @@ de congelar hay que saber qué transacción es y si pierde datos o no.
   efímero que el exportador no puede leer (`15ac2439`); y pausarlo, con el
   cuadro congelado pero los ajustes vivos, más el zoom del mosaico
   (`montageImageScale`, store v144) y cuatro movimientos más (`88d2492e`).
+- **F2**: flechas «anterior / siguiente» en `Select`, y la ventana Intro &
+  ending puesta sobre el contrato de `EditorTabLayout` — interruptor maestro en
+  la cabecera, bancos plegados, barra de navegación y transporte fijos, Title y
+  Tagline deduplicados y con su cuerpo bajo `FeatureGate`. Auditoría en
+  [docs/audits/AUDITORIA_VENTANA_INTRO_2026-09-30.md](../docs/audits/AUDITORIA_VENTANA_INTRO_2026-09-30.md):
+  de las 58 claves de la ventana, **ninguna** está muerta; el problema era el
+  orden, no el exceso.
 - Fuera el grabador en vivo de la pestaña Export (`93486e2e`).
 
 ## No hacer mientras esto esté abierto

@@ -15,6 +15,53 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+### Cambiado
+
+- **La ventana Intro & ending, ordenada.** La pestaña se saltaba el contrato de
+  `EditorTabLayout` por las tres regiones de arriba: la cabecera sólo llevaba un
+  icono decorativo, el interruptor maestro iba suelto en el cuerpo bajo un
+  segundo título, y el banco de animaciones guardadas se abría en el cuerpo en
+  vez de en su ranura. Medido: en una ventana de 768 px la fila de sub-pestañas
+  —lo único con lo que se navega— empezaba al **86 %** de la altura y el primer
+  ajuste de cualquier sección caía bajo el pliegue. Ahora el interruptor vive en
+  `EditorTabHeader` con el selector Intro/Ending al lado (son la misma pregunta:
+  el interruptor manda siempre sobre la ventana que estás mirando), y la fila de
+  sub-pestañas sube al **40 %**.
+
+    «Animaciones guardadas» y «Quick looks» pasan a secciones plegables, cerradas
+    por defecto y con memoria: son sitios a los que se vuelve, no sitios donde se
+    empieza; el banco lleva además el número de slots llenos en el título.
+    La fila de sub-pestañas y el transporte viajan juntos en una barra fija al
+    principio del scroller — el preview es el instrumento de la pestaña y no
+    puede irse con el scroll de los ajustes que gobierna.
+
+    Title y Tagline eran el mismo juego de controles escrito dos veces; ahora es
+    un `IntroTextBlock` usado dos veces, con el marco del título entrando por
+    `extra` y la línea de cierre del tagline por `hint`. Cada uno lleva su
+    interruptor en la cabecera de su tarjeta y su cuerpo dentro de un
+    `FeatureGate`: apagados dejaban a la vista unos diez controles que no
+    cambiaban nada en pantalla. La ventana entera, igual. El tooltip que explicaba
+    que la ventana **cubre** la cabeza del tema y no le añade duración no se
+    perdió al subir el interruptor: pasa a decirse junto al slider de duración,
+    que es donde surge la pregunta.
+
+    La auditoría completa, con lo medido y lo que se deja sin tocar, en
+    [docs/audits/AUDITORIA_VENTANA_INTRO_2026-09-30.md](docs/audits/AUDITORIA_VENTANA_INTRO_2026-09-30.md).
+    Hallazgo principal: de las 58 claves de `IntroSequenceSettings`, **ninguna**
+    está muerta — todas tienen consumidor en el render y control en la UI. El
+    problema nunca fue el exceso de ajustes, fue el orden.
+
+- **Flechas «anterior / siguiente» en los selectores.** Comparar dos slots
+  seguidos —el gesto normal al calibrar— costaba dos viajes por un desplegable
+  que con el tope de 120 slots de spectrum es legítimamente largo. `Select`
+  acepta ahora `steppers`, y entonces se flanquea con `◀ ▶` que saltan al vecino
+  sin abrir la lista. Se saltan los `disabled` y **no dan la vuelta** en los
+  extremos: con 120 slots, un «siguiente» que salte al primero es un brinco por
+  todo el banco, que no es lo que espera la mano. Al estar en el primitivo entra
+  de golpe en los 15 sitios donde se usa. La búsqueda del vecino vive aparte en
+  `src/ui/lib/stepOption.ts` para que el suite de Node la cubra, ya que no hay
+  harness de DOM en el repo.
+
 ### Añadido
 
 - **Ver la intro y el ending sin tocar el reloj del tema, y pausarlos.**

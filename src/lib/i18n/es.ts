@@ -181,6 +181,8 @@ export const es: Record<TranslationKey, string> = {
 	label_move_down: 'Mover Abajo',
 	label_reorder_layer: 'Arrastrar para Reordenar',
 	label_shuffle_order: 'Orden Aleatorio',
+	label_prev_option: 'Anterior',
+	label_next_option: 'Siguiente',
 	label_previous_image: 'Anterior',
 	label_next_image: 'Siguiente',
 	hint_shuffle_order: 'Reordenar el pool cambia el orden real del slideshow.',
@@ -478,8 +480,7 @@ export const es: Record<TranslationKey, string> = {
 	intro_outro_title: 'Ending generado',
 	intro_outro_hint:
 		'La misma composición sobre los últimos segundos; por defecto cierra con las imágenes con las que termina el set.',
-	intro_enabled: 'Generarlo',
-	intro_enabled_tooltip:
+	intro_duration_hint:
 		'Cubre el principio (o el final) de la línea de tiempo: no añade duración, así que el audio no se desfasa.',
 	intro_section_timing: 'Tiempos',
 	image_points_title: 'Puntos de la imagen',

@@ -1,26 +1,13 @@
-import { Clapperboard } from 'lucide-react';
-import { EditorTabHeader, EditorTabLayout, ICON_SIZE, UI_COLORS } from '@/ui';
-import { useT } from '@/lib/i18n';
 import { IntroSequenceTab } from '@/features/intro/ui';
 
+/**
+ * The intro / ending tab.
+ *
+ * A pass-through on purpose: the tab's header carries the master switch of the
+ * window you are looking at, and which window that is only the feature knows —
+ * so the feature owns the whole `EditorTabLayout`, header included. Wrapping it
+ * here again bought a second title row and a decorative icon above it.
+ */
 export default function IntroTab() {
-	const t = useT();
-
-	return (
-		<EditorTabLayout
-			header={
-				<EditorTabHeader
-					title={t.tab_intro}
-					subtitle={t.intro_subtitle}
-				>
-					<Clapperboard
-						size={ICON_SIZE.sm}
-						style={{ color: UI_COLORS.accent }}
-					/>
-				</EditorTabHeader>
-			}
-		>
-			<IntroSequenceTab />
-		</EditorTabLayout>
-	);
+	return <IntroSequenceTab />;
 }

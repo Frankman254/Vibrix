@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { UI_COLORS, ICON_SIZE, TYPE } from './tokens';
 import { transition } from './tokens/motion';
 import { cn } from './lib/cn';
+import { stepOption } from './lib/stepOption';
 import { FOCUS_RING } from './lib/focusRing';
 import FloatingPanel from './FloatingPanel';
 
@@ -30,6 +31,20 @@ type SelectProps<T extends string | number> = {
 	ariaLabel?: string;
 	className?: string;
 	style?: CSSProperties;
+	/**
+	 * Flank the trigger with «previous / next» arrows that step to the adjacent
+	 * option without opening the list.
+	 *
+	 * For a bank of 60-120 saved slots the list is legitimately long, and
+	 * comparing two neighbours — the normal gesture when calibrating — costs two
+	 * trips through it. The arrows skip `disabled` options and stop at the ends
+	 * instead of wrapping: wrapping would turn «next» into a jump across the
+	 * whole bank, which is never what the hand expects.
+	 */
+	steppers?: boolean;
+	/** Accessible names for the arrows. English defaults, like `placeholder`. */
+	prevLabel?: string;
+	nextLabel?: string;
 };
 
 const SIZE_SPEC: Record<SelectSize, { h: number; fs: number }> = {
@@ -55,15 +70,21 @@ export default function Select<T extends string | number>({
 	disabled = false,
 	ariaLabel,
 	className,
-	style
+	style,
+	steppers = false,
+	prevLabel = 'Previous',
+	nextLabel = 'Next'
 }: SelectProps<T>) {
 	const [open, setOpen] = useState(false);
 	const rootRef = useRef<HTMLDivElement | null>(null);
 	const spec =
 		density === 'compact' ? COMPACT_SIZE_SPEC[size] : SIZE_SPEC[size];
 	const current = options.find(o => o.value === value);
+	// The neighbours the arrows would land on, or `undefined` at an end.
+	const prev = steppers ? stepOption(options, value, -1) : undefined;
+	const next = steppers ? stepOption(options, value, 1) : undefined;
 
-	return (
+	const trigger = (
 		<div
 			ref={rootRef}
 			className={cn('relative', full && 'w-full', className)}
@@ -211,5 +232,69 @@ export default function Select<T extends string | number>({
 				</div>
 			</FloatingPanel>
 		</div>
+	);
+
+	if (!steppers) return trigger;
+
+	return (
+		<div className={cn('flex items-center gap-1', full && 'w-full')}>
+			<StepperButton
+				label={prevLabel}
+				height={spec.h}
+				disabled={disabled || !prev}
+				onClick={() => prev && onChange(prev.value)}
+			>
+				<ChevronLeft size={ICON_SIZE.sm} />
+			</StepperButton>
+			{trigger}
+			<StepperButton
+				label={nextLabel}
+				height={spec.h}
+				disabled={disabled || !next}
+				onClick={() => next && onChange(next.value)}
+			>
+				<ChevronRight size={ICON_SIZE.sm} />
+			</StepperButton>
+		</div>
+	);
+}
+
+/** One arrow. Square, the same height as the trigger it flanks. */
+function StepperButton({
+	label,
+	height,
+	disabled,
+	onClick,
+	children
+}: {
+	label: string;
+	height: number;
+	disabled: boolean;
+	onClick: () => void;
+	children: ReactNode;
+}) {
+	return (
+		<button
+			type="button"
+			aria-label={label}
+			title={label}
+			disabled={disabled}
+			onClick={onClick}
+			className={cn(
+				'inline-flex shrink-0 items-center justify-center disabled:cursor-not-allowed disabled:opacity-30',
+				FOCUS_RING
+			)}
+			style={{
+				width: height,
+				height,
+				background: UI_COLORS.raisedGradient,
+				color: UI_COLORS.fgMute,
+				border: `1px solid ${UI_COLORS.border}`,
+				borderRadius: 'var(--editor-radius-md)',
+				transition: transition('background, color, border-color')
+			}}
+		>
+			{children}
+		</button>
 	);
 }

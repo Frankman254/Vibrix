@@ -37,11 +37,12 @@
 
 ## Guides & audits
 
-| Doc                                                                                      | Topic                                        |
-| ---------------------------------------------------------------------------------------- | -------------------------------------------- |
-| [audits/AUDITORIA_CONGELACION_2026-09-30.md](audits/AUDITORIA_CONGELACION_2026-09-30.md) | Auditoría de congelación + traspaso a Lyrixa |
-| [guides/OBS_PRESENTATION_MODE.md](guides/OBS_PRESENTATION_MODE.md)                       | OBS workflow                                 |
-| [performance/PERFORMANCE_BASELINE.md](performance/PERFORMANCE_BASELINE.md)               | FPS measurement methodology                  |
+| Doc                                                                                          | Topic                                           |
+| -------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| [audits/AUDITORIA_CONGELACION_2026-09-30.md](audits/AUDITORIA_CONGELACION_2026-09-30.md)     | Auditoría de congelación + traspaso a Lyrixa    |
+| [audits/AUDITORIA_VENTANA_INTRO_2026-09-30.md](audits/AUDITORIA_VENTANA_INTRO_2026-09-30.md) | Auditoría y pulido de la ventana Intro & ending |
+| [guides/OBS_PRESENTATION_MODE.md](guides/OBS_PRESENTATION_MODE.md)                           | OBS workflow                                    |
+| [performance/PERFORMANCE_BASELINE.md](performance/PERFORMANCE_BASELINE.md)                   | FPS measurement methodology                     |
 
 ## Onboarding (developer)
 

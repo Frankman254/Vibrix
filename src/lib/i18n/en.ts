@@ -177,6 +177,8 @@ export const en = {
 	label_move_down: 'Move Down',
 	label_reorder_layer: 'Drag to Reorder',
 	label_shuffle_order: 'Shuffle Order',
+	label_prev_option: 'Previous',
+	label_next_option: 'Next',
 	label_previous_image: 'Previous',
 	label_next_image: 'Next',
 	hint_shuffle_order:
@@ -475,8 +477,7 @@ export const en = {
 	intro_outro_title: 'Generated ending',
 	intro_outro_hint:
 		'The same composition over the last seconds, by default closing on the images the set ends with.',
-	intro_enabled: 'Generate it',
-	intro_enabled_tooltip:
+	intro_duration_hint:
 		'It covers the head (or the tail) of the timeline — it does not add time, so the audio stays in sync.',
 	intro_section_timing: 'Timing',
 	image_points_title: 'Image points',

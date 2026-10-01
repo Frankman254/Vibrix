@@ -10,18 +10,24 @@
  * whatever is learned on the intro applies to the ending.
  */
 import { useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Pause, Play, Square } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import {
 	Button,
 	Caption,
+	EditorTabHeader,
+	EditorTabLayout,
+	FeatureGate,
 	FieldLabel,
 	SectionCard,
 	SegmentedControl,
 	Select,
 	TabFade,
 	Tabs,
-	TextInput
+	TextInput,
+	ToggleSwitch,
+	UI_COLORS
 } from '@/ui';
 import { useTabViewState } from '@/hooks/useTabViewState';
 import { useWallpaperStore } from '@/store/wallpaperStore';
@@ -29,6 +35,7 @@ import { useT } from '@/lib/i18n';
 import ToggleControl from '@/editor/ToggleControl';
 import AdaptiveColorInput from '@/editor/AdaptiveColorInput';
 import ConnectedColorInput from '@/editor/ConnectedColorInput';
+import CollapsibleSection from '@/editor/CollapsibleSection';
 import ProfileSlotsEditor from '@/editor/ProfileSlotsEditor';
 import { MotionSlider as Slider } from '@/editor/MotionSharedControls';
 import { formatDecimal } from '@/editor/motionTabUtils';
@@ -42,6 +49,7 @@ import {
 	TRACK_TITLE_FONT_LABELS
 } from '@/lib/canvasText/trackTitleOptions';
 import type {
+	ColorSourceMode,
 	ProfileSlot,
 	SpectrumProfileSettings,
 	IntroDivisionPattern,
@@ -164,6 +172,7 @@ function IntroSpectrumBankControls({
 	options: { value: string; label: string }[];
 	emptyLabel: string;
 }) {
+	const t = useT();
 	return (
 		<div className="flex flex-col gap-2">
 			<ToggleControl
@@ -186,6 +195,9 @@ function IntroSpectrumBankControls({
 					value={slotId ?? ''}
 					onChange={value => onSlotChange(value || null)}
 					ariaLabel={label}
+					steppers
+					prevLabel={t.label_prev_option}
+					nextLabel={t.label_next_option}
 					full
 					options={options}
 				/>
@@ -206,6 +218,167 @@ function IntroSpectrumBankControls({
  * image grid, which is long enough to deserve its own fold.
  */
 type IntroWindowView = 'timing' | 'montage' | 'text' | 'logo' | 'spectrum';
+
+/**
+ * One text block of the window.
+ *
+ * The title and the tagline are the same instrument twice — toggle, text, font,
+ * style source, size, reveal, colour — so they are one component used twice
+ * instead of two copies that drift apart. What genuinely differs comes in from
+ * outside: the title's frame through `extra`, the tagline's closing line through
+ * `hint`.
+ *
+ * Spelled out prop by prop rather than keyed by a `'title' | 'tagline'` prefix:
+ * the `IntroSequenceSettings` keys stay greppable and the patch stays typed
+ * without a single cast.
+ */
+function IntroTextBlock({
+	title,
+	enabled,
+	onEnabledChange,
+	text,
+	onTextChange,
+	placeholder,
+	textAriaLabel,
+	fontStyle,
+	onFontStyleChange,
+	styleSource,
+	onStyleSourceChange,
+	sizeLabel,
+	size,
+	onSizeChange,
+	sizeRange,
+	sizeStep,
+	sizeDefault,
+	reveal,
+	onRevealChange,
+	colorLabel,
+	colorSource,
+	onColorSourceChange,
+	color,
+	onColorChange,
+	hint,
+	extra
+}: {
+	title: string;
+	enabled: boolean;
+	onEnabledChange: (next: boolean) => void;
+	text: string;
+	onTextChange: (next: string) => void;
+	placeholder: string;
+	textAriaLabel: string;
+	fontStyle: TrackTitleFontStyle;
+	onFontStyleChange: (next: TrackTitleFontStyle) => void;
+	styleSource: IntroTextStyleSource;
+	onStyleSourceChange: (next: IntroTextStyleSource) => void;
+	sizeLabel: string;
+	size: number;
+	onSizeChange: (next: number) => void;
+	sizeRange: { readonly min: number; readonly max: number };
+	sizeStep: number;
+	sizeDefault: number;
+	reveal: IntroTextReveal;
+	onRevealChange: (next: IntroTextReveal) => void;
+	colorLabel: string;
+	colorSource: ColorSourceMode;
+	onColorSourceChange: (next: ColorSourceMode) => void;
+	color: string;
+	onColorChange: (next: string) => void;
+	hint?: string;
+	/** Extra controls between the reveal and the colour — the title's frame. */
+	extra?: ReactNode;
+}) {
+	const t = useT();
+	const revealOptions: { value: IntroTextReveal; label: string }[] = [
+		{ value: 'typewriter', label: t.intro_reveal_typewriter },
+		{ value: 'fade', label: t.intro_reveal_fade },
+		{ value: 'rise', label: t.intro_reveal_rise },
+		{ value: 'pop', label: t.intro_reveal_pop },
+		{ value: 'wipe', label: t.intro_reveal_wipe }
+	];
+	return (
+		<SectionCard
+			title={title}
+			density="compact"
+			action={
+				<ToggleSwitch
+					checked={enabled}
+					onChange={onEnabledChange}
+					size="sm"
+					ariaLabel={title}
+				/>
+			}
+		>
+			{/* Switched off, the block shows the switch and a line — never ten
+			    stale controls that change nothing on screen. */}
+			<FeatureGate enabled={enabled} hint={t.hint_enable_to_configure}>
+				<div className="flex flex-col gap-2">
+					<TextInput
+						value={text}
+						onChange={event => onTextChange(event.target.value)}
+						placeholder={placeholder}
+						aria-label={textAriaLabel}
+						size="sm"
+						full
+					/>
+					<Select<TrackTitleFontStyle>
+						value={fontStyle}
+						onChange={onFontStyleChange}
+						ariaLabel={t.intro_font}
+						steppers
+						prevLabel={t.label_prev_option}
+						nextLabel={t.label_next_option}
+						options={FONT_OPTIONS}
+						full
+						disabled={styleSource === 'track-info'}
+					/>
+					<SegmentedControl<IntroTextStyleSource>
+						value={styleSource}
+						onChange={onStyleSourceChange}
+						options={[
+							{ value: 'own', label: t.intro_text_style_own },
+							{
+								value: 'track-info',
+								label: t.intro_text_style_track_info
+							}
+						]}
+					/>
+					<Caption>{t.intro_text_style_hint}</Caption>
+					<Slider
+						label={sizeLabel}
+						value={size}
+						min={sizeRange.min}
+						max={sizeRange.max}
+						step={sizeStep}
+						onChange={onSizeChange}
+						defaultValue={sizeDefault}
+						variant="compact"
+						formatValue={formatDecimal}
+					/>
+					<Select<IntroTextReveal>
+						value={reveal}
+						onChange={onRevealChange}
+						ariaLabel={t.intro_reveal}
+						steppers
+						prevLabel={t.label_prev_option}
+						nextLabel={t.label_next_option}
+						options={revealOptions}
+						full
+					/>
+					{extra}
+					<AdaptiveColorInput
+						label={colorLabel}
+						source={colorSource}
+						onSourceChange={onColorSourceChange}
+						value={color}
+						onChange={onColorChange}
+					/>
+					{hint ? <Caption>{hint}</Caption> : null}
+				</div>
+			</FeatureGate>
+		</SectionCard>
+	);
+}
 
 function isIntroWindowView(value: unknown): value is IntroWindowView {
 	return (
@@ -309,50 +482,38 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 	const text = t as unknown as Record<string, string>;
 
 	const phases = resolveIntroPhases(settings);
-	const revealOptions: { value: IntroTextReveal; label: string }[] = [
-		{ value: 'typewriter', label: t.intro_reveal_typewriter },
-		{ value: 'fade', label: t.intro_reveal_fade },
-		{ value: 'rise', label: t.intro_reveal_rise },
-		{ value: 'pop', label: t.intro_reveal_pop },
-		{ value: 'wipe', label: t.intro_reveal_wipe }
-	];
 
 	return (
 		<div className="flex flex-col gap-2">
-			<SectionCard
-				title={kind === 'intro' ? t.intro_title : t.intro_outro_title}
-				subtitle={kind === 'intro' ? t.intro_hint : t.intro_outro_hint}
-				density="compact"
+			{/* The window's master switch lives in the tab header, the one
+			    sanctioned place for it, so switched off this is a line of text
+			    and not a screenful of controls that change nothing. */}
+			<FeatureGate
+				enabled={settings.enabled}
+				hint={t.hint_enable_to_configure}
 			>
-				<ToggleControl
-					label={t.intro_enabled}
-					value={settings.enabled}
-					onChange={enabled => patch({ enabled })}
-					tooltip={t.intro_enabled_tooltip}
-				/>
-			</SectionCard>
-
-			{!settings.enabled ? null : (
 				<>
-					{/* The sub-tab row is a navigation bar, not a setting: wrapping
-					    it in a titled card cost a header's worth of height on
-					    every screen and said nothing. */}
-					<SegmentedControl<IntroWindowView>
-						value={view}
-						onChange={setView}
-						options={viewOptions}
-						size="sm"
-						density="compact"
-						full
-						ariaLabel={t.intro_aria_sections}
-					/>
-
-					{/* An ACTION, not a setting, so it sits bare beside the
-					    sub-tab row instead of inside a titled card. Before this
-					    the only way to look at a window was to drag the playhead
-					    into it, so iterating on the composition cost a rewind
-					    per change. */}
-					<div className="flex flex-col gap-1">
+					{/* Navigation and transport ride together at the top of the
+					    scroller: the sub-tab row says where you are and the
+					    transport is the instrument you keep reaching for, so
+					    neither may scroll away under the settings it drives. */}
+					<div
+						className="sticky top-0 z-10 -mx-1 flex flex-col gap-1.5 px-1 pb-1.5"
+						style={{
+							background: UI_COLORS.shell,
+							backdropFilter: 'blur(6px)',
+							boxShadow: `0 6px 8px -6px ${UI_COLORS.overlayHi}`
+						}}
+					>
+						<SegmentedControl<IntroWindowView>
+							value={view}
+							onChange={setView}
+							options={viewOptions}
+							size="sm"
+							density="compact"
+							full
+							ariaLabel={t.intro_aria_sections}
+						/>
 						<div className="flex gap-1.5">
 							<Button
 								onClick={() => {
@@ -404,16 +565,20 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 								/>
 							)}
 						</div>
-						<Caption>{t.intro_preview_hint}</Caption>
 					</div>
 
-					{/* Above the sub-tabs on purpose: a quick look is the shortcut
-					    into the whole window, so it must not be buried inside
-					    one of its sections. A preset is a patch — the text, the
-					    picked images and the spectrum slots survive it. */}
-					<SectionCard
+					<Caption>{t.intro_preview_hint}</Caption>
+
+					{/* Folded by default, and it remembers: a quick look is a
+					    starting point you reach for once and then spend the
+					    session tuning, so six buttons must not hold the top of
+					    every one of the five sub-tabs open. A preset is a patch —
+					    the text, the picked images and the spectrum slots
+					    survive it. */}
+					<CollapsibleSection
 						title={t.intro_presets_title}
-						density="compact"
+						sectionId={`intro-presets-${kind}`}
+						dense
 					>
 						<div className="flex flex-col gap-1.5">
 							<div className="grid grid-cols-3 gap-1.5">
@@ -433,7 +598,7 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 							</div>
 							<Caption>{t.intro_presets_hint}</Caption>
 						</div>
-					</SectionCard>
+					</CollapsibleSection>
 
 					<TabFade tabKey={view}>
 						{view === 'timing' ? (
@@ -455,6 +620,11 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 										variant="macro"
 										formatValue={formatDecimal}
 									/>
+									{/* Said next to the duration, which is where
+									    the question comes up: the window COVERS
+									    the head (or the tail) of the timeline, it
+									    does not add to it. */}
+									<Caption>{t.intro_duration_hint}</Caption>
 									<Slider
 										label={t.intro_build_sec}
 										value={settings.buildSec}
@@ -505,6 +675,9 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 										value={settings.montage}
 										onChange={montage => patch({ montage })}
 										ariaLabel={t.intro_montage}
+										steppers
+										prevLabel={t.label_prev_option}
+										nextLabel={t.label_next_option}
 										full
 										options={[
 											{
@@ -550,6 +723,9 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 											patch({ montageMove })
 										}
 										ariaLabel={t.intro_montage_move}
+										steppers
+										prevLabel={t.label_prev_option}
+										nextLabel={t.label_next_option}
 										full
 										options={[
 											{
@@ -617,6 +793,9 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 												patch({ montageArrival })
 											}
 											ariaLabel={t.intro_montage_arrival}
+											steppers
+											prevLabel={t.label_prev_option}
+											nextLabel={t.label_next_option}
 											full
 											options={[
 												{
@@ -658,6 +837,9 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 												ariaLabel={
 													t.intro_division_pattern
 												}
+												steppers
+												prevLabel={t.label_prev_option}
+												nextLabel={t.label_next_option}
 												full
 												options={INTRO_DIVISION_PATTERNS.map(
 													value => ({
@@ -860,354 +1042,300 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 						) : null}
 
 						{view === 'text' ? (
-							<SectionCard
-								title={t.intro_section_title}
-								density="compact"
-							>
-								<div className="flex flex-col gap-2">
-									<ToggleControl
-										label={t.intro_title_enabled}
-										value={settings.titleEnabled}
-										onChange={titleEnabled =>
-											patch({ titleEnabled })
-										}
-									/>
-									<TextInput
-										value={settings.titleText}
-										onChange={event =>
-											patch({
-												titleText: event.target.value
-											})
-										}
-										placeholder={t.intro_title_placeholder}
-										aria-label={t.intro_title_text}
-										size="sm"
-										full
-									/>
-									<Select<TrackTitleFontStyle>
-										value={settings.titleFontStyle}
-										onChange={titleFontStyle =>
-											patch({ titleFontStyle })
-										}
-										ariaLabel={t.intro_font}
-										options={FONT_OPTIONS}
-										full
-										disabled={
-											settings.titleTextStyleSource ===
-											'track-info'
-										}
-									/>
-									<SegmentedControl<IntroTextStyleSource>
-										value={settings.titleTextStyleSource}
-										onChange={titleTextStyleSource =>
-											patch({ titleTextStyleSource })
-										}
-										options={[
-											{
-												value: 'own',
-												label: t.intro_text_style_own
-											},
-											{
-												value: 'track-info',
-												label: t.intro_text_style_track_info
-											}
-										]}
-									/>
-									<Caption>{t.intro_text_style_hint}</Caption>
-									<Slider
-										label={t.intro_title_size}
-										value={settings.titleSizePct}
-										min={INTRO_TITLE_SIZE_RANGE.min}
-										max={INTRO_TITLE_SIZE_RANGE.max}
-										step={0.5}
-										onChange={titleSizePct =>
-											patch({ titleSizePct })
-										}
-										defaultValue={factory.titleSizePct}
-										variant="compact"
-										formatValue={formatDecimal}
-									/>
-									<Select<IntroTextReveal>
-										value={settings.titleReveal}
-										onChange={titleReveal =>
-											patch({ titleReveal })
-										}
-										ariaLabel={t.intro_reveal}
-										options={revealOptions}
-										full
-									/>
-									<ToggleControl
-										label={t.intro_title_frame}
-										value={settings.titleFrameEnabled}
-										onChange={titleFrameEnabled =>
-											patch({ titleFrameEnabled })
-										}
-										tooltip={t.intro_title_frame_tooltip}
-									/>
-									{settings.titleFrameEnabled ? (
+							<>
+								<IntroTextBlock
+									title={t.intro_section_title}
+									enabled={settings.titleEnabled}
+									onEnabledChange={titleEnabled =>
+										patch({ titleEnabled })
+									}
+									text={settings.titleText}
+									onTextChange={titleText =>
+										patch({ titleText })
+									}
+									placeholder={t.intro_title_placeholder}
+									textAriaLabel={t.intro_title_text}
+									fontStyle={settings.titleFontStyle}
+									onFontStyleChange={titleFontStyle =>
+										patch({ titleFontStyle })
+									}
+									styleSource={settings.titleTextStyleSource}
+									onStyleSourceChange={titleTextStyleSource =>
+										patch({ titleTextStyleSource })
+									}
+									sizeLabel={t.intro_title_size}
+									size={settings.titleSizePct}
+									onSizeChange={titleSizePct =>
+										patch({ titleSizePct })
+									}
+									sizeRange={INTRO_TITLE_SIZE_RANGE}
+									sizeStep={0.5}
+									sizeDefault={factory.titleSizePct}
+									reveal={settings.titleReveal}
+									onRevealChange={titleReveal =>
+										patch({ titleReveal })
+									}
+									colorLabel={t.intro_title_color}
+									colorSource={settings.titleColorSource}
+									onColorSourceChange={titleColorSource =>
+										patch({ titleColorSource })
+									}
+									color={settings.titleColor}
+									onColorChange={titleColor =>
+										patch({ titleColor })
+									}
+									extra={
 										<>
-											<Select<IntroTitleFrameShape>
-												value={settings.titleFrameShape}
-												onChange={titleFrameShape =>
-													patch({ titleFrameShape })
-												}
-												ariaLabel={t.intro_frame_shape}
-												full
-												options={INTRO_TITLE_FRAME_SHAPES.map(
-													value => ({
-														value,
-														label: t[
-															`intro_frame_shape_${value}`
-														]
-													})
-												)}
-											/>
-											<SegmentedControl<IntroTitleFrameStyle>
-												value={settings.titleFrameStyle}
-												onChange={titleFrameStyle =>
-													patch({ titleFrameStyle })
-												}
-												options={[
-													{
-														value: 'outline',
-														label: t.intro_frame_style_outline
-													},
-													{
-														value: 'filled',
-														label: t.intro_frame_style_filled
-													},
-													{
-														value: 'both',
-														label: t.intro_frame_style_both
-													}
-												]}
-											/>
-											<Select<IntroTitleFrameAnimation>
+											<ToggleControl
+												label={t.intro_title_frame}
 												value={
-													settings.titleFrameAnimation
+													settings.titleFrameEnabled
 												}
-												onChange={titleFrameAnimation =>
-													patch({
-														titleFrameAnimation
-													})
+												onChange={titleFrameEnabled =>
+													patch({ titleFrameEnabled })
 												}
-												ariaLabel={
-													t.intro_frame_animation
-												}
-												full
-												options={[
-													{
-														value: 'draw',
-														label: t.intro_frame_anim_draw
-													},
-													{
-														value: 'expand',
-														label: t.intro_frame_anim_expand
-													},
-													{
-														value: 'grow',
-														label: t.intro_frame_anim_grow
-													},
-													{
-														value: 'fade',
-														label: t.intro_frame_anim_fade
-													},
-													{
-														value: 'sweep',
-														label: t.intro_frame_anim_sweep
-													}
-												]}
-											/>
-											<Slider
-												label={t.intro_frame_thickness}
-												value={
-													settings.titleFrameThickness
-												}
-												min={
-													INTRO_FRAME_THICKNESS_RANGE.min
-												}
-												max={
-													INTRO_FRAME_THICKNESS_RANGE.max
-												}
-												step={0.05}
-												onChange={titleFrameThickness =>
-													patch({
-														titleFrameThickness
-													})
-												}
-												defaultValue={
-													factory.titleFrameThickness
-												}
-												variant="compact"
-												formatValue={value =>
-													`${formatDecimal(value)}×`
+												tooltip={
+													t.intro_title_frame_tooltip
 												}
 											/>
-											<AdaptiveColorInput
-												label={t.intro_frame_color}
-												source={
-													settings.titleFrameColorSource
-												}
-												onSourceChange={titleFrameColorSource =>
-													patch({
-														titleFrameColorSource
-													})
-												}
-												value={settings.titleFrameColor}
-												onChange={titleFrameColor =>
-													patch({ titleFrameColor })
-												}
-											/>
-											<SegmentedControl<IntroFillMode>
-												value={
-													settings.titleFrameFillMode
-												}
-												onChange={titleFrameFillMode =>
-													patch({
-														titleFrameFillMode
-													})
-												}
-												options={[
-													{
-														value: 'solid',
-														label: t.intro_fill_solid
-													},
-													{
-														value: 'gradient',
-														label: t.intro_fill_gradient
-													},
-													{
-														value: 'rainbow',
-														label: t.intro_fill_rainbow
-													}
-												]}
-											/>
-											{settings.titleFrameFillMode ===
-											'gradient' ? (
-												<ConnectedColorInput
-													label={
-														t.intro_frame_color_secondary
-													}
-													value={
-														settings.titleFrameColorSecondary
-													}
-													onChange={titleFrameColorSecondary =>
-														patch({
-															titleFrameColorSecondary
-														})
-													}
-												/>
+											{settings.titleFrameEnabled ? (
+												<>
+													<Select<IntroTitleFrameShape>
+														value={
+															settings.titleFrameShape
+														}
+														onChange={titleFrameShape =>
+															patch({
+																titleFrameShape
+															})
+														}
+														ariaLabel={
+															t.intro_frame_shape
+														}
+														steppers
+														prevLabel={
+															t.label_prev_option
+														}
+														nextLabel={
+															t.label_next_option
+														}
+														full
+														options={INTRO_TITLE_FRAME_SHAPES.map(
+															value => ({
+																value,
+																label: t[
+																	`intro_frame_shape_${value}`
+																]
+															})
+														)}
+													/>
+													<SegmentedControl<IntroTitleFrameStyle>
+														value={
+															settings.titleFrameStyle
+														}
+														onChange={titleFrameStyle =>
+															patch({
+																titleFrameStyle
+															})
+														}
+														options={[
+															{
+																value: 'outline',
+																label: t.intro_frame_style_outline
+															},
+															{
+																value: 'filled',
+																label: t.intro_frame_style_filled
+															},
+															{
+																value: 'both',
+																label: t.intro_frame_style_both
+															}
+														]}
+													/>
+													<Select<IntroTitleFrameAnimation>
+														value={
+															settings.titleFrameAnimation
+														}
+														onChange={titleFrameAnimation =>
+															patch({
+																titleFrameAnimation
+															})
+														}
+														ariaLabel={
+															t.intro_frame_animation
+														}
+														steppers
+														prevLabel={
+															t.label_prev_option
+														}
+														nextLabel={
+															t.label_next_option
+														}
+														full
+														options={[
+															{
+																value: 'draw',
+																label: t.intro_frame_anim_draw
+															},
+															{
+																value: 'expand',
+																label: t.intro_frame_anim_expand
+															},
+															{
+																value: 'grow',
+																label: t.intro_frame_anim_grow
+															},
+															{
+																value: 'fade',
+																label: t.intro_frame_anim_fade
+															},
+															{
+																value: 'sweep',
+																label: t.intro_frame_anim_sweep
+															}
+														]}
+													/>
+													<Slider
+														label={
+															t.intro_frame_thickness
+														}
+														value={
+															settings.titleFrameThickness
+														}
+														min={
+															INTRO_FRAME_THICKNESS_RANGE.min
+														}
+														max={
+															INTRO_FRAME_THICKNESS_RANGE.max
+														}
+														step={0.05}
+														onChange={titleFrameThickness =>
+															patch({
+																titleFrameThickness
+															})
+														}
+														defaultValue={
+															factory.titleFrameThickness
+														}
+														variant="compact"
+														formatValue={value =>
+															`${formatDecimal(value)}×`
+														}
+													/>
+													<AdaptiveColorInput
+														label={
+															t.intro_frame_color
+														}
+														source={
+															settings.titleFrameColorSource
+														}
+														onSourceChange={titleFrameColorSource =>
+															patch({
+																titleFrameColorSource
+															})
+														}
+														value={
+															settings.titleFrameColor
+														}
+														onChange={titleFrameColor =>
+															patch({
+																titleFrameColor
+															})
+														}
+													/>
+													<SegmentedControl<IntroFillMode>
+														value={
+															settings.titleFrameFillMode
+														}
+														onChange={titleFrameFillMode =>
+															patch({
+																titleFrameFillMode
+															})
+														}
+														options={[
+															{
+																value: 'solid',
+																label: t.intro_fill_solid
+															},
+															{
+																value: 'gradient',
+																label: t.intro_fill_gradient
+															},
+															{
+																value: 'rainbow',
+																label: t.intro_fill_rainbow
+															}
+														]}
+													/>
+													{settings.titleFrameFillMode ===
+													'gradient' ? (
+														<ConnectedColorInput
+															label={
+																t.intro_frame_color_secondary
+															}
+															value={
+																settings.titleFrameColorSecondary
+															}
+															onChange={titleFrameColorSecondary =>
+																patch({
+																	titleFrameColorSecondary
+																})
+															}
+														/>
+													) : null}
+												</>
 											) : null}
 										</>
-									) : null}
-									<AdaptiveColorInput
-										label={t.intro_title_color}
-										source={settings.titleColorSource}
-										onSourceChange={titleColorSource =>
-											patch({ titleColorSource })
-										}
-										value={settings.titleColor}
-										onChange={titleColor =>
-											patch({ titleColor })
-										}
-									/>
-								</div>
-							</SectionCard>
-						) : null}
+									}
+								/>
 
-						{view === 'text' ? (
-							<SectionCard
-								title={t.intro_section_tagline}
-								density="compact"
-							>
-								<div className="flex flex-col gap-2">
-									<ToggleControl
-										label={t.intro_tagline_enabled}
-										value={settings.taglineEnabled}
-										onChange={taglineEnabled =>
-											patch({ taglineEnabled })
-										}
-									/>
-									<TextInput
-										value={settings.taglineText}
-										onChange={event =>
-											patch({
-												taglineText: event.target.value
-											})
-										}
-										placeholder={
-											t.intro_tagline_placeholder
-										}
-										aria-label={t.intro_tagline_text}
-										size="sm"
-										full
-									/>
-									<Select<TrackTitleFontStyle>
-										value={settings.taglineFontStyle}
-										onChange={taglineFontStyle =>
-											patch({ taglineFontStyle })
-										}
-										ariaLabel={t.intro_font}
-										options={FONT_OPTIONS}
-										full
-										disabled={
-											settings.taglineTextStyleSource ===
-											'track-info'
-										}
-									/>
-									<SegmentedControl<IntroTextStyleSource>
-										value={settings.taglineTextStyleSource}
-										onChange={taglineTextStyleSource =>
-											patch({ taglineTextStyleSource })
-										}
-										options={[
-											{
-												value: 'own',
-												label: t.intro_text_style_own
-											},
-											{
-												value: 'track-info',
-												label: t.intro_text_style_track_info
-											}
-										]}
-									/>
-									<Caption>{t.intro_text_style_hint}</Caption>
-									<Slider
-										label={t.intro_tagline_size}
-										value={settings.taglineSizePct}
-										min={INTRO_TAGLINE_SIZE_RANGE.min}
-										max={INTRO_TAGLINE_SIZE_RANGE.max}
-										step={0.25}
-										onChange={taglineSizePct =>
-											patch({ taglineSizePct })
-										}
-										defaultValue={factory.taglineSizePct}
-										variant="compact"
-										formatValue={formatDecimal}
-									/>
-									<Select<IntroTextReveal>
-										value={settings.taglineReveal}
-										onChange={taglineReveal =>
-											patch({ taglineReveal })
-										}
-										ariaLabel={t.intro_reveal}
-										options={revealOptions}
-										full
-									/>
-									<AdaptiveColorInput
-										label={t.intro_tagline_color}
-										source={settings.taglineColorSource}
-										onSourceChange={taglineColorSource =>
-											patch({ taglineColorSource })
-										}
-										value={settings.taglineColor}
-										onChange={taglineColor =>
-											patch({ taglineColor })
-										}
-									/>
-									<Caption>{t.intro_tagline_hint}</Caption>
-								</div>
-							</SectionCard>
+								<IntroTextBlock
+									title={t.intro_section_tagline}
+									enabled={settings.taglineEnabled}
+									onEnabledChange={taglineEnabled =>
+										patch({ taglineEnabled })
+									}
+									text={settings.taglineText}
+									onTextChange={taglineText =>
+										patch({ taglineText })
+									}
+									placeholder={t.intro_tagline_placeholder}
+									textAriaLabel={t.intro_tagline_text}
+									fontStyle={settings.taglineFontStyle}
+									onFontStyleChange={taglineFontStyle =>
+										patch({ taglineFontStyle })
+									}
+									styleSource={
+										settings.taglineTextStyleSource
+									}
+									onStyleSourceChange={taglineTextStyleSource =>
+										patch({ taglineTextStyleSource })
+									}
+									sizeLabel={t.intro_tagline_size}
+									size={settings.taglineSizePct}
+									onSizeChange={taglineSizePct =>
+										patch({ taglineSizePct })
+									}
+									sizeRange={INTRO_TAGLINE_SIZE_RANGE}
+									sizeStep={0.25}
+									sizeDefault={factory.taglineSizePct}
+									reveal={settings.taglineReveal}
+									onRevealChange={taglineReveal =>
+										patch({ taglineReveal })
+									}
+									colorLabel={t.intro_tagline_color}
+									colorSource={settings.taglineColorSource}
+									onColorSourceChange={taglineColorSource =>
+										patch({ taglineColorSource })
+									}
+									color={settings.taglineColor}
+									onColorChange={taglineColor =>
+										patch({ taglineColor })
+									}
+									hint={t.intro_tagline_hint}
+								/>
+							</>
 						) : null}
 
 						{view === 'logo' ? (
@@ -1461,7 +1589,7 @@ function IntroWindowEditor({ kind }: { kind: IntroSequenceKind }) {
 						) : null}
 					</TabFade>
 				</>
-			)}
+			</FeatureGate>
 		</div>
 	);
 }
@@ -1489,6 +1617,7 @@ function IntroSlotsSection() {
 		}))
 	);
 	const activeSetlist = setlists.find(item => item.id === activeSetlistId);
+	const filledCount = slots.filter(slot => slot.values).length;
 	const slotOptions = useMemo(
 		() => [
 			{ value: '', label: t.intro_slots_setlist_none },
@@ -1499,8 +1628,17 @@ function IntroSlotsSection() {
 		[slots, t.intro_slots_setlist_none]
 	);
 
+	// Folded by default: the bank is where you GO BACK to a look, not where you
+	// start one, so an empty eight-slot grid must not be the first thing the tab
+	// shows. The open state is remembered, so anyone who lives in the bank keeps
+	// it open.
 	return (
-		<SectionCard title={t.intro_slots_title} density="compact">
+		<CollapsibleSection
+			title={t.intro_slots_title}
+			sectionId="intro-slots"
+			badge={filledCount > 0 ? String(filledCount) : undefined}
+			dense
+		>
 			<div className="flex flex-col gap-2">
 				<ProfileSlotsEditor
 					title=""
@@ -1529,6 +1667,9 @@ function IntroSlotsSection() {
 								)
 							}
 							ariaLabel={t.intro_slots_setlist_label}
+							steppers
+							prevLabel={t.label_prev_option}
+							nextLabel={t.label_next_option}
 							options={slotOptions}
 							full
 						/>
@@ -1543,28 +1684,57 @@ function IntroSlotsSection() {
 					<Caption>{t.intro_slots_setlist_empty}</Caption>
 				)}
 			</div>
-		</SectionCard>
+		</CollapsibleSection>
 	);
 }
 
+/**
+ * The tab, on the canonical scaffold.
+ *
+ * The window picker lives in the header beside the master switch because the two
+ * belong together: the switch always governs the window you are looking at, and
+ * there is exactly one of it on screen. Before this the title row said nothing,
+ * the switch sat loose in the body under a second title, and the sub-tab row —
+ * the thing you actually steer with — started 86% of the way down a 768 px
+ * window, with the first setting below the fold.
+ */
 export default function IntroSequenceTab() {
 	const t = useT();
 	const [kind, setKind] = useState<IntroSequenceKind>('intro');
+	const enabled = useWallpaperStore(s =>
+		kind === 'intro' ? s.introSequence.enabled : s.outroSequence.enabled
+	);
+	const setIntroSequence = useWallpaperStore(s => s.setIntroSequence);
 
 	return (
-		<div className="flex flex-col gap-2">
-			<Tabs<IntroSequenceKind>
-				items={[
-					{ id: 'intro', label: t.intro_tab_intro },
-					{ id: 'outro', label: t.intro_tab_outro }
-				]}
-				value={kind}
-				onChange={setKind}
-				size="sm"
-				ariaLabel={t.tab_intro}
-			/>
-			<IntroSlotsSection />
+		<EditorTabLayout
+			header={
+				<EditorTabHeader
+					title={t.tab_intro}
+					subtitle={
+						kind === 'intro' ? t.intro_hint : t.intro_outro_hint
+					}
+					enabled={enabled}
+					onToggle={next => setIntroSequence(kind, { enabled: next })}
+					switchAriaLabel={
+						kind === 'intro' ? t.intro_title : t.intro_outro_title
+					}
+				>
+					<Tabs<IntroSequenceKind>
+						items={[
+							{ id: 'intro', label: t.intro_tab_intro },
+							{ id: 'outro', label: t.intro_tab_outro }
+						]}
+						value={kind}
+						onChange={setKind}
+						size="sm"
+						ariaLabel={t.tab_intro}
+					/>
+				</EditorTabHeader>
+			}
+			savedProfiles={<IntroSlotsSection />}
+		>
 			<IntroWindowEditor kind={kind} />
-		</div>
+		</EditorTabLayout>
 	);
 }
