@@ -11,6 +11,7 @@ import {
 } from '@/features/spectrum/domain/spectrumCameraSplit';
 import type { RenderFrameContext } from '../renderFrameContext';
 import type { RenderSubsystem } from '../renderSubsystem';
+import { drawFrameTile } from './frameTile';
 
 type ScratchSurface = {
 	canvas: HTMLCanvasElement;
@@ -74,7 +75,9 @@ function makeAudioLayerSubsystem(
 	return {
 		id,
 		render(ctx: RenderFrameContext) {
-			if (!ctx.audio) return;
+			// Captured so the narrowing survives into the tile callback.
+			const audio = ctx.audio;
+			if (!audio) return;
 			const target = ctx.canvas.getContext('2d');
 			if (!target) return;
 
@@ -94,32 +97,32 @@ function makeAudioLayerSubsystem(
 					ctx.resolution.width,
 					ctx.resolution.height
 				);
-				surface.ctx.clearRect(
-					0,
-					0,
-					surface.canvas.width,
-					surface.canvas.height
-				);
-				renderAudioLayerFrame({
-					ctx: surface.ctx,
-					canvas: surface.canvas,
-					layer,
-					state: ctx.state,
-					audio: ctx.audio,
-					dt,
-					timeMs: ctx.timeMs,
-					palette: ctx.palette,
-					trackTitle: ctx.trackTitle,
-					trackCurrentTime: ctx.trackCurrentTime,
-					trackDuration: ctx.trackDuration,
-					frameState: surface.frameState,
-					spectrumPartition: partition,
-					logoScope: ctx.scope?.logo,
-					spectrumScope: ctx.scope?.spectrum,
-					flashEdge: ctx.scope?.flashEdge,
-					trackTitleScope: ctx.scope?.trackTitle
+				// The tile rule (`frameTile`): this scratch is the size of the
+				// whole frame, so it is painted in the output's camera space
+				// and composited with that space cancelled. Blitting it moved
+				// instead cut the figure along the tile's border — the straight
+				// edge the exported video showed at the top and the right.
+				drawFrameTile(target, surface.ctx, ctx.resolution, tileCtx => {
+					renderAudioLayerFrame({
+						ctx: tileCtx,
+						canvas: surface.canvas,
+						layer,
+						state: ctx.state,
+						audio,
+						dt,
+						timeMs: ctx.timeMs,
+						palette: ctx.palette,
+						trackTitle: ctx.trackTitle,
+						trackCurrentTime: ctx.trackCurrentTime,
+						trackDuration: ctx.trackDuration,
+						frameState: surface.frameState,
+						spectrumPartition: partition,
+						logoScope: ctx.scope?.logo,
+						spectrumScope: ctx.scope?.spectrum,
+						flashEdge: ctx.scope?.flashEdge,
+						trackTitleScope: ctx.scope?.trackTitle
+					});
 				});
-				target.drawImage(surface.canvas, 0, 0);
 			}
 		},
 		reset() {

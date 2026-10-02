@@ -35,6 +35,7 @@ export {
 	beginCameraDrawSpace,
 	blitInFrameSpace,
 	clearCameraDrawOffsets,
+	clearCameraTile,
 	endCameraDrawOffset,
 	endCameraDrawSpace,
 	mirrorCameraDrawSpace,

@@ -7,6 +7,7 @@
 import { drawGlobalBackgroundFrame } from '@/features/background/render';
 import type { RenderFrameContext } from '../renderFrameContext';
 import type { RenderSubsystem } from '../renderSubsystem';
+import { drawFrameTile } from './frameTile';
 
 async function loadImage(url: string): Promise<HTMLImageElement | null> {
 	const image = new Image();
@@ -34,7 +35,9 @@ export function createGlobalBackgroundSubsystem(): RenderSubsystem {
 					: null;
 		},
 		render(ctx: RenderFrameContext) {
-			if (!image || !ctx.state.globalBackgroundEnabled) return;
+			// Captured so the narrowing survives into the tile callback.
+			const source = image;
+			if (!source || !ctx.state.globalBackgroundEnabled) return;
 			const target = ctx.canvas.getContext('2d');
 			if (!target) return;
 
@@ -47,14 +50,19 @@ export function createGlobalBackgroundSubsystem(): RenderSubsystem {
 			if (scratchCanvas.width !== width) scratchCanvas.width = width;
 			if (scratchCanvas.height !== height) scratchCanvas.height = height;
 
-			drawGlobalBackgroundFrame(
-				scratch,
-				image,
-				ctx.state,
-				ctx.timeMs,
-				ctx.audio?.amplitude ?? 0
+			// The tile rule (`frameTile`): painted in the output's camera space,
+			// composited with that space cancelled. The mandatory zoom of a
+			// frame target hid the moved tile's border most of the time, which
+			// is exactly what made the few frames that showed it hard to read.
+			drawFrameTile(target, scratch, ctx.resolution, tileCtx =>
+				drawGlobalBackgroundFrame(
+					tileCtx,
+					source,
+					ctx.state,
+					ctx.timeMs,
+					ctx.audio?.amplitude ?? 0
+				)
 			);
-			target.drawImage(scratchCanvas, 0, 0);
 		},
 		dispose() {
 			image = null;

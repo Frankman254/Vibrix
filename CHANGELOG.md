@@ -195,6 +195,25 @@ the version scheme in `src/lib/version.ts`.
 
 ### Corregido
 
+- **El vídeo exportado ya no corta la capa que mueve la cámara.** En el sistema
+  en vivo cada lienzo mueve lo que DIBUJA dentro de un canvas fijo, pero el
+  exportador añade un lienzo intermedio del tamaño del fotograma por capa
+  (spectrum, spectrum 2, logo, título, letra, luces de escenario, flash y fondo
+  global) y lo pegaba con la transformación de la cámara puesta. Eso mueve el
+  BITMAP, no la figura: lo que la figura tenía fuera del fotograma ya se había
+  recortado contra el borde del lienzo, y al desplazarlo ese borde entra en el
+  cuadro como un corte recto. Medido sobre el propio exportador a 960×540 con un
+  desplazamiento de (−120, +60) px: antes el dibujo moría **exactamente** en
+  x = 840 y en y = 60 —los dos cortes que se veían arriba y a la derecha en el
+  vídeo— y ahora llega hasta x = 959 e y = 0 con la figura en las mismas
+  columnas que antes, es decir se quitó el corte sin mover nada de sitio. El
+  lienzo se pinta ahora en el mismo espacio de cámara que su salida y se compone
+  con ese espacio cancelado (`drawFrameTile`), la regla que ya seguían los
+  efectos del spectrum. El borrado del lienzo sigue fuera del espacio, y el
+  registro aprende a distinguir un borrado redundante de un renderer que limpia
+  su propio canvas (`clearCameraTile`) para que el aviso de desarrollo sólo
+  salte cuando de verdad queda un defecto.
+
 - **Una base de datos a la que le falta un almacén se repara sola, y dejar de
   abrirla no lanza nada sin capturar.** `onupgradeneeded` sólo salta cuando la
   versión **sube**, así que una base que ya está en la versión actual pero sin su

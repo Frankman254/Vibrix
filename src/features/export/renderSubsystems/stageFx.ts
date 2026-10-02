@@ -23,6 +23,7 @@ import {
 import { updateFlashEdgeDrive } from '@/features/stageFx/flashEdgeDrive';
 import type { RenderFrameContext } from '../renderFrameContext';
 import type { RenderSubsystem } from '../renderSubsystem';
+import { drawFrameTile } from './frameTile';
 
 /** Delta above this is a seek or first frame, not a step (matches live). */
 const MAX_STEP_SEC = 0.1;
@@ -93,20 +94,28 @@ export function createStageLightsSubsystem(): RenderSubsystem {
 				Math.min(ctx.deltaMs / 1000, MAX_STEP_SEC),
 				ctx.state.motionPaused
 			);
-			const result = drawStageLights(
+			// The tile rule (`frameTile`): a frame-sized scratch is painted in
+			// the output's camera space and composited with that space
+			// cancelled, so the beams move and the tile's border does not.
+			drawFrameTile(
+				target,
 				scratchCtx,
-				width,
-				height,
-				ctx.state,
-				runtime,
-				response,
-				{
-					background: ctx.palette,
-					theme: getEditorThemePalette(ctx.state.editorTheme)
-				},
-				resolvePixelScale(ctx.resolution, viewportMin)
+				ctx.resolution,
+				tileCtx =>
+					drawStageLights(
+						tileCtx,
+						width,
+						height,
+						ctx.state,
+						runtime,
+						response,
+						{
+							background: ctx.palette,
+							theme: getEditorThemePalette(ctx.state.editorTheme)
+						},
+						resolvePixelScale(ctx.resolution, viewportMin)
+					).drawn
 			);
-			if (result.drawn) target.drawImage(scratchCtx.canvas, 0, 0);
 		},
 		reset() {
 			runtime = createStageLightsRuntime();
@@ -157,17 +166,17 @@ export function createFlashLightSubsystem(): RenderSubsystem {
 			const scratchCtx = scratch.get(width, height);
 			if (!target || !scratchCtx) return;
 
-			scratchCtx.clearRect(0, 0, width, height);
-			drawFlashLight(
-				scratchCtx,
-				width,
-				height,
-				ctx.state,
-				runtime,
-				color,
-				resolvePixelScale(ctx.resolution, viewportMin)
-			);
-			target.drawImage(scratchCtx.canvas, 0, 0);
+			drawFrameTile(target, scratchCtx, ctx.resolution, tileCtx => {
+				drawFlashLight(
+					tileCtx,
+					width,
+					height,
+					ctx.state,
+					runtime,
+					color,
+					resolvePixelScale(ctx.resolution, viewportMin)
+				);
+			});
 		},
 		reset() {
 			runtime = createFlashLightRuntime();

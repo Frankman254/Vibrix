@@ -4,6 +4,7 @@ import {
 	beginCameraDrawSpace,
 	blitInFrameSpace,
 	clearCameraDrawOffsets,
+	clearCameraTile,
 	endCameraDrawSpace,
 	mirrorCameraDrawSpace,
 	paintIntoCameraTile,
@@ -344,6 +345,55 @@ describe('the dev tripwire for the tile rule', () => {
 		// output inside the camera space.
 		ctx.fillRect(0, 0, FRAME.width, FRAME.height);
 		expect(warn).not.toHaveBeenCalled();
+		warn.mockRestore();
+	});
+});
+
+/** A ctx complete enough for the dev tripwire to patch and watch. */
+function guardableCtx() {
+	const ctx = {
+		canvas: { width: FRAME.width, height: FRAME.height },
+		save: () => {},
+		restore: () => {},
+		translate: () => {},
+		scale: () => {},
+		clearRect: () => {},
+		drawImage: () => {}
+	} as unknown as CanvasRenderingContext2D;
+	return ctx;
+}
+
+describe('the tile tripwire and a tile cleared before the mirror', () => {
+	it('stays silent when the tile was emptied by clearCameraTile', () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const output = guardableCtx();
+		const tile = guardableCtx();
+		beginCameraDrawSpace(output, { tx: 30, ty: 10, scale: 1, ...FRAME });
+
+		clearCameraTile(tile, FRAME.width, FRAME.height);
+		paintIntoCameraTile(tile, output, ctx => {
+			// What a renderer that owns its canvas live does on its own.
+			ctx.clearRect(0, 0, FRAME.width, FRAME.height);
+		});
+
+		expect(warn).not.toHaveBeenCalled();
+		endCameraDrawSpace(output);
+		warn.mockRestore();
+	});
+
+	it('still reports a full-tile clear inside the space on a tile nobody emptied', () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const output = guardableCtx();
+		const tile = guardableCtx();
+		beginCameraDrawSpace(output, { tx: 30, ty: 10, scale: 1, ...FRAME });
+
+		paintIntoCameraTile(tile, output, ctx => {
+			ctx.clearRect(0, 0, FRAME.width, FRAME.height);
+		});
+
+		expect(warn).toHaveBeenCalledTimes(1);
+		expect(String(warn.mock.calls[0]?.[0])).toContain('clearRect');
+		endCameraDrawSpace(output);
 		warn.mockRestore();
 	});
 });

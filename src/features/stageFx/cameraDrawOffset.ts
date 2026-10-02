@@ -123,6 +123,7 @@ export function beginCameraDrawSpace(
 export function endCameraDrawSpace(ctx: CanvasRenderingContext2D): void {
 	appliedSpaces.delete(ctx);
 	mirroredTiles.delete(ctx);
+	clearedTiles.delete(ctx);
 	ctx.restore();
 }
 
@@ -175,6 +176,25 @@ export function unapplyCameraDrawSpace(ctx: CanvasRenderingContext2D): boolean {
 	ctx.scale(1 / space.scale, 1 / space.scale);
 	ctx.translate(-cx - space.tx, -cy - space.ty);
 	return true;
+}
+
+/**
+ * Empty a scratch tile for this frame, outside any camera space.
+ *
+ * The maintenance half of the tile rule. Use it instead of a bare `clearRect`
+ * whenever the tile will then be painted through `paintIntoCameraTile`: it
+ * records that the tile starts the frame empty, so a renderer that clears
+ * itself again INSIDE the space — several draw an opening `clearRect` because
+ * live they own their canvas — is not reported as the bug it would otherwise
+ * be. A moved clear over an already empty tile removes nothing.
+ */
+export function clearCameraTile(
+	tileCtx: CanvasRenderingContext2D,
+	width: number,
+	height: number
+): void {
+	clearedTiles.add(tileCtx);
+	tileCtx.clearRect(0, 0, width, height);
 }
 
 /**
@@ -238,6 +258,9 @@ const guardedContexts = new WeakSet<CanvasRenderingContext2D>();
 
 /** Contexts whose camera space was mirrored from an output: scratch tiles. */
 const mirroredTiles = new WeakSet<CanvasRenderingContext2D>();
+
+/** Tiles emptied for this frame by `clearCameraTile`, before the mirror. */
+const clearedTiles = new WeakSet<CanvasRenderingContext2D>();
 
 /**
  * Dev-only tripwire for the tile rule.
@@ -314,6 +337,7 @@ function guardFrameTileFills(ctx: CanvasRenderingContext2D): void {
 				!warned &&
 				space !== undefined &&
 				mirroredTiles.has(ctx) &&
+				!clearedTiles.has(ctx) &&
 				(cancelledDepth.get(ctx) ?? 0) === 0 &&
 				x <= 0 &&
 				y <= 0 &&
