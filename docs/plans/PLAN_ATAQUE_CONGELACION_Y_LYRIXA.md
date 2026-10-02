@@ -7,14 +7,26 @@
 
 ## La restricción que ordena todo
 
-Lyrixa **no puede arrancar de verdad todavía**, y no por falta de ganas: su
-primera dependencia es trabajo **de Vibrix**. El secuenciador necesita un
-manifiesto de slots con `slotRevision` para saber qué puede poner en la línea
-temporal y para detectar que un slot cambió bajo sus pies. Hoy eso no existe
-(verificado: 0 ocurrencias de `slotRevision` en `src/`).
+> **Actualizado 2026-10-02 — la cadena se rompió a propósito.** Lo de abajo
+> describía una dependencia estricta: Lyrixa esperando el manifiesto. Ya no es
+> así. El contrato existe
+> ([VIBRIX_AUTHORING_CONTRACT.md](../features/VIBRIX_AUTHORING_CONTRACT.md)) y
+> trae un **fixture literal** que los dos repos validan en su propia suite, así
+> que **Lyrixa construye contra el fixture** y las dos vías corren en paralelo
+> desde hoy. Las tareas concretas están en
+> [.agents/TAREA_MANIFIESTO.md](../../.agents/TAREA_MANIFIESTO.md) (aquí) y
+> `Lyrixa/.agents/TAREA_SECUENCIADOR.md` (allí). Lo único que sigue esperando es
+> la **última** comprobación: que un score mueva lo que se ve en Vibrix.
 
-Así que no hay dos frentes en paralelo desde hoy: hay **una cadena con dos
-puertas**.
+Lyrixa **no podía arrancar de verdad** mientras su primera dependencia fuera
+trabajo **de Vibrix**: el secuenciador necesita un manifiesto de slots con
+`slotRevision` para saber qué puede poner en la línea temporal y para detectar
+que un slot cambió bajo sus pies. Eso sigue sin existir en código (verificado: 0
+ocurrencias de `slotRevision` en `src/`), pero **sí existe como contrato con
+fixture**, y contra eso se construye.
+
+Así que la cadena con dos puertas de abajo describe el **orden de entrega**, no
+una espera.
 
 ```
 Vía 1 · Congelar Vibrix ──[puerta 1: el usuario da el visto bueno]──▶ tag
@@ -25,7 +37,11 @@ Vía 1 · Congelar Vibrix ──[puerta 1: el usuario da el visto bueno]──�
                                                                   + Vibrix Fase C
 ```
 
-## Vía 1 · Congelar Vibrix — **esta ventana, ahora**
+## Vía 1 · Congelar Vibrix — **lista salvo el visto bueno**
+
+> **Al día 2026-10-02:** la [lista viva](../../.agents/TAREA_CONGELACION.md) está
+> en cero — F0 pasa y F1, F2 y F3 están hechas. Falta **sólo la puerta 1**, que
+> es del usuario: él dice si la mayoría pasa a su juicio, y entonces se etiqueta.
 
 El objetivo no es «arreglar todos los bugs». Es que el usuario pueda **probar el
 sistema entero y decir que pasa**. Eso cambia el orden de la cola.
@@ -62,22 +78,38 @@ secuenciador va a mover dónde vive esa configuración.
 Es la vía más barata del plan y la que desbloquea a Lyrixa. Tres piezas:
 
 - **`slotRevision`** — un hash del contenido en cada `ProfileSlot`, que cambie
-  cuando cambian sus valores y no cuando cambia su nombre. Clave persistida
-  nueva ⇒ **bump de `STORE_PERSIST_VERSION` + migración** que lo siembre
-  calculándolo de lo que ya hay.
+  cuando cambian sus valores y **no** cuando cambia su nombre. **Derivado a
+  demanda, no persistido** (ver abajo): sin bump ni migración.
 - **El manifiesto** — qué slots existen, de qué familia, con qué `id` y qué
   `slotRevision`. Derivado del estado, puro, testeable por valor.
-- **El endpoint** que lo publica, sobre el `backend/server/` que ya existe.
+- **La entrega, por archivo**: `<proyecto>.vibrix-manifest.json`. **No un
+  endpoint todavía** — el manifiesto sale del store del _navegador_, que el
+  servidor no tiene, y la ruta contra la que apunta el puente de Lyrixa
+  (`POST /api/lyrics-bundle`) **no existe** en `backend/server/src/index.mjs`.
+  HTTP después, con los mismos bytes.
 
 Va **después** del tag a propósito: así Lyrixa construye contra un Vibrix
 etiquetado y estable, no contra uno en movimiento.
 
-**Hay dos huecos que decidir aquí, y es mejor decidirlos antes de escribir el
-manifiesto que después:** `background` y `motion` son familias que el
-secuenciador quiere como pista, y hoy **no** son slots de escena — existe
-`backgroundProfileSlots` pero ninguna escena lo referencia, y `motion` vive
-dentro de `cameraFx`. O el manifiesto las publica como pistas de primera clase,
-o Lyrixa nace sin ellas.
+**Los dos huecos que había que decidir están decididos**, en la tabla de familias
+del [contrato](../features/VIBRIX_AUTHORING_CONTRACT.md), y ninguno salió como se
+esperaba:
+
+- **`motion` no es una familia que falte: es una que se borró.**
+  `wallpaperStoreMigrations.ts:2974` hace `delete motionProfileSlots`. Era
+  partículas+lluvia juntas y hoy se componen por separado. Fuera del contrato; un
+  cue `'motion'` no se podría resolver nunca.
+- **`background` no es «qué imagen se ve».** `backgroundProfileSlots` son
+  perfiles del **envelope de zoom por graves** (los usa `BgZoomAudioSection`), y
+  en efecto ninguna escena los referencia. Se publica como **`background-zoom`**
+  con `sceneBindable: false`, precisamente para que la UI de Lyrixa **no** prometa
+  cambiar la imagen de fondo desde la línea temporal: eso es el pool y los
+  setlists, no un slot.
+
+Y una tercera que nadie había mirado: **`slotRevision` no necesita ser una clave
+persistida**. Derivarla de `values` a demanda **ahorra el bump de
+`STORE_PERSIST_VERSION` y su migración** y elimina la posibilidad de que el hash
+y el contenido diverjan. Esta vía ya no toca la persistencia.
 
 **Puerta 2:** el manifiesto responde con slots reales. Ahí se bifurca.
 

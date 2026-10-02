@@ -29,11 +29,12 @@
 
 ## Features
 
-| Doc                                                              | Topic                                |
-| ---------------------------------------------------------------- | ------------------------------------ |
-| [features/SPECTRUM_ENGINE.md](features/SPECTRUM_ENGINE.md)       | Spectrum families, instances         |
-| [features/SPECTRUM_PIXEL_ART.md](features/SPECTRUM_PIXEL_ART.md) | Pixel shape vs pixelate post-process |
-| [features/LYRIXA_CONTRACT.md](features/LYRIXA_CONTRACT.md)       | Roles, idiomas, sourceId, words[]    |
+| Doc                                                                            | Topic                                  |
+| ------------------------------------------------------------------------------ | -------------------------------------- |
+| [features/SPECTRUM_ENGINE.md](features/SPECTRUM_ENGINE.md)                     | Spectrum families, instances           |
+| [features/SPECTRUM_PIXEL_ART.md](features/SPECTRUM_PIXEL_ART.md)               | Pixel shape vs pixelate post-process   |
+| [features/LYRIXA_CONTRACT.md](features/LYRIXA_CONTRACT.md)                     | Roles, idiomas, sourceId, words[]      |
+| [features/VIBRIX_AUTHORING_CONTRACT.md](features/VIBRIX_AUTHORING_CONTRACT.md) | Manifiesto de slots y score (→ Lyrixa) |
 
 ## Guides & audits
 
