@@ -421,7 +421,10 @@ export type SlideshowTransitionType =
 	| 'bars-horizontal'
 	| 'bars-vertical'
 	| 'rgb-shift'
-	| 'distortion';
+	| 'distortion'
+	| 'cross-zoom'
+	| 'diagonal-wipe'
+	| 'iris';
 /** The five dials that make a transition look the way it looks. */
 export interface TransitionPresetSettings {
 	transitionType: SlideshowTransitionType;

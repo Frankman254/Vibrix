@@ -231,7 +231,7 @@ export default function TransitionPresetPanel() {
 								active={store.transitionType === type}
 								onClick={() => store.setType(type)}
 							>
-								{TRANSITION_LABELS[type]}
+								{t[TRANSITION_LABELS[type]]}
 							</Button>
 						))}
 					</div>

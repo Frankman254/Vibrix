@@ -1,6 +1,18 @@
 import { APP_NAME } from '@/config/brand';
 
 export const en = {
+	transition_style_fade: 'Fade',
+	transition_style_slide_left: '← Slide',
+	transition_style_slide_right: 'Slide →',
+	transition_style_zoom_in: 'Zoom',
+	transition_style_blur_dissolve: 'Dissolve',
+	transition_style_bars_horizontal: 'Bars H',
+	transition_style_bars_vertical: 'Bars V',
+	transition_style_rgb_shift: 'RGB Split',
+	transition_style_distortion: 'Distort',
+	transition_style_cross_zoom: 'Cross zoom',
+	transition_style_diagonal_wipe: 'Diagonal wipe',
+	transition_style_iris: 'Iris',
 	// Panel
 	title: APP_NAME,
 	autoSaved: 'auto-saved',

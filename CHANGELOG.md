@@ -15,6 +15,8 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+- Transiciones de imagen: zoom con estela, barrido diagonal suave y apertura circular, con intensidad/audio existentes, etiquetas ES/EN y renderer compartido entre preview y export.
+
 ### Cambiado
 
 - **La ventana Intro & ending, ordenada.** La pestaña se saltaba el contrato de

@@ -15,3 +15,8 @@ export type {
 	GlobalBackgroundDrawPlan,
 	GlobalBackgroundDrawSettings
 } from './globalBackgroundDraw';
+
+export {
+	drawCinematicTransition,
+	isCinematicTransition
+} from './cinematicTransitions';

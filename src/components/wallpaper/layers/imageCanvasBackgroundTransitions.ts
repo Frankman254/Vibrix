@@ -1,3 +1,7 @@
+import {
+	drawCinematicTransition,
+	isCinematicTransition
+} from '@/features/background/render';
 import { clamp, lerp } from '@/lib/math';
 import { drawRgbShift, seededRandom } from '@/lib/canvas/imageEffects';
 import type { BackgroundImageSnapshot } from '@/features/background/imageLayerGeometry';
@@ -355,6 +359,32 @@ export function runBackgroundTransitionPass({
 	previousBackgroundParams: BackgroundImageSnapshot;
 	colorFilter: string;
 }) {
+	if (activeImage && isCinematicTransition(type)) {
+		const rendered = drawCinematicTransition({
+			ctx: dc.ctx,
+			width: dc.canvasWidth,
+			height: dc.canvasHeight,
+			type,
+			progress: easedProgress,
+			intensity: tc.transitionForce,
+			opacity: dc.layerOpacity,
+			drawFrom: ctx =>
+				drawBgImage(
+					{ ...dc, ctx, layerOpacity: 1 },
+					previousBackgroundImage,
+					previousBackgroundParams,
+					1
+				),
+			drawTo: ctx =>
+				drawBgImage(
+					{ ...dc, ctx, layerOpacity: 1 },
+					activeImage,
+					activeSnapshot,
+					1
+				)
+		});
+		if (rendered) return;
+	}
 	const slideDistance = dc.canvasWidth;
 
 	if (type === 'slide-left') {

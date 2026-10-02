@@ -2,6 +2,18 @@ import type { TranslationKey } from './en';
 import { APP_NAME } from '@/config/brand';
 
 export const es: Record<TranslationKey, string> = {
+	transition_style_fade: 'Fundido',
+	transition_style_slide_left: '← Deslizar',
+	transition_style_slide_right: 'Deslizar →',
+	transition_style_zoom_in: 'Zoom',
+	transition_style_blur_dissolve: 'Disolver',
+	transition_style_bars_horizontal: 'Barras H',
+	transition_style_bars_vertical: 'Barras V',
+	transition_style_rgb_shift: 'Separación RGB',
+	transition_style_distortion: 'Distorsión',
+	transition_style_cross_zoom: 'Zoom con estela',
+	transition_style_diagonal_wipe: 'Barrido diagonal',
+	transition_style_iris: 'Apertura circular',
 	// Panel
 	title: APP_NAME,
 	autoSaved: 'guardado automático',
