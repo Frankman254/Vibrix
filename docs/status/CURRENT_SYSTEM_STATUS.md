@@ -176,6 +176,35 @@ See `docs/features/SPECTRUM_ENGINE.md` (ownership model) and
 
 ---
 
+## Authoring catalogue for Lyrixa (`vibrix-manifest`)
+
+**Status: Stable (publish + review); playback is not implemented**
+
+- `features/scenes/slotRevision.ts` — content hash of a slot's `values`
+  (cyrb53 over a canonical tagged serialization, 14 hex digits). Derived on
+  demand, **not** a persisted key: renaming a slot does not move it, editing a
+  value does. A scene's revision folds in the revisions of the slots it binds.
+- `features/scenes/authoringManifest.ts` — `buildAuthoringManifest` /
+  `buildAuthoringManifestReport`: pure, clock-free, over exactly the 12
+  composable families (`calibrationProfileSlots` is excluded by the parameter
+  type). Dangling scene bindings are normalized away and reported, because
+  Lyrixa's parser rejects a whole file for one.
+- `features/scenes/authoringManifestFixture.ts` — the declared input the
+  contract's literal fixture is derived from.
+- `features/composition/vibrixScore.ts` + `vibrixScoreLoader.ts` — parse and
+  review a Lyrixa score: collects every readable error, never throws, and reports
+  per-cue `ready` / `updated` / `missing` / `empty` / `not-cueable`.
+- UI: `features/export/controls/VibrixAuthoringSection.tsx` in the Export tab.
+  Importing a score confirms first and **does not touch the project**; the review
+  is the deliverable.
+- Transport is a file (`<project>.vibrix-manifest.json`). No endpoint: the
+  catalogue lives in the browser store, which `backend/server` never sees.
+- Contract: [docs/features/VIBRIX_AUTHORING_CONTRACT.md](../features/VIBRIX_AUTHORING_CONTRACT.md).
+  **Not implemented:** evaluating a score (`resolveVisualStateAt(base, score, T)`),
+  which needs visual state at an instant to stop depending on the path taken.
+
+---
+
 ## Intro / ending windows
 
 **Status: Usable but needs QA**
@@ -279,7 +308,7 @@ Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 
 **Status: Stable**
 
-- Vitest: 144 files / 1603 tests (version, output modes, pixel helpers, spectrum, intro windows, store migrations, etc.)
+- Vitest: 151 files / 1690 tests (version, output modes, pixel helpers, spectrum, intro windows, store migrations, authoring manifest / slot revisions / Lyrixa score, etc.)
 - CI: `format:check`, `lint`, `test:types`, `test:run`, `docs:check`, `build`
 - DEV harness: `#/dev/spectrum-fx`
 
@@ -339,7 +368,9 @@ Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 ## Immediate priorities
 
 1. Offline video export QA (a full track, end to end) + OBS workflow documentation
-2. Pixel Art visual polish and performance measurement (manual baselines)
-3. Public alpha documentation freeze (`docs:check` in CI)
+2. `resolveVisualStateAt(base, score, T)` — the stateless refactor that lets a
+   Lyrixa score actually drive the frame (own window, from the freeze tag)
+3. Pixel Art visual polish and performance measurement (manual baselines)
+4. Public alpha documentation freeze (`docs:check` in CI)
 
 See deliverable “next three sprints” in sprint summary.

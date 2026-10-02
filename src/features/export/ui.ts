@@ -17,6 +17,7 @@ export { default as ProjectLibrarySection } from './controls/ProjectLibrarySecti
 export { default as ProjectPackageSection } from './controls/ProjectPackageSection';
 export { default as SettingsExportSection } from './controls/SettingsExportSection';
 export { default as VirtualFoldersSection } from './controls/VirtualFoldersSection';
+export { default as VibrixAuthoringSection } from './controls/VibrixAuthoringSection';
 
 export { useProjectPackageExport } from './controls/useProjectPackageExport';
 export type {

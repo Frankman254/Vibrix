@@ -73,7 +73,17 @@ tiene red.
 [PLAN_RENOVACION_2026-09](PLAN_RENOVACION_2026-09.md). Son ampliación, y el
 secuenciador va a mover dónde vive esa configuración.
 
-## Vía 2 · Fase A, el manifiesto — **esta misma ventana, después del tag**
+## Vía 2 · Fase A, el manifiesto — **HECHA (2026-10-02)**
+
+> El usuario dio la **puerta 1** y la Fase A se implementó en la misma ventana:
+> `slotRevision.ts`, `authoringManifest.ts`, el export por archivo y el import de
+> score con su informe, 54 tests nuevos. La **puerta 2 también está pasada**: el
+> manifiesto de un proyecto real (49 slots, 12 familias, tres escenas) lo acepta
+> el `parseAuthoringManifest` **real** de Lyrixa. Detalle y desviaciones en
+> [.agents/TAREA_MANIFIESTO.md](../../.agents/TAREA_MANIFIESTO.md).
+>
+> **El tag sigue pendiente.** Es lo único de la Vía 1 que falta, y hace de red
+> para la Vía 3.
 
 Es la vía más barata del plan y la que desbloquea a Lyrixa. Tres piezas:
 
@@ -111,7 +121,13 @@ persistida**. Derivarla de `values` a demanda **ahorra el bump de
 `STORE_PERSIST_VERSION` y su migración** y elimina la posibilidad de que el hash
 y el contenido diverjan. Esta vía ya no toca la persistencia.
 
-**Puerta 2:** el manifiesto responde con slots reales. Ahí se bifurca.
+**Puerta 2:** el manifiesto responde con slots reales. Ahí se bifurca. **Pasada:**
+responde con 49 slots de un proyecto real y Lyrixa los lee.
+
+Y apareció una cuarta decisión que no estaba en la mesa: **la revisión de una
+escena tiene que incluir las revisiones de los slots que liga**, o Lyrixa dice
+`Current` con el frame ya cambiado. Está en el contrato, §«La revisión de una
+escena incluye lo que liga».
 
 ## Vía 3 · Lyrixa y el refactor stateless — **ventanas nuevas, una cada uno**
 
@@ -131,11 +147,11 @@ que son los tres pilares de una línea temporal. Detalle en la
 
 ## Resumen de la decisión de ventanas
 
-| Cuándo                 | Ventanas abiertas                                    |
-| ---------------------- | ---------------------------------------------------- |
-| Ahora → puerta 1       | **Una sola**, aquí: F1, F2 y lo que salga probando   |
-| Puerta 1 → puerta 2    | **Una sola**, aquí: tag + Fase A                     |
-| Después de la puerta 2 | **Dos**: Lyrixa (obligatoria aparte) + Vibrix Fase C |
+| Cuándo                             | Ventanas abiertas                                    |
+| ---------------------------------- | ---------------------------------------------------- |
+| ~~Ahora → puerta 1~~ ✅            | **Una sola**, aquí: F1, F2 y lo que salga probando   |
+| ~~Puerta 1 → puerta 2~~ ✅         | **Una sola**, aquí: tag + Fase A                     |
+| **Ahora** — después de la puerta 2 | **Dos**: Lyrixa (obligatoria aparte) + Vibrix Fase C |
 
 Bifurcar antes de la puerta 2 no compra nada: las dos ventanas tocarían los
 mismos ficheros de Vibrix, y la de Lyrixa se quedaría esperando el manifiesto.

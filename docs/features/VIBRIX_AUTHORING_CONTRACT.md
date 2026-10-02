@@ -83,8 +83,14 @@ Un hash del **contenido** de un slot, para que Lyrixa pueda decir
 `Updated in Vibrix` en vez de cambiar la composición en silencio.
 
 ```ts
-revisionOf(slot: ProfileSlot<T>): string
+revisionOf(values: unknown): string;
+manifestRevision(revisions: readonly string[]): string;
 ```
+
+Implementado en
+[`src/features/scenes/slotRevision.ts`](../../src/features/scenes/slotRevision.ts)
+(cyrb53 sobre una serialización canónica etiquetada y con longitudes, 14 dígitos
+hex).
 
 Reglas:
 
@@ -96,6 +102,40 @@ Reglas:
 4. **No es criptografía**, es un detector de cambios: vale un hash determinista
    en JS puro (FNV-1a / cyrb53) en hex. Nada de `crypto.subtle`, que es `async`
    y sólo de navegador — esto tiene que correr en el suite de Node.
+5. **Los tipos se etiquetan.** `'1'` y `1` no pueden colisionar, ni `{a: null}`
+   con `{}`, ni `[1, 2]` con `[2, 1]` — en un array el orden **es** contenido,
+   mientras en un objeto no lo es. Una clave ausente ≡ una clave con `undefined`,
+   porque es lo que hace `JSON.stringify` al salir por el archivo.
+
+### La revisión de una escena incluye lo que liga
+
+Una escena no tiene `values`: tiene referencias. Hashear **sólo** sus
+referencias deja un agujero semántico que se ve a simple vista: edita el
+Spectrum que la escena apunta y la escena no se mueve, así que Lyrixa diría
+`Current` mientras el frame que se renderiza ya cambió.
+
+Así que la revisión de una escena se calcula sobre
+`familia=slotId@revisiónDeEseSlot` (y `familia=off` para un apagado explícito).
+Consecuencias, que son las deseadas:
+
+- Editar un slot mueve la escena que lo liga **y** deja quietas las que no.
+- Renombrar sigue siendo invisible, en la escena y en el slot.
+- Re-apuntar una escena a otro slot la mueve aunque los dos slots tengan los
+  mismos valores, porque el `slotId` entra en el hash.
+
+### Un binding que apunta a un slot que ya no está se cae en el productor
+
+`Lyrixa/src/core/composition/authoringManifest.ts` (`validateSceneBindings`)
+rechaza el **archivo entero** si una escena referencia un slot que el manifiesto
+no publica. Y eso pasa sin que nadie haga nada raro: `featureProfiles.ts` recorta
+los bancos a su tope, y una importación parcial puede traer escenas sin sus
+slots.
+
+Por eso Vibrix **normaliza la referencia colgada al publicar** (el mismo
+`normalizeSlotRef` que ya usa al activar una escena) y la reporta aparte en
+`droppedBindings`, que la UI muestra como aviso. Un proyecto con una referencia
+podrida exporta un manifiesto válido con una escena que liga menos cosas, en vez
+de un archivo que Lyrixa no abre.
 
 **Se calcula a demanda; no se guarda en el store.** La versión anterior de este
 plan lo daba por clave persistida nueva, con su bump de `STORE_PERSIST_VERSION` y
@@ -135,16 +175,52 @@ interface VibrixManifestSlot {
 }
 ```
 
-**Derivado del estado, puro, testeable por valor.** Una función
-`buildAuthoringManifest(state): VibrixAuthoringManifest` sin reloj ni azar
-dentro: `exportedAt` se inyecta. Un slot vacío se publica con
-`revision: 'empty'` en vez de omitirse — Lyrixa necesita saber que la ranura
-existe para explicar por qué está deshabilitada.
+**Derivado del estado, puro, testeable por valor.** Sin reloj ni azar dentro:
+
+```ts
+buildAuthoringManifest(
+	state: AuthoringManifestSource,
+	options: { exportedAt: string; projectName: string }
+): VibrixAuthoringManifest;
+
+// La misma cosa, más lo que tuvo que descartar para publicar algo válido.
+buildAuthoringManifestReport(state, options): {
+	manifest: VibrixAuthoringManifest;
+	droppedBindings: DroppedBindingWarning[];
+};
+```
+
+`exportedAt` se inyecta, y **`projectName` también**: no existe en el store —
+hoy es estado local de `ProjectLibrarySection.tsx` —, así que pedirlo es más
+honesto que inventarlo dentro.
+
+`AuthoringManifestSource` es un `Pick<WallpaperState, …>` de exactamente los 12
+bancos que se publican. Eso convierte «nunca publica `calibrationProfileSlots`»
+en una garantía del compilador en vez de un comentario, y hace que la
+suscripción de la UI a esos 12 bancos sea una dependencia real.
+
+Un slot vacío se publica con `revision: 'empty'` en vez de omitirse — Lyrixa
+necesita saber que la ranura existe para explicar por qué está deshabilitada.
 
 ## El ejemplo literal (el fixture compartido)
 
 Esto es el manifiesto que los dos repos validan. **Cópialo tal cual**; es el
 «primer corte» del doc de Lyrixa: tres escenas y los granulares que ligan.
+
+**Las revisiones de abajo son salida, no invención.** Se derivan del estado
+declarado en
+[`src/features/scenes/authoringManifestFixture.ts`](../../src/features/scenes/authoringManifestFixture.ts)
+(`CONTRACT_FIXTURE_STATE`), que es parte del contrato tanto como el JSON: un
+manifiesto **no lleva** los `values` de los que sale el hash, así que sin
+publicar la entrada nadie puede reproducir la salida. La primera versión de este
+doc traía hashes inventados, y por eso el criterio «byte a byte» era imposible de
+cumplir; ahora `authoringManifest.test.ts` compara contra este bloque
+literalmente, con el mismo sangrado de tabuladores.
+
+**Para Lyrixa son cadenas opacas.** Su suite compara revisiones entre sí
+(`slot.revision === cue.target.slotRevision`) y nunca afirma un valor hex
+concreto, así que regenerar estos hashes no rompe su suite: es una copia que se
+re-sincroniza cuando convenga, no una dependencia.
 
 ```json
 {
@@ -155,13 +231,13 @@ Esto es el manifiesto que los dos repos validan. **Cópialo tal cual**; es el
 	"rendererVersion": "0.7.0-alpha",
 	"storePersistVersion": 144,
 	"projectName": "Demo",
-	"revision": "7f3a1c9e",
+	"revision": "169bbe48d6a777",
 	"slots": [
 		{
 			"id": "scene-a",
 			"family": "scene",
 			"name": "Verse",
-			"revision": "1a2b3c4d",
+			"revision": "06f5cbdcbb8aad",
 			"sceneBindable": false,
 			"cueable": true,
 			"bindings": {
@@ -174,10 +250,13 @@ Esto es el manifiesto que los dos repos validan. **Cópialo tal cual**; es el
 			"id": "scene-b",
 			"family": "scene",
 			"name": "Chorus",
-			"revision": "5e6f7a8b",
+			"revision": "1badfdd9cedaf2",
 			"sceneBindable": false,
 			"cueable": true,
-			"bindings": { "spectrum": "spec-2", "looks": "look-1" }
+			"bindings": {
+				"spectrum": "spec-2",
+				"looks": "look-1"
+			}
 		},
 		{
 			"id": "scene-c",
@@ -191,7 +270,7 @@ Esto es el manifiesto que los dos repos validan. **Cópialo tal cual**; es el
 			"id": "spec-1",
 			"family": "spectrum",
 			"name": "Bars tight",
-			"revision": "9c0d1e2f",
+			"revision": "0f79ebd4d5f3e6",
 			"sceneBindable": true,
 			"cueable": true
 		},
@@ -199,7 +278,7 @@ Esto es el manifiesto que los dos repos validan. **Cópialo tal cual**; es el
 			"id": "spec-2",
 			"family": "spectrum",
 			"name": "Bars wide",
-			"revision": "3a4b5c6d",
+			"revision": "037549f677038c",
 			"sceneBindable": true,
 			"cueable": true
 		},
@@ -207,7 +286,7 @@ Esto es el manifiesto que los dos repos validan. **Cópialo tal cual**; es el
 			"id": "look-1",
 			"family": "looks",
 			"name": "Warm grade",
-			"revision": "7e8f9a0b",
+			"revision": "09cffd31a5fce4",
 			"sceneBindable": true,
 			"cueable": true
 		},
@@ -215,7 +294,7 @@ Esto es el manifiesto que los dos repos validan. **Cópialo tal cual**; es el
 			"id": "bgz-1",
 			"family": "background-zoom",
 			"name": "Punchy",
-			"revision": "1c2d3e4f",
+			"revision": "16fbe6c624044d",
 			"sceneBindable": false,
 			"cueable": true
 		},
@@ -223,7 +302,7 @@ Esto es el manifiesto que los dos repos validan. **Cópialo tal cual**; es el
 			"id": "intro-1",
 			"family": "intro-window",
 			"name": "Title fade",
-			"revision": "5a6b7c8d",
+			"revision": "05ea8b323e0e09",
 			"sceneBindable": false,
 			"cueable": false
 		}

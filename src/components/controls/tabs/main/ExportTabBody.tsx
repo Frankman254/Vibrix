@@ -17,6 +17,7 @@ import {
 	ProjectLibrarySection,
 	ProjectPackageSection,
 	SettingsExportSection,
+	VibrixAuthoringSection,
 	VirtualFoldersSection,
 	useProjectPackageExport,
 	useSettingsExport,
@@ -242,6 +243,9 @@ export default function ExportTabBody() {
 				}
 				onImportProject={() => projectImportRef.current?.click()}
 			/>
+
+			<SectionDivider label={t.section_vibrix_authoring} />
+			<VibrixAuthoringSection />
 
 			<SectionDivider label={t.section_offline_export} />
 			<OfflineExportSection

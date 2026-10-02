@@ -66,6 +66,30 @@ the version scheme in `src/lib/version.ts`.
 
 ### Añadido
 
+- **Vibrix publica su catálogo de slots para que Lyrixa compona sobre él.** Hasta
+  ahora Lyrixa no tenía forma de saber qué escenas y qué perfiles existen en un
+  proyecto, así que un secuenciador allí sólo podía adivinar nombres. La pestaña
+  **Export** trae una sección nueva: **Export manifest** escribe
+  `<proyecto>.vibrix-manifest.json` con las 12 familias de slots que se pueden
+  componer —cada una con su `id` estable, su nombre, y qué escena liga a qué—, y
+  **Check a score** lee de vuelta el `.vibrix-score.json` que escribe Lyrixa y
+  dice, cue por cue, si lo entiende.
+
+    Cada slot viaja con una **revisión**: un hash de su contenido, no de su nombre.
+    Renombrar «Look 1» a «Verso» no mueve nada; cambiarle un valor sí, y entonces
+    Lyrixa puede avisar de que el slot cambió bajo la composición en vez de
+    renderizar algo distinto en silencio. La revisión de una **escena** incluye las
+    de los slots que liga, precisamente para que editar un Spectrum ligado cuente
+    como cambio de la escena.
+
+    Importar un score **no toca el proyecto**: pide confirmación, y lo que entrega
+    es un informe (`Ready` / `Updated in Vibrix` / `Missing` / `Empty` /
+    `Not cueable` por cue). Reproducir un score es la fase siguiente y necesita que
+    el estado visual en un instante deje de depender del camino recorrido para
+    llegar; hasta entonces, prometer reproducción sería mentir. Nada de esto añade
+    claves al proyecto guardado: la revisión se deriva al vuelo, así que no hay
+    migración de datos.
+
 - **Ver la intro y el ending sin tocar el reloj del tema, y pausarlos.**
   Configurar una ventana costaba llevar el playhead a la cabeza del tema (o a su
   cola, para el ending) y rebobinar por cada ajuste; eso es lo que hacía la
