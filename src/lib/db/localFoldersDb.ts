@@ -1,3 +1,5 @@
+import { openStoreDbOrThrow } from './openStoreDb';
+
 const DB_NAME = 'lwag-folders';
 const DB_VERSION = 1;
 const STORE = 'handles';
@@ -31,17 +33,12 @@ interface FolderHandleRecord {
 }
 
 function openDb(): Promise<IDBDatabase> {
-	return new Promise((resolve, reject) => {
-		const req = indexedDB.open(DB_NAME, DB_VERSION);
-		req.onupgradeneeded = e => {
-			const db = (e.target as IDBOpenDBRequest).result;
-			if (!db.objectStoreNames.contains(STORE)) {
-				db.createObjectStore(STORE, { keyPath: 'id' });
-			}
-		};
-		req.onsuccess = () => resolve(req.result);
-		req.onerror = () => reject(req.error);
-	});
+	return openStoreDbOrThrow(DB_NAME, DB_VERSION, [
+		{
+			name: STORE,
+			create: db => db.createObjectStore(STORE, { keyPath: 'id' })
+		}
+	]);
 }
 
 export async function saveFolderHandle(

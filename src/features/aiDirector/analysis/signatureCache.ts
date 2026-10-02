@@ -9,6 +9,7 @@
  * IndexedDB blocked (private mode, storage pressure) must still be able to run
  * the analysis, just without caching.
  */
+import { openStoreDb } from '@/lib/db/openStoreDb';
 import { IMAGE_SIGNATURE_VERSION, type ImageSignature } from './imageSignature';
 
 const DB_NAME = 'vibrix-ai-director';
@@ -38,30 +39,17 @@ type CacheRow = {
 	updatedAt: number;
 };
 
-function openDb(): Promise<IDBDatabase | null> {
-	return new Promise(resolve => {
-		if (typeof indexedDB === 'undefined') {
-			resolve(null);
-			return;
+async function openDb(): Promise<IDBDatabase | null> {
+	if (typeof indexedDB === 'undefined') return null;
+	dropLegacyDb();
+	const { db } = await openStoreDb(DB_NAME, DB_VERSION, [
+		{
+			name: STORE,
+			create: handle =>
+				handle.createObjectStore(STORE, { keyPath: 'assetId' })
 		}
-		dropLegacyDb();
-		let request: IDBOpenDBRequest;
-		try {
-			request = indexedDB.open(DB_NAME, DB_VERSION);
-		} catch {
-			resolve(null);
-			return;
-		}
-		request.onupgradeneeded = () => {
-			const db = request.result;
-			if (!db.objectStoreNames.contains(STORE)) {
-				db.createObjectStore(STORE, { keyPath: 'assetId' });
-			}
-		};
-		request.onsuccess = () => resolve(request.result);
-		request.onerror = () => resolve(null);
-		request.onblocked = () => resolve(null);
-	});
+	]);
+	return db;
 }
 
 function runRequest<T>(request: IDBRequest<T>): Promise<T | null> {

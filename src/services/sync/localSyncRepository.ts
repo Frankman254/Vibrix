@@ -9,6 +9,7 @@ import {
 	type SyncRepository
 } from './SyncRepository';
 import { computeContentHash } from './contentHash';
+import { openStoreDbOrThrow } from '@/lib/db/openStoreDb';
 
 /**
  * IndexedDB-backed `SyncRepository`. This is the "local backend" that works
@@ -38,21 +39,19 @@ type AssetRecord = AssetMeta & {
 };
 
 function openDb(): Promise<IDBDatabase> {
-	return new Promise((resolve, reject) => {
-		const req = indexedDB.open(DB_NAME, DB_VERSION);
-		req.onupgradeneeded = event => {
-			const db = (event.target as IDBOpenDBRequest).result;
-			if (!db.objectStoreNames.contains(PROJECTS)) {
-				db.createObjectStore(PROJECTS, { keyPath: 'id' });
-			}
-			if (!db.objectStoreNames.contains(ASSETS)) {
+	return openStoreDbOrThrow(DB_NAME, DB_VERSION, [
+		{
+			name: PROJECTS,
+			create: db => db.createObjectStore(PROJECTS, { keyPath: 'id' })
+		},
+		{
+			name: ASSETS,
+			create: db => {
 				const store = db.createObjectStore(ASSETS, { keyPath: 'key' });
 				store.createIndex('projectId', 'projectId', { unique: false });
 			}
-		};
-		req.onsuccess = () => resolve(req.result);
-		req.onerror = () => reject(req.error);
-	});
+		}
+	]);
 }
 
 function tx<T>(

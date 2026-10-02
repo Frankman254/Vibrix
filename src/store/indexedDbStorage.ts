@@ -23,6 +23,7 @@
  *    empty database and shown every existing user an empty app, so the old
  *    names are read once and copied over. See `LEGACY_STORAGE` below.
  */
+import { openStoreDb } from '@/lib/db/openStoreDb';
 import { reportPersistenceFailure } from './persistenceStatus';
 
 const DB_NAME = 'vibrix-store';
@@ -48,28 +49,9 @@ let dbPromise: Promise<IDBDatabase | null> | null = null;
 
 function openDb(): Promise<IDBDatabase | null> {
 	if (dbPromise) return dbPromise;
-	dbPromise = new Promise(resolve => {
-		if (typeof indexedDB === 'undefined') {
-			resolve(null);
-			return;
-		}
-		let request: IDBOpenDBRequest;
-		try {
-			request = indexedDB.open(DB_NAME, DB_VERSION);
-		} catch {
-			resolve(null);
-			return;
-		}
-		request.onupgradeneeded = () => {
-			const db = request.result;
-			if (!db.objectStoreNames.contains(STORE)) {
-				db.createObjectStore(STORE);
-			}
-		};
-		request.onsuccess = () => resolve(request.result);
-		request.onerror = () => resolve(null);
-		request.onblocked = () => resolve(null);
-	});
+	dbPromise = openStoreDb(DB_NAME, DB_VERSION, [
+		{ name: STORE, create: db => db.createObjectStore(STORE) }
+	]).then(result => result.db);
 	return dbPromise;
 }
 

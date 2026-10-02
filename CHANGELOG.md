@@ -169,6 +169,33 @@ the version scheme in `src/lib/version.ts`.
 
 ### Corregido
 
+- **Una base de datos a la que le falta un almacén se repara sola, y dejar de
+  abrirla no lanza nada sin capturar.** `onupgradeneeded` sólo salta cuando la
+  versión **sube**, así que una base que ya está en la versión actual pero sin su
+  `objectStore` —un `createObjectStore` que falló a medias, una pestaña que se
+  cerró en plena migración, una versión vieja que creó la base sin terminar— se
+  queda roto **para siempre**: cada `db.transaction(store)` tira
+  `NotFoundError`, y al estar dentro del ejecutor de una promesa salía como
+  excepción no capturada en cada arranque, sin que ninguna de las cinco rutas de
+  IndexedDB tuviera forma de recuperarse.
+
+    Ahora las cinco abren por `src/lib/db/openStoreDb.ts`: comprueba que los
+    almacenes que pidió existen de verdad y, si falta alguno, reabre en
+    `version + 1` **contada desde la que hay en disco**, no desde la que pedía el
+    módulo, y los crea. Si la versión pedida es más baja que la del disco
+    (`VersionError`) reintenta sin versión — seguro precisamente ahí, porque el
+    fallo prueba que la base existe; una apertura sin versión sobre una base que
+    no existe es justo lo que crea la cáscara vacía que esto viene a limpiar.
+    Cuando no hay `indexedDB` devuelve `null` en vez de reventar.
+
+    No se pudo reproducir en esta máquina el arranque concreto que lo disparaba
+    al usuario, así que lo arreglado es la forma del fallo, no una causa
+    identificada: el estado dejaba de ser permanente y el error deja de salir sin
+    capturar. Probado induciendo el estado roto con `fake-indexeddb` (seis tests
+    en `openStoreDb.test.ts`, uno de ellos sembrando una base en la versión buena
+    sin su almacén y comprobando que después `db.transaction('images')` ya no
+    tira).
+
 - **La intro ligada a un setlist ya no se come la del proyecto.** Un setlist es
   una curación, no una edición destructiva — desactivarlo devuelve el pool
   entero — y su intro no obedecía esa regla: activar un setlist con slot de

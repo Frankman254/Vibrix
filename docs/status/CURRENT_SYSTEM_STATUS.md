@@ -26,8 +26,17 @@ This document describes the product **as implemented in code**, not aspirational
 | Vite + React 19 SPA              | Stable | HashRouter (`#/edit`, `#/present`, `#/record`, `#/preview`) |
 | Shared `WallpaperAppProviders`   | Stable | Single `AudioDataProvider` above route shells               |
 | Zustand + `localStorage` persist | Stable | `STORE_PERSIST_VERSION = 144`                               |
-| IndexedDB assets                 | Stable | Images, audio blobs                                         |
+| IndexedDB assets                 | Stable | Images, audio blobs; las 5 bases abren por `openStoreDb`    |
 | Vitest + GitHub Actions CI       | Stable | format, lint, types, tests, docs:check, build               |
+
+Las cinco rutas de IndexedDB (`imageDb`, `localFoldersDb`, `signatureCache`,
+`localSyncRepository`, `indexedDbStorage`) abren por
+[src/lib/db/openStoreDb.ts](../../src/lib/db/openStoreDb.ts): verifica que los
+almacenes pedidos existen y, si falta alguno, reabre en `version + 1` contada
+desde la del disco para crearlo. Hace falta porque `onupgradeneeded` sólo salta
+cuando la versión sube: una base que ya está en la versión actual sin su
+`objectStore` no se arreglaría nunca y cada transacción tiraría `NotFoundError`
+sin capturar.
 
 Verified provider tree (`src/App.tsx`):
 

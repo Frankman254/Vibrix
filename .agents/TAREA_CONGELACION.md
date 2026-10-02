@@ -24,7 +24,7 @@ supuesto) y **dónde se arregla**. Sin eso es un post-it, no una tarea.
 | F0  | Export de vídeo offline probado de punta a punta con un tema | **Pasa** (probado por el usuario)  |
 | F1  | No se puede ver la intro/ending sin mover el tiempo del tema | **Hecha** (`15ac2439`, `88d2492e`) |
 | F2  | Los selectores de slot son una lista larga sin flechas       | **Hecha** (ver abajo)              |
-| F3  | `NotFoundError` de IndexedDB no capturado en cada arranque   | **Siguiente**                      |
+| F3  | `NotFoundError` de IndexedDB no capturado en cada arranque   | **Hecha** (ver abajo)              |
 
 ## F1 · No hay forma de ver la intro o el ending sin cambiar el tiempo
 
@@ -73,15 +73,32 @@ avanza, aplica, y la flecha se apaga al llegar al extremo.
 **Qué se siente.** Nada, todavía: la app funciona. Pero la consola abre con una
 excepción **no capturada** en cada carga.
 
-**Por qué pasa.** Sin diagnosticar. El mensaje es `Failed to execute
-'transaction' on 'IDBDatabase': One of the specified object stores was not
-found`, y salta en una carga limpia sin tocar nada — verificado recargando la
-página sin interactuar. Huele a un `objectStore` que se abre antes de que una
-migración de la base lo haya creado.
+**Por qué pasa.** El mensaje es `Failed to execute 'transaction' on
+'IDBDatabase': One of the specified object stores was not found`. La causa
+concreta del arranque del usuario **no se pudo reproducir** en esta máquina:
+instrumentando `indexedDB.open` y `IDBDatabase.prototype.transaction` en una
+carga limpia salieron dos aperturas correctas y cero transacciones fallidas. Lo
+que sí se encontró es una base `vibrix-state` v1 **con cero almacenes** en el
+perfil del navegador; nada en el repo abre una base con ese nombre y el historial
+tampoco lo usó nunca, así que es una cáscara inerte — pero su existencia prueba
+que la forma del fallo es real.
 
-**Por qué está en la lista.** Un error no capturado al arrancar es exactamente
-lo que convierte «no se guardó mi proyecto» en un misterio de media tarde. Antes
-de congelar hay que saber qué transacción es y si pierde datos o no.
+Y esa forma era permanente: `onupgradeneeded` sólo salta cuando la versión
+**sube**, así que una base que ya está en la versión que el módulo pide pero sin
+su `objectStore` no se arregla nunca. Cada `db.transaction(store)` tira
+`NotFoundError` dentro del ejecutor de una promesa, es decir sin capturar, en
+cada arranque y para siempre.
+
+**Dónde se arregló.** En la apertura, compartida: `src/lib/db/openStoreDb.ts`
+verifica que los almacenes pedidos existen y, si falta alguno, reabre en
+`version + 1` contada **desde la del disco** y los crea; si la versión pedida es
+menor que la del disco reintenta sin versión (seguro sólo ahí, porque el
+`VersionError` prueba que la base existe); sin `indexedDB` devuelve `null` en vez
+de reventar. Las cinco rutas pasan por ella: `imageDb`, `localFoldersDb`,
+`signatureCache`, `localSyncRepository` y `indexedDbStorage`. Seis tests induciendo
+el estado roto con `fake-indexeddb`, porque a mano no se reproduce. Lo arreglado
+es la forma del fallo, no una causa identificada — si el error vuelve a salir,
+ahora hay un único sitio donde instrumentarlo.
 
 ## Arregladas en este ciclo
 
@@ -101,6 +118,13 @@ de congelar hay que saber qué transacción es y si pierde datos o no.
   [docs/audits/AUDITORIA_VENTANA_INTRO_2026-09-30.md](../docs/audits/AUDITORIA_VENTANA_INTRO_2026-09-30.md):
   de las 58 claves de la ventana, **ninguna** está muerta; el problema era el
   orden, no el exceso.
+- **F3**: una base de datos a la que le falta un almacén se repara sola. El
+  estado era permanente —`onupgradeneeded` no salta sin subir de versión— y el
+  `NotFoundError` salía sin capturar en cada arranque desde las cinco rutas de
+  IndexedDB; ahora todas abren por `openStoreDb`, que reabre un escalón por
+  encima de la versión **del disco** y crea lo que falte. La causa exacta del
+  arranque del usuario no se reprodujo aquí: se arregló la forma del fallo, con
+  el estado roto inducido en los tests.
 - Fuera el grabador en vivo de la pestaña Export (`93486e2e`).
 
 ## No hacer mientras esto esté abierto
