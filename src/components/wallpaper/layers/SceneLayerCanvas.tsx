@@ -76,6 +76,10 @@ export default function SceneLayerCanvas({ layer }: { layer: SceneLayer }) {
 	const particleFilterActive =
 		layer.type === 'particle-background' ||
 		layer.type === 'particle-foreground';
+	// Every GL scene layer moves what it DRAWS, never itself: rain offsets its
+	// plane inside the scene (`RainLayer`) and the particle fields offset their
+	// points. Only the image background still takes an element translation.
+	const drawsOwnCameraMotion = particleFilterActive || layer.type === 'rain';
 	const canvasFilter = particleFilterActive
 		? `brightness(${particleFilterBrightness}) contrast(${particleFilterContrast}) saturate(${particleFilterSaturation}) blur(${particleFilterBlur}px) hue-rotate(${particleFilterHueRotate}deg)`
 		: 'none';
@@ -99,14 +103,13 @@ export default function SceneLayerCanvas({ layer }: { layer: SceneLayer }) {
 							? 'rain'
 							: 'background'
 			}
-			// A particle field moves what it DRAWS, never itself. Sliding the
-			// element is what put a straight empty edge in the frame: the canvas
-			// is the size of the screen, so translating it uncovers the screen
-			// underneath. The field is generated past the frame instead
-			// (`resolveParticleFieldBounds`) and the points are offset inside
-			// the scene, so there is nothing to uncover — the same trade the
-			// spectrum canvases already make.
-			{...(particleFilterActive ? { 'data-camera-motion-draw': '' } : {})}
+			// Sliding the element is what put a straight empty edge in the
+			// frame: the canvas is the size of the screen, so translating it
+			// uncovers the screen underneath. The field is generated past the
+			// frame instead (`resolveParticleFieldBounds`, `resolveRainMeshTiles`)
+			// and offset inside the scene, so there is nothing to uncover — the
+			// same trade the spectrum canvases already make.
+			{...(drawsOwnCameraMotion ? { 'data-camera-motion-draw': '' } : {})}
 			style={{
 				position: 'fixed',
 				inset: 0,

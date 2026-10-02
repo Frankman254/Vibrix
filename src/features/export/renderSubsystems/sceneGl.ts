@@ -41,10 +41,12 @@ import {
 } from '@/features/stageFx/cameraDrawOffset';
 import {
 	applyRainUniforms,
+	RAIN_MESH_DEPTH_SCALE,
 	RAIN_MESH_OVERSCALE,
 	RAIN_MESH_Z,
 	RAIN_PALETTE_SIZE,
 	resolveRainMeshRotation,
+	resolveRainMeshTiles,
 	resolveRainUniforms
 } from '@/features/rain/render/rainUniforms';
 import { resolveSceneLayerMaxDpr } from '@/runtime/outputRenderQuality';
@@ -375,7 +377,8 @@ function createRainSubsystem(host: SceneGlHost): RenderSubsystem {
 				() => new THREE.Vector3()
 			)
 		},
-		uParticleType: { value: 0 }
+		uParticleType: { value: 0 },
+		uRainTiles: { value: 1 }
 	};
 	const mesh = new THREE.Mesh(
 		new THREE.PlaneGeometry(1, 1),
@@ -407,17 +410,30 @@ function createRainSubsystem(host: SceneGlHost): RenderSubsystem {
 			const { width, height } = ctx.resolution;
 			motionTime += Math.min(ctx.deltaMs / 1000, MAX_STEP_SEC);
 			uniforms.uTime.value = motionTime;
+			// Same plane the live canvas builds: Camera Motion moves the
+			// pattern, so it has to exist where the movement takes it. The
+			// overscan is measured in live-viewport pixels, and so is the
+			// viewport it is compared against, which keeps the tile count
+			// independent of the export resolution.
+			const tiles = resolveRainMeshTiles(
+				cameraMotionOverscanPx(ctx.state as WallpaperState, 'rain'),
+				readViewportMin()
+			);
 			applyRainUniforms(
 				uniforms,
-				resolveRainUniforms(ctx.state, {
-					background: ctx.palette,
-					theme: getEditorThemePalette(ctx.state.editorTheme)
-				})
+				resolveRainUniforms(
+					ctx.state,
+					{
+						background: ctx.palette,
+						theme: getEditorThemePalette(ctx.state.editorTheme)
+					},
+					tiles
+				)
 			);
 			const world = resolveWorldViewport(width / height);
 			mesh.scale.set(
-				world.width * RAIN_MESH_OVERSCALE,
-				world.height * RAIN_MESH_OVERSCALE,
+				world.width * RAIN_MESH_OVERSCALE * tiles,
+				world.height * RAIN_MESH_OVERSCALE * tiles,
 				1
 			);
 			mesh.rotation.z = resolveRainMeshRotation(ctx.state);
@@ -426,8 +442,28 @@ function createRainSubsystem(host: SceneGlHost): RenderSubsystem {
 				host.retain();
 				retained = true;
 			}
+			// The camera moves the PLANE, not the frame, exactly as the live
+			// canvas does: the GL canvas is the size of the output, so blitting
+			// it through the camera transform would slide its own edge into the
+			// video. The plane is bigger than the frame for this, so what
+			// scrolls in is more rain.
+			const space = readCameraDrawSpace(target);
+			const zoom = space?.scale ?? 1;
+			const worldPerPx =
+				(RAIN_MESH_DEPTH_SCALE * resolveWorldViewport(1).height) /
+				Math.max(1, height);
+			mesh.position.x = ((space?.tx ?? 0) / zoom) * worldPerPx;
+			mesh.position.y = -((space?.ty ?? 0) / zoom) * worldPerPx;
 			const glCanvas = host.draw(scene, width, height);
-			if (glCanvas) target.drawImage(glCanvas, 0, 0);
+			if (!glCanvas) return;
+			blitInFrameSpace(target, blitCtx => {
+				if (zoom !== 1) {
+					blitCtx.translate(width / 2, height / 2);
+					blitCtx.scale(zoom, zoom);
+					blitCtx.translate(-width / 2, -height / 2);
+				}
+				blitCtx.drawImage(glCanvas, 0, 0);
+			});
 		},
 		reset() {
 			motionTime = 0;

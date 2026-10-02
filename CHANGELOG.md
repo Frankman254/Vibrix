@@ -195,6 +195,25 @@ the version scheme in `src/lib/version.ts`.
 
 ### Corregido
 
+- **La lluvia ya no enseña su borde cuando la cámara la mueve.** Classic Rain se
+  dibuja sobre un plano de 1,5 viewports; Camera Motion movía el lienzo entero
+  (en vivo) o pegaba el canvas GL con la transformación puesta (en el export), y
+  en cuanto el movimiento pasaba de la holgura del plano entraba en el cuadro el
+  canto del propio plano: una banda vacía recta. Ahora la lluvia mueve lo que
+  DIBUJA —el plano dentro de la escena, como ya hacían las partículas— y el
+  patrón se repite por baldosas (`uRainTiles`): el plano crece lo que haga falta
+  para el recorrido máximo que permiten los ajustes y cada baldosa sigue midiendo
+  exactamente lo que medía, así que el tamaño, la velocidad y la densidad de las
+  gotas no cambian. El patrón además envuelve en los dos ejes, de modo que una
+  estela que sale por un lado vuelve a entrar por el otro en vez de cortarse —y
+  de paso se rellenan las esquinas que quedaban vacías al rotar el patrón.
+  Medido sobre el propio exportador a 960×540, forzando el desplazamiento máximo
+  que cada configuración puede producir: con 144 px de recorrido (1 baldosa, 102
+  px de salida) y con 288 px (2 baldosas, 203 px de salida) quedan **0 columnas
+  y 0 filas vacías**, y la densidad de la banda exterior coincide con el resto
+  del cuadro (530 vs 524 px de lluvia por columna) — antes de esto el mismo
+  desplazamiento dejaba una banda vacía de exactamente esos 102 y 203 px.
+
 - **El vídeo exportado ya no corta la capa que mueve la cámara.** En el sistema
   en vivo cada lienzo mueve lo que DIBUJA dentro de un canvas fijo, pero el
   exportador añade un lienzo intermedio del tamaño del fotograma por capa

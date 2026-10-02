@@ -54,6 +54,38 @@ export const RAIN_PALETTE_SIZE = 6;
 export const RAIN_MESH_OVERSCALE = 1.5;
 export const RAIN_MESH_Z = 0.1;
 
+/**
+ * World units at the plane's depth per world unit at z = 0, with the scene
+ * camera at z = 1. The plane is scaled in z = 0 viewport units but sits closer
+ * to the camera, so it covers `RAIN_MESH_OVERSCALE / RAIN_MESH_DEPTH_SCALE`
+ * screens — that, not the overscale alone, is the slack the frame gets.
+ */
+export const RAIN_MESH_DEPTH_SCALE = 1 - RAIN_MESH_Z;
+
+/** Screens of slack one tile of the pattern covers, on each axis. */
+const RAIN_TILE_COVERAGE = RAIN_MESH_OVERSCALE / RAIN_MESH_DEPTH_SCALE;
+
+/**
+ * How many copies of the authored pattern the plane has to hold so Camera
+ * Motion never slides its edge into the frame, given how far the movement can
+ * travel (`cameraMotionOverscanPx`) and the short side of the viewport those
+ * pixels are measured in.
+ *
+ * The plane grows by the same factor, so a tile stays exactly the size it is
+ * today and the drops keep the size, speed and density the dials ask for — the
+ * shader wraps the pattern per tile (`uRainTiles`), which is what a generated
+ * field can do instead of being zoomed. One tile already covers a third of the
+ * screen past each edge, so ordinary movements cost nothing.
+ */
+export function resolveRainMeshTiles(
+	overscanPx: number,
+	viewportMinPx: number
+): number {
+	if (!(overscanPx > 0) || !(viewportMinPx > 0)) return 1;
+	const neededScreens = 1 + (2 * overscanPx) / viewportMinPx;
+	return Math.max(1, Math.ceil(neededScreens / RAIN_TILE_COVERAGE));
+}
+
 function hexToVec3(hex: string): Vec3 {
 	const c = hex.replace('#', '');
 	return [
@@ -79,11 +111,15 @@ export type RainUniformValues = {
 	/** Always `RAIN_PALETTE_SIZE` entries. */
 	uPaletteColors: Vec3[];
 	uParticleType: number;
+	/** Copies of the pattern per mesh axis; see `resolveRainMeshTiles`. */
+	uRainTiles: number;
 };
 
 export function resolveRainUniforms(
 	settings: RainSettings,
-	palettes: { background: BackgroundPalette; theme: BackgroundPalette }
+	palettes: { background: BackgroundPalette; theme: BackgroundPalette },
+	/** `resolveRainMeshTiles`, i.e. how much bigger than a screen the plane is. */
+	tiles = 1
 ): RainUniformValues {
 	// Looks' "filter opacity" reaches rain from whichever effect layer
 	// targets it — not necessarily the one the Looks tab is editing.
@@ -127,7 +163,8 @@ export function resolveRainUniforms(
 		uUsePaletteRainbow: usePaletteRainbow ? 1 : 0,
 		uPaletteCount: activePalette.rainbow.length,
 		uPaletteColors: paletteColors,
-		uParticleType: PARTICLE_TYPE_INDEX[settings.rainParticleType] ?? 0
+		uParticleType: PARTICLE_TYPE_INDEX[settings.rainParticleType] ?? 0,
+		uRainTiles: Math.max(1, tiles)
 	};
 }
 
