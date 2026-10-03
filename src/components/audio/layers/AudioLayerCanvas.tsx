@@ -46,9 +46,7 @@ export default function AudioLayerCanvas({
 	spectrumPartition?: SpectrumDrawPartition;
 }) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
-	const fadeRef = useVisualTransitionFade(
-		transitionSubsystemsForLayerType(layer.type)
-	);
+
 	const rafRef = useRef<number>(0);
 	const lastTimeRef = useRef<number>(0);
 	const lastDrawTimeRef = useRef<number>(0);
@@ -67,6 +65,20 @@ export default function AudioLayerCanvas({
 		getDuration,
 		captureMode
 	} = useAudioData();
+	const fadeRef = useVisualTransitionFade(
+		transitionSubsystemsForLayerType(layer.type),
+		{
+			imageTransitionTarget:
+				layer.type === 'logo'
+					? 'logo'
+					: layer.type === 'spectrum'
+						? spectrumPartition === 'instances'
+							? 'spectrum2'
+							: 'spectrum'
+						: undefined,
+			getAudioSnapshot
+		}
+	);
 
 	useEffect(() => {
 		layerRef.current = layer;

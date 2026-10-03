@@ -185,4 +185,5 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // pushed away (below 1 the card is matted inside its cell, showing the
 // backdrop on purpose) or pulled closer. Seeded 1 in both windows and in every
 // saved intro animation, which is exactly what they were already drawing.
-export const STORE_PERSIST_VERSION = 144;
+// v145: per-image transitionLayerTargets, opt-in Spectrum 1/2 and logo.
+export const STORE_PERSIST_VERSION = 145;

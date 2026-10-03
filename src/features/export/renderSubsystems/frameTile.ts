@@ -34,7 +34,8 @@ export function drawFrameTile(
 	target: CanvasRenderingContext2D,
 	tile: CanvasRenderingContext2D,
 	size: FrameTileSize,
-	paint: (ctx: CanvasRenderingContext2D) => boolean | void
+	paint: (ctx: CanvasRenderingContext2D) => boolean | void,
+	composite?: (canvas: HTMLCanvasElement) => HTMLCanvasElement
 ): void {
 	clearCameraTile(tile, size.width, size.height);
 	let drawn = true;
@@ -42,5 +43,6 @@ export function drawFrameTile(
 		drawn = paint(ctx) !== false;
 	});
 	if (!drawn) return;
-	blitInFrameSpace(target, frame => frame.drawImage(tile.canvas, 0, 0));
+	const rendered = composite ? composite(tile.canvas) : tile.canvas;
+	blitInFrameSpace(target, frame => frame.drawImage(rendered, 0, 0));
 }

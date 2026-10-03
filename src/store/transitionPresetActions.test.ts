@@ -130,3 +130,82 @@ describe('transition presets in the store', () => {
 		expect(new Set(names).size).toBe(names.length);
 	});
 });
+
+describe('batch transition action', () => {
+	beforeEach(seed);
+	it('writes atomically, keeps duration and updates only active transition mirrors', async () => {
+		const { planTransitionBatch } =
+			await import('@/features/background/transitionBatch');
+		const state = useWallpaperStore.getState();
+		const plan = planTransitionBatch(
+			state.backgroundImages,
+			['iris', 'cross-zoom'],
+			{ transitionIntensity: 1.8 }
+		)!;
+		expect(
+			state.applyTransitionBatch(
+				plan,
+				state.backgroundImages,
+				state.setlists
+			)
+		).toBe(true);
+		const after = useWallpaperStore.getState();
+		expect(after.slideshowTransitionType).toBe(
+			after.backgroundImages[0].transitionType
+		);
+		expect(after.slideshowTransitionIntensity).toBe(1.8);
+		expect(after.slideshowTransitionDuration).toBe(
+			state.slideshowTransitionDuration
+		);
+		expect(after.backgroundImages.map(i => i.transitionDuration)).toEqual(
+			state.backgroundImages.map(i => i.transitionDuration)
+		);
+		expect(
+			after.applyTransitionBatch(
+				plan,
+				state.backgroundImages,
+				state.setlists
+			)
+		).toBe(false);
+	});
+	it('rejects a confirmation whose setlist was changed', async () => {
+		const { planTransitionBatch } =
+			await import('@/features/background/transitionBatch');
+		const state = useWallpaperStore.getState();
+		const plan = planTransitionBatch(state.backgroundImages, [
+			'iris',
+			'cross-zoom'
+		])!;
+		useWallpaperStore.setState({ setlists: [...state.setlists] });
+		expect(
+			state.applyTransitionBatch(
+				plan,
+				state.backgroundImages,
+				state.setlists
+			)
+		).toBe(false);
+		expect(useWallpaperStore.getState().backgroundImages).toBe(
+			state.backgroundImages
+		);
+	});
+});
+
+describe('image transition target switches', () => {
+	beforeEach(seed);
+	it('edits only the active image, preserving preset, style and duration', () => {
+		const before = useWallpaperStore.getState();
+		before.setImageTransitionLayerTargets(['spectrum2', 'logo']);
+		const after = useWallpaperStore.getState();
+		expect(after.backgroundImages[0].transitionLayerTargets).toEqual([
+			'spectrum2',
+			'logo'
+		]);
+		expect(after.backgroundImages[1]).toBe(before.backgroundImages[1]);
+		expect(after.backgroundImages[0].transitionDuration).toBe(
+			before.backgroundImages[0].transitionDuration
+		);
+		expect(after.backgroundImages[0].transitionPresetId).toBe(
+			before.backgroundImages[0].transitionPresetId
+		);
+	});
+});

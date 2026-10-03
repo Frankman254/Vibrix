@@ -1,3 +1,4 @@
+import { linkedImageTransition } from '@/features/visualTransition/linkedImageTransition';
 /**
  * How the offline frame stacks its layers, mirroring the live viewport:
  * draw order by each layer's z-index, which Camera FX target a subsystem
@@ -110,6 +111,11 @@ export function resolveTransitionAlpha(
 	id: RenderSubsystemId,
 	timeMs: number
 ): number {
+	if (
+		(id === 'spectrum' || id === 'spectrum2' || id === 'logo') &&
+		linkedImageTransition(state.visualTransition, id)
+	)
+		return 1;
 	const subsystem = SUBSYSTEM_TRANSITION[id];
 	const transition = state.visualTransition;
 	if (

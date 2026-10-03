@@ -80,3 +80,10 @@ export type {
 	PlaybackImageResolution,
 	SlideshowTimelineSettings
 } from './slideshow/slideshowPlayback';
+
+export {
+	transitionBatchImages,
+	planTransitionBatch,
+	applyTransitionBatchPlan
+} from './transitionBatch';
+export type { TransitionBatchPlan } from './transitionBatch';

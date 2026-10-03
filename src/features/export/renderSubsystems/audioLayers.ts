@@ -1,3 +1,5 @@
+import { LayerTransitionSurface } from '@/features/visualTransition/layerTransitionSurface';
+import type { ImageTransitionLayerTarget } from '@/types/wallpaper';
 import { buildOverlayLayers } from '@/lib/layers';
 import {
 	createAudioLayerFrameRenderState,
@@ -17,6 +19,7 @@ type ScratchSurface = {
 	canvas: HTMLCanvasElement;
 	ctx: CanvasRenderingContext2D;
 	frameState: AudioLayerFrameRenderState;
+	linkedTransition: LayerTransitionSurface;
 };
 
 const surfaces = new Map<string, ScratchSurface>();
@@ -40,6 +43,7 @@ function getSurface(id: string, width: number, height: number): ScratchSurface {
 	const surface: ScratchSurface = {
 		canvas,
 		ctx,
+		linkedTransition: new LayerTransitionSurface(),
 		frameState: createAudioLayerFrameRenderState()
 	};
 	surfaces.set(id, surface);
@@ -51,11 +55,10 @@ function isRenderableAudioLayer(layer: {
 	enabled: boolean;
 }): layer is RenderableAudioLayer {
 	return (
-		layer.enabled &&
-		(layer.type === 'logo' ||
-			layer.type === 'spectrum' ||
-			layer.type === 'track-title' ||
-			layer.type === 'lyrics')
+		layer.type === 'logo' ||
+		layer.type === 'spectrum' ||
+		layer.type === 'track-title' ||
+		layer.type === 'lyrics'
 	);
 }
 
@@ -97,32 +100,58 @@ function makeAudioLayerSubsystem(
 					ctx.resolution.width,
 					ctx.resolution.height
 				);
+				const linkedTarget: ImageTransitionLayerTarget | undefined =
+					id === 'spectrum' || id === 'spectrum2' || id === 'logo'
+						? id
+						: undefined;
+				if (linkedTarget)
+					surface.linkedTransition.capture(
+						surface.canvas,
+						ctx.state.visualTransition,
+						linkedTarget
+					);
 				// The tile rule (`frameTile`): this scratch is the size of the
 				// whole frame, so it is painted in the output's camera space
 				// and composited with that space cancelled. Blitting it moved
 				// instead cut the figure along the tile's border — the straight
 				// edge the exported video showed at the top and the right.
-				drawFrameTile(target, surface.ctx, ctx.resolution, tileCtx => {
-					renderAudioLayerFrame({
-						ctx: tileCtx,
-						canvas: surface.canvas,
-						layer,
-						state: ctx.state,
-						audio,
-						dt,
-						timeMs: ctx.timeMs,
-						palette: ctx.palette,
-						trackTitle: ctx.trackTitle,
-						trackCurrentTime: ctx.trackCurrentTime,
-						trackDuration: ctx.trackDuration,
-						frameState: surface.frameState,
-						spectrumPartition: partition,
-						logoScope: ctx.scope?.logo,
-						spectrumScope: ctx.scope?.spectrum,
-						flashEdge: ctx.scope?.flashEdge,
-						trackTitleScope: ctx.scope?.trackTitle
-					});
-				});
+				drawFrameTile(
+					target,
+					surface.ctx,
+					ctx.resolution,
+					tileCtx => {
+						renderAudioLayerFrame({
+							ctx: tileCtx,
+							canvas: surface.canvas,
+							layer,
+							state: ctx.state,
+							audio,
+							dt,
+							timeMs: ctx.timeMs,
+							palette: ctx.palette,
+							trackTitle: ctx.trackTitle,
+							trackCurrentTime: ctx.trackCurrentTime,
+							trackDuration: ctx.trackDuration,
+							frameState: surface.frameState,
+							spectrumPartition: partition,
+							logoScope: ctx.scope?.logo,
+							spectrumScope: ctx.scope?.spectrum,
+							flashEdge: ctx.scope?.flashEdge,
+							trackTitleScope: ctx.scope?.trackTitle
+						});
+					},
+					linkedTarget
+						? canvas =>
+								surface.linkedTransition.composite(
+									canvas,
+									ctx.state.visualTransition,
+									linkedTarget,
+									ctx.timeMs,
+									audio,
+									ctx.state
+								)
+						: undefined
+				);
 			}
 		},
 		reset() {
@@ -132,12 +161,20 @@ function makeAudioLayerSubsystem(
 			for (const [key, surface] of surfaces) {
 				if (key.startsWith(`${id}:`)) {
 					surface.frameState = createAudioLayerFrameRenderState();
+					surface.linkedTransition.dispose();
+					surface.ctx.clearRect(
+						0,
+						0,
+						surface.canvas.width,
+						surface.canvas.height
+					);
 				}
 			}
 		},
 		dispose() {
 			for (const [key, surface] of [...surfaces]) {
 				if (key.startsWith(`${id}:`)) {
+					surface.linkedTransition.dispose();
 					surface.canvas.width = 1;
 					surface.canvas.height = 1;
 					surfaces.delete(key);

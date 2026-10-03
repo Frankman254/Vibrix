@@ -1,3 +1,4 @@
+import type { TransitionBatchPlan } from '@/features/background';
 import type { ImageBassZoomPresetId } from '@/features/presets/imageBassZoomProfiles';
 import type {
 	AudioLyricsTrackEntry,
@@ -731,6 +732,9 @@ export type WallpaperStore = WallpaperState & {
 	setSlideshowInterval: (v: number) => void;
 	setSlideshowTransitionDuration: (v: number) => void;
 	setSlideshowTransitionType: (v: SlideshowTransitionType) => void;
+	setImageTransitionLayerTargets: (
+		targets: WallpaperState['backgroundImages'][number]['transitionLayerTargets']
+	) => void;
 	setSlideshowTransitionIntensity: (v: number) => void;
 	setSlideshowTransitionAudioDrive: (v: number) => void;
 	setSlideshowTransitionAudioChannel: (v: AudioReactiveChannel) => void;
@@ -738,6 +742,11 @@ export type WallpaperStore = WallpaperState & {
 	setSlideshowTransitionAnchor: (v: SlideshowTransitionAnchor) => void;
 	/** Point the active image at a named transition look. */
 	applyTransitionPreset: (id: string) => void;
+	applyTransitionBatch: (
+		plan: TransitionBatchPlan,
+		expectedImages: WallpaperState['backgroundImages'],
+		expectedSetlists: WallpaperState['setlists']
+	) => boolean;
 	/** Snapshot the active image's five dials as a new named preset. */
 	saveTransitionPreset: (name: string) => void;
 	renameTransitionPreset: (id: string, name: string) => void;

@@ -53,6 +53,15 @@ export default function WallpaperViewport({
 	sceneVisible?: boolean;
 }) {
 	const showEditorChrome = editorMode && !outputMode;
+	const linkedLayerTargets = useWallpaperStore(
+		useShallow(state => [
+			...new Set(
+				state.backgroundImages.flatMap(
+					image => image.transitionLayerTargets ?? []
+				)
+			)
+		])
+	);
 	const stageLightsEnabled = useWallpaperStore(s => s.stageLightsEnabled);
 	// Spectrum 1 and 2 share a canvas unless the camera aims at Spectrum 2, in
 	// which case each gets its own root so a CSS transform can move one alone.
@@ -180,8 +189,16 @@ export default function WallpaperViewport({
 		() =>
 			overlayLayers
 				.filter(isAudioOverlayLayer)
-				.filter(layer => layer.enabled),
-		[overlayLayers]
+				.filter(
+					layer =>
+						layer.enabled ||
+						(layer.type === 'logo' &&
+							linkedLayerTargets.includes('logo')) ||
+						(layer.type === 'spectrum' &&
+							(linkedLayerTargets.includes('spectrum') ||
+								linkedLayerTargets.includes('spectrum2')))
+				),
+		[overlayLayers, linkedLayerTargets]
 	);
 	const renderableLayers = useMemo(
 		() =>

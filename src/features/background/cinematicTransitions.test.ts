@@ -1,3 +1,4 @@
+import { TRANSITION_TYPES } from './transitionCatalog';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
 	drawCinematicTransition,
@@ -7,6 +8,9 @@ import {
 function context() {
 	return {
 		setTransform: vi.fn(),
+		translate: vi.fn(),
+		rotate: vi.fn(),
+		scale: vi.fn(),
 		clearRect: vi.fn(),
 		save: vi.fn(),
 		restore: vi.fn(),
@@ -55,17 +59,19 @@ describe('cinematic transition rendering', () => {
 		expect(args.drawTo).toHaveBeenCalledTimes(1);
 		expect(created[2].ctx.drawImage).toHaveBeenCalledTimes(12);
 		drawCinematicTransition({ ...args, width: 1080, height: 1920 });
-		expect(created).toHaveLength(3);
-		expect(created.every(c => c.width === 1080 && c.height === 1920)).toBe(
-			true
-		);
+		expect(created).toHaveLength(4);
+		expect(
+			created
+				.slice(0, 3)
+				.every(c => c.width === 1080 && c.height === 1920)
+		).toBe(true);
 		drawCinematicTransition({ ...args, ctx: context() });
-		expect(created).toHaveLength(6);
+		expect(created).toHaveLength(8);
 		expect(args.ctx.save).toHaveBeenCalledTimes(2);
 		expect(args.ctx.restore).toHaveBeenCalledTimes(2);
 	});
 
-	it.each(['cross-zoom', 'diagonal-wipe', 'iris'] as const)(
+	it.each(TRANSITION_TYPES)(
 		'%s draws exact endpoints without effect residue',
 		type => {
 			const { args, created } = setup();

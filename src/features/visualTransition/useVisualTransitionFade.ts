@@ -1,3 +1,13 @@
+import {
+	linkedImageTransition,
+	linkedTransitionProgress,
+	linkedTransitionForce
+} from './linkedImageTransition';
+import {
+	createAudioChannelSelectionState,
+	type AudioSnapshot
+} from '@/lib/audio/audioChannels';
+import type { ImageTransitionLayerTarget } from '@/types/wallpaper';
 import { useEffect, useRef } from 'react';
 import { useWallpaperStore } from '@/store/wallpaperStore';
 import {
@@ -6,6 +16,7 @@ import {
 } from '@/features/visualTransition/visualTransitionCoordinator';
 import {
 	applyCrossfade,
+	applyLinkedImageTransition,
 	freezeLayerFrame,
 	releaseFrozenFrame,
 	type FrozenLayerFrame
@@ -46,9 +57,15 @@ export { transitionSubsystemsForLayerType };
  */
 export function useVisualTransitionFade(
 	subsystems: readonly VisualTransitionSubsystem[],
-	options?: CrossfadeGateOptions
+	options?: CrossfadeGateOptions & {
+		imageTransitionTarget?: ImageTransitionLayerTarget;
+		getAudioSnapshot?: () => AudioSnapshot;
+	}
 ) {
 	const ref = useRef<HTMLDivElement>(null);
+	const audioGetter = useRef(options?.getAudioSnapshot);
+	audioGetter.current = options?.getAudioSnapshot;
+	const imageTransitionTarget = options?.imageTransitionTarget;
 	// The callers build the list per render, so an array would be a new
 	// dependency every time; the joined key is stable for the same layer.
 	const subsystemKey = subsystems.join('|');
@@ -62,7 +79,9 @@ export function useVisualTransitionFade(
 		let raf = 0;
 		let safety = 0;
 		let activeId: string | null = null;
+		let handledId: string | null = null;
 		let frame: FrozenLayerFrame | null = null;
+		const selection = createAudioChannelSelectionState();
 
 		const clearSafety = () => {
 			if (safety) window.clearTimeout(safety);
@@ -80,6 +99,25 @@ export function useVisualTransitionFade(
 
 		const paint = (progress: number) => {
 			if (frame) {
+				const state = useWallpaperStore.getState();
+				const linked = linkedImageTransition(
+					state.visualTransition,
+					imageTransitionTarget
+				);
+				if (linked && state.visualTransition) {
+					applyLinkedImageTransition(
+						frame,
+						linked,
+						progress,
+						linkedTransitionForce(
+							state.visualTransition,
+							audioGetter.current?.() ?? null,
+							state,
+							selection
+						)
+					);
+					return;
+				}
 				applyCrossfade(frame, progress);
 				return;
 			}
@@ -102,7 +140,12 @@ export function useVisualTransitionFade(
 			// `startedAtMs` is wall-clock (`Date.now()`); progress MUST use the
 			// same clock. `performance.now()` is a different epoch and would clamp
 			// progress to 0 forever, freezing the layer at opacity 0 (invisible).
-			const progress = visualTransitionProgress(transition, Date.now());
+			const progress = linkedImageTransition(
+				transition,
+				imageTransitionTarget
+			)
+				? linkedTransitionProgress(transition, Date.now())
+				: visualTransitionProgress(transition, Date.now());
 			if (progress >= 1) {
 				finish();
 				return;
@@ -113,8 +156,21 @@ export function useVisualTransitionFade(
 
 		const maybeStart = () => {
 			const transition = useWallpaperStore.getState().visualTransition;
-			if (!transition || transition.id === activeId) return;
+			if (!transition || transition.id === handledId) return;
+			handledId = transition.id;
+			const linked = linkedImageTransition(
+				transition,
+				imageTransitionTarget
+			);
+			const progress = linked
+				? linkedTransitionProgress(transition, Date.now())
+				: visualTransitionProgress(transition, Date.now());
+			if (progress >= 1) {
+				finish();
+				return;
+			}
 			if (
+				!linkedImageTransition(transition, imageTransitionTarget) &&
 				!shouldStartCrossfade(transition, watched, {
 					skipOnImageChange
 				})
@@ -138,10 +194,16 @@ export function useVisualTransitionFade(
 			// window paints again. Timers are throttled there too, but they do
 			// fire, and by this point the fade is over by wall clock anyway.
 			clearSafety();
-			safety = window.setTimeout(() => {
-				safety = 0;
-				finish();
-			}, transition.durationMs + 250);
+			safety = window.setTimeout(
+				() => {
+					safety = 0;
+					finish();
+				},
+				(linkedImageTransition(transition, imageTransitionTarget)
+					?.transitionDuration ?? transition.durationMs / 1000) *
+					1000 +
+					250
+			);
 		};
 
 		// Catch a transition that is already live when this layer mounts, then
@@ -154,7 +216,7 @@ export function useVisualTransitionFade(
 			unsubscribe();
 			finish();
 		};
-	}, [subsystemKey, skipOnImageChange]);
+	}, [subsystemKey, skipOnImageChange, imageTransitionTarget]);
 
 	return ref;
 }

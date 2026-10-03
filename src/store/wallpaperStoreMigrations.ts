@@ -3668,6 +3668,15 @@ export function migrateWallpaperStore(
 		}
 	}
 
+	if (fromVersion < 145) {
+		migratedState.backgroundImages = (
+			migratedState.backgroundImages ?? []
+		).map(image => ({
+			...image,
+			transitionLayerTargets: image.transitionLayerTargets ?? []
+		}));
+	}
+
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;
 }
 

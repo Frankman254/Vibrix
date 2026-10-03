@@ -6,13 +6,7 @@ import type {
 	BgTransitionCtx
 } from './imageCanvasBackgroundRenderTypes';
 
-/**
- * A 2D context that only remembers what it was asked to draw.
- *
- * The point of these tests is the *number and kind* of draws: the tiled
- * transitions used to redraw the whole image inside every tile, which is the
- * lag the user reported, and nothing was watching for a regression.
- */
+/** Records the scene composite separately from offscreen image preparation. */
 function recordingContext() {
 	const drawn: unknown[] = [];
 	const ctx = {
@@ -25,7 +19,12 @@ function recordingContext() {
 		rect() {},
 		clip() {},
 		clearRect() {},
+		fillRect() {},
 		setTransform() {},
+		createImageData(w: number, h: number) {
+			return { data: new Uint8ClampedArray(w * h * 4) };
+		},
+		putImageData() {},
 		translate() {},
 		rotate() {},
 		scale() {},
@@ -66,6 +65,7 @@ beforeEach(() => {
 			if (tag !== 'canvas') throw new Error(`unexpected <${tag}>`);
 			const canvas = { width: 0, height: 0, getContext: () => ctx };
 			const ctx = recordingContext();
+			Object.defineProperty(ctx, 'canvas', { value: canvas });
 			offscreens.push(canvas);
 			return canvas;
 		}
@@ -107,8 +107,7 @@ function pass(type: string) {
 		activeImage: IMAGE,
 		activeSnapshot: SNAPSHOT,
 		previousBackgroundImage: IMAGE,
-		previousBackgroundParams: SNAPSHOT,
-		colorFilter: 'none'
+		previousBackgroundParams: SNAPSHOT
 	});
 	const onScreen = ctx.drawn;
 	return {
@@ -117,26 +116,17 @@ function pass(type: string) {
 	};
 }
 
-describe('tiled background transitions', () => {
-	it('composes Dissolve once and copies the tiles', () => {
-		const { imageDraws, tileBlits } = pass('blur-dissolve');
-		// One draw for the outgoing image; the incoming one is composed into
-		// the offscreen canvas, never onto the visible canvas.
-		expect(imageDraws).toBe(1);
-		// Every tile already revealed at 50 % is a copy, not a full-image
-		// redraw: dozens of them, and not one of them touches IMAGE.
-		expect(tileBlits).toBeGreaterThan(50);
-	});
-
-	it('copies the tiles for bars and distortion too', () => {
-		for (const type of ['bars-horizontal', 'bars-vertical', 'distortion']) {
-			const { imageDraws, tileBlits } = pass(type);
-			expect(imageDraws, type).toBe(1);
-			expect(tileBlits, type).toBeGreaterThan(5);
-		}
-	});
-
-	it('still draws both images for the plain crossfade', () => {
-		expect(pass('fade')).toEqual({ imageDraws: 2, tileBlits: 0 });
+describe('background transition integration', () => {
+	it.each([
+		'fade',
+		'slide-left',
+		'cross-zoom',
+		'iris',
+		'bars-horizontal',
+		'blur-dissolve',
+		'distortion',
+		'rgb-shift'
+	])('%s composites once onto the scene', type => {
+		expect(pass(type)).toEqual({ imageDraws: 0, tileBlits: 1 });
 	});
 });

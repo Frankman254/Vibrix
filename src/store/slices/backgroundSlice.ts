@@ -1,3 +1,4 @@
+import { applyTransitionBatchPlan } from '@/features/background';
 import type { StateCreator } from 'zustand';
 import {
 	IMAGE_BASS_ZOOM_PRESETS,
@@ -867,6 +868,15 @@ export function createBackgroundSlice(
 					transitionPresetId: null
 				})
 			})),
+		setImageTransitionLayerTargets: targets =>
+			patchActiveImage(() => ({
+				transitionLayerTargets: [...new Set(targets)].filter(
+					target =>
+						target === 'spectrum' ||
+						target === 'spectrum2' ||
+						target === 'logo'
+				)
+			})),
 		setSlideshowTransitionType: v =>
 			set(state => ({
 				slideshowTransitionType: v,
@@ -909,6 +919,40 @@ export function createBackgroundSlice(
 			set({ slideshowTransitionAudioSmoothing: v }),
 		setSlideshowTransitionAnchor: v =>
 			set({ slideshowTransitionAnchor: v }),
+		applyTransitionBatch: (plan, expectedImages, expectedSetlists) => {
+			if (
+				get().backgroundImages !== expectedImages ||
+				get().setlists !== expectedSetlists
+			)
+				return false;
+			set(state => {
+				const backgroundImages = applyTransitionBatchPlan(
+					state.backgroundImages,
+					plan
+				);
+				const active = backgroundImages.find(
+					image => image.assetId === state.activeImageId
+				);
+				const changedActive = plan.assignments.some(
+					item => item.assetId === state.activeImageId
+				);
+				return {
+					backgroundImages,
+					...(active && changedActive
+						? {
+								slideshowTransitionType: active.transitionType,
+								slideshowTransitionIntensity:
+									active.transitionIntensity,
+								slideshowTransitionAudioDrive:
+									active.transitionAudioDrive,
+								slideshowTransitionAudioChannel:
+									active.transitionAudioChannel
+							}
+						: {})
+				};
+			});
+			return true;
+		},
 		applyTransitionPreset: id =>
 			set(state => {
 				const preset = state.transitionPresets.find(

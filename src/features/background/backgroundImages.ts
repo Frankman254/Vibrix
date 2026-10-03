@@ -41,6 +41,7 @@ export type BackgroundImageSettings = Pick<
 	| 'bassIntensity'
 	| 'audioReactiveDecay'
 	| 'audioChannel'
+	| 'transitionLayerTargets'
 	| 'transitionType'
 	| 'transitionDuration'
 	| 'transitionIntensity'
@@ -94,6 +95,7 @@ export function getDefaultBackgroundImageSettings(): BackgroundImageSettings {
 		bassIntensity: DEFAULT_STATE.imageBassScaleIntensity,
 		audioReactiveDecay: DEFAULT_STATE.imageAudioReactiveDecay,
 		audioChannel: DEFAULT_STATE.imageAudioChannel,
+		transitionLayerTargets: [],
 		transitionType: DEFAULT_STATE.slideshowTransitionType,
 		transitionDuration: DEFAULT_STATE.slideshowTransitionDuration,
 		transitionIntensity: DEFAULT_STATE.slideshowTransitionIntensity,
@@ -177,6 +179,14 @@ export function createBackgroundImageItem(
 		audioReactiveDecay:
 			settings.audioReactiveDecay ?? defaults.audioReactiveDecay,
 		audioChannel: settings.audioChannel ?? defaults.audioChannel,
+		transitionLayerTargets: [
+			...new Set(settings.transitionLayerTargets ?? [])
+		].filter(
+			target =>
+				target === 'spectrum' ||
+				target === 'spectrum2' ||
+				target === 'logo'
+		),
 		transitionType: settings.transitionType ?? defaults.transitionType,
 		transitionDuration:
 			settings.transitionDuration ?? defaults.transitionDuration,

@@ -389,6 +389,14 @@ export function normalizePersistedBackgroundImages(
 				fallbackImageConfig.imageAudioReactiveDecay,
 			audioChannel:
 				image.audioChannel ?? fallbackImageConfig.imageAudioChannel,
+			transitionLayerTargets: Array.isArray(image.transitionLayerTargets)
+				? image.transitionLayerTargets.filter(
+						target =>
+							target === 'spectrum' ||
+							target === 'spectrum2' ||
+							target === 'logo'
+					)
+				: [],
 			transitionType:
 				image.transitionType ??
 				fallbackImageConfig.slideshowTransitionType,

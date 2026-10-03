@@ -66,7 +66,8 @@ export function detectVisualTransitionSubsystems(
 }
 
 export function createVisualTransitionSnapshot(params: {
-	state: Pick<WallpaperState, 'activeImageId' | 'performanceMode'>;
+	state: Pick<WallpaperState, 'activeImageId' | 'performanceMode'> &
+		Partial<Pick<WallpaperState, 'backgroundImages'>>;
 	patch: Partial<WallpaperState>;
 	toImageId: string | null;
 	startedAtMs?: number;
@@ -76,6 +77,20 @@ export function createVisualTransitionSnapshot(params: {
 	const imageChanged = params.state.activeImageId !== params.toImageId;
 	if (!imageChanged && subsystems.length === 0) return null;
 	const reduced = params.prefersReducedMotion === true;
+	const outgoing = params.state.backgroundImages?.find(
+		image => image.assetId === params.state.activeImageId
+	);
+	const imageTransition =
+		imageChanged && !reduced && outgoing?.transitionLayerTargets?.length
+			? {
+					transitionType: outgoing.transitionType,
+					transitionDuration: outgoing.transitionDuration,
+					transitionIntensity: outgoing.transitionIntensity,
+					transitionAudioDrive: outgoing.transitionAudioDrive,
+					transitionAudioChannel: outgoing.transitionAudioChannel,
+					targets: [...outgoing.transitionLayerTargets]
+				}
+			: undefined;
 	const startedAtMs = params.startedAtMs ?? Date.now();
 	const performanceDuration =
 		params.state.performanceMode === 'low'
@@ -86,6 +101,7 @@ export function createVisualTransitionSnapshot(params: {
 	return {
 		id: `vt-${startedAtMs}-${Math.random().toString(36).slice(2, 8)}`,
 		fromImageId: params.state.activeImageId,
+		...(imageTransition ? { imageTransition } : {}),
 		toImageId: params.toImageId,
 		startedAtMs,
 		durationMs: reduced ? 0 : performanceDuration,

@@ -229,7 +229,7 @@ re-sincroniza cuando convenga, no una dependencia.
 	"exportKind": "vibrix-manifest",
 	"exportedAt": "2026-10-02T00:00:00.000Z",
 	"rendererVersion": "0.7.0-alpha",
-	"storePersistVersion": 144,
+	"storePersistVersion": 145,
 	"projectName": "Demo",
 	"revision": "169bbe48d6a777",
 	"slots": [

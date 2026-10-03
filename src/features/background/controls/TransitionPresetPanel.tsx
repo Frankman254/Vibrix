@@ -1,3 +1,6 @@
+import type { ImageTransitionLayerTarget } from '@/types/wallpaper';
+import TransitionBatchPanel from './TransitionBatchPanel';
+import { TRANSITION_REVERSE } from '../transitionCatalog';
 import { useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useWallpaperStore } from '@/store/wallpaperStore';
@@ -23,7 +26,7 @@ import { formatDecimal } from './bgFormat';
  * longer is what the preset says. Saving is explicit, the way every other slot
  * in this app works.
  */
-export default function TransitionPresetPanel() {
+function ActiveTransitionPresetPanel() {
 	const t = useT();
 	const { confirm } = useDialog();
 	const [draftName, setDraftName] = useState('');
@@ -52,7 +55,8 @@ export default function TransitionPresetPanel() {
 			applyPreset: s.applyTransitionPreset,
 			savePreset: s.saveTransitionPreset,
 			renamePreset: s.renameTransitionPreset,
-			deletePreset: s.deleteTransitionPreset
+			deletePreset: s.deleteTransitionPreset,
+			setLayerTargets: s.setImageTransitionLayerTargets
 		}))
 	);
 
@@ -80,6 +84,50 @@ export default function TransitionPresetPanel() {
 	return (
 		<>
 			<Caption>{t.hint_transition_next}</Caption>
+			<fieldset className="flex flex-col gap-2">
+				<legend className="text-xs font-semibold">
+					{t.transition_linked_layers}
+				</legend>
+				<Caption>{t.transition_linked_hint}</Caption>
+				<div className="flex flex-wrap gap-4">
+					{(
+						[
+							['spectrum', t.transition_target_spectrum1],
+							['spectrum2', t.transition_target_spectrum2],
+							['logo', t.transition_target_logo]
+						] as const
+					).map(([target, label]) => (
+						<label
+							key={target}
+							className="flex items-center gap-2 text-xs"
+						>
+							<input
+								type="checkbox"
+								role="switch"
+								checked={
+									activeImage?.transitionLayerTargets?.includes(
+										target
+									) ?? false
+								}
+								disabled={!activeImage}
+								onChange={event => {
+									const targets: ImageTransitionLayerTarget[] =
+										activeImage?.transitionLayerTargets ??
+										[];
+									store.setLayerTargets(
+										event.target.checked
+											? [...targets, target]
+											: targets.filter(
+													item => item !== target
+												)
+									);
+								}}
+							/>
+							{label}
+						</label>
+					))}
+				</div>
+			</fieldset>
 
 			<div className="flex flex-wrap gap-1.5">
 				{store.transitionPresets.map(preset => (
@@ -217,7 +265,7 @@ export default function TransitionPresetPanel() {
 					>
 						{t.label_transition_style}
 					</span>
-					<div className="flex flex-wrap gap-1.5">
+					<div className="grid grid-cols-2 gap-1.5">
 						{TRANSITION_TYPES.map(type => (
 							<Button
 								key={type}
@@ -237,6 +285,18 @@ export default function TransitionPresetPanel() {
 					</div>
 				</div>
 
+				{TRANSITION_REVERSE[store.transitionType] && (
+					<Button
+						size="sm"
+						onClick={() =>
+							store.setType(
+								TRANSITION_REVERSE[store.transitionType]!
+							)
+						}
+					>
+						{t.transition_reverse}
+					</Button>
+				)}
 				<div className="grid grid-cols-2 gap-2">
 					<Slider
 						label={t.label_transition_duration}
@@ -280,5 +340,44 @@ export default function TransitionPresetPanel() {
 				/>
 			</AdvancedOnly>
 		</>
+	);
+}
+
+export default function TransitionPresetPanel() {
+	const t = useT();
+	const [tab, setTab] = useState<'image' | 'global'>('image');
+	return (
+		<div className="flex flex-col gap-3">
+			<div
+				role="tablist"
+				aria-label={t.label_transition_style}
+				className="grid grid-cols-2 gap-2"
+			>
+				<Button
+					role="tab"
+					aria-selected={tab === 'image'}
+					active={tab === 'image'}
+					onClick={() => setTab('image')}
+				>
+					{t.transition_tab_image}
+				</Button>
+				<Button
+					role="tab"
+					aria-selected={tab === 'global'}
+					active={tab === 'global'}
+					onClick={() => setTab('global')}
+				>
+					{t.transition_tab_global}
+				</Button>
+			</div>
+			<div role="tabpanel" hidden={tab !== 'image'}>
+				<div className="flex flex-col gap-3">
+					<ActiveTransitionPresetPanel />
+				</div>
+			</div>
+			<div role="tabpanel" hidden={tab !== 'global'}>
+				<TransitionBatchPanel />
+			</div>
+		</div>
 	);
 }

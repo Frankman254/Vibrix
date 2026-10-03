@@ -424,7 +424,29 @@ export type SlideshowTransitionType =
 	| 'distortion'
 	| 'cross-zoom'
 	| 'diagonal-wipe'
-	| 'iris';
+	| 'iris'
+	| 'cross-zoom-out'
+	| 'diagonal-wipe-reverse'
+	| 'iris-close'
+	| 'slide-up'
+	| 'slide-down'
+	| 'zoom-out'
+	| 'wipe-left'
+	| 'wipe-right'
+	| 'wipe-up'
+	| 'wipe-down'
+	| 'spin-left'
+	| 'spin-right'
+	| 'diamond'
+	| 'diamond-close'
+	| 'curtain'
+	| 'curtain-close'
+	| 'checkerboard'
+	| 'mosaic'
+	| 'ripple'
+	| 'wave'
+	| 'squeeze-horizontal'
+	| 'squeeze-vertical';
 /** The five dials that make a transition look the way it looks. */
 export interface TransitionPresetSettings {
 	transitionType: SlideshowTransitionType;
@@ -450,7 +472,14 @@ export type VisualTransitionSubsystem =
 	| 'looks'
 	| 'logo'
 	| 'scene';
+export type ImageTransitionLayerTarget = 'spectrum' | 'spectrum2' | 'logo';
+export type LinkedImageTransition = TransitionPresetSettings & {
+	targets: ImageTransitionLayerTarget[];
+};
+
 export type VisualTransitionSnapshot = {
+	/** Outgoing image settings, frozen before applying the next scene. */
+	imageTransition?: LinkedImageTransition;
 	id: string;
 	fromImageId: string | null;
 	toImageId: string | null;
@@ -569,6 +598,7 @@ export interface BackgroundImageItem {
 	audioReactiveDecay: number;
 	audioChannel: AudioReactiveChannel;
 	// Transition (slideshow)
+	transitionLayerTargets: ImageTransitionLayerTarget[];
 	transitionType: SlideshowTransitionType;
 	transitionDuration: number;
 	transitionIntensity: number;

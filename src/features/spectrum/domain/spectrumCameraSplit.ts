@@ -5,9 +5,10 @@
  * something: an extra full-screen canvas per frame is exactly the cost the
  * spectrum perf audit warned about.
  *
- * So the split is demand-driven: it happens only while a Camera FX target names
- * `spectrum-2`. Pure, and the single source of truth for both the live viewport
- * and the offline export, so the two can never disagree about who draws what.
+ * So the split is demand-driven: it happens while a Camera FX target names
+ * `spectrum-2`, or while any image can transition Spectrum 1/2 independently.
+ * Pure, and the single source of truth for both the live viewport and offline
+ * export, so the two can never disagree about who draws what.
  */
 import {
 	findMotionLayerForTarget,
@@ -24,7 +25,10 @@ export type SpectrumDrawPartition =
 	/** Only `spectrumInstances` (Spectrum 2 and any further instance). */
 	| 'instances';
 
-export type SpectrumCameraSplitSource = MotionLayerTargetSource &
+export type SpectrumCameraSplitSource = Partial<
+	Pick<WallpaperState, 'backgroundImages'>
+> &
+	MotionLayerTargetSource &
 	Pick<
 		WallpaperState,
 		| 'cameraMotionEnabled'
@@ -34,13 +38,21 @@ export type SpectrumCameraSplitSource = MotionLayerTargetSource &
 	>;
 
 /**
- * True when the camera actually distinguishes the two spectrums: a live motion
- * layer or Screen Shake names `spectrum-2`, and there is a second spectrum to
- * move. Everything else keeps the single-canvas path.
+ * True when Camera FX distinguishes the two spectrums, or an image transition
+ * may need to capture either one independently. Everything else keeps the
+ * single-canvas path.
  */
 export function spectrumCameraSplitActive(
 	state: SpectrumCameraSplitSource
 ): boolean {
+	if (
+		state.backgroundImages?.some(image =>
+			image.transitionLayerTargets?.some(
+				target => target === 'spectrum' || target === 'spectrum2'
+			)
+		)
+	)
+		return true;
 	if (state.spectrumInstances.length === 0) return false;
 	if (
 		state.cameraMotionEnabled &&

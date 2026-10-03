@@ -559,3 +559,41 @@ describe('migrateWallpaperStore v143 setlist intro fallback', () => {
 		expect(migrated.setlistIntroFallback).toEqual(parked);
 	});
 });
+
+describe('v145 per-image linked transition targets', () => {
+	it('backfills opt-out without altering transition timing', () => {
+		const migrated = migrateWallpaperStore(
+			{
+				backgroundImages: [
+					{
+						assetId: 'old',
+						url: null,
+						transitionType: 'iris',
+						transitionDuration: 2.4
+					}
+				]
+			},
+			144
+		);
+		expect(migrated.backgroundImages[0].transitionLayerTargets).toEqual([]);
+		expect(migrated.backgroundImages[0].transitionDuration).toBe(2.4);
+	});
+	it('preserves explicitly saved targets through migration and normalization', () => {
+		const migrated = migrateWallpaperStore(
+			{
+				backgroundImages: [
+					{
+						assetId: 'linked',
+						url: null,
+						transitionLayerTargets: ['spectrum2', 'logo']
+					}
+				]
+			},
+			144
+		);
+		expect(migrated.backgroundImages[0].transitionLayerTargets).toEqual([
+			'spectrum2',
+			'logo'
+		]);
+	});
+});

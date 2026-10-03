@@ -136,8 +136,7 @@ export function renderBackgroundFrame({
 			activeImage,
 			activeSnapshot,
 			previousBackgroundImage: previousBackgroundImageRef.current,
-			previousBackgroundParams: previousBackgroundParamsRef.current,
-			colorFilter
+			previousBackgroundParams: previousBackgroundParamsRef.current
 		});
 
 		if (progress >= 1 && activeImage) {

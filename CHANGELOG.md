@@ -15,6 +15,18 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+- Transiciones enlazadas por imagen: cada imagen puede aplicar su transición de
+  salida también a Spectrum 1, Spectrum 2 y/o Logo. Preview y export offline
+  comparten el mismo compositor y respetan la duración, intensidad y canal de
+  audio de la imagen saliente. `STORE_PERSIST_VERSION` is at **145**; la
+  migración añade la selección vacía, por lo que los proyectos existentes
+  conservan exactamente su comportamiento.
+
+- Transiciones: catálogo ampliado a 34 estilos/variantes, inversión de dirección
+  y renovación del motor de los estilos anteriores. Nueva pestaña Global para
+  repartir estilos seleccionados por setlist o biblioteca, sin vecinas repetidas,
+  con confirmación, duraciones intactas y parámetros de intensidad/audio opcionales.
+
 - Transiciones de imagen: zoom con estela, barrido diagonal suave y apertura circular, con intensidad/audio existentes, etiquetas ES/EN y renderer compartido entre preview y export.
 
 ### Cambiado
@@ -132,7 +144,7 @@ the version scheme in `src/lib/version.ts`.
     nerviosa, cuatro veces seguidas) y **Zoom + pan** (empujar hacia la foto
     mientras recorre, como un documental). Los cinco de antes siguen intactos.
 
-    `STORE_PERSIST_VERSION` is at **144**; la migración siembra
+    `STORE_PERSIST_VERSION` is at **145**; la migración siembra
     `montageImageScale = 1` en las dos ventanas y en cada animación de intro
     guardada, que es exactamente lo que ya estaban dibujando, así que ningún
     proyecto cambia de aspecto al abrirse.
@@ -195,7 +207,7 @@ the version scheme in `src/lib/version.ts`.
 
 ### Corregido
 
-- **El Flash Light ya no enseña su borde cuando la cámara lo mueve.** El flash es
+- **El Flash Light ya no enseña su borde cuando la cámara o el shake lo mueven.** El flash es
   un relleno del tamaño exacto del cuadro, así que moverlo —da igual si se mueve
   el lienzo o el dibujo— destapaba por el lado contrario una banda recta sin
   flash. Ahora el relleno se pinta pasado el cuadro justo lo que mide el
@@ -206,6 +218,9 @@ the version scheme in `src/lib/version.ts`.
   viñeta invertida) desbordan por igual, y mientras hay desbordamiento el flash
   se dibuja directo en vez de pasar por su caché del tamaño del cuadro —esa
   caché es precisamente lo que nunca debe pegarse con la cámara puesta.
+
+    El margen toma también el desplazamiento real del fotograma, así que cubre
+    Screen Shake y una pose suavizada que todavía exceda un rango recién reducido.
 
 - **La lluvia ya no enseña su borde cuando la cámara la mueve.** Classic Rain se
   dibuja sobre un plano de 1,5 viewports; Camera Motion movía el lienzo entero
@@ -225,6 +240,8 @@ the version scheme in `src/lib/version.ts`.
   y 0 filas vacías**, y la densidad de la banda exterior coincide con el resto
   del cuadro (530 vs 524 px de lluvia por columna) — antes de esto el mismo
   desplazamiento dejaba una banda vacía de exactamente esos 102 y 203 px.
+  La cobertura se calcula además con el aspecto y la rotación del plano: sus
+  cuatro esquinas quedan dentro en 16:9, 9:16, ultrawide y cuadrado.
 
 - **El vídeo exportado ya no corta la capa que mueve la cámara.** En el sistema
   en vivo cada lienzo mueve lo que DIBUJA dentro de un canvas fijo, pero el
