@@ -74,6 +74,9 @@ el sleep mode del editor.
 - Camera FX (movimiento y shake) por capa.
 - Partículas de fondo y de primer plano, con sus filtros.
 - Lluvia.
+- Las capas movidas no desplazan un bitmap ya recortado: spectrum, logo,
+  textos, fondos, Stage FX, partículas, lluvia y Flash Light conservan
+  cobertura fuera del cuadro en preview y export.
 - Los efectos avanzados del editor (Looks) sobre el overlay seleccionado:
   RGB shift (con envolvente de audio), scanlines y ruido. No es una capa:
   el subsistema `overlays` los dibuja en un scratch aparte, igual que el

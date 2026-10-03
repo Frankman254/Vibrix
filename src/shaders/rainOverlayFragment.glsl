@@ -59,7 +59,9 @@ void main() {
   // drops keep the size, speed and density the dials ask for however far the
   // camera travels. Wrapping is also why nothing is ever cut: a streak that
   // leaves one side comes back on the other.
-  vec2 tileUV = vec2(fract(rotUV.x * uRainTiles), rotUV.y * uRainTiles);
+  // Anchor the authored pattern at the centre as the coverage changes.
+  vec2 patternUV = (rotUV - 0.5) * uRainTiles + 0.5;
+  vec2 tileUV = vec2(fract(patternUV.x), patternUV.y);
 
   float rain = 0.0;
   vec3 rainColor = vec3(0.0);

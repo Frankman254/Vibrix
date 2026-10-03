@@ -417,7 +417,9 @@ function createRainSubsystem(host: SceneGlHost): RenderSubsystem {
 			// independent of the export resolution.
 			const tiles = resolveRainMeshTiles(
 				cameraMotionOverscanPx(ctx.state as WallpaperState, 'rain'),
-				readViewportMin()
+				readViewportMin(),
+				width / height,
+				resolveRainMeshRotation(ctx.state)
 			);
 			applyRainUniforms(
 				uniforms,

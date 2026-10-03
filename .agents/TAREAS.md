@@ -11,7 +11,7 @@
 | -------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | 1A       | Fondo + spectrum + logo + audio → MP4, progreso, cancelar                                 | Implementado, **falta la prueba real del usuario** (canción de 3 min en VLC / QuickTime / YouTube) |
 | 1B       | Letras Lyrixa en el export                                                                | Implementado (subsistema `lyrics`), falta verificar sincronía ±1 frame con un bundle real          |
-| 1C       | Partículas, lluvia, Stage FX, Camera FX, overlays, fondo global, slideshow/escenas, Looks | **Implementado** — falta verificar letras con un bundle real y la paridad frame a frame (1E)       |
+| 1C       | Partículas, lluvia, Stage FX, Camera FX, overlays, fondo global, slideshow/escenas, Looks | **Implementado** — auditados los bordes bajo Camera FX; falta verificar letras y la paridad 1E     |
 | 1D       | Presets YouTube/Shorts/Instagram, rango in/out                                            | Pendiente (ya hay selector de resolución y fps)                                                    |
 | 1E       | Test de paridad offline vs preview                                                        | Pendiente                                                                                          |
 

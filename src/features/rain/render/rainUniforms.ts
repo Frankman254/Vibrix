@@ -79,11 +79,26 @@ const RAIN_TILE_COVERAGE = RAIN_MESH_OVERSCALE / RAIN_MESH_DEPTH_SCALE;
  */
 export function resolveRainMeshTiles(
 	overscanPx: number,
-	viewportMinPx: number
+	viewportMinPx: number,
+	aspect = 1,
+	rotation = 0
 ): number {
-	if (!(overscanPx > 0) || !(viewportMinPx > 0)) return 1;
-	const neededScreens = 1 + (2 * overscanPx) / viewportMinPx;
-	return Math.max(1, Math.ceil(neededScreens / RAIN_TILE_COVERAGE));
+	if (!(viewportMinPx > 0) || !(aspect > 0)) return 1;
+	const width = viewportMinPx * Math.max(1, aspect);
+	const height = viewportMinPx * Math.max(1, 1 / aspect);
+	const bleed = Math.max(0, overscanPx);
+	// Inverse-rotate the expanded frame into the plane's local axes. Merely
+	// covering the short side misses corners in landscape/portrait frames.
+	const c = Math.abs(Math.cos(rotation));
+	const s = Math.abs(Math.sin(rotation));
+	const neededX =
+		(c * (width + 2 * bleed) + s * (height + 2 * bleed)) / width;
+	const neededY =
+		(s * (width + 2 * bleed) + c * (height + 2 * bleed)) / height;
+	return Math.max(
+		1,
+		Math.ceil(Math.max(neededX, neededY) / RAIN_TILE_COVERAGE)
+	);
 }
 
 function hexToVec3(hex: string): Vec3 {

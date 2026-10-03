@@ -45,9 +45,12 @@ export default function RainLayer({
 	const cameraOverscanPx = useWallpaperStore(s =>
 		cameraMotionOverscanPx(s, 'rain')
 	);
+	const meshRotation = useWallpaperStore(s => resolveRainMeshRotation(s));
 	const meshTiles = resolveRainMeshTiles(
 		cameraOverscanPx,
-		Math.max(1, Math.min(size.width, size.height))
+		Math.max(1, Math.min(size.width, size.height)),
+		size.width / Math.max(1, size.height),
+		meshRotation
 	);
 	const meshTilesRef = useRef(meshTiles);
 	meshTilesRef.current = meshTiles;
