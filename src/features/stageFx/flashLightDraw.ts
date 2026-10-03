@@ -8,6 +8,7 @@
  */
 import type { AudioSnapshot } from '@/lib/audio/audioChannels';
 import type { WallpaperState } from '@/types/wallpaper';
+import { readCameraDrawSpace } from './cameraDrawOffset';
 import {
 	readFxChannel,
 	resolveFxThreshold,
@@ -67,7 +68,8 @@ function drawEdgeFlash(
 	h: number,
 	color: string,
 	softness: number,
-	pixelScale: number
+	pixelScale: number,
+	bleed: number
 ) {
 	const edgeDepth = Math.max(
 		48 * pixelScale,
@@ -85,28 +87,28 @@ function drawEdgeFlash(
 	top.addColorStop(0.24, mid);
 	top.addColorStop(1, clear);
 	ctx.fillStyle = top;
-	ctx.fillRect(0, 0, w, edgeDepth);
+	ctx.fillRect(-bleed, -bleed, w + 2 * bleed, edgeDepth + bleed);
 
 	const bottom = ctx.createLinearGradient(0, h, 0, h - edgeDepth);
 	bottom.addColorStop(0, hot);
 	bottom.addColorStop(0.24, mid);
 	bottom.addColorStop(1, clear);
 	ctx.fillStyle = bottom;
-	ctx.fillRect(0, h - edgeDepth, w, edgeDepth);
+	ctx.fillRect(-bleed, h - edgeDepth, w + 2 * bleed, edgeDepth + bleed);
 
 	const left = ctx.createLinearGradient(0, 0, edgeDepth, 0);
 	left.addColorStop(0, hot);
 	left.addColorStop(0.24, mid);
 	left.addColorStop(1, clear);
 	ctx.fillStyle = left;
-	ctx.fillRect(0, 0, edgeDepth, h);
+	ctx.fillRect(-bleed, -bleed, edgeDepth + bleed, h + 2 * bleed);
 
 	const right = ctx.createLinearGradient(w, 0, w - edgeDepth, 0);
 	right.addColorStop(0, hot);
 	right.addColorStop(0.24, mid);
 	right.addColorStop(1, clear);
 	ctx.fillStyle = right;
-	ctx.fillRect(w - edgeDepth, 0, edgeDepth, h);
+	ctx.fillRect(w - edgeDepth, -bleed, edgeDepth + bleed, h + 2 * bleed);
 }
 
 function drawFlashShape(
@@ -116,19 +118,22 @@ function drawFlashShape(
 	h: number,
 	color: string,
 	softness: number,
-	pixelScale: number
+	pixelScale: number,
+	bleed = 0
 ) {
 	const cx = w / 2;
 	const cy = h / 2;
 	const softEdge = Math.max(0.05, Math.min(0.92, 1 - softness * 0.72));
+	const fillAll = () =>
+		ctx.fillRect(-bleed, -bleed, w + 2 * bleed, h + 2 * bleed);
 	if (shape === 'full-screen') {
 		ctx.fillStyle = color;
-		ctx.fillRect(0, 0, w, h);
+		fillAll();
 		return;
 	}
 
 	if (shape === 'edge-flash') {
-		drawEdgeFlash(ctx, w, h, color, softness, pixelScale);
+		drawEdgeFlash(ctx, w, h, color, softness, pixelScale, bleed);
 		return;
 	}
 
@@ -148,7 +153,7 @@ function drawFlashShape(
 		);
 		gradient.addColorStop(1, rgba(color, 0));
 		ctx.fillStyle = gradient;
-		ctx.fillRect(0, 0, w, h);
+		fillAll();
 		return;
 	}
 
@@ -174,7 +179,7 @@ function drawFlashShape(
 		gradient.addColorStop(1, rgba(color, 0));
 	}
 	ctx.fillStyle = gradient;
-	ctx.fillRect(0, 0, w, h);
+	fillAll();
 }
 
 export type FlashShapeCache = {
@@ -309,7 +314,8 @@ export function stepFlashLight(
 /**
  * Paints the flash onto `ctx` (not cleared here) at the runtime's current
  * drive. `pixelScale` scales the edge flash's minimum depth for an output
- * larger or smaller than the live viewport.
+ * larger or smaller than the live viewport. `bleed` extends the fill beyond
+ * every edge so moving the drawing cannot reveal its frame-sized boundary.
  */
 export function drawFlashLight(
 	ctx: CanvasRenderingContext2D,
@@ -318,7 +324,8 @@ export function drawFlashLight(
 	settings: FlashLightSettings,
 	runtime: FlashLightRuntime,
 	color: string,
-	pixelScale = 1
+	pixelScale = 1,
+	bleed = 0
 ): void {
 	ctx.save();
 	ctx.globalCompositeOperation = settings.flashLightBlendMode;
@@ -327,13 +334,36 @@ export function drawFlashLight(
 		runtime.drive * Math.max(0, settings.flashLightBrightness)
 	);
 	ctx.shadowBlur = 0;
+	const softness = clamp01(settings.flashLightSoftness);
+	const space = readCameraDrawSpace(ctx);
+	if (space) {
+		bleed = Math.max(
+			bleed,
+			Math.abs(space.tx) / space.scale,
+			Math.abs(space.ty) / space.scale
+		);
+	}
+	if (bleed > 0) {
+		drawFlashShape(
+			ctx,
+			settings.flashLightShape,
+			width,
+			height,
+			color,
+			softness,
+			pixelScale,
+			bleed
+		);
+		ctx.restore();
+		return;
+	}
 	runtime.shapeCache = getFlashShapeCanvas(
 		runtime.shapeCache,
 		settings.flashLightShape,
 		width,
 		height,
 		color,
-		clamp01(settings.flashLightSoftness),
+		softness,
 		pixelScale
 	);
 	ctx.drawImage(runtime.shapeCache.canvas, 0, 0);

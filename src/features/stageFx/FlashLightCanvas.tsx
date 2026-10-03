@@ -15,6 +15,11 @@ import {
 	syncOutputCanvasBacking,
 	subscribeOutputRenderQuality
 } from '@/runtime/outputRenderQuality';
+import {
+	beginCameraDrawOffset,
+	endCameraDrawOffset
+} from '@/features/stageFx/cameraDrawOffset';
+import { cameraMotionOverscanPx } from '@/features/stageFx/motionLayers';
 
 /**
  * Audio-peak impact overlay, independent from the moving Stage Lights beams.
@@ -105,14 +110,34 @@ export default function FlashLightCanvas({ zIndex = 90 }: { zIndex?: number }) {
 			visibleRef.current = visible;
 
 			if (visible) {
-				drawFlashLight(
+				// Camera Motion moves the DRAWING, not this canvas: the canvas
+				// is exactly the screen, so translating the element would
+				// uncover the screen behind it. The fill is painted past the
+				// frame by the movement's own travel instead, so what the
+				// movement brings in is more flash and never a straight edge.
+				const cssWidth = c.clientWidth;
+				const backingRatio = cssWidth > 0 ? c.width / cssWidth : 1;
+				const bleed =
+					cameraMotionOverscanPx(state, 'flash-light') * backingRatio;
+				const offsetPushed = beginCameraDrawOffset(
 					ctx,
-					c.width,
-					c.height,
-					state,
-					runtime,
-					resolvedFlashColor
+					'flash-light',
+					c
 				);
+				try {
+					drawFlashLight(
+						ctx,
+						c.width,
+						c.height,
+						state,
+						runtime,
+						resolvedFlashColor,
+						1,
+						bleed
+					);
+				} finally {
+					if (offsetPushed) endCameraDrawOffset(ctx);
+				}
 			}
 
 			rafRef.current = requestAnimationFrame(frame);
@@ -131,6 +156,7 @@ export default function FlashLightCanvas({ zIndex = 90 }: { zIndex?: number }) {
 		<canvas
 			ref={canvasRef}
 			data-camera-motion-layer="flash-light"
+			data-camera-motion-draw=""
 			style={{
 				position: 'fixed',
 				inset: 0,

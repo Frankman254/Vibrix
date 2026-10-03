@@ -14,10 +14,14 @@
  * layer, and a canvas that opted in (`data-camera-motion-draw`) translates its
  * context before painting and keeps its element exactly where it is.
  *
- * Layers whose content is a full-canvas FILL (stage lights, flash, particles,
- * the background image) gain nothing from this — moving the fill exposes the
- * same band either way — so they stay on the element transform and on the
- * edge-cover zoom.
+ * A layer whose content is a full-canvas FILL needs one more thing before it
+ * can join: moving the fill alone just exposes the same band on the other
+ * side, so the fill itself has to reach PAST the frame by the movement's
+ * maximum travel (`cameraMotionOverscanPx`). That is how Flash Light works —
+ * `drawFlashLight(..., bleed)` — and the generated fields do the equivalent by
+ * being made bigger instead of zoomed (`resolveParticleFieldBounds`,
+ * `resolveRainMeshTiles`). Only the background image, whose content really is a
+ * single bitmap, stays on the element transform and the edge-cover zoom.
  *
  * ## The rule for effects that paint through a scratch canvas
  *

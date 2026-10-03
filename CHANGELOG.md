@@ -195,6 +195,18 @@ the version scheme in `src/lib/version.ts`.
 
 ### Corregido
 
+- **El Flash Light ya no enseña su borde cuando la cámara lo mueve.** El flash es
+  un relleno del tamaño exacto del cuadro, así que moverlo —da igual si se mueve
+  el lienzo o el dibujo— destapaba por el lado contrario una banda recta sin
+  flash. Ahora el relleno se pinta pasado el cuadro justo lo que mide el
+  recorrido máximo que permiten los ajustes de Camera Motion
+  (`cameraMotionOverscanPx`), en vivo y en el vídeo, de modo que lo que el
+  movimiento mete en escena es más flash y nunca un canto. Las seis formas
+  (pantalla completa, bordes, ráfaga horizontal/vertical, estallido circular y
+  viñeta invertida) desbordan por igual, y mientras hay desbordamiento el flash
+  se dibuja directo en vez de pasar por su caché del tamaño del cuadro —esa
+  caché es precisamente lo que nunca debe pegarse con la cámara puesta.
+
 - **La lluvia ya no enseña su borde cuando la cámara la mueve.** Classic Rain se
   dibuja sobre un plano de 1,5 viewports; Camera Motion movía el lienzo entero
   (en vivo) o pegaba el canvas GL con la transformación puesta (en el export), y

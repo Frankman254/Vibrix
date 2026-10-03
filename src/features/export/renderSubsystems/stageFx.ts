@@ -21,6 +21,7 @@ import {
 	stepStageLights
 } from '@/features/stageFx/render';
 import { updateFlashEdgeDrive } from '@/features/stageFx/flashEdgeDrive';
+import { cameraMotionOverscanPx } from '@/features/stageFx/motionLayers';
 import type { RenderFrameContext } from '../renderFrameContext';
 import type { RenderSubsystem } from '../renderSubsystem';
 import { drawFrameTile } from './frameTile';
@@ -166,6 +167,11 @@ export function createFlashLightSubsystem(): RenderSubsystem {
 			const scratchCtx = scratch.get(width, height);
 			if (!target || !scratchCtx) return;
 
+			const pixelScale = resolvePixelScale(ctx.resolution, viewportMin);
+			// The tile rule (`frameTile`) plus the fill's own bleed: the tile
+			// is painted in the output's camera space and composited with that
+			// space cancelled, and the fill reaches past the frame by the
+			// movement's maximum travel so moving it uncovers nothing.
 			drawFrameTile(target, scratchCtx, ctx.resolution, tileCtx => {
 				drawFlashLight(
 					tileCtx,
@@ -174,7 +180,9 @@ export function createFlashLightSubsystem(): RenderSubsystem {
 					ctx.state,
 					runtime,
 					color,
-					resolvePixelScale(ctx.resolution, viewportMin)
+					pixelScale,
+					cameraMotionOverscanPx(ctx.state, 'flash-light') *
+						pixelScale
 				);
 			});
 		},
