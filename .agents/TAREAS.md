@@ -17,6 +17,14 @@
 
 ### Siguiente paso concreto
 
+> **Compose / Lyrixa:** el modelo v2 acordado (imágenes como objetos,
+> activaciones sostenidas por carril y modo Compose determinista) está en
+> [TAREA_COMPOSE_TIMELINE.md](TAREA_COMPOSE_TIMELINE.md). Sustituye el bloque
+> automático de ocho segundos del primer corte de Lyrixa y amplía el manifiesto
+> v1, que sólo publica slots. **Vibrix ya exporta el paquete v2, valida scores
+> v1/v2 y resuelve el estado puro en T.** Falta conectar ese evaluador a
+> Play/seek y al export offline.
+
 0. **[TAREA_EXPORT_RAPIDO_AISLADO.md](TAREA_EXPORT_RAPIDO_AISLADO.md)**
    (fases A→F, un commit por fase, auditoría de Claude entre fases).
    **Fase A commiteada (`76e9d981`), Fase A.bis commiteada (`d9809cc6`),

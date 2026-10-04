@@ -10,10 +10,11 @@
 > letras. Diseño del secuenciador, en Lyrixa:
 > `Lyrixa/docs/03-vibrix-composition-sequencer.md`.
 >
-> **Estado: contrato acordado, sin implementar.** `slotRevision` tiene 0
-> ocurrencias en `src/` a día de hoy. Las tareas que lo implementan son
-> [.agents/TAREA_MANIFIESTO.md](../../.agents/TAREA_MANIFIESTO.md) (aquí) y
-> `Lyrixa/.agents/TAREA_SECUENCIADOR.md` (allí).
+> **Estado:** la versión 1 del catálogo de slots y del score está implementada.
+> La versión 2, acordada el 2026-10-03, añade las imágenes como objetos de
+> autoría y cambia el timeline a activaciones sostenidas. La tarea ejecutable
+> está en
+> [.agents/TAREA_COMPOSE_TIMELINE.md](../../.agents/TAREA_COMPOSE_TIMELINE.md).
 
 ## Regla que hace posible trabajar en paralelo
 
@@ -76,6 +77,38 @@ manifiesto para que Lyrixa pueda **mostrar** qué intro abre el tema, con
 **`calibrationProfileSlots` no se publica nunca.** Es calibración del
 dispositivo: depende de la pantalla y del equipo de quien edita. Un score que la
 moviera cambiaría la calibración de otra máquina al importarlo.
+
+### Las imágenes son objetos de autoría, no slots
+
+La tabla anterior enumera bancos de slots. No enumera todo lo que puede ocupar
+un carril. Una imagen de `backgroundImages` también tiene identidad estable
+(`assetId`), encuadre, transición hacia la siguiente imagen, una escena asociada
+y overrides por imagen. Por eso la versión 2 del manifiesto publica además un
+catálogo `images`; **no** disfraza las imágenes como `background-zoom` ni las
+mete en un banco de slots que no existe.
+
+```ts
+interface VibrixManifestImage {
+	id: string; // BackgroundImageItem.assetId
+	kind: 'image';
+	name: string; // originalFileName o etiqueta estable de respaldo
+	revision: string;
+	enabled: boolean;
+	sceneSlotId: string | null;
+	/** Miniatura transportable y acotada; nunca una blob URL del navegador. */
+	thumbnailDataUrl?: string;
+}
+```
+
+La revisión de una imagen cubre lo que cambia su resultado visual: identidad
+del asset, encuadre, opacidad, reactividad, transición a la siguiente, escena,
+referencias de perfiles y overrides inline. No incluye `url`, `thumbnailUrl` ni
+el nombre: son transporte o presentación. Cambiar el nombre no rompe un score;
+cambiar la transición sí.
+
+La miniatura es opcional para que un manifiesto siga siendo válido si el asset
+no se puede leer. Cuando exista debe ser autocontenida y pequeña; una `blob:` URL
+no sirve porque Lyrixa corre en otro origen y no puede abrirla.
 
 ## `slotRevision` — derivado, no persistido
 
@@ -148,7 +181,7 @@ no necesita bump ni migración.**
 
 ```ts
 interface VibrixAuthoringManifest {
-	schemaVersion: 1;
+	schemaVersion: 2;
 	app: 'Vibrix';
 	exportKind: 'vibrix-manifest';
 	exportedAt: string; // ISO 8601
@@ -158,6 +191,7 @@ interface VibrixAuthoringManifest {
 	/** Hash de todas las revisiones juntas: cambia si cambió cualquier slot. */
 	revision: string;
 	slots: VibrixManifestSlot[];
+	images: VibrixManifestImage[];
 }
 
 interface VibrixManifestSlot {
@@ -224,7 +258,7 @@ re-sincroniza cuando convenga, no una dependencia.
 
 ```json
 {
-	"schemaVersion": 1,
+	"schemaVersion": 2,
 	"app": "Vibrix",
 	"exportKind": "vibrix-manifest",
 	"exportedAt": "2026-10-02T00:00:00.000Z",
@@ -306,7 +340,8 @@ re-sincroniza cuando convenga, no una dependencia.
 			"sceneBindable": false,
 			"cueable": false
 		}
-	]
+	],
+	"images": []
 }
 ```
 
@@ -325,6 +360,8 @@ con un test:
 
 ## El score
 
+### Versión 1 implementada
+
 El de `Lyrixa/docs/03-vibrix-composition-sequencer.md`, con estos cambios:
 
 - `CompositionTrack['kind']` usa **`VibrixSlotFamily`** de este documento: fuera
@@ -332,6 +369,105 @@ El de `Lyrixa/docs/03-vibrix-composition-sequencer.md`, con estos cambios:
   existe como familia propia (Spectrum 2 tiene su propio banco desde v97).
 - `target.slotRevision` es el de aquí: derivado y sólo sobre `values`.
 - Tiempos en **milisegundos enteros**, como ya decía. Sin cambios.
+
+La versión 1 modela cada cue con `startTimeMs` y `endTimeMs`. Lyrixa crea hoy
+un bloque de ocho segundos al soltarlo. Eso queda aceptado al importar archivos
+viejos, pero no es el modelo de edición definitivo.
+
+### Versión 2 — activaciones sostenidas
+
+Un carril representa una fuente de activaciones ordenadas. Colocar un objeto en
+`startTimeMs` lo activa en ese instante. Se mantiene hasta la siguiente
+activación que afecte ese estado o hasta el final de la canción. La duración que
+Lyrixa dibuja es **derivada**; no se guarda como una segunda verdad que el
+usuario tenga que estirar a mano.
+
+Ejemplo: una imagen en `00:00` y otra en `03:00` hacen que la primera ocupe tres
+minutos. Al llegar a `03:00`, Vibrix usa la transición «hacia la siguiente» que
+ya pertenece a la primera imagen. Lyrixa decide cuándo ocurre el cambio; Vibrix
+sigue siendo dueño de cómo se ve.
+
+```ts
+type VibrixTimelineKind = VibrixSlotFamily | 'image';
+
+interface CompositionTrackV2 {
+	id: string;
+	name: string;
+	kind: VibrixTimelineKind;
+	order: number;
+	enabled: boolean;
+	locked: boolean;
+}
+
+type CompositionTargetV2 =
+	| {
+			kind: 'scene' | 'feature-slot';
+			family: VibrixSlotFamily;
+			id: string;
+			revision: string;
+	  }
+	| { kind: 'image'; family: 'image'; id: string; revision: string }
+	| { kind: 'inherit'; family: VibrixSlotFamily };
+
+interface CompositionCueV2 {
+	id: string;
+	trackId: string;
+	startTimeMs: number;
+	target: CompositionTargetV2;
+	priority: number;
+	enabled: boolean;
+}
+```
+
+El sobre v2 mantiene los metadatos del v1, cambia `schemaVersion` a `2` y usa
+dependencias discriminadas para slots e imágenes:
+
+```ts
+interface VibrixScoreDependencyV2 {
+	kind: 'slot' | 'image';
+	id: string;
+	family: VibrixTimelineKind;
+	name: string;
+	revision: string;
+}
+```
+
+`inherit` devuelve un carril granular al resultado de los objetos agregados.
+Es necesario porque un Spectrum 2 colocado en un carril se sostiene; sin una
+activación explícita de herencia no habría forma clara de dejar de sobrescribir
+las escenas posteriores.
+
+No se crea un carril por cada pestaña visible de Vibrix. Se crea uno por cada
+estado temporal independiente y cueable: Image, Scene, Spectrum 1, Spectrum 2,
+Looks, Particles, Rain, Lights, Camera FX, Logo, Track Title y, en modo avanzado,
+Background Zoom. `intro-window` sigue siendo informativo y `calibration` sigue
+fuera del contrato.
+
+### Cómo se resuelve un instante
+
+El evaluador parte de una base declarada y pliega todas las activaciones con
+`startTimeMs <= T`, ordenadas por tiempo y con un desempate estable. Cada objeto
+toca únicamente lo que posee:
+
+- una feature granular toca sólo su familia;
+- una escena toca los bindings presentes y respeta ausente frente a `off`;
+- una imagen cambia el asset, aplica su encuadre y prepara su transición; su
+  escena y overrides por imagen conservan la semántica que ya tienen en Vibrix;
+- `inherit` retira el override sostenido de su familia.
+
+El pliegue desde la misma base hace que reproducir desde cero y saltar
+directamente a `01:42` produzcan el mismo estado. Un cue no es un `toggle` y no
+depende del historial del store vivo.
+
+El orden en un mismo milisegundo es: Scene, Image y después las pistas
+granulares. Así un override granular situado exactamente en el corte puede
+afinar el resultado agregado de la escena o de la imagen. Un override granular
+se mantiene por encima de escenas e imágenes posteriores hasta otro cue del
+mismo carril o un `inherit`; ésa es la razón de que `inherit` exista.
+
+Los lectores v2 deben seguir aceptando score v1. Para un cue v1, su activación
+empieza en `startTimeMs`; `endTimeMs` conserva su semántica histórica durante la
+migración, pero Lyrixa guarda los proyectos nuevos como v2.
 
 ## Transporte: archivo primero, y por qué
 
@@ -358,6 +494,80 @@ HTTP llega después y **con los mismos bytes** — que es exactamente lo que el
 comentario de `liveWallpaperTarget.ts` ya promete al separar la entrega de la
 construcción. Si luego se sirve por HTTP, los paths son los que propone el doc de
 Lyrixa (`GET /api/authoring/manifest`, `POST /api/composition-bundle`).
+
+### Transporte definitivo: paquete de autoría → paquete de score
+
+El manifiesto JSON suelto de v1 sigue siendo legible. El flujo nuevo usa dos
+paquetes con responsabilidades distintas. El primer contenedor es JSON
+autocontenido —igual que el paquete de proyecto actual de Vibrix— y puede pasar
+a binario/ZIP cuando entren originales portables sin cambiar `manifest.json` ni
+`score.json`:
+
+```text
+Vibrix
+  └─ exporta proyecto.vibrix-authoring
+       ├─ manifest         catálogo v2
+       └─ snapshots        valores inmutables de slots e imágenes
+                 ↓
+              Lyrixa
+                 └─ ordena objetos en el tiempo; no renderiza Vibrix
+                      ↓
+                 exporta proyecto.vibrix-score
+                      ├─ score.json
+                      └─ dependencies/  sólo lo usado por la composición
+                                ↓
+                             Vibrix
+                                └─ modo Compose: preview, play y export offline
+```
+
+El paquete que Vibrix entrega a Lyrixa contiene todo lo necesario para
+identificar, mostrar y colocar los objetos sin depender de `blob:` URLs ni de la
+IndexedDB de otro origen. Incluye el catálogo, snapshots y las previews
+transportables disponibles en el manifiesto. Lyrixa no
+necesita el renderer de Vibrix ni duplica sus controles.
+
+El paquete que vuelve desde Lyrixa contiene el score y únicamente sus
+dependencias usadas. Su primera versión también puede ser un contenedor JSON.
+En el mismo proyecto, Vibrix puede resolver por id y
+revisión. Para abrirlo en otra máquina, una variante portable añade los assets
+binarios originales referenciados; nunca se meten como base64 dentro del JSON.
+
+Vibrix es la autoridad de reproducción. Al importar el paquete, el modo Compose
+usa el score para resolver qué imagen, escena y slots corresponden al playhead.
+El preview en vivo y el export offline consumen el mismo evaluador; Lyrixa sólo
+decide qué se activa y cuándo.
+
+La forma concreta del primer paquete es:
+
+```ts
+interface VibrixAuthoringPackage {
+	format: 'vibrix-authoring';
+	packageVersion: 1;
+	exportedAt: string;
+	manifest: VibrixAuthoringManifest; // schemaVersion 2
+	snapshots: Array<
+		| {
+				kind: 'slot';
+				id: string;
+				family: VibrixSlotFamily;
+				name: string;
+				revision: string;
+				values: unknown;
+		  }
+		| {
+				kind: 'image';
+				id: string;
+				name: string;
+				revision: string;
+				values: unknown;
+		  }
+	>;
+}
+```
+
+El archivo se llama `<proyecto>.vibrix-authoring`. Las previews transportables
+viven en `manifest.images[].thumbnailDataUrl`; los snapshots nunca llevan
+`blob:` URLs ni timestamps del slideshow anterior.
 
 ## Lo que este contrato NO resuelve
 

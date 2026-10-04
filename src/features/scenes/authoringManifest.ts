@@ -1,4 +1,5 @@
 import type {
+	BackgroundImageItem,
 	ProfileSlot,
 	SceneSlot,
 	SceneSlotRef,
@@ -65,8 +66,19 @@ export interface VibrixManifestSlot {
 	cueable: boolean;
 }
 
+export interface VibrixManifestImage {
+	id: string;
+	kind: 'image';
+	name: string;
+	revision: string;
+	enabled: boolean;
+	sceneSlotId: string | null;
+	/** Only transportable previews. Browser-local `blob:` URLs are omitted. */
+	thumbnailDataUrl?: string;
+}
+
 export interface VibrixAuthoringManifest {
-	schemaVersion: 1;
+	schemaVersion: 2;
 	app: 'Vibrix';
 	exportKind: 'vibrix-manifest';
 	exportedAt: string;
@@ -75,6 +87,7 @@ export interface VibrixAuthoringManifest {
 	projectName: string;
 	revision: string;
 	slots: VibrixManifestSlot[];
+	images: VibrixManifestImage[];
 }
 
 /**
@@ -99,6 +112,7 @@ export type AuthoringManifestSource = Pick<
 	| 'trackTitleProfileSlots'
 	| 'backgroundProfileSlots'
 	| 'introProfileSlots'
+	| 'backgroundImages'
 >;
 
 export interface AuthoringManifestOptions {
@@ -224,6 +238,47 @@ function sceneRevision(
 }
 
 /**
+ * The stable, visual part of an image. URLs are browser transport, the file
+ * name is presentation, and `playbackSwitchAt` belongs to the legacy
+ * slideshow timeline that Compose replaces. Everything else can change the
+ * rendered result and therefore moves the revision.
+ */
+export function buildImageAuthoringValues(image: BackgroundImageItem) {
+	const {
+		url: _url,
+		thumbnailUrl: _thumbnailUrl,
+		originalFileName: _originalFileName,
+		playbackSwitchAt: _playbackSwitchAt,
+		...visualValues
+	} = image;
+	return visualValues;
+}
+
+function imageRevision(image: BackgroundImageItem): string {
+	return revisionOf(buildImageAuthoringValues(image));
+}
+
+function buildManifestImages(
+	state: AuthoringManifestSource
+): VibrixManifestImage[] {
+	const sceneIds = new Set(state.sceneSlots.map(scene => scene.id));
+	return (state.backgroundImages ?? []).map((image, index) => ({
+		id: image.assetId,
+		kind: 'image',
+		name: image.originalFileName?.trim() || `Image ${index + 1}`,
+		revision: imageRevision(image),
+		enabled: image.enabled,
+		sceneSlotId:
+			image.sceneSlotId && sceneIds.has(image.sceneSlotId)
+				? image.sceneSlotId
+				: null,
+		...(image.thumbnailUrl?.startsWith('data:image/')
+			? { thumbnailDataUrl: image.thumbnailUrl }
+			: {})
+	}));
+}
+
+/**
  * Build the manifest, and report what had to be left out.
  *
  * Every slot is listed, including empty ones (with `revision: 'empty'`), so
@@ -290,10 +345,11 @@ export function buildAuthoringManifestReport(
 	});
 
 	const slots = [...sceneSlots, ...granularSlots];
+	const images = buildManifestImages(state);
 
 	return {
 		manifest: {
-			schemaVersion: 1,
+			schemaVersion: 2,
 			app: 'Vibrix',
 			exportKind: 'vibrix-manifest',
 			exportedAt: options.exportedAt,
@@ -302,8 +358,12 @@ export function buildAuthoringManifestReport(
 			projectName: options.projectName,
 			// Content only: a rename must not move this either, or every rename
 			// would look like "the catalogue changed".
-			revision: manifestRevision(slots.map(slot => slot.revision)),
-			slots
+			revision: manifestRevision([
+				...slots.map(slot => slot.revision),
+				...images.map(image => image.revision)
+			]),
+			slots,
+			images
 		},
 		droppedBindings
 	};

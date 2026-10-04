@@ -78,6 +78,24 @@ the version scheme in `src/lib/version.ts`.
 
 ### Añadido
 
+- **Compose v2 publica objetos preparados para que Lyrixa los secuencie.** La
+  sección de composición de Export genera ahora
+  `<proyecto>.vibrix-authoring`: un paquete autocontenido con el manifiesto v2,
+  snapshots de las doce familias de slots y las imágenes del proyecto. Cada
+  imagen viaja por `assetId`, revisión visual, escena asociada y una miniatura
+  transportable; ninguna `blob:` URL sale del navegador. Renombrar o cambiar el
+  timestamp del slideshow anterior no altera la revisión, mientras que editar
+  el encuadre o la transición sí.
+
+    Vibrix también entiende scores v2 de activaciones sostenidas (`scene`,
+    `feature-slot`, `image` e `inherit`) y sigue aceptando scores v1 con intervalos.
+    `resolveVisualStateAt(base, score, T)` resuelve Scene/Image y overrides
+    granulares sin leer ni escribir el store: Image permanece hasta la siguiente,
+    Spectrum 2 se mantiene independiente y un granular domina escenas posteriores
+    hasta `inherit`. La conexión de este evaluador a Play/seek y al export offline
+    sigue pendiente; importar un score continúa siendo una revisión sin modificar
+    el proyecto.
+
 - **Vibrix publica su catálogo de slots para que Lyrixa compona sobre él.** Hasta
   ahora Lyrixa no tenía forma de saber qué escenas y qué perfiles existen en un
   proyecto, así que un secuenciador allí sólo podía adivinar nombres. La pestaña

@@ -11,6 +11,7 @@ import {
 	type AuthoringManifestSource,
 	type DroppedBindingWarning
 } from '@/features/scenes/authoringManifest';
+import { createAuthoringPackageBlob } from '@/features/export/authoringPackageExport';
 import {
 	reviewVibrixScore,
 	type ScoreCueStatus,
@@ -45,6 +46,7 @@ const STATUS_LABEL_KEYS: Record<ScoreCueStatus, TranslationKey> = {
 	updated: 'vibrix_authoring_status_updated',
 	missing: 'vibrix_authoring_status_missing',
 	empty: 'vibrix_authoring_status_empty',
+	disabled: 'vibrix_authoring_status_disabled',
 	'not-cueable': 'vibrix_authoring_status_not_cueable'
 };
 
@@ -92,6 +94,7 @@ export default function VibrixAuthoringSection() {
 	const source = useWallpaperStore(
 		useShallow(
 			(state): AuthoringManifestSource => ({
+				backgroundImages: state.backgroundImages,
 				sceneSlots: state.sceneSlots,
 				spectrumProfileSlots: state.spectrumProfileSlots,
 				spectrumSecondProfileSlots: state.spectrumSecondProfileSlots,
@@ -114,6 +117,7 @@ export default function VibrixAuthoringSection() {
 		});
 		return {
 			slots: manifest.slots.length,
+			images: manifest.images.length,
 			scenes: manifest.slots.filter(slot => slot.family === 'scene')
 				.length,
 			revision: manifest.revision.slice(0, 8)
@@ -128,7 +132,7 @@ export default function VibrixAuthoringSection() {
 		return active?.name || state.audioFileName || 'Vibrix project';
 	}
 
-	async function exportManifest() {
+	async function exportAuthoringPackage() {
 		setBusy(true);
 		try {
 			const projectName = resolveProjectName();
@@ -137,13 +141,14 @@ export default function VibrixAuthoringSection() {
 				{ exportedAt: new Date().toISOString(), projectName }
 			);
 			setDropped(droppedBindings);
-			const blob = new Blob([JSON.stringify(manifest, null, '\t')], {
-				type: 'application/json'
+			const { blob } = await createAuthoringPackageBlob(source, {
+				exportedAt: manifest.exportedAt,
+				projectName
 			});
-			const fileName = `${sanitize(projectName)}.vibrix-manifest.json`;
+			const fileName = `${sanitize(projectName)}.vibrix-authoring`;
 			const saved = await saveBlobWithPicker(blob, fileName, {
-				description: 'Vibrix authoring manifest',
-				mimeType: 'application/json'
+				description: 'Vibrix authoring package',
+				mimeType: 'application/x-vibrix-authoring+json'
 			});
 			if (!saved) downloadBlobFallback(blob, fileName);
 			setTone('ok');
@@ -218,12 +223,13 @@ export default function VibrixAuthoringSection() {
 					{t.vibrix_authoring_catalog_summary
 						.replace('{slots}', String(summary.slots))
 						.replace('{scenes}', String(summary.scenes))
+						.replace('{images}', String(summary.images))
 						.replace('{revision}', summary.revision)}
 				</Caption>
 
 				<div className="flex gap-2">
 					<Button
-						onClick={() => void exportManifest()}
+						onClick={() => void exportAuthoringPackage()}
 						disabled={busy}
 						size="sm"
 						density="compact"
@@ -246,7 +252,7 @@ export default function VibrixAuthoringSection() {
 				<input
 					ref={scoreInputRef}
 					type="file"
-					accept=".json,application/json"
+					accept=".vibrix-score,.json,application/json"
 					className="hidden"
 					onChange={event => void handleScoreFile(event)}
 				/>

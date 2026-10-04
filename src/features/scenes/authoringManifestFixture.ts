@@ -34,6 +34,7 @@ function scene(
 }
 
 export const CONTRACT_FIXTURE_STATE = {
+	backgroundImages: [],
 	sceneSlots: [
 		scene('scene-a', 'Verse', {
 			spectrumSlotId: 'spec-1',

@@ -14,6 +14,30 @@ const MANIFEST = buildAuthoringManifest(
 	{ exportedAt: '2026-10-02T00:00:00.000Z', projectName: 'Demo' }
 );
 
+const IMAGE_MANIFEST = buildAuthoringManifest(
+	{
+		...CONTRACT_FIXTURE_STATE,
+		backgroundImages: [
+			{
+				assetId: 'image-a',
+				url: 'blob:image',
+				thumbnailUrl: null,
+				originalFileName: 'cover.png',
+				enabled: true,
+				scale: 1,
+				positionX: 0,
+				positionY: 0,
+				opacity: 1,
+				transitionType: 'fade',
+				transitionDuration: 1,
+				playbackSwitchAt: null,
+				sceneSlotId: 'scene-a'
+			}
+		]
+	} as unknown as WallpaperState,
+	{ exportedAt: '2026-10-03T00:00:00.000Z', projectName: 'Demo' }
+);
+
 function revisionOfSlot(slotId: string): string {
 	const slot = MANIFEST.slots.find(entry => entry.id === slotId);
 	if (!slot) throw new Error(`fixture slot ${slotId} is missing`);
@@ -86,7 +110,96 @@ function scoreFixture(overrides: Record<string, unknown> = {}) {
 	};
 }
 
+function scoreV2Fixture() {
+	const image = IMAGE_MANIFEST.images[0];
+	return {
+		app: 'Lyrixa',
+		exportKind: 'vibrix-score',
+		schemaVersion: 2,
+		exportedAt: '2026-10-03T09:00:00.000Z',
+		projectName: 'Demo',
+		sourceTrack: { fileName: 'demo.mp3', durationMs: 215000 },
+		renderer: {
+			minimumVersion: '0.7.0-alpha',
+			catalogRevision: IMAGE_MANIFEST.revision
+		},
+		score: {
+			tracks: [
+				{
+					id: 'images',
+					name: 'Images',
+					kind: 'image',
+					order: 0,
+					enabled: true,
+					locked: false
+				},
+				{
+					id: 'spectrum-second',
+					name: 'Spectrum 2',
+					kind: 'spectrum-second',
+					order: 1,
+					enabled: true,
+					locked: false
+				}
+			],
+			cues: [
+				{
+					id: 'image-at-zero',
+					trackId: 'images',
+					startTimeMs: 0,
+					target: {
+						kind: 'image',
+						family: 'image',
+						id: image.id,
+						revision: image.revision
+					},
+					priority: 0,
+					enabled: true
+				},
+				{
+					id: 'inherit-spectrum-two',
+					trackId: 'spectrum-second',
+					startTimeMs: 90000,
+					target: {
+						kind: 'inherit',
+						family: 'spectrum-second'
+					},
+					priority: 0,
+					enabled: true
+				}
+			]
+		},
+		dependencies: [
+			{
+				kind: 'image',
+				id: image.id,
+				family: 'image',
+				name: image.name,
+				revision: image.revision
+			}
+		]
+	};
+}
+
 describe('parseVibrixScoreEnvelope', () => {
+	it('accepts v2 sustained image and inherit activations without end times', () => {
+		const result = parseVibrixScoreEnvelope(scoreV2Fixture());
+		if (!result.ok) throw new Error(result.errors.join('\n'));
+		expect(result.score.schemaVersion).toBe(2);
+		expect(result.score.score.cues).toHaveLength(2);
+		expect(result.score.score.cues[0]).not.toHaveProperty('endTimeMs');
+		expect(result.score.score.cues[1].target.kind).toBe('inherit');
+	});
+
+	it('rejects a v2 target placed on a different family track', () => {
+		const fixture = scoreV2Fixture();
+		fixture.score.cues[0].trackId = 'spectrum-second';
+		const result = parseVibrixScoreEnvelope(fixture);
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.errors.join('\n')).toContain('does not match track');
+	});
+
 	it('accepts the envelope Lyrixa produces', () => {
 		const result = parseVibrixScoreEnvelope(scoreFixture());
 		if (!result.ok) throw new Error(result.errors.join('\n'));
@@ -185,6 +298,43 @@ describe('parseVibrixScoreEnvelope', () => {
 });
 
 describe('reviewVibrixScore', () => {
+	it('reviews a v2 image and inherit activation as ready', () => {
+		const parsed = parseVibrixScoreEnvelope(scoreV2Fixture());
+		if (!parsed.ok) throw new Error(parsed.errors.join('\n'));
+		const result = reviewVibrixScore(parsed.score, IMAGE_MANIFEST);
+		expect(result.readyCount).toBe(2);
+		expect(result.cues[0]).toMatchObject({
+			family: 'image',
+			slotName: 'cover.png',
+			endTimeMs: null
+		});
+		expect(result.cues[1].slotName).toBe('Inherit scene/image');
+	});
+
+	it('reports a disabled image instead of treating it as playable', () => {
+		const disabledManifest = buildAuthoringManifest(
+			{
+				...CONTRACT_FIXTURE_STATE,
+				backgroundImages: [
+					{
+						assetId: 'image-a',
+						url: null,
+						thumbnailUrl: null,
+						originalFileName: 'cover.png',
+						enabled: false,
+						playbackSwitchAt: null,
+						sceneSlotId: null
+					}
+				]
+			} as unknown as WallpaperState,
+			{ exportedAt: '2026-10-04T00:00:00.000Z', projectName: 'Demo' }
+		);
+		const parsed = parseVibrixScoreEnvelope(scoreV2Fixture());
+		if (!parsed.ok) throw new Error(parsed.errors.join('\n'));
+		const result = reviewVibrixScore(parsed.score, disabledManifest);
+		expect(result.counts.disabled).toBe(1);
+	});
+
 	function review(
 		mutate: (fixture: ReturnType<typeof scoreFixture>) => void
 	) {

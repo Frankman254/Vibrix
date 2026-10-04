@@ -52,6 +52,18 @@
 
 ## 3. Dónde quedó el trabajo
 
+### Compose / Lyrixa — corte v2 del 2026-10-04
+
+Vibrix ya exporta `<proyecto>.vibrix-authoring` con manifiesto schema v2,
+snapshots de slots e imágenes y previews transportables. El parser de score
+acepta v1 y v2; v2 usa activaciones sostenidas y entiende Image/Scene,
+granulares e `inherit`. `src/features/composition/resolveVisualStateAt.ts`
+resuelve un estado determinista en T sin tocar el store. Falta conectar el
+evaluador al preview/Play y al export offline, implementar el progreso temporal
+de la transición de imagen y, sólo cuando el score tenga consumidor real,
+persistirlo con bump y migración. Tarea viva:
+[TAREA_COMPOSE_TIMELINE.md](TAREA_COMPOSE_TIMELINE.md).
+
 Fase actual: **Fase 1 · Export de vídeo offline** (tab Export → MP4/WebM
 frame a frame, sin tiempo real). Últimos commits: `42638dea` (Auto Focus y
 Auto Logo por saliencia, `lib/saliency.ts`), `dab55cd5` (color activo de

@@ -27,7 +27,7 @@ function build(state: unknown = CONTRACT_FIXTURE_STATE) {
  * reproducible rather than decorative.
  */
 const CONTRACT_FIXTURE = {
-	schemaVersion: 1,
+	schemaVersion: 2,
 	app: 'Vibrix',
 	exportKind: 'vibrix-manifest',
 	exportedAt: '2026-10-02T00:00:00.000Z',
@@ -106,7 +106,8 @@ const CONTRACT_FIXTURE = {
 			sceneBindable: false,
 			cueable: false
 		}
-	]
+	],
+	images: []
 };
 
 describe('buildAuthoringManifest', () => {
@@ -262,6 +263,79 @@ describe('revisions as a change detector', () => {
 		expect(
 			build(edited).slots.find(slot => slot.id === 'scene-a')?.revision
 		).toBe(build().slots.find(slot => slot.id === 'scene-a')?.revision);
+	});
+});
+
+describe('image authoring objects', () => {
+	const image = {
+		assetId: 'image-a',
+		url: 'blob:original',
+		thumbnailUrl: 'blob:thumbnail',
+		originalFileName: 'cover.png',
+		enabled: true,
+		scale: 1,
+		positionX: 0,
+		positionY: 0,
+		opacity: 1,
+		transitionType: 'fade',
+		transitionDuration: 1.2,
+		transitionIntensity: 1,
+		transitionAudioDrive: 0,
+		transitionAudioChannel: 'master',
+		transitionLayerTargets: ['background'],
+		transitionPresetId: null,
+		playbackSwitchAt: 42,
+		sceneSlotId: 'scene-a'
+	};
+
+	function withImage(patch: Record<string, unknown> = {}) {
+		return build({
+			...CONTRACT_FIXTURE_STATE,
+			backgroundImages: [{ ...image, ...patch }]
+		});
+	}
+
+	it('publishes images separately from slot families', () => {
+		const manifest = withImage();
+		expect(manifest.images).toEqual([
+			expect.objectContaining({
+				id: 'image-a',
+				kind: 'image',
+				name: 'cover.png',
+				enabled: true,
+				sceneSlotId: 'scene-a'
+			})
+		]);
+		expect(manifest.slots.some(slot => slot.id === 'image-a')).toBe(false);
+	});
+
+	it('keeps the revision stable across rename, URLs and legacy timestamps', () => {
+		const before = withImage().images[0].revision;
+		const after = withImage({
+			originalFileName: 'renamed.jpg',
+			url: 'blob:another-original',
+			thumbnailUrl: 'blob:another-thumbnail',
+			playbackSwitchAt: 180
+		}).images[0].revision;
+		expect(after).toBe(before);
+	});
+
+	it('moves the image and catalogue revisions when its visual setup changes', () => {
+		const before = withImage();
+		const after = withImage({ transitionType: 'wipe-left' });
+		expect(after.images[0].revision).not.toBe(before.images[0].revision);
+		expect(after.revision).not.toBe(before.revision);
+	});
+
+	it('only publishes transportable thumbnail data and drops a dangling scene', () => {
+		expect(withImage().images[0]).not.toHaveProperty('thumbnailDataUrl');
+		const dataUrl = 'data:image/webp;base64,AAAA';
+		const published = withImage({
+			thumbnailUrl: dataUrl,
+			sceneSlotId: 'scene-deleted'
+		}).images[0];
+		expect(published.thumbnailDataUrl).toBe(dataUrl);
+		expect(published.sceneSlotId).toBeNull();
 	});
 });
 

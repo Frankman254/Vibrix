@@ -2775,16 +2775,17 @@ export const en = {
 		'Browser storage is unavailable. Your current session is still running in memory, but a reload can lose recent changes.',
 	storage_persistence_export_hint:
 		'Export the project or settings before closing or reloading this page.',
-	section_vibrix_authoring: 'Lyrixa Composition (.vibrix-manifest)',
-	vibrix_authoring_title: 'Slot catalogue for Lyrixa',
+	section_vibrix_authoring: 'Lyrixa Composition (.vibrix-authoring)',
+	vibrix_authoring_title: 'Visual catalogue for Lyrixa',
 	vibrix_authoring_subtitle:
-		'Publish which scenes and slots exist so Lyrixa can place them on a timeline.',
-	vibrix_authoring_export: 'Export manifest',
+		'Publish images, scenes and prepared effects so Lyrixa can sequence them.',
+	vibrix_authoring_export: 'Export authoring package',
 	vibrix_authoring_import_score: 'Check a score',
 	vibrix_authoring_catalog_summary:
-		'{slots} slots · {scenes} scenes · catalogue {revision}',
-	vibrix_authoring_exported: 'Manifest exported.',
-	vibrix_authoring_export_failed: 'The manifest could not be exported.',
+		'{images} images · {slots} slots · {scenes} scenes · catalogue {revision}',
+	vibrix_authoring_exported: 'Authoring package exported.',
+	vibrix_authoring_export_failed:
+		'The authoring package could not be exported.',
 	vibrix_authoring_dropped_bindings:
 		'{n} scene binding(s) pointed at slots that no longer exist and were left out.',
 	vibrix_authoring_dialog_import_title: 'Check a Lyrixa score',
@@ -2802,6 +2803,7 @@ export const en = {
 	vibrix_authoring_status_updated: 'Updated in Vibrix',
 	vibrix_authoring_status_missing: 'Missing here',
 	vibrix_authoring_status_empty: 'Slot is empty',
+	vibrix_authoring_status_disabled: 'Image is disabled',
 	vibrix_authoring_status_not_cueable: 'Not cueable',
 	vibrix_authoring_playback_note:
 		'Checking only. Playing a score back needs time-independent visual state, which is the next phase.',

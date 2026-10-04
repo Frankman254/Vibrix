@@ -124,6 +124,23 @@ Does **not** include an internal video encoder — see Recording subsystem.
 
 ---
 
+## Lyrixa Compose
+
+**Status: Contract and pure runtime implemented; playback wiring pending**
+
+- Export emits `<project>.vibrix-authoring` with manifest schema v2, immutable
+  slot/image snapshots and transportable image previews.
+- Images are authoring objects separate from `background-zoom`; Spectrum 1 and
+  Spectrum 2 remain independent families.
+- Score parsing accepts legacy schema v1 intervals and schema v2 sustained
+  activations (`scene`, `feature-slot`, `image`, `inherit`).
+- `resolveVisualStateAt(base, score, T)` is pure and deterministic. Granular
+  overrides remain above later scenes/images until another cue or `inherit`.
+- The score is not persisted and does not drive the live viewport or offline
+  export yet. Import currently validates and reports compatibility only.
+
+---
+
 ## Spectrum
 
 **Status: Stable** (Pixel shape + pixelate post-process: **Usable but needs QA**)

@@ -2803,16 +2803,17 @@ export const es: Record<TranslationKey, string> = {
 		'El almacenamiento del navegador no está disponible. La sesión actual sigue en memoria, pero al recargar puedes perder cambios recientes.',
 	storage_persistence_export_hint:
 		'Exporta el proyecto o los ajustes antes de cerrar o recargar esta página.',
-	section_vibrix_authoring: 'Composición Lyrixa (.vibrix-manifest)',
-	vibrix_authoring_title: 'Catálogo de slots para Lyrixa',
+	section_vibrix_authoring: 'Composición Lyrixa (.vibrix-authoring)',
+	vibrix_authoring_title: 'Catálogo visual para Lyrixa',
 	vibrix_authoring_subtitle:
-		'Publica qué escenas y slots existen para que Lyrixa pueda colocarlos en una línea temporal.',
-	vibrix_authoring_export: 'Exportar manifiesto',
+		'Publica imágenes, escenas y efectos preparados para que Lyrixa los secuencie.',
+	vibrix_authoring_export: 'Exportar paquete de autoría',
 	vibrix_authoring_import_score: 'Revisar un score',
 	vibrix_authoring_catalog_summary:
-		'{slots} slots · {scenes} escenas · catálogo {revision}',
-	vibrix_authoring_exported: 'Manifiesto exportado.',
-	vibrix_authoring_export_failed: 'No se pudo exportar el manifiesto.',
+		'{images} imágenes · {slots} slots · {scenes} escenas · catálogo {revision}',
+	vibrix_authoring_exported: 'Paquete de autoría exportado.',
+	vibrix_authoring_export_failed:
+		'No se pudo exportar el paquete de autoría.',
 	vibrix_authoring_dropped_bindings:
 		'{n} enlace(s) de escena apuntaban a slots que ya no existen y quedaron fuera.',
 	vibrix_authoring_dialog_import_title: 'Revisar un score de Lyrixa',
@@ -2830,6 +2831,7 @@ export const es: Record<TranslationKey, string> = {
 	vibrix_authoring_status_updated: 'Cambiado en Vibrix',
 	vibrix_authoring_status_missing: 'No está aquí',
 	vibrix_authoring_status_empty: 'Slot vacío',
+	vibrix_authoring_status_disabled: 'Imagen desactivada',
 	vibrix_authoring_status_not_cueable: 'No se puede encolar',
 	vibrix_authoring_playback_note:
 		'Solo revisa. Reproducir un score necesita estado visual independiente del tiempo, que es la fase siguiente.',
