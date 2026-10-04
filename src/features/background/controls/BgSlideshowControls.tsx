@@ -71,10 +71,28 @@ export default function BgSlideshowControls() {
 			),
 		[store.backgroundImages, store.setlists, store.activeSetlistId]
 	);
-	const resetButtonLabel = activeSetlist ? 'Reset Setlist' : 'Reset All';
-	const resetButtonTitle = activeSetlist
-		? 'Clear manual timestamps only on images in the active setlist'
-		: 'Clear all manual timestamps on every image, revert to auto-calculated';
+	async function resetTimings() {
+		if (
+			!(await confirm({
+				title: t.confirm_reset_slideshow_timestamps_title,
+				message: activeSetlist
+					? t.slideshow_reset_setlist_message.replace(
+							'{name}',
+							activeSetlist.name
+						)
+					: t.slideshow_reset_message,
+				confirmLabel: t.label_confirm_reset,
+				cancelLabel: t.label_cancel,
+				tone: 'warning'
+			}))
+		)
+			return;
+		store.resetAllManualTimestamps(
+			activeSetlist
+				? visibleImages.map(image => image.assetId)
+				: undefined
+		);
+	}
 
 	const intervalSeconds = store.slideshowInterval;
 	const displayInterval = useMinutes ? intervalSeconds / 60 : intervalSeconds;
@@ -93,6 +111,16 @@ export default function BgSlideshowControls() {
 				checked={store.slideshowEnabled}
 				onChange={store.setSlideshowEnabled}
 			/>
+			<Button
+				onClick={() => void resetTimings()}
+				size="sm"
+				variant="secondary"
+			>
+				{t.slideshow_reset_equal}
+			</Button>
+			<span className="text-[11px]" style={{ color: UI_COLORS.fgMute }}>
+				{t.slideshow_modes_hint}
+			</span>
 			{store.slideshowEnabled && (
 				<div className="flex flex-col gap-2">
 					{/* Above the mode switches on purpose: pressing it turns
@@ -106,10 +134,10 @@ export default function BgSlideshowControls() {
 							tooltip={t.hint_slideshow_audio_checkpoints}
 						/>
 						<SwitchRow
-							label="Manual timestamps"
+							label={t.slideshow_manual_label}
 							checked={store.slideshowManualTimestampsEnabled}
 							onChange={store.setSlideshowManualTimestampsEnabled}
-							tooltip="Switch images at exact seconds defined per image (audio file mode)"
+							tooltip={t.slideshow_modes_hint}
 						/>
 						<SwitchRow
 							label={t.label_slideshow_track_change_sync}
@@ -121,54 +149,6 @@ export default function BgSlideshowControls() {
 
 					{store.slideshowManualTimestampsEnabled && (
 						<div className="flex flex-col gap-2">
-							<div className="flex items-center gap-2">
-								<span
-									className="flex-1 text-[11px]"
-									style={{
-										color: 'var(--editor-accent-muted)'
-									}}
-								>
-									Drag cards and resize their edges to control
-									how long each image stays on screen.
-								</span>
-								<Button
-									onClick={() =>
-										void (async () => {
-											if (
-												!(await confirm({
-													title: t.confirm_reset_slideshow_timestamps_title,
-													message: activeSetlist
-														? `Remove manual clip timing only from the ${visibleImages.length} image(s) in "${activeSetlist.name}". Timings on hidden images stay untouched.`
-														: t.confirm_reset_slideshow_timestamps_message,
-													confirmLabel:
-														t.label_confirm_reset,
-													cancelLabel: t.label_cancel,
-													tone: 'warning'
-												}))
-											) {
-												return;
-											}
-											if (activeSetlist) {
-												visibleImages.forEach(image =>
-													store.setBackgroundImagePlaybackSwitchAt(
-														image.assetId,
-														null
-													)
-												);
-												return;
-											}
-											store.resetAllManualTimestamps();
-										})()
-									}
-									className="shrink-0"
-									size="sm"
-									density="compact"
-									variant="ghost"
-									title={resetButtonTitle}
-								>
-									{resetButtonLabel}
-								</Button>
-							</div>
 							<div className="flex flex-col gap-1">
 								<span
 									className="text-[11px] font-medium"
@@ -197,10 +177,13 @@ export default function BgSlideshowControls() {
 									{t.hint_slideshow_transition_anchor}
 								</span>
 							</div>
-							<SlideshowClipTimeline />
 						</div>
 					)}
 
+					{(store.slideshowManualTimestampsEnabled ||
+						store.slideshowAudioCheckpointsEnabled) && (
+						<SlideshowClipTimeline />
+					)}
 					{store.slideshowAudioCheckpointsEnabled &&
 					!store.slideshowManualTimestampsEnabled ? (
 						<span

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { resolveEditorImagePreviewUrl } from '@/lib/editorImagePreviews';
 import { useT } from '@/lib/i18n';
 import { useAudioContext } from '@/context/useAudioContext';
+import { resolveSlideshowPool } from '../slideshow/slideshowPlayback';
 import { UI_COLORS } from '@/ui';
 import ActiveWallpaperSection from './ActiveWallpaperSection';
 import GlobalBackgroundSection from './GlobalBackgroundSection';
@@ -177,12 +178,19 @@ export default function BackgroundTab({
 		visibleBackgroundImages
 	]);
 
+	const timingPool = resolveSlideshowPool(
+		store.backgroundImages,
+		store.setlists,
+		store.activeSetlistId
+	);
+	const timingIndex = timingPool.findIndex(
+		image => image.assetId === currentActiveImageId
+	);
 	const calculatedSwitchAt =
 		store.slideshowManualTimestampsEnabled &&
-		activeImageIndex >= 0 &&
+		timingIndex >= 0 &&
 		trackDuration > 0
-			? (trackDuration / Math.max(visibleBackgroundImages.length, 1)) *
-				activeImageIndex
+			? (trackDuration / timingPool.length) * timingIndex
 			: null;
 
 	function setActiveSetlistImageOrder(nextVisibleIds: string[]) {

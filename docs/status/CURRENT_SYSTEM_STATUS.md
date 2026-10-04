@@ -352,6 +352,18 @@ Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 
 ---
 
+## Edición de tiempos del slideshow
+
+- Audio Checkpoints, marcas manuales y sincronización por pista se excluyen al
+  seleccionarlos. Cambiar de modo conserva las marcas guardadas.
+- «Repartir en partes iguales» solicita confirmación, limpia las marcas del
+  setlist activo (o de toda la biblioteca si no hay uno) y activa Audio
+  Checkpoints. Al volver a manual, esas imágenes parten de tiempos automáticos.
+- La timeline comparte el pool habilitado y las marcas del reproductor;
+  representa los anclajes temporales, no el comienzo de cada fundido. Los clips
+  se ordenan por tiempo y permiten editar inicio/fin en segundos.
+- HUD → Audio → Editar tiempos de imágenes abre los mismos controles del panel.
+
 ## Playback / media-key controls
 
 - **Play/pause** (hardware key, e.g. F8): supported. Driven by Media Session +

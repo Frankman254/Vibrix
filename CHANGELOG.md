@@ -15,6 +15,15 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+- Slideshow: Audio Checkpoints, marcas manuales y sincronización por pista
+  son modos excluyentes al seleccionarlos. «Repartir en partes iguales» borra
+  marcas con confirmación (sólo el setlist activo, si existe), activa el reparto
+  automático y permite volver al modo manual limpio. La timeline usa el mismo
+  pool habilitado y las mismas marcas que el reproductor, muestra marcas fuera
+  de orden cronológicamente y permite introducir inicio/fin en segundos. HUD →
+  Audio → Editar tiempos de imágenes comparte estos controles; M evita marcas
+  duplicadas cuando ambos paneles están abiertos.
+
 - Transiciones enlazadas por imagen: cada imagen puede aplicar su transición de
   salida también a Spectrum 1, Spectrum 2 y/o Logo. Preview y export offline
   comparten el mismo compositor y respetan la duración, intensidad y canal de

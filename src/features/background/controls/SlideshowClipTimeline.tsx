@@ -1,9 +1,10 @@
+import { buildTimelineClips } from '../slideshow/slideshowTimeline';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAudioContext } from '@/context/useAudioContext';
 import { useT } from '@/lib/i18n';
 import { useWallpaperStore } from '@/store/wallpaperStore';
 import { resolveEditorImagePreviewUrl } from '@/lib/editorImagePreviews';
-import { filterImageIdsBySetlist } from '@/store/slices/setlistsSlice';
+import { resolveSlideshowPool } from '../slideshow/slideshowPlayback';
 
 const MIN_CLIP_DURATION = 0.5;
 const MIN_CLIP_WIDTH_PX = 220;
@@ -19,17 +20,6 @@ const CLIP_COLORS = [
 	'#20c997',
 	'#f06595'
 ];
-
-type TimelineClip = {
-	assetId: string;
-	index: number;
-	start: number;
-	end: number;
-	isManual: boolean;
-	imageUrl: string | null;
-	thumbnailUrl: string | null;
-	enabled: boolean;
-};
 
 type DragMode = 'move' | 'resize-start' | 'resize-end';
 
@@ -132,46 +122,11 @@ function hasOutOfOrderTimestamps(
 	return false;
 }
 
-function buildTimelineClips(
-	images: ReturnType<typeof useWallpaperStore.getState>['backgroundImages'],
-	duration: number
-): TimelineClip[] {
-	const visibleImages = images.filter(image => image.url);
-	if (visibleImages.length === 0 || duration <= 0) return [];
-
-	const starts: number[] = [];
-	for (let index = 0; index < visibleImages.length; index += 1) {
-		const image = visibleImages[index]!;
-		const autoStart =
-			(duration / Math.max(visibleImages.length, 1)) * index;
-		const previousStart = starts[index - 1] ?? 0;
-		const remainingClips = visibleImages.length - index - 1;
-		const minStart = index === 0 ? 0 : previousStart + MIN_CLIP_DURATION;
-		const maxStart = Math.max(
-			minStart,
-			duration - remainingClips * MIN_CLIP_DURATION
-		);
-		const candidate =
-			index === 0 ? 0 : (image.playbackSwitchAt ?? autoStart);
-		starts.push(clamp(candidate, minStart, maxStart));
-	}
-
-	return visibleImages.map((image, index) => ({
-		assetId: image.assetId,
-		index,
-		start: starts[index] ?? 0,
-		end: starts[index + 1] ?? duration,
-		isManual: image.playbackSwitchAt != null,
-		imageUrl: image.url,
-		thumbnailUrl: image.thumbnailUrl,
-		enabled: image.enabled
-	}));
-}
-
 export default function SlideshowClipTimeline() {
 	const {
 		backgroundImages,
 		activeImageId,
+		slideshowManualTimestampsEnabled,
 		editorImagePreviewQuality,
 		setlists,
 		activeSetlistId,
@@ -184,21 +139,22 @@ export default function SlideshowClipTimeline() {
 	const trackRef = useRef<HTMLDivElement | null>(null);
 	const rafRef = useRef(0);
 	const dragStateRef = useRef<DragState>(null);
+	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [duration, setDuration] = useState(0);
 	const [playheadTime, setPlayheadTime] = useState(0);
 	const [viewportWidth, setViewportWidth] = useState(MIN_TIMELINE_WIDTH_PX);
 	const visibleBackgroundImages = useMemo(
-		() =>
-			filterImageIdsBySetlist(
-				backgroundImages,
-				setlists,
-				activeSetlistId
-			),
+		() => resolveSlideshowPool(backgroundImages, setlists, activeSetlistId),
 		[backgroundImages, setlists, activeSetlistId]
 	);
 	const clips = useMemo(
-		() => buildTimelineClips(visibleBackgroundImages, duration),
-		[visibleBackgroundImages, duration]
+		() =>
+			buildTimelineClips(
+				visibleBackgroundImages,
+				duration,
+				slideshowManualTimestampsEnabled
+			),
+		[visibleBackgroundImages, duration, slideshowManualTimestampsEnabled]
 	);
 	const timelineWidth = useMemo(
 		() => resolveTimelineWidth(duration, clips.length, viewportWidth),
@@ -241,8 +197,10 @@ export default function SlideshowClipTimeline() {
 	}, []);
 
 	const outOfOrder = useMemo(
-		() => hasOutOfOrderTimestamps(visibleBackgroundImages),
-		[visibleBackgroundImages]
+		() =>
+			slideshowManualTimestampsEnabled &&
+			hasOutOfOrderTimestamps(visibleBackgroundImages),
+		[visibleBackgroundImages, slideshowManualTimestampsEnabled]
 	);
 
 	const timeFromClientX = useCallback(
@@ -340,6 +298,8 @@ export default function SlideshowClipTimeline() {
 		) => {
 			const clip = clips[clipIndex];
 			if (!clip) return;
+			setSelectedId(clip.assetId);
+			if (!slideshowManualTimestampsEnabled) return;
 			event.stopPropagation();
 			event.currentTarget.setPointerCapture(event.pointerId);
 			dragStateRef.current = {
@@ -352,7 +312,12 @@ export default function SlideshowClipTimeline() {
 			};
 			setActiveImageId(clip.assetId);
 		},
-		[clips, setActiveImageId, timeFromClientX]
+		[
+			clips,
+			setActiveImageId,
+			timeFromClientX,
+			slideshowManualTimestampsEnabled
+		]
 	);
 
 	const clearDragState = useCallback(
@@ -389,15 +354,84 @@ export default function SlideshowClipTimeline() {
 					color: 'var(--editor-accent-muted)'
 				}}
 			>
-				Load a file track to edit slideshow timing on a real timeline.
+				{t.slideshow_load_audio}
 			</div>
 		);
 	}
 
+	const selectedClip =
+		clips.find(clip => clip.assetId === (selectedId ?? activeImageId)) ??
+		clips[0];
 	const playheadLeftPx = clamp(playheadTime / duration, 0, 1) * timelineWidth;
 
 	return (
 		<div className="flex flex-col gap-2">
+			{slideshowManualTimestampsEnabled && selectedClip && (
+				<div className="flex flex-wrap items-center gap-2 text-[11px]">
+					<select
+						aria-label={t.slideshow_image_label}
+						value={selectedClip.assetId}
+						onChange={event => setSelectedId(event.target.value)}
+						className="rounded border bg-[var(--editor-surface-bg)] p-1"
+					>
+						{clips.map(clip => (
+							<option key={clip.assetId} value={clip.assetId}>
+								IMG {clip.poolIndex + 1}
+							</option>
+						))}
+					</select>
+					{(['resize-start', 'resize-end'] as const).map(mode => {
+						const value =
+							mode === 'resize-start'
+								? selectedClip.start
+								: selectedClip.end;
+						const disabled =
+							mode === 'resize-start'
+								? selectedClip.index === 0
+								: selectedClip.index === clips.length - 1;
+						return (
+							<label
+								key={mode}
+								className="flex items-center gap-1"
+							>
+								{mode === 'resize-start'
+									? t.slideshow_start_seconds
+									: t.slideshow_end_seconds}
+								<input
+									key={`${selectedClip.assetId}-${value}`}
+									type="number"
+									min={0}
+									max={duration}
+									step="0.1"
+									defaultValue={Number(value.toFixed(3))}
+									disabled={disabled}
+									className="w-24 rounded border bg-[var(--editor-surface-bg)] p-1"
+									onKeyDown={event => {
+										if (event.key === 'Enter')
+											event.currentTarget.blur();
+									}}
+									onBlur={event => {
+										const next =
+											event.currentTarget.valueAsNumber;
+										if (
+											Number.isFinite(next) &&
+											next !== Number(value.toFixed(3))
+										)
+											applyClipMutation(
+												selectedClip.index,
+												mode,
+												next
+											);
+										event.currentTarget.value =
+											String(value);
+									}}
+								/>
+							</label>
+						);
+					})}
+				</div>
+			)}
+
 			<div
 				className="flex items-center justify-between text-[10px] tabular-nums"
 				style={{ color: 'var(--editor-accent-muted)' }}
@@ -515,9 +549,10 @@ export default function SlideshowClipTimeline() {
 									onClick={() =>
 										setActiveImageId(clip.assetId)
 									}
-									title={`Image ${clip.index + 1} · ${formatTime(clip.start)} - ${formatTime(clip.end)}`}
+									title={`Image ${clip.poolIndex + 1} · ${formatTime(clip.start)} - ${formatTime(clip.end)}`}
 								>
-									{clip.index > 0 ? (
+									{slideshowManualTimestampsEnabled &&
+									clip.index > 0 ? (
 										<div
 											className="absolute inset-y-0 left-0 z-20 w-3 cursor-ew-resize"
 											onPointerDown={event =>
@@ -529,7 +564,8 @@ export default function SlideshowClipTimeline() {
 											}
 										/>
 									) : null}
-									{clip.index < clips.length - 1 ? (
+									{slideshowManualTimestampsEnabled &&
+									clip.index < clips.length - 1 ? (
 										<div
 											className="absolute inset-y-0 right-0 z-20 w-3 cursor-ew-resize"
 											onPointerDown={event =>
@@ -544,7 +580,7 @@ export default function SlideshowClipTimeline() {
 									<div className="pointer-events-none flex h-full flex-col justify-between bg-black/25 px-3 py-2">
 										<div className="flex items-center justify-between gap-2">
 											<span className="truncate text-[12px] font-semibold text-white">
-												IMG {clip.index + 1}
+												IMG {clip.poolIndex + 1}
 											</span>
 											<span className="text-[10px] text-white/85">
 												{clip.isManual
@@ -571,9 +607,7 @@ export default function SlideshowClipTimeline() {
 					color: 'var(--editor-accent-muted)'
 				}}
 			>
-				Scroll horizontally for precision. Each card owns one continuous
-				span: moving or trimming a clip updates its neighbours so the
-				timeline stays gap-free and overlap-free.
+				{t.slideshow_timeline_hint}
 			</div>
 		</div>
 	);

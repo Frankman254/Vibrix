@@ -65,6 +65,8 @@ export default function SlideshowMarkControl() {
 	// that feels wrong, so `M` does it — unless the user is typing somewhere.
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.defaultPrevented || event.repeat) return;
+			if (document.querySelector('[aria-modal="true"]')) return;
 			if (event.key !== 'm' && event.key !== 'M') return;
 			if (event.metaKey || event.ctrlKey || event.altKey) return;
 			const target = event.target as HTMLElement | null;

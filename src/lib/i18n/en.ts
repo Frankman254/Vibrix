@@ -441,6 +441,21 @@ export const en = {
 	label_diag_theme_colors: 'Diag Accent Source',
 	label_default_colors: 'Default Color',
 	label_theme: 'Theme',
+	slideshow_reset_equal: 'Distribute equally',
+	slideshow_reset_message:
+		'Clear manual marks on all images and divide the audio duration equally among enabled images. Automatic mode will be enabled.',
+	slideshow_reset_setlist_message:
+		'Clear manual marks in setlist “{name}” and divide the audio equally among its enabled images. Images outside this setlist keep their marks. Automatic mode will be enabled.',
+	slideshow_manual_label: 'Manual timestamps',
+	slideshow_modes_hint:
+		'Audio Checkpoints divides the audio equally. Manual uses your saved marks. Switching modes preserves marks; “Distribute equally” clears them with confirmation.',
+	slideshow_load_audio: 'Load an audio track to edit its timing.',
+	slideshow_timeline_hint:
+		'In manual mode, select an image to enter its start and end in seconds or drag its edges. Times show the marks; the anchor determines when the transition begins. Automatic mode shows equal, read-only spans.',
+	slideshow_image_label: 'Image to edit',
+	slideshow_start_seconds: 'Start (s)',
+	slideshow_end_seconds: 'End (s)',
+	slideshow_edit_timing: 'Edit image timing',
 	label_slideshow_audio_checkpoints: 'Audio Checkpoints',
 	label_slideshow_track_change_sync: 'Track Change Sync',
 	label_slideshow_mark_here: 'Mark here',

@@ -345,6 +345,8 @@ export function createBackgroundCollectionActions(
 
 			set(current => ({
 				slideshowManualTimestampsEnabled: true,
+				slideshowAudioCheckpointsEnabled: false,
+				slideshowTrackChangeSyncEnabled: false,
 				backgroundImages: current.backgroundImages.map(img =>
 					img.assetId === next.assetId
 						? { ...img, playbackSwitchAt: markedAt }
@@ -361,12 +363,17 @@ export function createBackgroundCollectionActions(
 				enabledManualMode
 			};
 		},
-		resetAllManualTimestamps: () =>
+		resetAllManualTimestamps: imageIds =>
 			set(state => ({
-				backgroundImages: state.backgroundImages.map(img => ({
-					...img,
-					playbackSwitchAt: null
-				}))
+				slideshowEnabled: true,
+				slideshowAudioCheckpointsEnabled: true,
+				slideshowManualTimestampsEnabled: false,
+				slideshowTrackChangeSyncEnabled: false,
+				backgroundImages: state.backgroundImages.map(img =>
+					!imageIds || imageIds.includes(img.assetId)
+						? { ...img, playbackSwitchAt: null }
+						: img
+				)
 			})),
 		setActiveImageId: id => {
 			set(state => {

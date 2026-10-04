@@ -1,3 +1,4 @@
+import { SlideshowHudControls } from '@/features/background/ui';
 import {
 	useCallback,
 	useEffect,
@@ -493,10 +494,13 @@ export default function QuickActionsPanel() {
 						)}
 
 					{expandPanel === 'audio' && (
-						<QuickActionsShortcutsPanel
-							actions={audioActions}
-							isRainbow={usesRainbowChrome}
-						/>
+						<div className="min-w-0 flex flex-col gap-2">
+							<QuickActionsShortcutsPanel
+								actions={audioActions}
+								isRainbow={usesRainbowChrome}
+							/>
+							<SlideshowHudControls />
+						</div>
 					)}
 
 					{expandPanel === 'logo' && (

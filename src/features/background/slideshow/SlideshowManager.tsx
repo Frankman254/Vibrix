@@ -105,7 +105,19 @@ export default function SlideshowManager() {
 		captureMode === 'file' &&
 		slideshowIds.length >= 1;
 
-	// ── Ref invalidation on track or setlist change ────────────────────────
+	// Only timing edits invalidate the schedule. Ordinary image/framing edits
+	// must preserve a manual selection until the next checkpoint boundary.
+	const timingKey = JSON.stringify(
+		backgroundImages.map(image => [
+			image.assetId,
+			Boolean(image.url),
+			image.enabled,
+			image.playbackSwitchAt,
+			image.transitionDuration
+		])
+	);
+
+	// ── Ref invalidation on track, mode or timing change ────────────────────────
 	// When the active audio track or setlist changes, the checkpoint refs from
 	// the previous track/setlist are stale.  Reset them so the first poll tick
 	// for the new track applies the correct image rather than treating it as
@@ -114,7 +126,15 @@ export default function SlideshowManager() {
 		lastCheckpointIdRef.current = null;
 		lastTimestampAssetIdRef.current = null;
 		dbg('refs-invalidated', { activeAudioTrackId, activeSetlistId });
-	}, [activeAudioTrackId, activeSetlistId]);
+	}, [
+		activeAudioTrackId,
+		activeSetlistId,
+		timingKey,
+		slideshowAudioCheckpointsEnabled,
+		slideshowManualTimestampsEnabled,
+		slideshowTransitionAnchor,
+		slideshowTransitionDuration
+	]);
 
 	// ── Zero-position reset (timer / track-sync modes) ────────────────────
 	// Polling modes (checkpoint, timestamp) handle forceApply internally.

@@ -28,7 +28,9 @@ function setup(count = 3) {
 		setlists: [],
 		activeSetlistId: null,
 		activeImageId: images[0]!.assetId,
-		slideshowManualTimestampsEnabled: false
+		slideshowManualTimestampsEnabled: false,
+		slideshowAudioCheckpointsEnabled: true,
+		slideshowTrackChangeSyncEnabled: false
 	});
 	return images;
 }
@@ -95,5 +97,54 @@ describe('markNextImageSwitchAt — the "mark here" gesture', () => {
 		const result = store().markNextImageSwitchAt(30);
 		expect(result.imageId).toBe(images[2]!.assetId);
 		expect(switchTimes()).toEqual([null, null, 30]);
+	});
+});
+
+describe('slideshow timing modes and reset', () => {
+	beforeEach(() => setup());
+	it('switches to automatic timing without silently deleting saved marks', () => {
+		store().markNextImageSwitchAt(42);
+		store().setSlideshowAudioCheckpointsEnabled(true);
+		expect(store().slideshowManualTimestampsEnabled).toBe(false);
+		expect(store().slideshowAudioCheckpointsEnabled).toBe(true);
+		expect(switchTimes()).toEqual([null, 42, null]);
+	});
+	it('manual and track-sync modes disable competing modes, including mark here', () => {
+		store().setSlideshowManualTimestampsEnabled(true);
+		expect(store().slideshowAudioCheckpointsEnabled).toBe(false);
+		store().setSlideshowTrackChangeSyncEnabled(true);
+		expect(store().slideshowManualTimestampsEnabled).toBe(false);
+		store().markNextImageSwitchAt(20);
+		expect(store().slideshowTrackChangeSyncEnabled).toBe(false);
+		expect(store().slideshowAudioCheckpointsEnabled).toBe(false);
+		expect(store().slideshowManualTimestampsEnabled).toBe(true);
+	});
+	it('reset clears only the requested setlist images and returns to equal audio shares', () => {
+		const images = store().backgroundImages;
+		images.forEach((image, index) =>
+			store().setBackgroundImagePlaybackSwitchAt(
+				image.assetId,
+				index * 23
+			)
+		);
+		store().setSlideshowManualTimestampsEnabled(true);
+		store().resetAllManualTimestamps([
+			images[0].assetId,
+			images[2].assetId
+		]);
+		expect(switchTimes()).toEqual([null, 23, null]);
+		expect(store().slideshowAudioCheckpointsEnabled).toBe(true);
+		expect(store().slideshowManualTimestampsEnabled).toBe(false);
+		expect(store().slideshowEnabled).toBe(true);
+		store().setSlideshowManualTimestampsEnabled(true);
+		expect(switchTimes()).toEqual([null, 23, null]);
+	});
+	it('global reset clears all marks, even when cycling was off', () => {
+		store().markNextImageSwitchAt(17);
+		store().setSlideshowEnabled(false);
+		store().resetAllManualTimestamps();
+		expect(switchTimes()).toEqual([null, null, null]);
+		expect(store().slideshowEnabled).toBe(true);
+		expect(store().slideshowTrackChangeSyncEnabled).toBe(false);
 	});
 });

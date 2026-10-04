@@ -1044,11 +1044,35 @@ export function createBackgroundSlice(
 			}),
 		setSlideshowResetPosition: v => set({ slideshowResetPosition: v }),
 		setSlideshowAudioCheckpointsEnabled: v =>
-			set({ slideshowAudioCheckpointsEnabled: v }),
+			set({
+				slideshowAudioCheckpointsEnabled: v,
+				...(v
+					? {
+							slideshowManualTimestampsEnabled: false,
+							slideshowTrackChangeSyncEnabled: false
+						}
+					: {})
+			}),
 		setSlideshowTrackChangeSyncEnabled: v =>
-			set({ slideshowTrackChangeSyncEnabled: v }),
+			set({
+				slideshowTrackChangeSyncEnabled: v,
+				...(v
+					? {
+							slideshowManualTimestampsEnabled: false,
+							slideshowAudioCheckpointsEnabled: false
+						}
+					: {})
+			}),
 		setSlideshowManualTimestampsEnabled: v =>
-			set({ slideshowManualTimestampsEnabled: v }),
+			set({
+				slideshowManualTimestampsEnabled: v,
+				...(v
+					? {
+							slideshowAudioCheckpointsEnabled: false,
+							slideshowTrackChangeSyncEnabled: false
+						}
+					: {})
+			}),
 		...createBackgroundCollectionActions(set, get),
 		...createEffectLayerActions(set),
 		// Derived from the canonical key list instead of a hand-written one.

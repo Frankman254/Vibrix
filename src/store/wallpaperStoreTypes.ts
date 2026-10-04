@@ -761,7 +761,7 @@ export type WallpaperStore = WallpaperState & {
 		assetId: string,
 		v: number | null
 	) => void;
-	resetAllManualTimestamps: () => void;
+	resetAllManualTimestamps: (imageIds?: string[]) => void;
 	/**
 	 * Writes `timeSec` as the switch timestamp of the image AFTER the active
 	 * one — the "mark here" gesture: the end of a clip is the start of the next.

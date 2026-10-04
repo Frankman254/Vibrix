@@ -443,6 +443,21 @@ export const es: Record<TranslationKey, string> = {
 	label_diag_theme_colors: 'Fuente del Acento de Diag',
 	label_default_colors: 'Color por Defecto',
 	label_theme: 'Tema',
+	slideshow_reset_equal: 'Repartir en partes iguales',
+	slideshow_reset_message:
+		'Se borrarán las marcas manuales de todas las imágenes y se repartirá la duración del audio en partes iguales entre las imágenes habilitadas. Se activará el modo automático.',
+	slideshow_reset_setlist_message:
+		'Se borrarán las marcas manuales de las imágenes del setlist «{name}» y se repartirá el audio en partes iguales entre sus imágenes habilitadas. Las imágenes fuera del setlist conservarán sus marcas. Se activará el modo automático.',
+	slideshow_manual_label: 'Marcas de tiempo manuales',
+	slideshow_modes_hint:
+		'Audio Checkpoints reparte el audio en partes iguales. Manual usa tus marcas guardadas. Cambiar de modo conserva las marcas; «Repartir en partes iguales» las borra con confirmación.',
+	slideshow_load_audio: 'Carga una pista de audio para editar sus tiempos.',
+	slideshow_timeline_hint:
+		'En manual, selecciona una imagen para escribir su inicio y fin en segundos o arrastra sus bordes. Los tiempos indican las marcas; el anclaje determina cuándo comienza el fundido. En automático se muestran partes iguales, sin editar.',
+	slideshow_image_label: 'Imagen para editar',
+	slideshow_start_seconds: 'Inicio (s)',
+	slideshow_end_seconds: 'Fin (s)',
+	slideshow_edit_timing: 'Editar tiempos de imágenes',
 	label_slideshow_audio_checkpoints: 'Checkpoints por Audio',
 	label_slideshow_track_change_sync: 'Sincronizar Cambio de Pista',
 	label_slideshow_mark_here: 'Marcar aquí',
