@@ -6,6 +6,38 @@ import type {
 } from '@/types/layers';
 import type { WallpaperState } from '@/types/wallpaper';
 
+/**
+ * The scene layers that own a GL scene, and so a WebGL context.
+ *
+ * `background-image` is deliberately absent: it draws through the DOM/2D path,
+ * and routing it to a `<Canvas>` (which `WallpaperViewport` used to do by
+ * fallthrough whenever its url was still missing) spends a whole context
+ * drawing nothing. `sceneLayerRegistry` must carry a renderer for every type
+ * listed here — its map is typed against this list.
+ */
+export const GL_SCENE_LAYER_TYPES = [
+	'particle-background',
+	'particle-foreground',
+	'rain'
+] as const;
+
+export type GlSceneLayerType = (typeof GL_SCENE_LAYER_TYPES)[number];
+
+/** A scene layer with a GL scene behind it. */
+export type GlSceneLayer = Extract<SceneLayer, { type: GlSceneLayerType }>;
+
+/**
+ * Whether this layer gets a WebGL context. Asked before mounting, and asked
+ * regardless of `enabled`: the canvas of a GL layer outlives its own on/off
+ * switch so a scene change does not destroy and rebuild the renderer.
+ */
+export function isGlSceneLayer(layer: WallpaperLayer): layer is GlSceneLayer {
+	return (
+		layer.kind === 'scene' &&
+		(GL_SCENE_LAYER_TYPES as readonly string[]).includes(layer.type)
+	);
+}
+
 function sortLayers<T extends WallpaperLayer>(layers: T[]): T[] {
 	return [...layers].sort((a, b) => a.zIndex - b.zIndex);
 }

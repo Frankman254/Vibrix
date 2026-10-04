@@ -35,6 +35,26 @@ acceleration · 44.5 Mbps` con su `✓ Supported`. Cambiar el frame rate vuelve
   a negociar, y el cálculo de espacio en disco usa el bitrate negociado en vez
   del de la tabla.
 
+- WebGL: los canvas de particles y rain conservan su contexto al apagarse. El
+  storm de `THREE.WebGLRenderer: Context Lost.` en consola no era la GPU
+  cayéndose: es el log que Three emite cuando R3F destruye un `<Canvas>`
+  (llama a `forceContextLoss()` medio segundo después de desmontar), uno por
+  desmontaje, emparejado con el aviso de `THREE.Clock` del root nuevo. Una
+  escena ligada por imagen cambia `particlesEnabled` / `rainEnabled` en cada
+  foto, así que el slideshow tiraba un WebGLRenderer y construía otro en cada
+  salto: contexto nuevo, shaders recompilados y buffers de partículas
+  resubidos. Ahora el canvas se monta la primera vez que la capa se usa y se
+  queda: apagada no dibuja (una última pasada para limpiar y se para el rAF),
+  no gasta el filtro CSS y no vuelve a negociar contexto. Una capa que nunca
+  se ha encendido sigue sin costar nada.
+
+- WebGL: `background-image` ya no puede acabar en un `<Canvas>`. El enrutado de
+  capas caía por descarte en `SceneLayerCanvas`, así que una imagen de fondo sin
+  url todavía resuelta gastaba un contexto WebGL completo para dibujar nada.
+  `isGlSceneLayer` (en `lib/layers`) es ahora la única fuente de verdad de qué
+  capa recibe contexto, y el registry de escena está tipado contra esa lista:
+  añadir un tipo sin renderer es error de tipos, no un canvas vacío.
+
 - Slideshow: Audio Checkpoints, marcas manuales y sincronización por pista
   son modos excluyentes al seleccionarlos. «Repartir en partes iguales» borra
   marcas con confirmación (sólo el setlist activo, si existe), activa el reparto

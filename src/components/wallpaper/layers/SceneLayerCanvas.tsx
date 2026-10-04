@@ -23,9 +23,23 @@ import {
  * a high-refresh display (120Hz) the particle/rain GPU draw — and the heavy
  * additive glow overdraw — happens ~half as often with no visible difference.
  */
-function FrameRateLimiter({ minFrameMs }: { minFrameMs: number }) {
+function FrameRateLimiter({
+	minFrameMs,
+	active
+}: {
+	minFrameMs: number;
+	active: boolean;
+}) {
 	const invalidate = useThree(s => s.invalidate);
 	useEffect(() => {
+		// Layer switched off: draw ONE more frame so the scene — now empty —
+		// clears what it had on screen, then stop scheduling entirely. The
+		// context survives for the next time the layer comes back; the work
+		// does not.
+		if (!active) {
+			invalidate();
+			return undefined;
+		}
 		let rafId = 0;
 		let last = 0;
 		const tick = (now: number) => {
@@ -37,7 +51,7 @@ function FrameRateLimiter({ minFrameMs }: { minFrameMs: number }) {
 		};
 		rafId = requestAnimationFrame(tick);
 		return () => cancelAnimationFrame(rafId);
-	}, [invalidate, minFrameMs]);
+	}, [invalidate, minFrameMs, active]);
 	return null;
 }
 
@@ -71,7 +85,17 @@ export default function SceneLayerCanvas({ layer }: { layer: SceneLayer }) {
 		}))
 	);
 
-	if (!layer.enabled) return null;
+	// Mount on first use, then never give the context back. Unmounting a
+	// <Canvas> destroys its WebGLRenderer, and R3F's teardown calls
+	// `forceContextLoss()` half a second later — which is the
+	// `THREE.WebGLRenderer: Context Lost.` that filled the console. A
+	// scene-driven slideshow toggles `particlesEnabled` / `rainEnabled` per
+	// image, so every switch was throwing away a renderer and building a new
+	// one: fresh context, shaders recompiled, particle buffers re-uploaded.
+	// A layer the user has never turned on still costs nothing.
+	const usedOnce = useRef(layer.enabled);
+	if (layer.enabled) usedOnce.current = true;
+	if (!layer.enabled && !usedOnce.current) return null;
 
 	const particleFilterActive =
 		layer.type === 'particle-background' ||
@@ -80,9 +104,10 @@ export default function SceneLayerCanvas({ layer }: { layer: SceneLayer }) {
 	// plane inside the scene (`RainLayer`) and the particle fields offset their
 	// points. Only the image background still takes an element translation.
 	const drawsOwnCameraMotion = particleFilterActive || layer.type === 'rain';
-	const canvasFilter = particleFilterActive
-		? `brightness(${particleFilterBrightness}) contrast(${particleFilterContrast}) saturate(${particleFilterSaturation}) blur(${particleFilterBlur}px) hue-rotate(${particleFilterHueRotate}deg)`
-		: 'none';
+	const canvasFilter =
+		particleFilterActive && layer.enabled
+			? `brightness(${particleFilterBrightness}) contrast(${particleFilterContrast}) saturate(${particleFilterSaturation}) blur(${particleFilterBlur}px) hue-rotate(${particleFilterHueRotate}deg)`
+			: 'none';
 	const maxDpr = resolveSceneLayerMaxDpr(
 		performanceMode,
 		particleFilterActive
@@ -145,7 +170,10 @@ export default function SceneLayerCanvas({ layer }: { layer: SceneLayer }) {
 				dpr={canvasDpr}
 				frameloop="demand"
 			>
-				<FrameRateLimiter minFrameMs={minFrameMs} />
+				<FrameRateLimiter
+					minFrameMs={minFrameMs}
+					active={layer.enabled}
+				/>
 				<Suspense fallback={null}>
 					<ParallaxController groupRef={groupRef}>
 						<group ref={groupRef}>{renderSceneLayer(layer)}</group>

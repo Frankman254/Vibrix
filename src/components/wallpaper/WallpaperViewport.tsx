@@ -1,6 +1,10 @@
 import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { buildOverlayLayers, buildSceneLayers } from '@/lib/layers';
+import {
+	buildOverlayLayers,
+	buildSceneLayers,
+	isGlSceneLayer
+} from '@/lib/layers';
 import { useWallpaperStore } from '@/store/wallpaperStore';
 import { SlideshowManager } from '@/features/background/ui';
 import { resolveSpectrumPartitions } from '@/features/spectrum/domain/spectrumCameraSplit';
@@ -236,6 +240,21 @@ export default function WallpaperViewport({
 					<GlobalBackgroundView />
 					{stageLightsEnabled && <StageLightsCanvas zIndex={1} />}
 					{renderableLayers.map(layer => {
+						// GL scene layers are the exception to the disabled
+						// check below: they stay mounted so a scene that turns
+						// particles or rain off does not destroy their WebGL
+						// context and rebuild it on the next image (see
+						// SceneLayerCanvas). Everything else is DOM/2D and
+						// costs nothing to unmount.
+						if (isGlSceneLayer(layer)) {
+							return (
+								<SceneLayerCanvas
+									key={layer.id}
+									layer={layer}
+								/>
+							);
+						}
+
 						if (!layer.enabled) return null;
 
 						if (
@@ -259,9 +278,9 @@ export default function WallpaperViewport({
 							);
 						}
 
-						return (
-							<SceneLayerCanvas key={layer.id} layer={layer} />
-						);
+						// No renderer for this type: drawing nothing is the
+						// answer, NOT an empty GL canvas.
+						return null;
 					})}
 					{audioLayers.flatMap(layer =>
 						layer.type === 'spectrum'
