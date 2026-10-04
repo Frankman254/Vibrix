@@ -15,14 +15,34 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+- Export de vídeo: selección de encoder por capacidades, no por sistema
+  operativo. La plataforma solo **ordena** los candidatos (Windows → H.264
+  hardware, luego H.264 software, luego HEVC y WebM/VP9; macOS → H.264
+  hardware, HEVC hardware, H.264 software; Linux → H.264 hardware/software con
+  VP9 como formato secundario) y la decisión final siempre la toma
+  `VideoEncoder.isConfigSupported()` sobre la **misma** config que recibirá el
+  encoder: cadena de códec completa con perfil y nivel calculados del ritmo de
+  macrobloques real (1440p60 → `avc1.640033`), bitrate explícito, `framerate`
+  incluido y `prefer-hardware`/`prefer-software` como pista. Nunca se pide
+  NVENC, QuickSync, AMF, VideoToolbox ni VAAPI directamente. Antes el sondeo
+  previo corría sin frame rate y el encoder real sí lo llevaba, así que en
+  Windows el export pasaba la comprobación y moría minutos después con frames
+  ya renderizados; ahora ningún frame se renderiza sin una config aprobada, y
+  si el hardware rechaza el bitrate de calidad se baja de escalón (×0.7, ×0.5)
+  o se cae a software antes de fallar. El panel de Export muestra la config
+  elegida: `Windows 11 · H.264 High 5.1 · 2560×1440 · 60 FPS · Hardware
+acceleration · 44.5 Mbps` con su `✓ Supported`. Cambiar el frame rate vuelve
+  a negociar, y el cálculo de espacio en disco usa el bitrate negociado en vez
+  del de la tabla.
+
 - Slideshow: Audio Checkpoints, marcas manuales y sincronización por pista
   son modos excluyentes al seleccionarlos. «Repartir en partes iguales» borra
   marcas con confirmación (sólo el setlist activo, si existe), activa el reparto
   automático y permite volver al modo manual limpio. La timeline usa el mismo
   pool habilitado y las mismas marcas que el reproductor, muestra marcas fuera
-  de orden cronológicamente y permite introducir inicio/fin en segundos. HUD →
-  Audio → Editar tiempos de imágenes comparte estos controles; M evita marcas
-  duplicadas cuando ambos paneles están abiertos.
+  de orden cronológicamente y permite introducir inicio/fin en segundos. El HUD
+  de Audio conserva sólo los accesos rápidos «Marcar aquí» y «Repartir en partes
+  iguales»; la timeline y la edición precisa permanecen en el editor.
 
 - Transiciones enlazadas por imagen: cada imagen puede aplicar su transición de
   salida también a Spectrum 1, Spectrum 2 y/o Logo. Preview y export offline

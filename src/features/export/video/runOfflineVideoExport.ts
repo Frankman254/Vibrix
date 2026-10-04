@@ -37,13 +37,13 @@ import {
 	createOfflineVideoEncoder,
 	type OfflineVideoSink
 } from './offlineVideoEncoder';
+import type { OfflineVideoEncoderPlan } from './offlineEncoderNegotiation';
 import {
 	computeOfflineExportRatio,
 	computeOfflineFrameCount,
 	estimateOfflineExportEtaMs,
 	type OfflineVideoExportPhase,
-	type OfflineVideoExportProgress,
-	type OfflineVideoFormat
+	type OfflineVideoExportProgress
 } from './offlineVideoFormat';
 import { createOfflineCameraFx } from './offlineCameraFx';
 import {
@@ -54,7 +54,8 @@ import {
 
 export type RunOfflineVideoExportOptions = {
 	audioTrack: OfflineAudioTrack;
-	format: OfflineVideoFormat;
+	/** A config that already passed capability negotiation. */
+	plan: OfflineVideoEncoderPlan;
 	sink: OfflineVideoSink;
 	width: number;
 	height: number;
@@ -164,7 +165,7 @@ export async function runOfflineVideoExport(
 	const encoder = await createOfflineVideoEncoder({
 		canvas,
 		fps,
-		format: options.format,
+		plan: options.plan,
 		sink: options.sink
 	});
 

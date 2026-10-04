@@ -9,6 +9,53 @@ import type {
 	OfflineVideoExportError
 } from '@/features/export/video/offlineVideoExportRuntime';
 import type { OfflineVideoExportProgress } from '@/features/export/video/offlineVideoFormat';
+import type { OfflineVideoEncoderPlan } from '@/features/export/video/offlineEncoderNegotiation';
+import { platformName } from '@/lib/env/platform';
+
+/** Codec families as people name them, not as WebCodecs spells them. */
+const CODEC_NAMES: Record<string, string> = {
+	avc: 'H.264',
+	hevc: 'H.265',
+	vp9: 'VP9',
+	vp8: 'VP8',
+	av1: 'AV1'
+};
+
+function megabits(bitsPerSecond: number): string {
+	const mbps = bitsPerSecond / 1_000_000;
+	const rounded = mbps >= 10 ? Math.round(mbps) : Math.round(mbps * 10) / 10;
+	return `${rounded} Mbps`;
+}
+
+/**
+ * The exact configuration the export will use, in one line:
+ * `Windows 11 · H.264 High 5.1 · 2560×1440 · 60 FPS · Hardware acceleration ·
+ * 24 Mbps`.
+ *
+ * Built from the negotiated plan, never from the resolution controls, so the
+ * panel cannot advertise a config the encoder is not running. `platformLabel`
+ * is the refined display name when the browser gave one away (Windows 11 vs
+ * Windows 10); it falls back to the coarse platform the negotiation used.
+ */
+export function offlineEncoderSummary(
+	t: Translations,
+	plan: OfflineVideoEncoderPlan,
+	platformLabel?: string
+): string {
+	const codec = CODEC_NAMES[plan.video.videoCodec] ?? plan.video.videoCodec;
+	return [
+		platformLabel || platformName(plan.platform),
+		`${codec} ${plan.video.profileLabel}`,
+		`${plan.width}\u00d7${plan.height}`,
+		`${plan.fps} FPS`,
+		plan.video.hardwareAcceleration === 'prefer-hardware'
+			? t.offline_encoder_hardware
+			: t.offline_encoder_software,
+		megabits(plan.video.bitrate)
+	]
+		.filter(Boolean)
+		.join(' \u00b7 ');
+}
 
 export function offlineExportPhaseLabel(
 	t: Translations,

@@ -442,6 +442,7 @@ export const en = {
 	label_default_colors: 'Default Color',
 	label_theme: 'Theme',
 	slideshow_reset_equal: 'Distribute equally',
+	slideshow_hud_equal: 'Equalize timing',
 	slideshow_reset_message:
 		'Clear manual marks on all images and divide the audio duration equally among enabled images. Automatic mode will be enabled.',
 	slideshow_reset_setlist_message:
@@ -1312,6 +1313,13 @@ export const en = {
 	offline_label_resolution: 'Resolution',
 	offline_label_fps: 'Frame rate',
 	offline_format_checking: 'Checking encoder...',
+	offline_encoder_title: 'Encoder',
+	offline_encoder_auto: 'Auto',
+	offline_encoder_detected: 'Detected',
+	offline_encoder_hardware: 'Hardware acceleration',
+	offline_encoder_software: 'Software encoder',
+	offline_encoder_supported: 'Supported',
+	offline_encoder_none: 'No supported encoder for this resolution',
 	offline_btn_export_video: 'Export video',
 	offline_btn_cancel: 'Cancel export',
 	offline_phase_preparing: 'Preparing project...',

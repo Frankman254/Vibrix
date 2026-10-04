@@ -444,6 +444,7 @@ export const es: Record<TranslationKey, string> = {
 	label_default_colors: 'Color por Defecto',
 	label_theme: 'Tema',
 	slideshow_reset_equal: 'Repartir en partes iguales',
+	slideshow_hud_equal: 'Igualar tiempos',
 	slideshow_reset_message:
 		'Se borrarán las marcas manuales de todas las imágenes y se repartirá la duración del audio en partes iguales entre las imágenes habilitadas. Se activará el modo automático.',
 	slideshow_reset_setlist_message:
@@ -1320,6 +1321,13 @@ export const es: Record<TranslationKey, string> = {
 	offline_label_resolution: 'Resolución',
 	offline_label_fps: 'Fotogramas por segundo',
 	offline_format_checking: 'Comprobando codificador...',
+	offline_encoder_title: 'Codificador',
+	offline_encoder_auto: 'Automático',
+	offline_encoder_detected: 'Detectado',
+	offline_encoder_hardware: 'Aceleración por hardware',
+	offline_encoder_software: 'Codificador por software',
+	offline_encoder_supported: 'Compatible',
+	offline_encoder_none: 'Ningún codificador compatible con esta resolución',
 	offline_btn_export_video: 'Exportar vídeo',
 	offline_btn_cancel: 'Cancelar exportación',
 	offline_phase_preparing: 'Preparando proyecto...',

@@ -262,8 +262,9 @@ export default function ExportTabBody() {
 				onResolutionChange={videoExport.setResolutionId}
 				fps={videoExport.fps}
 				onFpsChange={videoExport.setFps}
-				format={videoExport.format}
-				formatChecked={videoExport.formatChecked}
+				plan={videoExport.plan}
+				planChecked={videoExport.planChecked}
+				platformLabel={videoExport.platformLabel}
 				progress={videoExport.progress}
 				error={videoExport.error}
 				storageHint={videoExport.storageHint}

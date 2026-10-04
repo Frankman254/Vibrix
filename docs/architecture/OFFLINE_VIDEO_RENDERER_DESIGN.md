@@ -9,7 +9,10 @@
 ```
 ExportTabBody (components/)            inyecta createOfflineBackgroundSubsystem()
   └─ useOfflineVideoExport (features/export/controls)
-       1. codecs sondeados antes del clic (resolveOfflineVideoFormat)
+       1. encoder negociado antes del clic (negotiateOfflineVideoEncoder):
+          candidatos ordenados por plataforma, cada uno confirmado con
+          VideoEncoder.isConfigSupported() — sin config aprobada no se
+          renderiza ni un frame
        2. showSaveFilePicker en el clic → StreamTarget; si no hay, BufferTarget
        3. loadImageBlob → openOfflineAudioTrack (mediabunny: metadatos +
           decodificador, sin muestras en RAM)
@@ -25,7 +28,9 @@ ExportTabBody (components/)            inyecta createOfflineBackgroundSubsystem(
 
 | Pieza                                                      | Archivo                                                                                                        |
 | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Negociación de formato + progreso (puro, testeado)         | `src/features/export/video/offlineVideoFormat.ts`                                                              |
+| Negociación de encoder por plataforma (puro, testeado)     | `src/features/export/video/offlineEncoderNegotiation.ts`                                                       |
+| Cadenas de códec (perfil/nivel AVC, HEVC, VP9)             | `src/features/export/video/videoCodecStrings.ts`                                                               |
+| Contenedor/códec + progreso + tabla de bitrate (puro)      | `src/features/export/video/offlineVideoFormat.ts`                                                              |
 | mediabunny: encoder, sink, writable cancelable             | `src/features/export/video/offlineVideoEncoder.ts`                                                             |
 | Bucle de frames                                            | `src/features/export/video/runOfflineVideoExport.ts`                                                           |
 | Fondo (vive en `components/`, se inyecta)                  | `src/components/wallpaper/layers/imageCanvasOfflineSubsystem.ts`                                               |

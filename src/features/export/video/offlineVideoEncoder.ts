@@ -17,18 +17,70 @@ import {
 	StreamTarget,
 	WebMOutputFormat,
 	canEncodeAudio,
-	canEncodeVideo,
 	type StreamTargetChunk
 } from 'mediabunny';
 import type {
-	OfflineCodecProbe,
-	OfflineVideoFormat
-} from './offlineVideoFormat';
-import { recommendedVideoBitrateFor } from './offlineVideoFormat';
+	OfflineEncoderProbe,
+	OfflineVideoEncoderPlan,
+	VideoEncoderCandidate,
+	VideoProbeSize
+} from './offlineEncoderNegotiation';
 
-export const mediabunnyCodecProbe: OfflineCodecProbe = {
-	canEncodeVideo: (codec, size) =>
-		canEncodeVideo(codec, { ...size, quality: QUALITY_HIGH }),
+/**
+ * The exact `VideoEncoderConfig` mediabunny will hand to WebCodecs for this
+ * candidate. Building it here — instead of letting the library derive a codec
+ * string from a bitrate guess at first-frame time — is what makes the
+ * pre-flight probe and the real encode the same question. Every field the
+ * library sets is set here, `framerate` included: Windows H.264 encoders
+ * answer differently once a frame rate is in the config, which is how an
+ * export could pass its probe and still die three minutes in.
+ */
+export function buildVideoEncoderConfig(
+	candidate: VideoEncoderCandidate,
+	size: VideoProbeSize
+): VideoEncoderConfig {
+	return {
+		codec: candidate.codecString,
+		width: size.width,
+		height: size.height,
+		bitrate: candidate.bitrate,
+		bitrateMode: 'variable',
+		framerate: size.fps,
+		alpha: 'discard',
+		hardwareAcceleration: candidate.hardwareAcceleration,
+		// Mediabunny asks for length-prefixed samples, not Annex B; the probe
+		// has to ask for the same thing or it is probing another config.
+		...(candidate.videoCodec === 'avc'
+			? { avc: { format: 'avc' as const } }
+			: candidate.videoCodec === 'hevc'
+				? { hevc: { format: 'hevc' as const } }
+				: {})
+	};
+}
+
+/**
+ * Capability probe backed by WebCodecs itself. Video goes straight to
+ * `VideoEncoder.isConfigSupported()` so the answer covers the whole config;
+ * audio stays on mediabunny's helper, which wraps
+ * `AudioEncoder.isConfigSupported()` with the same quality the export uses.
+ */
+export const webCodecsEncoderProbe: OfflineEncoderProbe = {
+	async canEncodeVideo(candidate, size) {
+		if (typeof VideoEncoder === 'undefined') return false;
+		// H.264 and HEVC are 4:2:0: odd dimensions are rejected downstream
+		// whatever the probe says.
+		if (
+			(candidate.videoCodec === 'avc' ||
+				candidate.videoCodec === 'hevc') &&
+			(size.width % 2 === 1 || size.height % 2 === 1)
+		) {
+			return false;
+		}
+		const support = await VideoEncoder.isConfigSupported(
+			buildVideoEncoderConfig(candidate, size)
+		);
+		return support.supported === true;
+	},
 	canEncodeAudio: (codec, audio) =>
 		canEncodeAudio(codec, { ...audio, quality: QUALITY_HIGH })
 };
@@ -98,10 +150,11 @@ export type OfflineVideoEncoder = {
 export async function createOfflineVideoEncoder(options: {
 	canvas: HTMLCanvasElement;
 	fps: number;
-	format: OfflineVideoFormat;
+	plan: OfflineVideoEncoderPlan;
 	sink: OfflineVideoSink;
 }): Promise<OfflineVideoEncoder> {
-	const { canvas, fps, format, sink } = options;
+	const { canvas, fps, plan, sink } = options;
+	const { format, video } = plan;
 	const bufferTarget = sink.kind === 'buffer' ? new BufferTarget() : null;
 	const target =
 		sink.kind === 'stream'
@@ -122,33 +175,28 @@ export async function createOfflineVideoEncoder(options: {
 				})
 			: new WebMOutputFormat();
 
-	// Explicit VBR at the table bitrate keeps predictable quality and file
-	// size (the old QUALITY_HIGH ran ~38 Mbps at 1080p60 on Macs). Hardware
-	// encoding is preferred for long exports. If the browser cannot honour
-	// that exact config, fall back to the old qualitative path so an export
-	// never fails just because the rate-control preference is unsupported.
-	const bitrate = recommendedVideoBitrateFor({
-		width: canvas.width,
-		height: canvas.height,
-		fps
-	});
-	const rateControlled = new Quality({ bitrate, bitrateMode: 'variable' });
-	const canUseRateControl = await canEncodeVideo(format.videoCodec, {
-		width: canvas.width,
-		height: canvas.height,
-		quality: rateControlled,
-		hardwareAcceleration: 'prefer-hardware'
-	}).catch(() => false);
+	// No probing here and no fallback: `plan` is a config that already passed
+	// `VideoEncoder.isConfigSupported()` in `negotiateOfflineVideoEncoder`,
+	// and these fields reproduce it exactly — codec string, VBR bitrate and
+	// hardware hint. A mismatch would mean rendering frames into an encoder
+	// that then refuses the very first one.
+	if (
+		canvas.width !== plan.width ||
+		canvas.height !== plan.height ||
+		fps !== plan.fps
+	) {
+		throw new Error('offline-export-encoder-plan-mismatch');
+	}
 
 	const output = new Output({ format: outputFormat, target });
 	const videoSource = new CanvasSource(canvas, {
 		codec: format.videoCodec,
-		...(canUseRateControl
-			? {
-					quality: rateControlled,
-					hardwareAcceleration: 'prefer-hardware' as const
-				}
-			: { quality: QUALITY_HIGH }),
+		fullCodecString: video.codecString,
+		quality: new Quality({
+			bitrate: video.bitrate,
+			bitrateMode: 'variable'
+		}),
+		hardwareAcceleration: video.hardwareAcceleration,
 		keyFrameInterval: 2
 	});
 	const audioSource = new AudioBufferSource({

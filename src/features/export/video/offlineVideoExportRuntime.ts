@@ -30,9 +30,9 @@ import {
 } from '@/features/export/video/offlineVideoEncoder';
 import {
 	estimateOfflineVideoBytes,
-	type OfflineVideoExportProgress,
-	type OfflineVideoFormat
+	type OfflineVideoExportProgress
 } from '@/features/export/video/offlineVideoFormat';
+import type { OfflineVideoEncoderPlan } from '@/features/export/video/offlineEncoderNegotiation';
 import {
 	createOpfsVideoSink,
 	OfflineStorageError,
@@ -81,7 +81,8 @@ export type StartOfflineVideoExportArgs = {
 	fftSize: number;
 	audioSmoothing: number;
 	extraSubsystems: RenderSubsystem[];
-	format: OfflineVideoFormat | null;
+	/** The negotiated encoder config; null means negotiation found none. */
+	plan: OfflineVideoEncoderPlan | null;
 	width: number;
 	height: number;
 	fps: OfflineExportFps;
@@ -163,7 +164,7 @@ export async function startOfflineVideoExport({
 	fftSize,
 	audioSmoothing,
 	extraSubsystems,
-	format,
+	plan,
 	width,
 	height,
 	fps
@@ -174,10 +175,13 @@ export async function startOfflineVideoExport({
 		patch({ error: 'no-audio' });
 		return;
 	}
-	if (!format) {
+	// Capability negotiation is a precondition, not a step: without a config
+	// the browser already confirmed, not a single frame gets rendered.
+	if (!plan) {
 		patch({ error: 'no-encoder' });
 		return;
 	}
+	const { format } = plan;
 
 	const fileName = buildDescriptiveExportFileName({
 		kind: 'recording',
@@ -245,7 +249,8 @@ export async function startOfflineVideoExport({
 				width,
 				height,
 				fps,
-				durationSec: audioTrack.durationSec
+				durationSec: audioTrack.durationSec,
+				videoBitsPerSecond: plan.video.bitrate
 			});
 			// No picker (Brave, Firefox): stream to disk instead of RAM;
 			// BufferTarget stays the last resort for small files only.
@@ -271,7 +276,7 @@ export async function startOfflineVideoExport({
 		}
 		const result = await runOfflineVideoExport({
 			audioTrack,
-			format,
+			plan,
 			sink,
 			width,
 			height,

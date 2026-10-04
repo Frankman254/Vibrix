@@ -1,9 +1,11 @@
 /**
- * Offline video export — format negotiation and progress math.
+ * Offline video export — container/codec vocabulary, progress math and the
+ * quality bitrate table.
  *
- * Pure on purpose: the codec probe is injected, so the preference order
- * (MP4 H.264 + AAC first, WebM as the escape hatch) is unit-tested without a
- * browser. The mediabunny wiring lives in `offlineVideoEncoder.ts`.
+ * Which codec an export actually uses is negotiated in
+ * `offlineEncoderNegotiation.ts` (platform-ordered candidates, every one of
+ * them confirmed by `VideoEncoder.isConfigSupported()`); the mediabunny
+ * wiring lives in `offlineVideoEncoder.ts`. This module stays pure.
  */
 
 export type OfflineVideoContainer = 'mp4' | 'webm';
@@ -17,76 +19,6 @@ export type OfflineVideoFormat = {
 	extension: 'mp4' | 'webm';
 	mimeType: 'video/mp4' | 'video/webm';
 };
-
-export type OfflineCodecProbe = {
-	canEncodeVideo(
-		codec: OfflineVideoCodecId,
-		size: { width: number; height: number }
-	): Promise<boolean>;
-	canEncodeAudio(
-		codec: OfflineAudioCodecId,
-		audio: { sampleRate: number; numberOfChannels: number }
-	): Promise<boolean>;
-};
-
-type ContainerCandidate = {
-	container: OfflineVideoContainer;
-	video: OfflineVideoCodecId[];
-	audio: OfflineAudioCodecId[];
-};
-
-// MP4 is what YouTube, QuickTime and every editor accept without complaint,
-// so it wins whenever the browser can encode anything that fits in it.
-const CONTAINER_CANDIDATES: ContainerCandidate[] = [
-	{ container: 'mp4', video: ['avc', 'hevc', 'av1'], audio: ['aac', 'opus'] },
-	{
-		container: 'webm',
-		video: ['vp9', 'vp8', 'av1'],
-		audio: ['opus', 'vorbis']
-	}
-];
-
-async function firstSupported<T>(
-	candidates: T[],
-	probe: (candidate: T) => Promise<boolean>
-): Promise<T | null> {
-	for (const candidate of candidates) {
-		try {
-			if (await probe(candidate)) return candidate;
-		} catch {
-			// A probe that throws is a codec this browser cannot use.
-		}
-	}
-	return null;
-}
-
-export async function resolveOfflineVideoFormat(
-	probe: OfflineCodecProbe,
-	size: { width: number; height: number },
-	audio: { sampleRate: number; numberOfChannels: number } = {
-		sampleRate: 44100,
-		numberOfChannels: 2
-	}
-): Promise<OfflineVideoFormat | null> {
-	for (const candidate of CONTAINER_CANDIDATES) {
-		const videoCodec = await firstSupported(candidate.video, codec =>
-			probe.canEncodeVideo(codec, size)
-		);
-		if (!videoCodec) continue;
-		const audioCodec = await firstSupported(candidate.audio, codec =>
-			probe.canEncodeAudio(codec, audio)
-		);
-		if (!audioCodec) continue;
-		return {
-			container: candidate.container,
-			videoCodec,
-			audioCodec,
-			extension: candidate.container,
-			mimeType: candidate.container === 'mp4' ? 'video/mp4' : 'video/webm'
-		};
-	}
-	return null;
-}
 
 export type OfflineVideoExportPhase =
 	| 'idle'
@@ -194,8 +126,17 @@ export function estimateOfflineVideoBytes(options: {
 	height: number;
 	fps: number;
 	durationSec: number;
+	/**
+	 * The negotiated encoder bitrate, when one is known. Encoder negotiation
+	 * may settle on a lower rung than the table asks for (a hardware encoder
+	 * that refuses the top rate still takes a lower one), and the storage
+	 * check has to reserve what the file will really cost, not what the
+	 * quality table wanted.
+	 */
+	videoBitsPerSecond?: number;
 }): number {
-	const videoBitsPerSecond = recommendedVideoBitrateFor(options);
+	const videoBitsPerSecond =
+		options.videoBitsPerSecond ?? recommendedVideoBitrateFor(options);
 	const audioBitsPerSecond = 256_000;
 	return Math.ceil(
 		((videoBitsPerSecond + audioBitsPerSecond) / 8) * options.durationSec

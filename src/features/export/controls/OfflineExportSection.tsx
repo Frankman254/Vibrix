@@ -8,16 +8,15 @@ import {
 	type OfflineExportFps,
 	type OfflineExportResolutionPresetId
 } from '@/features/export/offlineExportTypes';
-import type {
-	OfflineVideoExportProgress,
-	OfflineVideoFormat
-} from '@/features/export/video/offlineVideoFormat';
+import type { OfflineVideoExportProgress } from '@/features/export/video/offlineVideoFormat';
+import type { OfflineVideoEncoderPlan } from '@/features/export/video/offlineEncoderNegotiation';
 import type {
 	OfflineStorageHint,
 	OfflineVideoExportError
 } from './useOfflineVideoExport';
 import { formatBytes } from '@/features/export/exportFileUtils';
 import {
+	offlineEncoderSummary,
 	offlineExportErrorLabel,
 	offlineExportPhaseLabel
 } from '@/features/export/video/offlineVideoExportLabels';
@@ -39,8 +38,9 @@ type OfflineExportSectionProps = {
 	onResolutionChange: (id: OfflineExportResolutionPresetId) => void;
 	fps: OfflineExportFps;
 	onFpsChange: (fps: OfflineExportFps) => void;
-	format: OfflineVideoFormat | null;
-	formatChecked: boolean;
+	plan: OfflineVideoEncoderPlan | null;
+	planChecked: boolean;
+	platformLabel: string;
 	progress: OfflineVideoExportProgress;
 	error: OfflineVideoExportError | null;
 	storageHint: OfflineStorageHint | null;
@@ -74,8 +74,9 @@ export default function OfflineExportSection({
 	onResolutionChange,
 	fps,
 	onFpsChange,
-	format,
-	formatChecked,
+	plan,
+	planChecked,
+	platformLabel,
 	progress,
 	error,
 	storageHint,
@@ -93,10 +94,10 @@ export default function OfflineExportSection({
 			: offlineExportPlan.status === 'warning'
 				? t.offline_readiness_warning
 				: t.offline_readiness_blocked;
-	const formatLabel = !formatChecked
+	const formatLabel = !planChecked
 		? t.offline_format_checking
-		: format
-			? `${format.container.toUpperCase()} · ${format.videoCodec.toUpperCase()} + ${format.audioCodec.toUpperCase()}`
+		: plan
+			? `${plan.format.container.toUpperCase()} · ${plan.format.videoCodec.toUpperCase()} + ${plan.format.audioCodec.toUpperCase()}`
 			: t.offline_error_no_encoder;
 	const currentPhaseLabel = offlineExportPhaseLabel(t, progress);
 
@@ -154,6 +155,49 @@ export default function OfflineExportSection({
 				<span>
 					{t.offline_label_audio}: {offlineExportPlan.audio.label}
 				</span>
+			</div>
+
+			{/* The negotiated encoder, spelled out: which codec profile and
+			    level passed `isConfigSupported`, at what bitrate, and whether
+			    hardware acceleration was the config that won. A failed export
+			    on someone else's machine is unreadable without it. */}
+			<div
+				className="flex flex-col gap-0.5 rounded border px-2 py-1.5"
+				style={{
+					borderColor: 'var(--editor-button-border)',
+					background: 'var(--editor-button-bg)'
+				}}
+			>
+				<div className="flex items-baseline justify-between gap-2">
+					<span
+						className="text-xs"
+						style={{ color: 'var(--editor-accent-soft)' }}
+					>
+						{t.offline_encoder_title}
+					</span>
+					<span className="text-[11px] text-gray-400">
+						{t.offline_encoder_auto}
+					</span>
+				</div>
+				{!planChecked ? (
+					<span className="text-[11px] text-gray-400">
+						{t.offline_format_checking}
+					</span>
+				) : plan ? (
+					<>
+						<span className="text-[11px] text-gray-300">
+							{t.offline_encoder_detected}:{' '}
+							{offlineEncoderSummary(t, plan, platformLabel)}
+						</span>
+						<span className="text-[11px] text-green-400">
+							{'\u2713'} {t.offline_encoder_supported}
+						</span>
+					</>
+				) : (
+					<span className="text-[11px] text-red-400">
+						{t.offline_encoder_none}
+					</span>
+				)}
 			</div>
 
 			{offlineExportVisibleIssues.map(issue => (

@@ -5,11 +5,12 @@ import type { OfflineExportAudioAssetRef } from '@/features/export/offlineExport
 import { OFFLINE_EXPORT_RESOLUTION_PRESETS } from '@/features/export/offlineExportTypes';
 import type { ExportNamingState } from '@/features/export/exportFileUtils';
 import type { RenderSubsystem } from '@/features/export/renderSubsystem';
-import { mediabunnyCodecProbe } from '@/features/export/video/offlineVideoEncoder';
+import { webCodecsEncoderProbe } from '@/features/export/video/offlineVideoEncoder';
 import {
-	resolveOfflineVideoFormat,
-	type OfflineVideoFormat
-} from '@/features/export/video/offlineVideoFormat';
+	negotiateOfflineVideoEncoder,
+	type OfflineVideoEncoderPlan
+} from '@/features/export/video/offlineEncoderNegotiation';
+import { resolvePlatformLabel } from '@/lib/env/platform';
 import {
 	cancelOfflineVideoExport,
 	getOfflineVideoExportSnapshot,
@@ -53,8 +54,11 @@ export function useOfflineVideoExport({
 			setFps: state.setOfflineExportFps
 		}))
 	);
-	const [format, setFormat] = useState<OfflineVideoFormat | null>(null);
-	const [formatChecked, setFormatChecked] = useState(false);
+	const [plan, setPlan] = useState<OfflineVideoEncoderPlan | null>(null);
+	const [planChecked, setPlanChecked] = useState(false);
+	// Cosmetic only ("Windows 11" instead of "Windows"); the negotiation
+	// never branches on it.
+	const [platformLabel, setPlatformLabel] = useState('');
 	// The run itself lives outside React (see offlineVideoExportRuntime): the
 	// Export tab unmounts whenever the user looks at anything else.
 	const run = useSyncExternalStore(
@@ -68,25 +72,40 @@ export function useOfflineVideoExport({
 			preset => preset.id === resolutionId
 		) ?? OFFLINE_EXPORT_RESOLUTION_PRESETS[0];
 
-	// Probe codecs ahead of the click: the save picker needs the extension
-	// and must open while the click still counts as a user gesture.
 	useEffect(() => {
 		let cancelled = false;
-		setFormatChecked(false);
-		void resolveOfflineVideoFormat(mediabunnyCodecProbe, {
+		void resolvePlatformLabel().then(label => {
+			if (!cancelled) setPlatformLabel(label);
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, []);
+
+	// Negotiate the encoder ahead of the click, for two reasons: the save
+	// picker needs the container's extension while the click still counts as
+	// a user gesture, and no frame may be rendered before a config has passed
+	// `VideoEncoder.isConfigSupported()`. The frame rate is part of that
+	// config — a Windows H.264 encoder answers differently at 60 fps than at
+	// 30 — so changing it renegotiates.
+	useEffect(() => {
+		let cancelled = false;
+		setPlanChecked(false);
+		void negotiateOfflineVideoEncoder(webCodecsEncoderProbe, {
 			width: resolution.width,
-			height: resolution.height
+			height: resolution.height,
+			fps
 		})
 			.catch(() => null)
 			.then(next => {
 				if (cancelled) return;
-				setFormat(next);
-				setFormatChecked(true);
+				setPlan(next);
+				setPlanChecked(true);
 			});
 		return () => {
 			cancelled = true;
 		};
-	}, [resolution.width, resolution.height]);
+	}, [resolution.width, resolution.height, fps]);
 
 	const busy = isOfflineVideoExportBusyPhase(run.progress.phase);
 
@@ -98,7 +117,7 @@ export function useOfflineVideoExport({
 			fftSize,
 			audioSmoothing,
 			extraSubsystems,
-			format,
+			plan,
 			width: resolution.width,
 			height: resolution.height,
 			fps
@@ -110,15 +129,16 @@ export function useOfflineVideoExport({
 		setResolutionId,
 		fps,
 		setFps,
-		format,
-		formatChecked,
+		plan,
+		planChecked,
+		platformLabel,
 		progress: run.progress,
 		error: run.error,
 		storageHint: run.storageHint,
 		savedFileName: run.savedFileName,
 		savedFileBytes: run.savedFileBytes,
 		busy,
-		canStart: canExport && !busy && Boolean(format) && formatChecked,
+		canStart: canExport && !busy && Boolean(plan) && planChecked,
 		startExport,
 		cancelExport: cancelOfflineVideoExport
 	};

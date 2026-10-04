@@ -4,79 +4,8 @@ import {
 	computeOfflineFrameCount,
 	estimateOfflineExportEtaMs,
 	estimateOfflineVideoBytes,
-	recommendedVideoBitrateFor,
-	resolveOfflineVideoFormat,
-	type OfflineAudioCodecId,
-	type OfflineCodecProbe,
-	type OfflineVideoCodecId
+	recommendedVideoBitrateFor
 } from './offlineVideoFormat';
-
-function probeFor(
-	video: OfflineVideoCodecId[],
-	audio: OfflineAudioCodecId[]
-): OfflineCodecProbe {
-	return {
-		canEncodeVideo: async codec => video.includes(codec),
-		canEncodeAudio: async codec => audio.includes(codec)
-	};
-}
-
-const SIZE = { width: 1920, height: 1080 };
-
-describe('resolveOfflineVideoFormat', () => {
-	it('prefers MP4 with H.264 and AAC', async () => {
-		const format = await resolveOfflineVideoFormat(
-			probeFor(['avc', 'vp9'], ['aac', 'opus']),
-			SIZE
-		);
-		expect(format).toMatchObject({
-			container: 'mp4',
-			videoCodec: 'avc',
-			audioCodec: 'aac',
-			mimeType: 'video/mp4'
-		});
-	});
-
-	it('keeps MP4 with Opus when AAC cannot be encoded', async () => {
-		const format = await resolveOfflineVideoFormat(
-			probeFor(['avc'], ['opus']),
-			SIZE
-		);
-		expect(format).toMatchObject({ container: 'mp4', audioCodec: 'opus' });
-	});
-
-	it('falls back to WebM when no MP4 video codec is available', async () => {
-		const format = await resolveOfflineVideoFormat(
-			probeFor(['vp9'], ['opus']),
-			SIZE
-		);
-		expect(format).toMatchObject({
-			container: 'webm',
-			videoCodec: 'vp9',
-			extension: 'webm'
-		});
-	});
-
-	it('treats a throwing probe as unsupported', async () => {
-		const format = await resolveOfflineVideoFormat(
-			{
-				canEncodeVideo: async codec => {
-					if (codec === 'avc') throw new Error('boom');
-					return codec === 'vp8';
-				},
-				canEncodeAudio: async codec => codec === 'vorbis'
-			},
-			SIZE
-		);
-		expect(format).toMatchObject({ container: 'webm', videoCodec: 'vp8' });
-	});
-
-	it('returns null when nothing can be encoded', async () => {
-		expect(
-			await resolveOfflineVideoFormat(probeFor([], []), SIZE)
-		).toBeNull();
-	});
-});
 
 describe('offline export progress math', () => {
 	it('counts every frame needed to cover the audio', () => {

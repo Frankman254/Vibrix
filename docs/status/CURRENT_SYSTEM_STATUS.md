@@ -362,7 +362,8 @@ Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 - La timeline comparte el pool habilitado y las marcas del reproductor;
   representa los anclajes temporales, no el comienzo de cada fundido. Los clips
   se ordenan por tiempo y permiten editar inicio/fin en segundos.
-- HUD → Audio → Editar tiempos de imágenes abre los mismos controles del panel.
+- HUD → Audio ofrece sólo «Marcar aquí» y «Repartir en partes iguales» como
+  accesos rápidos. La timeline y los campos precisos viven en el editor.
 
 ## Playback / media-key controls
 
