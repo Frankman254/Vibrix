@@ -27,6 +27,66 @@ export const OFFLINE_EXPORT_RESOLUTION_PRESETS: OfflineExportResolutionPreset[] 
 		{ id: '4k', label: '4K', width: 3840, height: 2160 }
 	];
 
+/** Physical pixels of the display, as the browser reports them. */
+export type ScreenMetrics = {
+	/** CSS pixels of the screen, before the device pixel ratio. */
+	width: number;
+	height: number;
+	devicePixelRatio: number;
+};
+
+/**
+ * How far below a preset's height a screen may fall and still pick it. A
+ * 1392-pixel-tall panel is a 1440p screen with the taskbar taken out (96.7% of
+ * it), and exporting it at 1080p would throw away resolution the display
+ * actually has. Deliberately tight: at 10% a 14" MacBook Pro (3024×1964) came
+ * out as 4K, which is the opposite of matching the screen.
+ */
+const SCREEN_MATCH_TOLERANCE = 0.95;
+
+export function readScreenMetrics(): ScreenMetrics | null {
+	if (typeof window === 'undefined' || !window.screen) return null;
+	const { width, height } = window.screen;
+	if (!(width > 0) || !(height > 0)) return null;
+	return {
+		width,
+		height,
+		devicePixelRatio: window.devicePixelRatio || 1
+	};
+}
+
+/**
+ * The preset that matches this display: the largest one the screen can
+ * actually show, never larger.
+ *
+ * `screen.width/height` are CSS pixels, so a Retina or scaled Windows display
+ * reports far fewer than it has — the device pixel ratio is what turns them
+ * back into real ones. Measured on the SHORT side, because every preset is
+ * 16:9 and a portrait or ultrawide panel would otherwise be read as a much
+ * bigger screen than it is.
+ *
+ * Deliberately capped at the largest preset rather than extrapolating: 4K is
+ * the top rung, and an 8K display asking for an export nothing can encode is
+ * not a better answer than 4K.
+ */
+export function resolutionPresetForScreen(
+	metrics: ScreenMetrics | null
+): OfflineExportResolutionPresetId {
+	const fallback: OfflineExportResolutionPresetId = '1080p';
+	if (!metrics) return fallback;
+	const dpr = metrics.devicePixelRatio > 0 ? metrics.devicePixelRatio : 1;
+	const shortSide = Math.min(metrics.width, metrics.height) * dpr;
+	let best: OfflineExportResolutionPresetId | null = null;
+	for (const preset of OFFLINE_EXPORT_RESOLUTION_PRESETS) {
+		if (shortSide >= preset.height * SCREEN_MATCH_TOLERANCE) {
+			best = preset.id;
+		}
+	}
+	// Below 720p (a small or heavily scaled panel) the smallest preset is still
+	// the honest answer — there is nothing lower to offer.
+	return best ?? OFFLINE_EXPORT_RESOLUTION_PRESETS[0]!.id;
+}
+
 export type OfflineExportQualityMode = 'draft' | 'balanced' | 'production';
 export type OfflineExportContainerTarget = 'mp4-friendly' | 'webm';
 export type OfflineExportReadinessStatus = 'ready' | 'warning' | 'blocked';

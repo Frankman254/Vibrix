@@ -1,3 +1,5 @@
+import { isQuotaExceededError } from '@/lib/db/storageDiagnostics';
+
 export type PersistenceFailure = {
 	id: number;
 	storageName: string;
@@ -10,26 +12,19 @@ let failure: PersistenceFailure | null = null;
 let nextFailureId = 1;
 const listeners = new Set<Listener>();
 
+/**
+ * Was this failure about space, or about storage being unavailable?
+ *
+ * The distinction drives what the user is told: a quota failure has an action
+ * ("free space or export the project"), an unavailable one does not ("private
+ * mode / storage blocked"). The quota test itself lives in
+ * `lib/db/storageDiagnostics` so the export path classifies it identically —
+ * both surfaces compete for the same per-origin quota.
+ */
 export function classifyPersistenceFailure(
 	error: unknown
 ): PersistenceFailure['kind'] {
-	if (
-		typeof error === 'object' &&
-		error !== null &&
-		('name' in error || 'code' in error)
-	) {
-		const name = 'name' in error ? String(error.name) : '';
-		const code = 'code' in error ? Number(error.code) : 0;
-		if (
-			name === 'QuotaExceededError' ||
-			name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-			code === 22 ||
-			code === 1014
-		) {
-			return 'quota';
-		}
-	}
-	return 'unavailable';
+	return isQuotaExceededError(error) ? 'quota' : 'unavailable';
 }
 
 export function reportPersistenceFailure(

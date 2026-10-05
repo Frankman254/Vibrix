@@ -11,6 +11,7 @@ import {
 	spectrumAnnulusInImageSpace
 } from '@/features/logo';
 import { bestPlacementBox, type SaliencyAvoidRegion } from '@/lib/saliency';
+import { revokeObjectUrlsSoon } from '@/lib/objectUrlLifecycle';
 import {
 	resolveSpectrumPlacement,
 	resolveScaledSpectrumSettings
@@ -481,7 +482,22 @@ export function createBackgroundCollectionActions(
 					state.activeImageId
 				);
 			}),
-		setImageUrls: v =>
+		setImageUrls: v => {
+			// Replacing the pool's urls orphans the ones it held. Only urls the
+			// new list does NOT contain are released — restoring assets calls
+			// this with the urls it already had, and revoking a live one blanks
+			// the wallpaper. Thumbnails survive a replacement (the entries keep
+			// them) but not a clear.
+			const previous = get().backgroundImages;
+			const keep = new Set(v);
+			revokeObjectUrlsSoon([
+				...previous
+					.map(image => image.url)
+					.filter(url => !keep.has(url ?? '')),
+				...(v.length === 0
+					? previous.map(image => image.thumbnailUrl)
+					: [])
+			]);
 			set(state => {
 				if (v.length === 0) {
 					return {
@@ -505,7 +521,8 @@ export function createBackgroundCollectionActions(
 					backgroundImages,
 					state.activeImageId
 				);
-			}),
+			});
+		},
 		// Explicit Cover Fit: set the stored framing EXACTLY to the covered
 		// composition (scale may shrink as well as grow — this is a deliberate
 		// recalculation, unlike the passive raise-only refit) and clear the
@@ -841,7 +858,17 @@ export function createBackgroundCollectionActions(
 
 				return didUpdate ? { backgroundImages } : state;
 			}),
-		removeImageEntry: id =>
+		removeImageEntry: id => {
+			// Before the entry is gone: an object URL pins its blob for the
+			// life of the document, and dropping the url from state is not
+			// something the browser can see. A deleted 4K still that nobody
+			// revokes stays resident for the rest of the session.
+			const removed = get().backgroundImages.find(
+				image => image.assetId === id
+			);
+			if (removed) {
+				revokeObjectUrlsSoon([removed.url, removed.thumbnailUrl]);
+			}
 			set(state => {
 				if (!state.backgroundImages.some(image => image.assetId === id))
 					return state;
@@ -857,7 +884,8 @@ export function createBackgroundCollectionActions(
 					backgroundImages,
 					nextActiveImageId
 				);
-			}),
+			});
+		},
 		addOverlay: overlay =>
 			set(state => ({
 				overlays: [...state.overlays, overlay],
@@ -869,7 +897,9 @@ export function createBackgroundCollectionActions(
 					overlay.id === id ? { ...overlay, ...patch } : overlay
 				)
 			})),
-		removeOverlay: id =>
+		removeOverlay: id => {
+			const removed = get().overlays.find(overlay => overlay.id === id);
+			if (removed) revokeObjectUrlsSoon([removed.url]);
 			set(state => {
 				const overlays = state.overlays.filter(
 					overlay => overlay.id !== id
@@ -881,7 +911,8 @@ export function createBackgroundCollectionActions(
 							? (overlays[0]?.id ?? null)
 							: state.selectedOverlayId
 				};
-			}),
+			});
+		},
 		setSelectedOverlayId: id => set({ selectedOverlayId: id }),
 		setBackgroundImageSceneSlotId: (assetId, sceneSlotId) =>
 			set(state => {

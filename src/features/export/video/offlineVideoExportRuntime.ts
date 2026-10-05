@@ -36,8 +36,17 @@ import type { OfflineVideoEncoderPlan } from '@/features/export/video/offlineEnc
 import {
 	createOpfsVideoSink,
 	OfflineStorageError,
+	sweepStaleOpfsExports,
 	type OpfsVideoSink
 } from '@/features/export/video/offlineOpfsSink';
+import {
+	EMPTY_STORAGE_ESTIMATE,
+	formatStorageBytes,
+	formatStorageEstimate,
+	isQuotaExceededError,
+	readStorageEstimate,
+	type StorageEstimateSnapshot
+} from '@/lib/db/storageDiagnostics';
 import { runOfflineVideoExport } from '@/features/export/video/runOfflineVideoExport';
 
 type SavePicker = (options: {
@@ -197,8 +206,10 @@ export async function startOfflineVideoExport({
 	// export reports its size without opening the folder.
 	const written = { bytes: 0 };
 	let audioTrack: OfflineAudioTrack | null = null;
-	// (crashed-run cleanup happens inside createOpfsVideoSink, awaited
-	// before its quota check so the numbers it reads are current.)
+	// Both read before the first byte is written and reused by the error path,
+	// so a quota failure can report what the numbers were when it started.
+	let storage: StorageEstimateSnapshot = EMPTY_STORAGE_ESTIMATE;
+	let estimatedBytes = 0;
 
 	const picker = getSavePicker();
 	if (picker) {
@@ -231,6 +242,26 @@ export async function startOfflineVideoExport({
 	abortController = controller;
 	patch({ progress: { ...IDLE_PROGRESS, phase: 'preparing' } });
 
+	// Reclaim debris from crashed runs, then read the quota — in that order, so
+	// the numbers describe today's real free space. This runs for EVERY export,
+	// not just the OPFS path: a Chrome user who gets the save picker streams
+	// straight to their own disk, but gigabytes left in OPFS by a previous
+	// failed run still sit in the same per-origin bucket as the project state,
+	// and that is what makes saving start failing.
+	//
+	// Nothing here is user data: the files are this module's own
+	// `vibrix-export-*` scratch files, and only ones untouched for minutes.
+	const swept = await sweepStaleOpfsExports();
+	if (swept.removed > 0) {
+		console.info(
+			`[offline-export] reclaimed ${formatStorageBytes(swept.reclaimedBytes)} from ${swept.removed} abandoned export file(s).`
+		);
+	}
+	storage = await readStorageEstimate();
+	console.info(
+		`[offline-export] storage before export: ${formatStorageEstimate(storage)}`
+	);
+
 	try {
 		const blob = await loadImageBlob(offlineAudioAsset.assetId);
 		if (!blob) throw new Error('audio-asset-not-found');
@@ -244,14 +275,18 @@ export async function startOfflineVideoExport({
 		});
 		controller.signal.throwIfAborted();
 
+		estimatedBytes = estimateOfflineVideoBytes({
+			width,
+			height,
+			fps,
+			durationSec: audioTrack.durationSec,
+			videoBitsPerSecond: plan.video.bitrate
+		});
+		console.info(
+			`[offline-export] estimated output ${formatStorageBytes(estimatedBytes)} · ${sink.kind === 'stream' ? 'streaming to the file you picked (outside the browser quota)' : 'no save picker; falling back to browser storage'}`
+		);
+
 		if (sink.kind === 'buffer') {
-			const estimatedBytes = estimateOfflineVideoBytes({
-				width,
-				height,
-				fps,
-				durationSec: audioTrack.durationSec,
-				videoBitsPerSecond: plan.video.bitrate
-			});
 			// No picker (Brave, Firefox): stream to disk instead of RAM;
 			// BufferTarget stays the last resort for small files only.
 			opfs = await createOpfsVideoSink({
@@ -306,6 +341,11 @@ export async function startOfflineVideoExport({
 		} else {
 			const message =
 				exportError instanceof Error ? exportError.message : '';
+			// A QuotaExceededError from the writable is the browser running out
+			// of room mid-write — a different problem from an encoder refusal
+			// or a GL fault, with a different answer for the user, so it must
+			// not be flattened into the generic 'failed'.
+			const quotaExceeded = isQuotaExceededError(exportError);
 			patch({
 				progress: { ...IDLE_PROGRESS, phase: 'error' },
 				storageHint:
@@ -314,15 +354,29 @@ export async function startOfflineVideoExport({
 								neededBytes: exportError.neededBytes,
 								freeBytes: exportError.freeBytes
 							}
-						: state.storageHint,
+						: quotaExceeded
+							? {
+									neededBytes: estimatedBytes,
+									freeBytes: storage.availableBytes
+								}
+							: state.storageHint,
 				error:
 					message === 'audio-asset-not-found'
 						? 'audio-not-found'
-						: message === 'insufficient-storage'
+						: message === 'insufficient-storage' || quotaExceeded
 							? 'insufficient-storage'
 							: 'failed'
 			});
-			console.error('[offline-export]', exportError);
+			if (quotaExceeded) {
+				// The numbers AFTER the failure: how full it actually got.
+				const after = await readStorageEstimate();
+				console.error(
+					`[offline-export] out of storage. ${formatStorageEstimate(after)} · estimated output ${formatStorageBytes(estimatedBytes)}`,
+					exportError
+				);
+			} else {
+				console.error('[offline-export]', exportError);
+			}
 		}
 		if (opfs) {
 			await opfs.discard();

@@ -943,6 +943,7 @@ export type WallpaperStore = WallpaperState & {
 	setSceneServiceBaseUrl: (v: string) => void;
 	setSceneServiceModel: (v: string) => void;
 	setOfflineExportResolutionId: (v: OfflineExportResolutionPresetId) => void;
+	setOfflineExportResolutionAuto: (v: boolean) => void;
 	setOfflineExportFps: (v: OfflineExportFps) => void;
 	setControlPanelAnchor: (v: ControlPanelAnchor) => void;
 	setControlPanelOffset: (x: number, y: number) => void;

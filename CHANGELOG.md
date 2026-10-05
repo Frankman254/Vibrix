@@ -15,6 +15,65 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+- Almacenamiento: el `QuotaExceededError` y el "Los cambios no se están
+  guardando" eran el mismo problema que el export reventando al 29%. Todo
+  comparte una sola cuota por origen — el estado del proyecto, el pool de
+  imágenes, los proyectos guardados y el archivo temporal del export — así que
+  un export de 1440p60 que muere a medias deja gigas de basura en OPFS y la
+  siguiente sesión arranca con un almacenamiento que ya no acepta nada. Cuatro
+  arreglos:
+    - **La basura se recoge de verdad.** La limpieza de `vibrix-export-*` solo
+      corría dentro del camino OPFS, que en Chrome (con save picker) nunca se
+      pisa: ahora corre al arrancar la app y antes de **cada** export, sea cual
+      sea el destino. Solo toca archivos propios sin modificar desde hace
+      minutos, para no borrar el export que otra pestaña esté escribiendo.
+      Nunca se borra nada del proyecto para recuperar espacio.
+    - **Se escribe una vez, no por mutación.** Arrastrar un slider serializaba el
+      proyecto completo en cada frame. `createPersistedStateWriter` agrupa las
+      escrituras con un debounce de 1,2 s (techo de 5 s para que un arrastre
+      continuo no lo aplace eternamente) y vuelca al ocultar la pestaña.
+    - **Deja de insistir cuando falla.** El primer fallo abre un corta-circuitos:
+      se para el guardado automático en vez de reintentar contra un
+      almacenamiento lleno en cada mutación. El proyecto sigue vivo en memoria, se
+      conserva el valor **actual** para el reintento y el aviso ofrece
+      "Reintentar guardado".
+    - **El error se distingue.** `QuotaExceededError` ya no se aplana en
+      `failed`: es `insufficient-storage` con sus cifras. Antes y después de cada
+      export se registra `navigator.storage.estimate()` (uso / cuota / libre y el
+      desglose por backend de Chrome), y el overlay de diagnóstico (Ctrl+Shift+F)
+      muestra cuota, espacio libre, guardados hechos/agrupados y si el guardado
+      automático está en pausa. El archivo temporal de OPFS se abre en modo
+      `exclusive`, que evita el swap que duplicaba el tamaño del vídeo dentro de
+      la cuota.
+
+- Proyectos guardados: los bytes de los assets se guardan **una sola vez**.
+  `lwag-sync` metía el blob dentro de la fila de cada proyecto, así que guardar
+  el mismo pool de 200 imágenes en tres proyectos dejaba tres copias completas
+  de cada foto — gigas duplicados dentro de la misma cuota por origen que
+  necesita el export. El hash de contenido ya se calculaba y se tiraba; ahora es
+  la clave de un store `blobs` compartido, y las filas de assets siguen siendo
+  por proyecto. La limpieza es por alcanzabilidad (se borra el blob que ninguna
+  fila nombra), no por contador: un contador que se desfasa en uno o filtra el
+  blob para siempre o borra bytes que un proyecto sigue usando. Las filas v1
+  con su copia incrustada se siguen leyendo tal cual y no se tocan; volver a
+  guardar el proyecto es lo que mueve sus bytes al store compartido.
+
+- Fuga de object URLs: borrar una imagen del pool o un overlay quitaba la url
+  del estado sin llamar a `revokeObjectURL`, y un object URL ancla su blob
+  durante toda la vida del documento — un pool de stills en 4K son cientos de
+  megas que no se liberaban nunca. Ahora se revocan al borrar y al reemplazar
+  (solo las urls que la lista nueva ya no contiene, y con retardo, para no
+  dejar en blanco la capa que todavía se está desmontando).
+
+- Export de vídeo: la resolución sigue a la pantalla. El valor por defecto era
+  1080p guardado, que en un monitor de 1440p tiraba resolución real a la basura
+  sin que nadie lo hubiera elegido. Ahora `Auto` (activo por defecto) mide el
+  lado corto de `screen` por `devicePixelRatio` y elige el escalón más alto que
+  la pantalla puede mostrar, se recalcula al mover la ventana a otro monitor, y
+  elegir un preset a mano lo desactiva. `STORE_PERSIST_VERSION` is at **146**;
+  la migración solo enciende `Auto` en stores que siguen en el 1080p de
+  fábrica — un valor distinto es una decisión del usuario y no se pisa.
+
 - Export de vídeo: selección de encoder por capacidades, no por sistema
   operativo. La plataforma solo **ordena** los candidatos (Windows → H.264
   hardware, luego H.264 software, luego HEVC y WebM/VP9; macOS → H.264

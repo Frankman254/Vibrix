@@ -24,7 +24,6 @@
  *    names are read once and copied over. See `LEGACY_STORAGE` below.
  */
 import { openStoreDb } from '@/lib/db/openStoreDb';
-import { reportPersistenceFailure } from './persistenceStatus';
 
 const DB_NAME = 'vibrix-store';
 const DB_VERSION = 1;
@@ -180,7 +179,11 @@ export const indexedDbStorage = {
 				validate(name, readLocalStorage(name)) ??
 				(await readLegacy(name));
 			if (legacy) {
-				await indexedDbStorage.setItem(name, legacy);
+				// Best-effort: a full quota must not stop us RETURNING the
+				// state the user already has.
+				await indexedDbStorage
+					.setItem(name, legacy)
+					.catch(() => undefined);
 			}
 			return legacy;
 		} catch (error) {
@@ -192,40 +195,33 @@ export const indexedDbStorage = {
 		}
 	},
 
+	/**
+	 * Write one value, **rejecting** when storage refuses it.
+	 *
+	 * This used to swallow the error and report it. It no longer does, because
+	 * swallowing it here left the caller unable to tell a successful save from a
+	 * refused one — so persist kept pushing the whole project at a full quota,
+	 * failing every time. `createPersistedStateWriter` is the one caller, and it
+	 * needs the rejection to open its circuit breaker and to hold the value for
+	 * a retry. It is also what reports the failure to the UI, so nothing is
+	 * lost by not reporting it twice.
+	 */
 	async setItem(name: string, value: string): Promise<void> {
 		const db = await openDb();
 		if (!db) {
-			// No IndexedDB: keep the old localStorage path, quota reporting and
-			// all, rather than silently dropping the write.
-			try {
-				localStorage.setItem(name, value);
-			} catch (error) {
-				console.error(
-					`[vibrix] Failed to persist ${name} (no IndexedDB, localStorage quota exceeded or unavailable). State kept in memory only.`,
-					error
-				);
-				reportPersistenceFailure(name, error);
-			}
+			// No IndexedDB (private mode, storage blocked): the 5 MB
+			// localStorage path is worse, but it is not nothing.
+			localStorage.setItem(name, value);
 			return;
 		}
 
-		try {
-			const tx = db.transaction(STORE, 'readwrite');
-			tx.objectStore(STORE).put(value, name);
-			await new Promise<void>((resolve, reject) => {
-				tx.oncomplete = () => resolve();
-				tx.onerror = () => reject(tx.error);
-				tx.onabort = () => reject(tx.error);
-			});
-		} catch (error) {
-			// IndexedDB has its own quota. Report it the same way so the user
-			// still gets the "export before reloading" warning.
-			console.error(
-				`[vibrix] Failed to persist ${name} to IndexedDB.`,
-				error
-			);
-			reportPersistenceFailure(name, error);
-		}
+		const tx = db.transaction(STORE, 'readwrite');
+		tx.objectStore(STORE).put(value, name);
+		await new Promise<void>((resolve, reject) => {
+			tx.oncomplete = () => resolve();
+			tx.onerror = () => reject(tx.error);
+			tx.onabort = () => reject(tx.error);
+		});
 	},
 
 	async removeItem(name: string): Promise<void> {

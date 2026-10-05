@@ -2339,6 +2339,12 @@ export type WallpaperState = {
 	// Offline video export — standing output preferences. The run itself is not
 	// store state (see features/export/video/offlineVideoExportRuntime).
 	offlineExportResolutionId: OfflineExportResolutionPresetId;
+	/**
+	 * Follow the display instead of the stored preset. On by default, so a
+	 * 1440p screen exports at 1440p without anybody opening the Export tab;
+	 * picking a resolution by hand turns it off and keeps it off.
+	 */
+	offlineExportResolutionAuto: boolean;
 	offlineExportFps: OfflineExportFps;
 
 	// System

@@ -126,8 +126,15 @@ export function createSystemSlice(
 		setSceneServiceBaseUrl: v =>
 			set({ sceneServiceBaseUrl: v.trim().replace(/\/+$/, '') }),
 		setSceneServiceModel: v => set({ sceneServiceModel: v.trim() }),
+		// Picking a resolution IS the decision to stop following the screen:
+		// leaving auto on would quietly undo the click on the next reload.
 		setOfflineExportResolutionId: v =>
-			set({ offlineExportResolutionId: v }),
+			set({
+				offlineExportResolutionId: v,
+				offlineExportResolutionAuto: false
+			}),
+		setOfflineExportResolutionAuto: v =>
+			set({ offlineExportResolutionAuto: v }),
 		setOfflineExportFps: v => set({ offlineExportFps: v }),
 		setControlPanelAnchor: v =>
 			set({

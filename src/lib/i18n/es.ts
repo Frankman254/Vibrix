@@ -1319,6 +1319,8 @@ export const es: Record<TranslationKey, string> = {
 	offline_btn_analyzing: 'Analizando audio offline...',
 	offline_btn_test_analysis: 'Probar análisis de audio offline',
 	offline_label_resolution: 'Resolución',
+	offline_resolution_auto: 'Auto',
+	offline_resolution_auto_hint: 'Igualando tu pantalla de {screen}.',
 	offline_label_fps: 'Fotogramas por segundo',
 	offline_format_checking: 'Comprobando codificador...',
 	offline_encoder_title: 'Codificador',
@@ -2826,6 +2828,14 @@ export const es: Record<TranslationKey, string> = {
 		'El almacenamiento del navegador no está disponible. La sesión actual sigue en memoria, pero al recargar puedes perder cambios recientes.',
 	storage_persistence_export_hint:
 		'Exporta el proyecto o los ajustes antes de cerrar o recargar esta página.',
+	storage_persistence_paused:
+		'El guardado automático está en pausa para no seguir insistiendo contra un almacenamiento que lo rechaza.',
+	storage_persistence_retry: 'Reintentar guardado',
+	storage_persistence_retrying: 'Reintentando…',
+	storage_persistence_retry_ok:
+		'Guardado. Se reanudó el guardado automático.',
+	storage_persistence_retry_failed:
+		'Todavía no se puede guardar. Libera espacio o exporta el proyecto para conservarlo.',
 	section_vibrix_authoring: 'Composición Lyrixa (.vibrix-authoring)',
 	vibrix_authoring_title: 'Catálogo visual para Lyrixa',
 	vibrix_authoring_subtitle:

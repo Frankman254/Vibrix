@@ -186,4 +186,8 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // backdrop on purpose) or pulled closer. Seeded 1 in both windows and in every
 // saved intro animation, which is exactly what they were already drawing.
 // v145: per-image transitionLayerTargets, opt-in Spectrum 1/2 and logo.
-export const STORE_PERSIST_VERSION = 145;
+// v146: `offlineExportResolutionAuto` — the export resolution follows the
+// display's real pixels by default (short side × devicePixelRatio) instead of
+// a stored 1080p nobody chose. Picking a preset turns it off. Migration enables
+// it only for stores still on the factory 1080p, so a deliberate choice stands.
+export const STORE_PERSIST_VERSION = 146;

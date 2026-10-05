@@ -1,6 +1,6 @@
 # Current System Status
 
-**As of:** `chore/fase-0-higiene` (`main`) · App `0.7.0-alpha` · Store persist **v145**
+**As of:** `chore/fase-0-higiene` (`main`) · App `0.7.0-alpha` · Store persist **v146**
 
 This document describes the product **as implemented in code**, not aspirational roadmaps.
 
@@ -25,7 +25,7 @@ This document describes the product **as implemented in code**, not aspirational
 | -------------------------------- | ------ | ----------------------------------------------------------- |
 | Vite + React 19 SPA              | Stable | HashRouter (`#/edit`, `#/present`, `#/record`, `#/preview`) |
 | Shared `WallpaperAppProviders`   | Stable | Single `AudioDataProvider` above route shells               |
-| Zustand + `localStorage` persist | Stable | `STORE_PERSIST_VERSION = 145`                               |
+| Zustand + `localStorage` persist | Stable | `STORE_PERSIST_VERSION = 146`                               |
 | IndexedDB assets                 | Stable | Images, audio blobs; las 5 bases abren por `openStoreDb`    |
 | Vitest + GitHub Actions CI       | Stable | format, lint, types, tests, docs:check, build               |
 
@@ -266,7 +266,7 @@ See `docs/features/SPECTRUM_ENGINE.md` (ownership model) and
 | Constant                  | Value         | Location                                    |
 | ------------------------- | ------------- | ------------------------------------------- |
 | `APP_VERSION`             | `0.7.0-alpha` | `src/lib/version.ts`, `package.json`        |
-| `STORE_PERSIST_VERSION`   | **145**       | Migrations in `wallpaperStoreMigrations.ts` |
+| `STORE_PERSIST_VERSION`   | **146**       | Migrations in `wallpaperStoreMigrations.ts` |
 | `PROJECT_SCHEMA_VERSION`  | 1             |                                             |
 | `SETTINGS_SCHEMA_VERSION` | 1             |                                             |
 

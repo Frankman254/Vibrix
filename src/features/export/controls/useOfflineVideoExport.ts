@@ -2,7 +2,12 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useWallpaperStore } from '@/store/wallpaperStore';
 import type { OfflineExportAudioAssetRef } from '@/features/export/offlineExportPlanner';
-import { OFFLINE_EXPORT_RESOLUTION_PRESETS } from '@/features/export/offlineExportTypes';
+import {
+	OFFLINE_EXPORT_RESOLUTION_PRESETS,
+	readScreenMetrics,
+	resolutionPresetForScreen,
+	type ScreenMetrics
+} from '@/features/export/offlineExportTypes';
 import type { ExportNamingState } from '@/features/export/exportFileUtils';
 import type { RenderSubsystem } from '@/features/export/renderSubsystem';
 import { webCodecsEncoderProbe } from '@/features/export/video/offlineVideoEncoder';
@@ -11,6 +16,7 @@ import {
 	type OfflineVideoEncoderPlan
 } from '@/features/export/video/offlineEncoderNegotiation';
 import { resolvePlatformLabel } from '@/lib/env/platform';
+import { flushPersistedState } from '@/store/persistedStateStorage';
 import {
 	cancelOfflineVideoExport,
 	getOfflineVideoExportSnapshot,
@@ -46,14 +52,40 @@ export function useOfflineVideoExport({
 	// Resolution and fps are a standing preference, not a per-visit choice:
 	// they live in the persisted store so a reload (or a tab switch) keeps
 	// whatever the user picked last.
-	const { resolutionId, fps, setResolutionId, setFps } = useWallpaperStore(
+	const {
+		storedResolutionId,
+		resolutionAuto,
+		fps,
+		setResolutionId,
+		setResolutionAuto,
+		setFps
+	} = useWallpaperStore(
 		useShallow(state => ({
-			resolutionId: state.offlineExportResolutionId,
+			storedResolutionId: state.offlineExportResolutionId,
+			resolutionAuto: state.offlineExportResolutionAuto,
 			fps: state.offlineExportFps,
 			setResolutionId: state.setOfflineExportResolutionId,
+			setResolutionAuto: state.setOfflineExportResolutionAuto,
 			setFps: state.setOfflineExportFps
 		}))
 	);
+	// Re-read on resize: `screen.*` reports the display the window is ON, so
+	// dragging the editor to a 4K monitor should change the answer.
+	const [screen, setScreen] = useState<ScreenMetrics | null>(() =>
+		readScreenMetrics()
+	);
+	useEffect(() => {
+		const onResize = () => setScreen(readScreenMetrics());
+		window.addEventListener('resize', onResize);
+		return () => window.removeEventListener('resize', onResize);
+	}, []);
+	const screenResolutionId = resolutionPresetForScreen(screen);
+	// Auto is the default, so a 1440p screen exports at 1440p without anybody
+	// opening this tab. The negotiation below reads THIS, never the stored
+	// value, so the encoder is always probed for the size that will be used.
+	const resolutionId = resolutionAuto
+		? screenResolutionId
+		: storedResolutionId;
 	const [plan, setPlan] = useState<OfflineVideoEncoderPlan | null>(null);
 	const [planChecked, setPlanChecked] = useState(false);
 	// Cosmetic only ("Windows 11" instead of "Windows"); the negotiation
@@ -110,6 +142,10 @@ export function useOfflineVideoExport({
 	const busy = isOfflineVideoExportBusyPhase(run.progress.phase);
 
 	function startExport() {
+		// Spend the pending debounced write before the export starts competing
+		// for the same per-origin storage quota: if the export fills it, this
+		// is the last chance for the project's own state to land on disk.
+		void flushPersistedState();
 		void startOfflineVideoExport({
 			offlineAudioAsset,
 			exportNamingState,
@@ -127,6 +163,14 @@ export function useOfflineVideoExport({
 	return {
 		resolutionId,
 		setResolutionId,
+		resolutionAuto,
+		setResolutionAuto,
+		/** `2560\u00d71440`, the display's real pixels, for the Auto hint. */
+		screenLabel: screen
+			? `${Math.round(screen.width * (screen.devicePixelRatio || 1))}\u00d7${Math.round(
+					screen.height * (screen.devicePixelRatio || 1)
+				)}`
+			: '',
 		fps,
 		setFps,
 		plan,

@@ -20,7 +20,7 @@ import { migrateWallpaperStore } from '@/store/wallpaperStoreMigrations';
 import { partializeWallpaperStore } from '@/store/wallpaperStorePersistence';
 import type { WallpaperStore } from '@/store/wallpaperStoreTypes';
 import { STORE_PERSIST_VERSION } from '@/lib/version';
-import { indexedDbStorage } from '@/store/indexedDbStorage';
+import { persistedStateWriter } from '@/store/persistedStateStorage';
 
 /**
  * Scene state persists to IndexedDB, not localStorage.
@@ -32,12 +32,18 @@ import { indexedDbStorage } from '@/store/indexedDbStorage';
  * localStorage state across on first read and falls back to localStorage when
  * IndexedDB is unavailable, so no install loses its project either way.
  *
+ * Writes are debounced and coalesced on the way out (see
+ * `createPersistedStateWriter`): dragging a slider used to serialize the whole
+ * project on every frame, and once the quota was full it retried on every
+ * mutation forever. Saving is therefore eventual — call `flushPersistedState()`
+ * where a moment has to be committed immediately.
+ *
  * Consequence to know about: IndexedDB is asynchronous, so hydration now
  * happens a tick after mount instead of during it. The store starts at factory
  * defaults for that tick — read `useWallpaperStore.persist.hasHydrated()` (or
  * `onFinishHydration`) anywhere that must not act on pre-hydration state.
  */
-const safeStorage = indexedDbStorage;
+const safeStorage = persistedStateWriter.storage;
 
 export const useWallpaperStore = create<WallpaperStore>()(
 	persist(

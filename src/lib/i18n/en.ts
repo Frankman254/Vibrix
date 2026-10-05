@@ -1311,6 +1311,8 @@ export const en = {
 	offline_btn_analyzing: 'Analyzing offline audio...',
 	offline_btn_test_analysis: 'Test Offline Audio Analysis',
 	offline_label_resolution: 'Resolution',
+	offline_resolution_auto: 'Auto',
+	offline_resolution_auto_hint: 'Matching your {screen} display.',
 	offline_label_fps: 'Frame rate',
 	offline_format_checking: 'Checking encoder...',
 	offline_encoder_title: 'Encoder',
@@ -2798,6 +2800,13 @@ export const en = {
 		'Browser storage is unavailable. Your current session is still running in memory, but a reload can lose recent changes.',
 	storage_persistence_export_hint:
 		'Export the project or settings before closing or reloading this page.',
+	storage_persistence_paused:
+		'Automatic saving is paused so it stops retrying a storage that keeps refusing.',
+	storage_persistence_retry: 'Retry saving',
+	storage_persistence_retrying: 'Retrying…',
+	storage_persistence_retry_ok: 'Saved. Automatic saving resumed.',
+	storage_persistence_retry_failed:
+		'Still cannot save. Free up space, or export the project to keep it.',
 	section_vibrix_authoring: 'Lyrixa Composition (.vibrix-authoring)',
 	vibrix_authoring_title: 'Visual catalogue for Lyrixa',
 	vibrix_authoring_subtitle:

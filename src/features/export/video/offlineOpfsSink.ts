@@ -55,25 +55,78 @@ function entriesOf(
 }
 
 /**
- * Delete files left behind by exports that crashed or were interrupted.
- * Best effort: a file a download is still reading cannot be removed yet, and
- * that is fine — this runs again on the next export.
+ * How long a scratch file must have been untouched before the sweep may delete
+ * it. OPFS is shared across every tab on this origin, so a file being written
+ * right now is not debris — it is somebody's export in another tab. A crashed
+ * run stops being modified the moment it dies, so its multi-gigabyte file still
+ * gets collected, just on a later pass.
  */
-export async function sweepStaleOpfsExports(): Promise<void> {
-	if (!opfsSupported()) return;
+const STALE_AGE_MS = 10 * 60_000;
+
+export type OpfsSweepResult = {
+	removed: number;
+	reclaimedBytes: number;
+	/** Files skipped because something may still be writing them. */
+	skippedActive: number;
+};
+
+/**
+ * Delete files left behind by exports that crashed or were interrupted.
+ *
+ * A 1440p60 export that dies at 29% leaves gigabytes in OPFS, and those bytes
+ * count against the SAME per-origin quota as the project state — which is how
+ * one failed export turns into "Changes are not being saved". The debris has to
+ * be collected on startup and before every export, not only on the OPFS export
+ * path, because a Chrome user taking the save-picker path never reached the
+ * code that used to run this.
+ *
+ * Best effort by design: a file a download is still reading cannot be removed
+ * yet, and that is fine — the next pass gets it.
+ */
+export async function sweepStaleOpfsExports(
+	options: { minAgeMs?: number } = {}
+): Promise<OpfsSweepResult> {
+	const minAgeMs = options.minAgeMs ?? STALE_AGE_MS;
+	const result: OpfsSweepResult = {
+		removed: 0,
+		reclaimedBytes: 0,
+		skippedActive: 0
+	};
+	if (!opfsSupported()) return result;
 	try {
 		const root = await opfsRoot();
 		for await (const entry of entriesOf(root)) {
 			if (
-				entry.kind === 'file' &&
-				entry.name.startsWith(OPFS_FILE_PREFIX)
+				entry.kind !== 'file' ||
+				!entry.name.startsWith(OPFS_FILE_PREFIX)
 			) {
-				await root.removeEntry(entry.name).catch(() => undefined);
+				continue;
+			}
+			let bytes = 0;
+			try {
+				const file = await (entry as FileSystemFileHandle).getFile();
+				if (Date.now() - file.lastModified < minAgeMs) {
+					result.skippedActive += 1;
+					continue;
+				}
+				bytes = file.size;
+			} catch {
+				// Cannot be read (locked by an active writer): leave it alone.
+				result.skippedActive += 1;
+				continue;
+			}
+			try {
+				await root.removeEntry(entry.name);
+				result.removed += 1;
+				result.reclaimedBytes += bytes;
+			} catch {
+				result.skippedActive += 1;
 			}
 		}
 	} catch {
 		// The sweep never blocks an export.
 	}
+	return result;
 }
 
 /**
@@ -161,6 +214,29 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
+ * Open the scratch file in exclusive mode when the browser supports it.
+ *
+ * The default (`siloed`) mode writes through a swap file and only copies to the
+ * real file on close — so a 6 GB export needs 12 GB of quota, half of it for a
+ * copy nobody reads. `exclusive` writes in place at the cost of locking the
+ * file to this one writer, which is exactly what an export is. Not in the
+ * lib.dom typings yet, and Safari does not implement it, hence the cast and the
+ * fallback.
+ */
+async function createExclusiveWritable(
+	handle: FileSystemFileHandle
+): Promise<FileSystemWritableFileStream> {
+	const open = handle.createWritable as (options?: {
+		mode?: 'exclusive' | 'siloed';
+	}) => Promise<FileSystemWritableFileStream>;
+	try {
+		return await open.call(handle, { mode: 'exclusive' });
+	} catch {
+		return handle.createWritable();
+	}
+}
+
+/**
  * Opens `<prefix><stamp>-<fileName>` in OPFS and wraps its writable stream in
  * the same cancellable proxy the save-picker path uses, so the muxer's
  * position-based writes land on disk and a cancelled export aborts the file
@@ -178,6 +254,8 @@ export async function createOpfsVideoSink(options: {
 	isCancelled: () => boolean;
 }): Promise<OpfsVideoSink | null> {
 	if (!opfsSupported()) return null;
+	// The runtime already sweeps before every export, whichever sink wins;
+	// this stays so a direct caller still gets today's real free space.
 	await sweepStaleOpfsExports();
 	await ensurePersistentStorage();
 	const free = await opfsFreeBytes();
@@ -199,7 +277,7 @@ export async function createOpfsVideoSink(options: {
 			`${OPFS_FILE_PREFIX}${Date.now()}-${safeName}`,
 			{ create: true }
 		);
-		file = await handle.createWritable();
+		file = await createExclusiveWritable(handle);
 	} catch (error) {
 		// A quota failure or a full disk at createWritable: same honest signal.
 		if (error instanceof OfflineStorageError) throw error;

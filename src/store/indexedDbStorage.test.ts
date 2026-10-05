@@ -138,13 +138,12 @@ describe('indexedDbStorage', () => {
 		}
 	});
 
-	it('reports a quota failure rather than throwing when falling back', async () => {
+	it('rejects when the fallback storage refuses the write', async () => {
 		const realIndexedDb = globalThis.indexedDB;
 		// @ts-expect-error — simulating a browser with storage blocked.
 		delete globalThis.indexedDB;
 		resetIndexedDbStorageForTests();
 
-		const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
 		const setItem = vi
 			.spyOn(globalThis.localStorage, 'setItem')
 			.mockImplementation(() => {
@@ -154,15 +153,16 @@ describe('indexedDbStorage', () => {
 			});
 
 		try {
-			// Must not throw — a failed persist write cannot be allowed to crash
-			// the editor mid-session.
+			// The rejection is the contract: swallowing it here is what let
+			// persist keep pushing the whole project at a full quota forever.
+			// `createPersistedStateWriter` is the one caller, and it needs the
+			// failure to open its breaker and hold the value for a retry — it
+			// is also what keeps this from crashing the editor.
 			await expect(
 				indexedDbStorage.setItem('k5', '{"a":3}')
-			).resolves.toBeUndefined();
-			expect(spy).toHaveBeenCalled();
+			).rejects.toThrow(/quota/);
 		} finally {
 			setItem.mockRestore();
-			spy.mockRestore();
 			globalThis.indexedDB = realIndexedDb;
 			resetIndexedDbStorageForTests();
 		}

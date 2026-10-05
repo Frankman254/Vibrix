@@ -36,6 +36,10 @@ type OfflineExportSectionProps = {
 	onAnalyzeOfflineAudio: () => void;
 	resolutionId: OfflineExportResolutionPresetId;
 	onResolutionChange: (id: OfflineExportResolutionPresetId) => void;
+	resolutionAuto: boolean;
+	onResolutionAutoChange: (auto: boolean) => void;
+	/** The display's real pixels (`2560×1440`), or '' when unknown. */
+	screenLabel: string;
 	fps: OfflineExportFps;
 	onFpsChange: (fps: OfflineExportFps) => void;
 	plan: OfflineVideoEncoderPlan | null;
@@ -72,6 +76,9 @@ export default function OfflineExportSection({
 	onAnalyzeOfflineAudio,
 	resolutionId,
 	onResolutionChange,
+	resolutionAuto,
+	onResolutionAutoChange,
+	screenLabel,
 	fps,
 	onFpsChange,
 	plan,
@@ -109,12 +116,47 @@ export default function OfflineExportSection({
 			<span className="text-xs text-gray-500">{t.offline_caption}</span>
 
 			<div className="flex flex-col gap-1">
-				<span
-					className="text-xs"
-					style={{ color: 'var(--editor-accent-soft)' }}
-				>
-					{t.offline_label_resolution}
-				</span>
+				<div className="flex items-baseline justify-between gap-2">
+					<span
+						className="text-xs"
+						style={{ color: 'var(--editor-accent-soft)' }}
+					>
+						{t.offline_label_resolution}
+					</span>
+					{/* Auto is the default: the export matches the display
+					    rather than a stored 1080p nobody picked. Clicking a
+					    preset below turns it off (the store action does it),
+					    and this is how it comes back on. */}
+					<button
+						type="button"
+						disabled={busy}
+						onClick={() => onResolutionAutoChange(!resolutionAuto)}
+						className="rounded border px-2 py-0.5 text-[11px] transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+						style={{
+							background: resolutionAuto
+								? 'var(--editor-accent-soft-bg, var(--editor-button-bg))'
+								: 'var(--editor-button-bg)',
+							borderColor: resolutionAuto
+								? UI_COLORS.accentBorder
+								: 'var(--editor-button-border)',
+							color: resolutionAuto
+								? UI_COLORS.accent
+								: 'var(--editor-button-fg)'
+						}}
+					>
+						{resolutionAuto
+							? `\u2713 ${t.offline_resolution_auto}`
+							: t.offline_resolution_auto}
+					</button>
+				</div>
+				{resolutionAuto && screenLabel ? (
+					<span className="text-[11px] text-gray-500">
+						{t.offline_resolution_auto_hint.replace(
+							'{screen}',
+							screenLabel
+						)}
+					</span>
+				) : null}
 				<EnumButtons<OfflineExportResolutionPresetId>
 					options={OFFLINE_EXPORT_RESOLUTION_PRESETS.map(
 						preset => preset.id

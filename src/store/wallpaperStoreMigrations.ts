@@ -3065,6 +3065,16 @@ export function migrateWallpaperStore(
 		migratedState.offlineExportResolutionId ??= '1080p';
 		migratedState.offlineExportFps ??= 30;
 	}
+	if (fromVersion < 146) {
+		// Follow-the-screen is only turned ON for stores still sitting on the
+		// factory 1080p — that value means "never chose", and those are the
+		// users a 1440p screen should start exporting at 1440p for. A store
+		// holding anything else holds a deliberate choice, and overriding it
+		// from the display would be this migration changing someone's output
+		// behind their back.
+		migratedState.offlineExportResolutionAuto ??=
+			(migratedState.offlineExportResolutionId ?? '1080p') === '1080p';
+	}
 	if (fromVersion < 119) {
 		// The single Looks stack becomes the first effect layer. Its values are
 		// still the legacy `filter*` keys — the entry is the snapshot — so the

@@ -7,10 +7,20 @@ import { useWallpaperStore } from '@/store/wallpaperStore';
 import { useAudioData } from '@/hooks/useAudioData';
 import { classifyAnalyserState } from '@/context/audioData/playbackDiagnostics';
 import {
+	formatStorageBytes,
+	formatStorageEstimate,
+	readStorageEstimate,
+	type StorageEstimateSnapshot
+} from '@/lib/db/storageDiagnostics';
+import { persistedStateWriter } from '@/store/persistedStateStorage';
+import {
 	getMediaTrackDiagnostics,
 	getMediaTrackDiagnosticsVersion,
 	subscribeMediaTrackDiagnostics
 } from '@/context/audioData/mediaTrackRuntime';
+
+/** How often the overlay refreshes the quota numbers. */
+const STORAGE_POLL_MS = 5_000;
 
 type FrameSample = {
 	fps: number;
@@ -79,6 +89,16 @@ export default function OutputModeDevDiagnostics({
 	const { getAmplitude } = useAudioData();
 	const debugVisible = useOutputFpsDebugVisible();
 	const [sample, setSample] = useState<FrameSample | null>(null);
+	// Storage is the one diagnostic that explains two unrelated-looking
+	// symptoms at once: a failed export and "changes are not being saved". Both
+	// draw on the same per-origin quota, so the numbers belong on screen next
+	// to the render stats rather than only in the console.
+	const [storage, setStorage] = useState<StorageEstimateSnapshot | null>(
+		null
+	);
+	const [writerStats, setWriterStats] = useState(() =>
+		persistedStateWriter.getStats()
+	);
 	const mountedRef = useRef(true);
 	const getAmplitudeRef = useRef(getAmplitude);
 	getAmplitudeRef.current = getAmplitude;
@@ -102,6 +122,25 @@ export default function OutputModeDevDiagnostics({
 		return () => {
 			mountedRef.current = false;
 			cancelAnimationFrame(raf);
+		};
+	}, [debugVisible]);
+
+	// Same `debugVisible` gate as the sampler: no polling for an overlay
+	// nobody is looking at.
+	useEffect(() => {
+		if (!debugVisible) return undefined;
+		let active = true;
+		const read = () => {
+			setWriterStats(persistedStateWriter.getStats());
+			void readStorageEstimate().then(next => {
+				if (active) setStorage(next);
+			});
+		};
+		read();
+		const id = window.setInterval(read, STORAGE_POLL_MS);
+		return () => {
+			active = false;
+			window.clearInterval(id);
 		};
 	}, [debugVisible]);
 
@@ -183,6 +222,34 @@ export default function OutputModeDevDiagnostics({
 			{audioPlayingButAnalyserInactive ? (
 				<div className="text-amber-400">
 					⚠ audio playing but analyser inactive
+				</div>
+			) : null}
+			<div className="mt-1 border-t border-white/10 pt-1">
+				storage: {storage ? formatStorageEstimate(storage) : '…'}
+			</div>
+			<div>
+				state saves: {writerStats.writes} · coalesced:{' '}
+				{writerStats.coalesced} · pending:{' '}
+				{writerStats.pendingKeys.length}
+				{writerStats.lastWriteAt === null
+					? ''
+					: ` · last ${Math.round((Date.now() - writerStats.lastWriteAt) / 1000)}s ago`}
+			</div>
+			{writerStats.suspended ? (
+				<div className="text-amber-400">
+					⚠ auto-save paused ({writerStats.lastErrorName ?? 'error'})
+					— project kept in memory
+				</div>
+			) : null}
+			{storage && storage.availableBytes !== null ? (
+				<div
+					className={
+						storage.availableBytes < 2 * 1024 * 1024 * 1024
+							? 'text-amber-400'
+							: 'text-white/60'
+					}
+				>
+					headroom: {formatStorageBytes(storage.availableBytes)}
 				</div>
 			) : null}
 			<div className="mt-1 text-white/40">Ctrl+Shift+F to hide</div>
