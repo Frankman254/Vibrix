@@ -15,6 +15,26 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+- Timeline manual: los tiempos ahora son slots posicionales y las imágenes son
+  sus ocupantes. Reordenar el pool cambia la imagen del slot sin arrastrar sus
+  tiempos; apagar una imagen compacta las siguientes sobre los slots existentes
+  y reactivarla restaura la ocupación completa. El motor conserva siempre el
+  orden del pool, incluso al abrir proyectos cuyos timestamps antiguos estaban
+  cruzados.
+- **Editor de tiempos directo:** cada marca significa ahora que la imagen
+  entrante ya está completamente visible; se eliminó el selector persistido de
+  anclaje. El botón **Ahora** centra el playhead y selecciona su clip, mientras
+  que elegir una imagen centra su tramo. `STORE_PERSIST_VERSION` is at **149**.
+
+- Transiciones por imagen: se eliminó la colección redundante de presets con
+  nombre; cada imagen ya era la fuente real de estilo, duración, intensidad y
+  audio. El panel ahora edita esos valores directamente, ofrece
+  **Transicionar todo** y botones normales para Spectrum 1, Spectrum 2 y Logo.
+  Guardar o editar una transición tampoco reinicia el cursor del autociclo, por
+  lo que Prev/Next conserva la previsualización manual hasta el siguiente punto
+  de cambio. La migración v147 elimina solo las etiquetas antiguas y preserva
+  intactos los valores visuales de cada imagen.
+
 - Almacenamiento: el `QuotaExceededError` y el "Los cambios no se están
   guardando" eran el mismo problema que el export reventando al 29%. Todo
   comparte una sola cuota por origen — el estado del proyecto, el pool de

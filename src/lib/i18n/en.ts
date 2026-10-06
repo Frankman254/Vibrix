@@ -1,9 +1,11 @@
 import { APP_NAME } from '@/config/brand';
 
 export const en = {
-	transition_linked_layers: 'Also apply to',
-	transition_linked_hint:
-		'Use this image’s style and duration when moving to the next image, replacing these layers’ automatic fade.',
+	transition_all_layers: 'Transition everything',
+	transition_all_layers_hint:
+		'Use this image’s transition for the image, both spectrums and the logo.',
+	transition_choose_layers:
+		'Or choose which extra layers follow the image transition.',
 	transition_target_spectrum1: 'Spectrum 1',
 	transition_target_spectrum2: 'Spectrum 2',
 	transition_target_logo: 'Logo',
@@ -254,13 +256,6 @@ export const en = {
 	section_transition_next: 'Transition To Next',
 	hint_transition_next:
 		'These transition settings are saved on the active image and are used when leaving it for the next one.',
-	transition_preset_custom: 'Custom',
-	transition_preset_save: 'Save as preset',
-	transition_preset_name_placeholder: 'Preset name',
-	transition_preset_limit: 'No room for more presets. Delete one first.',
-	transition_preset_delete_title: 'Delete transition preset',
-	transition_preset_delete_message:
-		'the images using it keep their transition and go back to Custom.',
 	label_transition_style: 'Transition Style',
 	label_mirror_image: 'Mirror',
 	section_layers: 'Layer Inspector',
@@ -452,31 +447,24 @@ export const en = {
 		'Audio Checkpoints divides the audio equally. Manual uses your saved marks. Switching modes preserves marks; “Distribute equally” clears them with confirmation.',
 	slideshow_load_audio: 'Load an audio track to edit its timing.',
 	slideshow_timeline_hint:
-		'In manual mode, select an image to enter its start and end in seconds or drag its edges. Times show the marks; the anchor determines when the transition begins. Automatic mode shows equal, read-only spans.',
+		'Select an image to enter when it enters and leaves, or drag its edges. Fields accept m:ss, h:mm:ss or seconds. A mark is the instant the incoming image is fully visible. “Current” returns to the song position. Automatic mode shows equal, read-only spans.',
 	slideshow_image_label: 'Image to edit',
-	slideshow_start_seconds: 'Start (s)',
-	slideshow_end_seconds: 'End (s)',
+	slideshow_start_seconds: 'Enters',
+	slideshow_end_seconds: 'Leaves',
+	slideshow_jump_to_playhead: 'Current · {time}',
+	slideshow_jump_to_playhead_hint:
+		'Center the timeline on the current song position and select its image.',
 	slideshow_edit_timing: 'Edit image timing',
 	label_slideshow_audio_checkpoints: 'Audio Checkpoints',
 	label_slideshow_track_change_sync: 'Track Change Sync',
 	label_slideshow_mark_here: 'Mark here',
 	hint_slideshow_mark_here:
-		'Writes the current playback time as the start of the NEXT image, closing the current one. Press M with the timeline open.',
-	slideshow_marked_toast: 'IMG {index} starts at {time}{anchor}',
-	slideshow_marked_anchor_end: ' — the transition ends there',
-	slideshow_marked_anchor_center: ' — the timestamp is mid-transition',
+		'Marks the current playback time as the instant the NEXT image is fully visible. Press M with the timeline open.',
+	slideshow_marked_toast: 'IMG {index} is fully visible at {time}',
 	slideshow_mark_last_image:
 		'The last image of the pool is on screen: there is nothing after it to mark.',
 	slideshow_mark_enabled_manual:
 		'Manual timestamps turned on so the mark takes effect.',
-	slideshow_order_warning:
-		'The saved times no longer follow the pool order, so the pass plays the images in a different order than the list. Drag the clips or clear the timings to line them up again.',
-	label_slideshow_transition_anchor: 'Timestamp anchor',
-	hint_slideshow_transition_anchor:
-		'Where a marked timestamp sits inside its transition. End = the new image is fully there ON the mark (for drops); Start = the transition begins there (the old behaviour).',
-	slideshow_anchor_start: 'Start',
-	slideshow_anchor_center: 'Center',
-	slideshow_anchor_end: 'End',
 	hint_slideshow_audio_checkpoints:
 		'For long mixes, map the current playback progress across the loaded image count and jump images by checkpoints instead of a timer.',
 	hint_slideshow_track_change_sync:

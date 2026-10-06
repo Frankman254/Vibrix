@@ -445,7 +445,7 @@ Vuelve aquí cuando una palabra te frene:
 - **legacy / modern:** conviven dos generaciones de la interfaz del editor. La
   vieja ("legacy") y la nueva ("modern"). El kit `src/ui/` es la base de la
   nueva.
-- **`STORE_PERSIST_VERSION` (= 111):** el número de versión del formato en que se
+- **`STORE_PERSIST_VERSION` (= 149):** el número de versión del formato en que se
   guarda tu configuración. Cada vez que se cambia algo importante del formato,
   sube y se escribe una migración.
 

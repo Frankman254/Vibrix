@@ -5,10 +5,13 @@
 import type {
 	BackgroundImageItem,
 	Setlist,
-	SlideshowTransitionAnchor,
 	WallpaperState
 } from '@/types/wallpaper';
 import { filterImageIdsBySetlist } from '@/store/slices/setlistsSlice';
+import {
+	projectEnabledImagesOntoTimingSlots,
+	resolveTimingSlotMarks
+} from './slideshowTimingSlots';
 
 /** currentTime values ≤ this are treated as "position 0" → show image 1/N. */
 export const PLAYBACK_ZERO_EPSILON = 0.05;
@@ -24,26 +27,22 @@ export function resolveSlideshowPool(
 	setlists: Setlist[],
 	activeSetlistId: string | null
 ): BackgroundImageItem[] {
-	return filterImageIdsBySetlist(
-		backgroundImages.filter(
-			img => Boolean(img.url) && img.enabled !== false
-		),
-		setlists,
-		activeSetlistId
+	return projectEnabledImagesOntoTimingSlots(
+		resolveSlideshowScope(backgroundImages, setlists, activeSetlistId)
 	);
 }
 
-/**
- * Fraction of the transition that must already have run when the timestamp is
- * reached: `end` needs the whole thing (so it starts a full duration early),
- * `center` half of it, `start` none — which is the legacy behaviour.
- */
-export function transitionAnchorLead(
-	anchor: SlideshowTransitionAnchor
-): number {
-	if (anchor === 'end') return 1;
-	if (anchor === 'center') return 0.5;
-	return 0;
+/** Ordered slot carriers, including disabled images. */
+export function resolveSlideshowScope(
+	backgroundImages: BackgroundImageItem[],
+	setlists: Setlist[],
+	activeSetlistId: string | null
+): BackgroundImageItem[] {
+	return filterImageIdsBySetlist(
+		backgroundImages.filter(img => Boolean(img.url)),
+		setlists,
+		activeSetlistId
+	);
 }
 
 export interface ManualSwitchEntry {
@@ -57,9 +56,9 @@ export interface ManualSwitchEntry {
 /**
  * The manual-timestamp schedule, ordered by the moment each switch fires.
  *
- * A marked timestamp says "the new image belongs HERE". With anchor `end` the
- * transition has to start `transitionDuration` earlier so it has finished by
- * then — look-ahead, which is why this lives in the resolver and not in the UI.
+ * A marked timestamp says "the new image is fully visible HERE". The transition
+ * starts `transitionDuration` earlier so it has finished on the mark. This
+ * look-ahead belongs in the resolver, not in the editor UI.
  * Images without a timestamp keep their automatic share of the track.
  *
  * Shared by the resolver and by the poller that decides when to wake up next,
@@ -68,32 +67,26 @@ export interface ManualSwitchEntry {
 export function buildManualSwitchSchedule(params: {
 	pool: BackgroundImageItem[];
 	duration: number;
-	anchor?: SlideshowTransitionAnchor;
-	/** Global fallback for images with no `transitionDuration` of their own. */
+	/** Global fallback when the outgoing image has no transition duration. */
 	defaultTransitionDuration?: number;
 }): ManualSwitchEntry[] {
-	const anchor = params.anchor ?? 'start';
-	const lead = transitionAnchorLead(anchor);
-	const effectiveDuration = Math.max(0.1, params.duration);
-	return params.pool
-		.map((image, index, arr) => {
-			const markedAt =
-				image.playbackSwitchAt != null
-					? image.playbackSwitchAt
-					: (effectiveDuration / arr.length) * index;
-			const transition =
-				image.transitionDuration ??
-				params.defaultTransitionDuration ??
-				0;
-			// The first image has nothing to transition from, so it never gets
-			// pulled below zero by the lead.
-			const switchAt =
-				index === 0
-					? markedAt
-					: Math.max(0, markedAt - transition * lead);
-			return { image, markedAt, switchAt };
-		})
-		.sort((a, b) => a.switchAt - b.switchAt);
+	const marks = resolveTimingSlotMarks(params.pool, params.duration);
+	let previousSwitchAt = 0;
+	return params.pool.map((image, index) => {
+		const markedAt = marks[index] ?? 0;
+		const outgoingImage = params.pool[index - 1];
+		const transition =
+			outgoingImage?.transitionDuration ??
+			params.defaultTransitionDuration ??
+			0;
+		// The first image has nothing to transition from, so it never gets
+		// pulled below zero by the lead.
+		const anchoredSwitchAt =
+			index === 0 ? markedAt : Math.max(0, markedAt - transition);
+		const switchAt = Math.max(previousSwitchAt, anchoredSwitchAt);
+		previousSwitchAt = switchAt;
+		return { image, markedAt, switchAt };
+	});
 }
 
 export interface PlaybackImageResolution {
@@ -123,8 +116,6 @@ export function resolveEffectivePlaybackImageId(params: {
 	slideshowEnabled: boolean;
 	manualTimestampsEnabled: boolean;
 	currentActiveImageId: string | null;
-	/** Manual mode only; omitted means `start` (no look-ahead). */
-	transitionAnchor?: SlideshowTransitionAnchor;
 	defaultTransitionDuration?: number;
 }): PlaybackImageResolution {
 	const {
@@ -158,7 +149,6 @@ export function resolveEffectivePlaybackImageId(params: {
 		const scheduled = buildManualSwitchSchedule({
 			pool,
 			duration,
-			anchor: params.transitionAnchor,
 			defaultTransitionDuration: params.defaultTransitionDuration
 		});
 
@@ -244,7 +234,6 @@ export function resolveEffectiveImageForPlayback(params: {
 	slideshowEnabled: boolean;
 	manualTimestampsEnabled: boolean;
 	lastAutoTargetId: string | null;
-	transitionAnchor?: SlideshowTransitionAnchor;
 	defaultTransitionDuration?: number;
 }): EffectiveImageResolution {
 	const pool = resolveSlideshowPool(
@@ -271,7 +260,6 @@ export function resolveEffectiveImageForPlayback(params: {
 		slideshowEnabled: params.slideshowEnabled,
 		manualTimestampsEnabled: params.manualTimestampsEnabled,
 		currentActiveImageId: params.lastAutoTargetId,
-		transitionAnchor: params.transitionAnchor,
 		defaultTransitionDuration: params.defaultTransitionDuration
 	});
 
@@ -314,7 +302,6 @@ export type SlideshowTimelineSettings = Pick<
 	| 'slideshowAudioCheckpointsEnabled'
 	| 'slideshowManualTimestampsEnabled'
 	| 'slideshowTrackChangeSyncEnabled'
-	| 'slideshowTransitionAnchor'
 	| 'slideshowTransitionDuration'
 >;
 
@@ -354,7 +341,6 @@ export function resolveSlideshowImageIdAtTime(
 			slideshowEnabled: true,
 			manualTimestampsEnabled: settings.slideshowManualTimestampsEnabled,
 			currentActiveImageId: settings.activeImageId,
-			transitionAnchor: settings.slideshowTransitionAnchor,
 			defaultTransitionDuration: settings.slideshowTransitionDuration
 		}).resolvedId;
 	}

@@ -32,7 +32,7 @@ const CONTRACT_FIXTURE = {
 	exportKind: 'vibrix-manifest',
 	exportedAt: '2026-10-02T00:00:00.000Z',
 	rendererVersion: '0.7.0-alpha',
-	storePersistVersion: 146,
+	storePersistVersion: 149,
 	projectName: 'Demo',
 	revision: '169bbe48d6a777',
 	slots: [
@@ -283,7 +283,6 @@ describe('image authoring objects', () => {
 		transitionAudioDrive: 0,
 		transitionAudioChannel: 'master',
 		transitionLayerTargets: ['background'],
-		transitionPresetId: null,
 		playbackSwitchAt: 42,
 		sceneSlotId: 'scene-a'
 	};

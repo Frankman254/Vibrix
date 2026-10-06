@@ -10,6 +10,7 @@ import type {
 	SlideshowTransitionType,
 	WallpaperState
 } from '@/types/wallpaper';
+import { preserveTimingSlotsAfterReorder } from '@/features/background/slideshow/slideshowTimingSlots';
 
 export type BackgroundImageLayoutState = Pick<
 	WallpaperState,
@@ -53,8 +54,6 @@ export type BackgroundImageLayoutPatch = Partial<BackgroundImageLayout> & {
 	transitionIntensity?: number;
 	transitionAudioDrive?: number;
 	transitionAudioChannel?: WallpaperState['slideshowTransitionAudioChannel'];
-	/** Null means "the dials were moved by hand": no named preset any more. */
-	transitionPresetId?: string | null;
 };
 
 export function buildBackgroundImageCollectionPatch(
@@ -220,7 +219,7 @@ export function moveBackgroundImageItem(
 	const [movedImage] = nextImages.splice(currentIndex, 1);
 	if (!movedImage) return backgroundImages;
 	nextImages.splice(targetIndex, 0, movedImage);
-	return nextImages;
+	return preserveTimingSlotsAfterReorder(backgroundImages, nextImages);
 }
 
 export function shuffleBackgroundImages(
@@ -237,7 +236,7 @@ export function shuffleBackgroundImages(
 		];
 	}
 
-	return nextImages;
+	return preserveTimingSlotsAfterReorder(backgroundImages, nextImages);
 }
 
 export function buildFallbackBackgroundImageConfig(
@@ -412,7 +411,6 @@ export function normalizePersistedBackgroundImages(
 			transitionAudioChannel:
 				image.transitionAudioChannel ??
 				fallbackImageConfig.slideshowTransitionAudioChannel,
-			transitionPresetId: image.transitionPresetId ?? null,
 			logoProfileSlotId: image.logoProfileSlotId ?? null,
 			spectrumProfileSlotId: image.spectrumProfileSlotId ?? null,
 			particlesProfileSlotId: image.particlesProfileSlotId ?? null,

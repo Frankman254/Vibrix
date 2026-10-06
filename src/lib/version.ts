@@ -119,9 +119,7 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // v122: `sceneServiceModel` — which model the scene service should use, when
 // its server offers several (LM Studio with three models loaded, say). '' keeps
 // the server's own choice, which is what every pre-v122 store meant.
-// v123: `slideshowTransitionAnchor` — where a manual timestamp sits inside its
-// transition. Defaults to `end` (the transition finishes on the mark), which is
-// a deliberate behaviour change for existing projects: marking is a sync gesture.
+// v123: historical `slideshowTransitionAnchor` preference (removed by v149).
 // v124: `motionLayers` + `activeMotionLayerId` — Camera Motion becomes a stack
 // of movements with their own targets, mirroring `effectLayers`. The active
 // layer's live values stay the flat `cameraMotion*` keys.
@@ -190,4 +188,12 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // display's real pixels by default (short side × devicePixelRatio) instead of
 // a stored 1080p nobody chose. Picking a preset turns it off. Migration enables
 // it only for stores still on the factory 1080p, so a deliberate choice stands.
-export const STORE_PERSIST_VERSION = 146;
+// v147: transition presets removed. Every image already stores its complete
+// outgoing transition, so preset ids and a second global collection duplicated
+// the same data and made selection state ambiguous.
+// v148: manual image timestamps become positional timing slots. Reordering now
+// changes the image occupying a slot, disabling compacts occupants over the
+// existing slots, and no timestamp can reorder playback behind the pool's back.
+// v149: manual timestamps have one meaning: the incoming image is fully visible
+// on the mark. The persisted start/center/end selector is removed.
+export const STORE_PERSIST_VERSION = 149;

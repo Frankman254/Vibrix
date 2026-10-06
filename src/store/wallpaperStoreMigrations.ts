@@ -97,8 +97,8 @@ import type { ProfileSlot } from '@/types/wallpaper';
 import type { LyricsLayerColorMode } from '@/features/lyrics';
 import type { ColorSourceMode } from '@/types/wallpaper';
 import type { IntroSequenceSettings } from '@/types/wallpaper';
-import { mergeTransitionPresets } from '@/features/background/transitionPresets';
 import { createDefaultIntroSequence } from '@/features/intro';
+import { normalizeLegacyTimingSlots } from '@/features/background/slideshow/slideshowTimingSlots';
 
 function normalizeParticleColorMode(
 	raw: unknown,
@@ -3135,13 +3135,6 @@ export function migrateWallpaperStore(
 		);
 	}
 
-	if (fromVersion < 123) {
-		// `end` is a behaviour change, not just a new key: a manual timestamp
-		// now marks where the incoming image is fully ON, which is what the
-		// marking gesture always meant. `start` stays available in the UI.
-		migratedState.slideshowTransitionAnchor = 'end';
-	}
-
 	if (fromVersion < 124) {
 		// The single Camera Motion movement becomes the first motion layer. Its
 		// values are still the flat `cameraMotion*` keys — the entry is the
@@ -3185,22 +3178,6 @@ export function migrateWallpaperStore(
 			cameraFxOverride: image.cameraFxOverride ?? null,
 			lightsOverride: image.lightsOverride ?? null,
 			trackTitleOverride: image.trackTitleOverride ?? null
-		}));
-	}
-
-	if (fromVersion < 127) {
-		// Named transition presets. The factory ones are seeded here (and any
-		// later build's new ones by `mergeTransitionPresets`). Images keep
-		// their five values and simply have no preset name yet:
-		// `transitionPresetId` null reads as "Custom", which is what they are.
-		migratedState.transitionPresets = mergeTransitionPresets(
-			migratedState.transitionPresets
-		);
-		migratedState.backgroundImages = (
-			migratedState.backgroundImages ?? []
-		).map(image => ({
-			...image,
-			transitionPresetId: image.transitionPresetId ?? null
 		}));
 	}
 
@@ -3685,6 +3662,44 @@ export function migrateWallpaperStore(
 			...image,
 			transitionLayerTargets: image.transitionLayerTargets ?? []
 		}));
+	}
+
+	if (fromVersion < 147) {
+		// Each image already owns the five values that the renderer consumes.
+		// Remove the duplicate named collection and its label-only image ids;
+		// the transition itself remains byte-for-byte unchanged.
+		delete (
+			migratedState as WallpaperStore & { transitionPresets?: unknown }
+		).transitionPresets;
+		migratedState.backgroundImages = (
+			migratedState.backgroundImages ?? []
+		).map(image => {
+			const normalized = { ...image } as typeof image & {
+				transitionPresetId?: unknown;
+			};
+			delete normalized.transitionPresetId;
+			return normalized;
+		});
+	}
+
+	if (fromVersion < 148) {
+		// Manual timestamps used to travel with image identities and could make
+		// image 26 play before image 23. They are positional slots now: retain
+		// every saved boundary, but assign them in ascending pool order.
+		migratedState.backgroundImages = normalizeLegacyTimingSlots(
+			migratedState.backgroundImages ?? []
+		);
+	}
+
+	if (fromVersion < 149) {
+		// A timestamp now has one stable meaning: the incoming image is fully
+		// visible at that instant. The old start/center/end preference made the
+		// same mark change meaning and duplicated a playback invariant in UI.
+		delete (
+			migratedState as WallpaperStore & {
+				slideshowTransitionAnchor?: unknown;
+			}
+		).slideshowTransitionAnchor;
 	}
 
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;

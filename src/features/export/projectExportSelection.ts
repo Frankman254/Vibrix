@@ -63,8 +63,6 @@ const PROJECT_EXPORT_SECTION_KEYS: Record<
 			'activeImageId',
 			'slideshowResetPosition',
 			'slideshowManualTimestampsEnabled',
-			'slideshowTransitionAnchor',
-			'transitionPresets',
 			'backgroundProfileSlots',
 			'sceneSlots',
 			'activeSceneSlotId',

@@ -32,7 +32,6 @@ export default function SlideshowManager() {
 		slideshowAudioCheckpointsEnabled,
 		slideshowTrackChangeSyncEnabled,
 		slideshowManualTimestampsEnabled,
-		slideshowTransitionAnchor,
 		slideshowTransitionDuration,
 		audioTracks,
 		activeAudioTrackId,
@@ -51,7 +50,6 @@ export default function SlideshowManager() {
 			slideshowTrackChangeSyncEnabled: s.slideshowTrackChangeSyncEnabled,
 			slideshowManualTimestampsEnabled:
 				s.slideshowManualTimestampsEnabled,
-			slideshowTransitionAnchor: s.slideshowTransitionAnchor,
 			slideshowTransitionDuration: s.slideshowTransitionDuration,
 			audioTracks: s.audioTracks,
 			activeAudioTrackId: s.activeAudioTrackId,
@@ -105,34 +103,76 @@ export default function SlideshowManager() {
 		captureMode === 'file' &&
 		slideshowIds.length >= 1;
 
-	// Only timing edits invalidate the schedule. Ordinary image/framing edits
-	// must preserve a manual selection until the next checkpoint boundary.
-	const timingKey = JSON.stringify(
-		backgroundImages.map(image => [
-			image.assetId,
-			Boolean(image.url),
-			image.enabled,
-			image.playbackSwitchAt,
-			image.transitionDuration
-		])
-	);
-
-	// ── Ref invalidation on track, mode or timing change ────────────────────────
-	// When the active audio track or setlist changes, the checkpoint refs from
-	// the previous track/setlist are stale.  Reset them so the first poll tick
-	// for the new track applies the correct image rather than treating it as
-	// "no change" if both tracks happen to resolve the same target id.
-	useEffect(() => {
-		lastCheckpointIdRef.current = null;
-		lastTimestampAssetIdRef.current = null;
-		dbg('refs-invalidated', { activeAudioTrackId, activeSetlistId });
-	}, [
+	const autoModeKey = JSON.stringify([
 		activeAudioTrackId,
 		activeSetlistId,
-		timingKey,
+		slideshowEnabled,
 		slideshowAudioCheckpointsEnabled,
 		slideshowManualTimestampsEnabled,
-		slideshowTransitionAnchor,
+		slideshowIds
+	]);
+	const scheduleKey = JSON.stringify(
+		slideshowIds.map(assetId => {
+			const image = backgroundImages.find(
+				item => item.assetId === assetId
+			);
+			return [
+				assetId,
+				image?.playbackSwitchAt,
+				image?.transitionDuration
+			];
+		})
+	);
+	const previousAutoModeKeyRef = useRef(autoModeKey);
+
+	// ── Auto-playback cursor synchronization ───────────────────────────────────
+	// A track, mode or pool change must re-apply the resolved image on the next
+	// tick. A timing edit is different: keep the cursor at the target for the
+	// current position so editing/saving a transition cannot undo a manual
+	// Prev/Next preview before the next real boundary.
+	useEffect(() => {
+		if (previousAutoModeKeyRef.current !== autoModeKey) {
+			previousAutoModeKeyRef.current = autoModeKey;
+			lastCheckpointIdRef.current = null;
+			lastTimestampAssetIdRef.current = null;
+			dbg('refs-invalidated', { activeAudioTrackId, activeSetlistId });
+			return;
+		}
+
+		const state = useWallpaperStore.getState();
+		const currentTime = Math.max(0, getCurrentTime());
+		const duration = getDuration();
+		const common = {
+			images: state.backgroundImages,
+			setlists: state.setlists,
+			activeSetlistId: state.activeSetlistId,
+			currentTime,
+			duration,
+			slideshowEnabled: state.slideshowEnabled
+		};
+		lastCheckpointIdRef.current = resolveEffectiveImageForPlayback({
+			...common,
+			manualTimestampsEnabled: false,
+			lastAutoTargetId: null
+		}).targetImageId;
+		lastTimestampAssetIdRef.current = resolveEffectiveImageForPlayback({
+			...common,
+			manualTimestampsEnabled: true,
+			lastAutoTargetId: null,
+			defaultTransitionDuration: state.slideshowTransitionDuration
+		}).targetImageId;
+		dbg('refs-reseeded-after-timing-edit', {
+			currentTime,
+			checkpointTarget: lastCheckpointIdRef.current,
+			timestampTarget: lastTimestampAssetIdRef.current
+		});
+	}, [
+		autoModeKey,
+		activeAudioTrackId,
+		activeSetlistId,
+		getCurrentTime,
+		getDuration,
+		scheduleKey,
 		slideshowTransitionDuration
 	]);
 
@@ -339,7 +379,6 @@ export default function SlideshowManager() {
 				slideshowEnabled: true,
 				manualTimestampsEnabled: true,
 				lastAutoTargetId: lastTimestampAssetIdRef.current,
-				transitionAnchor: state.slideshowTransitionAnchor,
 				defaultTransitionDuration: state.slideshowTransitionDuration
 			});
 
@@ -356,8 +395,8 @@ export default function SlideshowManager() {
 			}
 
 			// Schedule next tick: find the next switch boundary from the very
-			// same schedule the resolver uses, anchor included — otherwise the
-			// poller sleeps through an anchored switch that fires early.
+			// same schedule the resolver uses, including transition look-ahead,
+			// so the poller never sleeps through a switch that fires early.
 			const nextSwitch = buildManualSwitchSchedule({
 				pool: resolveSlideshowPool(
 					backgroundImages,
@@ -365,7 +404,6 @@ export default function SlideshowManager() {
 					activeSetlistId
 				),
 				duration,
-				anchor: slideshowTransitionAnchor,
 				defaultTransitionDuration: slideshowTransitionDuration
 			}).find(entry => entry.switchAt > currentTime);
 			const timeToNext = nextSwitch
@@ -389,7 +427,6 @@ export default function SlideshowManager() {
 		backgroundImages,
 		setlists,
 		activeSetlistId,
-		slideshowTransitionAnchor,
 		slideshowTransitionDuration,
 		useManualTimestamps
 	]);

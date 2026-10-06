@@ -192,6 +192,10 @@ export default function BackgroundTab({
 		trackDuration > 0
 			? (trackDuration / timingPool.length) * timingIndex
 			: null;
+	const playbackSwitchAt =
+		timingIndex >= 0
+			? (timingPool[timingIndex]?.playbackSwitchAt ?? null)
+			: null;
 
 	function setActiveSetlistImageOrder(nextVisibleIds: string[]) {
 		if (!activeSetlist) return;
@@ -333,6 +337,7 @@ export default function BackgroundTab({
 					slideshowManualTimestampsEnabled={
 						store.slideshowManualTimestampsEnabled
 					}
+					playbackSwitchAt={playbackSwitchAt}
 					onChangePlaybackSwitchAt={value => {
 						if (!activeImage) return;
 						store.setBackgroundImagePlaybackSwitchAt(

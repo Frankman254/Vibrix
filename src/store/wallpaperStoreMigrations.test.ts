@@ -597,3 +597,85 @@ describe('v145 per-image linked transition targets', () => {
 		]);
 	});
 });
+
+describe('v147 removes duplicate named transition presets', () => {
+	it('preserves the real per-image transition and drops legacy labels', () => {
+		const migrated = migrateWallpaperStore(
+			{
+				transitionPresets: [
+					{
+						id: 'mine',
+						name: 'Mine',
+						settings: { transitionType: 'iris' }
+					}
+				],
+				backgroundImages: [
+					{
+						assetId: 'img-1',
+						url: null,
+						transitionPresetId: 'mine',
+						transitionType: 'cross-zoom',
+						transitionDuration: 2.4,
+						transitionIntensity: 1.7,
+						transitionAudioDrive: 0.8,
+						transitionAudioChannel: 'bass'
+					}
+				]
+			} as never,
+			146
+		);
+
+		expect(
+			(migrated as unknown as Record<string, unknown>).transitionPresets
+		).toBeUndefined();
+		expect(
+			migrated.backgroundImages[0] as unknown as Record<string, unknown>
+		).not.toHaveProperty('transitionPresetId');
+		expect(migrated.backgroundImages[0]).toEqual(
+			expect.objectContaining({
+				transitionType: 'cross-zoom',
+				transitionDuration: 2.4,
+				transitionIntensity: 1.7,
+				transitionAudioDrive: 0.8,
+				transitionAudioChannel: 'bass'
+			})
+		);
+	});
+});
+
+describe('v148 positional slideshow timing slots', () => {
+	it('keeps null slots and orders saved boundaries by pool position', () => {
+		const migrated = migrateWallpaperStore(
+			{
+				backgroundImages: [
+					{ assetId: 'a', url: null, playbackSwitchAt: null },
+					{ assetId: 'b', url: null, playbackSwitchAt: 80 },
+					{ assetId: 'c', url: null, playbackSwitchAt: 20 },
+					{ assetId: 'd', url: null, playbackSwitchAt: 55 }
+				]
+			} as never,
+			147
+		);
+		expect(
+			migrated.backgroundImages.map(image => image.playbackSwitchAt)
+		).toEqual([null, 20, 55, 80]);
+	});
+});
+
+describe('v149 fixed slideshow timestamp meaning', () => {
+	it('removes the obsolete transition anchor without changing image marks', () => {
+		const migrated = migrateWallpaperStore(
+			{
+				slideshowTransitionAnchor: 'start',
+				backgroundImages: [
+					{ assetId: 'a', url: null, playbackSwitchAt: 42 }
+				]
+			} as never,
+			148
+		);
+		expect(
+			migrated as unknown as Record<string, unknown>
+		).not.toHaveProperty('slideshowTransitionAnchor');
+		expect(migrated.backgroundImages[0]?.playbackSwitchAt).toBe(42);
+	});
+});

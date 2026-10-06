@@ -2,13 +2,13 @@ import type {
 	BackgroundImageItem,
 	Setlist,
 	SlideshowTransitionType,
-	TransitionPresetSettings
+	ImageTransitionSettings
 } from '@/types/wallpaper';
 import { TRANSITION_TYPES } from './transitionCatalog';
 
 export type TransitionBatchExtras = Partial<
 	Pick<
-		TransitionPresetSettings,
+		ImageTransitionSettings,
 		| 'transitionIntensity'
 		| 'transitionAudioDrive'
 		| 'transitionAudioChannel'
@@ -109,11 +109,7 @@ export function applyTransitionBatchPlan(
 	return images.map(image => {
 		const type = types.get(image.assetId);
 		if (!type) return image;
-		const next = {
-			...image,
-			transitionType: type,
-			transitionPresetId: null
-		};
+		const next = { ...image, transitionType: type };
 		if (plan.extras.transitionIntensity !== undefined)
 			next.transitionIntensity = plan.extras.transitionIntensity;
 		if (plan.extras.transitionAudioDrive !== undefined)

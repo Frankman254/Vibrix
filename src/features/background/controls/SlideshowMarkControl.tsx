@@ -23,7 +23,6 @@ export default function SlideshowMarkControl() {
 	const markNextImageSwitchAt = useWallpaperStore(
 		state => state.markNextImageSwitchAt
 	);
-	const anchor = useWallpaperStore(state => state.slideshowTransitionAnchor);
 	const { getCurrentTime } = useAudioContext();
 	const timerRef = useRef(0);
 	const [notice, setNotice] = useState<string | null>(null);
@@ -34,15 +33,7 @@ export default function SlideshowMarkControl() {
 			? t.slideshow_mark_last_image
 			: t.slideshow_marked_toast
 					.replace('{index}', String(result.poolPosition))
-					.replace('{time}', formatTime(result.markedAt))
-					.replace(
-						'{anchor}',
-						anchor === 'end'
-							? t.slideshow_marked_anchor_end
-							: anchor === 'center'
-								? t.slideshow_marked_anchor_center
-								: ''
-					);
+					.replace('{time}', formatTime(result.markedAt));
 		setNotice(
 			result.enabledManualMode
 				? `${message} · ${t.slideshow_mark_enabled_manual}`
@@ -51,13 +42,10 @@ export default function SlideshowMarkControl() {
 		window.clearTimeout(timerRef.current);
 		timerRef.current = window.setTimeout(() => setNotice(null), NOTICE_MS);
 	}, [
-		anchor,
 		getCurrentTime,
 		markNextImageSwitchAt,
 		t.slideshow_mark_enabled_manual,
 		t.slideshow_mark_last_image,
-		t.slideshow_marked_anchor_center,
-		t.slideshow_marked_anchor_end,
 		t.slideshow_marked_toast
 	]);
 

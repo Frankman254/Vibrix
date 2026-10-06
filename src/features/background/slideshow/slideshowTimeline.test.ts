@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { createBackgroundImageItem } from '../backgroundImages';
-import { buildTimelineClips } from './slideshowTimeline';
+import {
+	buildTimelineClips,
+	formatTimelineTimestamp,
+	parseTimelineTimestamp,
+	resolveTimelineScrollLeft
+} from './slideshowTimeline';
 import {
 	resolveSlideshowPool,
 	resolveEffectivePlaybackImageId
@@ -38,16 +43,16 @@ describe('timeline playback parity', () => {
 			).toBe(clip.assetId);
 		}
 	});
-	it('shows out-of-order marks chronologically instead of clamping them to fake times', () => {
+	it('keeps pool occupants in slot order when legacy marks are out of order', () => {
 		const pool = images();
 		const clips = buildTimelineClips(pool, 100, true);
 		expect(
 			clips.map(clip => [clip.poolIndex, clip.start, clip.end])
 		).toEqual([
 			[0, 0, 20],
-			[2, 20, 55],
-			[3, 55, 80],
-			[1, 80, 100]
+			[1, 20, 55],
+			[2, 55, 80],
+			[3, 80, 100]
 		]);
 		for (const clip of clips) {
 			expect(
@@ -90,5 +95,26 @@ describe('timeline playback parity', () => {
 		).toEqual(['img-3', 'img-0']);
 		expect(buildTimelineClips(pool, Infinity, false)).toEqual([]);
 		expect(buildTimelineClips(pool, 0, true)).toEqual([]);
+	});
+});
+
+describe('timeline navigation', () => {
+	it('centers the requested song time and clamps both ends', () => {
+		expect(resolveTimelineScrollLeft(0, 100, 2000, 500)).toBe(0);
+		expect(resolveTimelineScrollLeft(50, 100, 2000, 500)).toBe(750);
+		expect(resolveTimelineScrollLeft(100, 100, 2000, 500)).toBe(1500);
+	});
+
+	it('does not scroll when the whole timeline already fits', () => {
+		expect(resolveTimelineScrollLeft(50, 100, 500, 500)).toBe(0);
+	});
+
+	it('formats and accepts clock times as well as raw seconds', () => {
+		expect(formatTimelineTimestamp(2346.844)).toBe('39:06.844');
+		expect(parseTimelineTimestamp('39:06.844')).toBe(2346.844);
+		expect(parseTimelineTimestamp('1:02:03.5')).toBe(3723.5);
+		expect(parseTimelineTimestamp('42,5')).toBe(42.5);
+		expect(parseTimelineTimestamp('3:75')).toBeNull();
+		expect(parseTimelineTimestamp('')).toBeNull();
 	});
 });

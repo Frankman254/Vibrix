@@ -13,15 +13,17 @@ opuesta cuando existe; las variantes también se seleccionan por separado.
 
 Los estilos anteriores conservan sus identificadores, pero usan el renderer
 compartido: fundido sin caída de brillo, deslizamientos sin huecos, máscaras
-escalonadas y distorsión determinista según el progreso. Se conservan los
-controles de duración, intensidad y audio y los presets personalizados.
+escalonadas y distorsión determinista según el progreso. Cada imagen guarda
+directamente su estilo, duración, intensidad y respuesta al audio; no existe
+una segunda colección de presets que duplique esos mismos valores.
 
 ## Capas enlazadas
 
 Cada imagen puede aplicar su transición de salida a **Spectrum 1**, **Spectrum
-2** y **Logo** mediante tres interruptores en «Esta imagen». La decisión se
-guarda en la imagen saliente: al pasar a la siguiente, esas capas usan el mismo
-estilo, duración, intensidad, empuje y canal de audio que el fondo. Las capas no
+2** y **Logo**. **Transicionar todo** activa las tres capas de una vez; al
+apagarlo aparecen botones para elegirlas individualmente. La decisión se guarda
+en la imagen saliente: al pasar a la siguiente, esas capas usan el mismo estilo,
+duración, intensidad, empuje y canal de audio que el fondo. Las capas no
 seleccionadas conservan el fundido corto del coordinador visual.
 
 Spectrum 1 y Spectrum 2 mantienen superficies separadas cuando alguna imagen
@@ -62,6 +64,23 @@ El catálogo amplía `SlideshowTransitionType` y mantiene los identificadores
 anteriores. La selección de capas enlazadas sí agrega
 `transitionLayerTargets` a cada imagen; la migración v145 la inicializa vacía,
 así que los proyectos existentes no cambian de aspecto.
+
+## Slots de tiempo manuales
+
+La línea temporal mantiene sus fronteras por **posición**. Las imágenes ocupan
+esos slots: reordenar el pool cambia el ocupante sin mover los tiempos;
+desactivar una imagen compacta las restantes sobre los primeros slots y
+reactivarla recompone la secuencia completa. Las marcas nunca cambian por sí
+solas el orden de reproducción. La migración v148 ordena las fronteras antiguas
+que estaban ligadas a identidades de imagen.
+
+Cada marca tiene una sola interpretación: indica el instante en que la imagen
+entrante ya está visible por completo. El motor adelanta internamente el inicio
+según la duración de la transición; el editor no expone anclajes alternativos.
+**Ahora · mm:ss** centra la línea en la posición real de la canción y selecciona
+el clip correspondiente. Elegir una imagen en el selector también lleva su
+tramo al centro, y los campos **Entra** / **Sale** editan sus fronteras sin
+obligar a recorrer la línea manualmente.
 
 ## Referencias
 

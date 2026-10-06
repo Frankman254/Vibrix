@@ -35,6 +35,7 @@ import {
 	shuffleBackgroundImages,
 	syncActiveBackgroundImage
 } from '@/store/backgroundStoreUtils';
+import { preserveTimingSlotsAfterReorder } from '@/features/background/slideshow/slideshowTimingSlots';
 import {
 	buildActiveImageSelectionPatch,
 	buildCoveredAutoFitPatch,
@@ -45,11 +46,56 @@ import type {
 	MarkNextSwitchResult,
 	WallpaperStore
 } from '@/store/wallpaperStoreTypes';
-import { resolveSlideshowPool } from '@/features/background/slideshow/slideshowPlayback';
+import {
+	resolveSlideshowPool,
+	resolveSlideshowScope
+} from '@/features/background/slideshow/slideshowPlayback';
 import type { StateCreator } from 'zustand';
 
 type WallpaperSet = Parameters<StateCreator<WallpaperStore>>[0];
 type WallpaperGet = Parameters<StateCreator<WallpaperStore>>[1];
+
+function writeTimingSlotForOccupant(
+	state: WallpaperStore,
+	assetId: string,
+	value: number | null
+): BackgroundImageItem[] {
+	const scope = resolveSlideshowScope(
+		state.backgroundImages,
+		state.setlists,
+		state.activeSetlistId
+	);
+	const occupants = scope.filter(image => image.enabled !== false);
+	const occupantIndex = occupants.findIndex(
+		image => image.assetId === assetId
+	);
+	const carrierId = scope[occupantIndex]?.assetId ?? assetId;
+	return state.backgroundImages.map(image =>
+		image.assetId === carrierId
+			? { ...image, playbackSwitchAt: value }
+			: image
+	);
+}
+
+function timingCarrierIdsForOccupants(
+	state: WallpaperStore,
+	assetIds: readonly string[]
+): Set<string> {
+	const requested = new Set(assetIds);
+	const scope = resolveSlideshowScope(
+		state.backgroundImages,
+		state.setlists,
+		state.activeSetlistId
+	);
+	const occupants = scope.filter(image => image.enabled !== false);
+	return new Set(
+		occupants.flatMap((image, index) =>
+			requested.has(image.assetId) && scope[index]
+				? [scope[index]!.assetId]
+				: []
+		)
+	);
+}
 
 function prefersReducedMotion(): boolean {
 	return (
@@ -278,19 +324,13 @@ export function createBackgroundCollectionActions(
 		},
 		setImagePlaybackSwitchAt: v =>
 			set(state => ({
-				backgroundImages: state.backgroundImages.map(img =>
-					img.assetId === state.activeImageId
-						? { ...img, playbackSwitchAt: v }
-						: img
-				)
+				backgroundImages: state.activeImageId
+					? writeTimingSlotForOccupant(state, state.activeImageId, v)
+					: state.backgroundImages
 			})),
 		setBackgroundImagePlaybackSwitchAt: (assetId, v) =>
 			set(state => ({
-				backgroundImages: state.backgroundImages.map(img =>
-					img.assetId === assetId
-						? { ...img, playbackSwitchAt: v }
-						: img
-				)
+				backgroundImages: writeTimingSlotForOccupant(state, assetId, v)
 			})),
 		// The "mark here" gesture. The end of a clip IS the start of the next
 		// one, so marking writes the NEXT image's timestamp — no `end` field
@@ -323,35 +363,14 @@ export function createBackgroundCollectionActions(
 			const nextIndex = pool.findIndex(
 				img => img.assetId === next.assetId
 			);
-			// Marking out of order is allowed — the resolver sorts by time, so
-			// the pass simply plays the pool in a different order. That is a
-			// legitimate edit, but the UI must say it happened.
-			const marks = pool.map((img, index) =>
-				img.assetId === next.assetId
-					? markedAt
-					: (img.playbackSwitchAt ?? null) !== null
-						? img.playbackSwitchAt!
-						: index === 0
-							? 0
-							: Number.NaN
-			);
-			const reordered = marks.some((value, index) => {
-				if (index === 0 || Number.isNaN(value)) return false;
-				for (let before = 0; before < index; before += 1) {
-					const earlier = marks[before]!;
-					if (!Number.isNaN(earlier) && earlier > value) return true;
-				}
-				return false;
-			});
-
 			set(current => ({
 				slideshowManualTimestampsEnabled: true,
 				slideshowAudioCheckpointsEnabled: false,
 				slideshowTrackChangeSyncEnabled: false,
-				backgroundImages: current.backgroundImages.map(img =>
-					img.assetId === next.assetId
-						? { ...img, playbackSwitchAt: markedAt }
-						: img
+				backgroundImages: writeTimingSlotForOccupant(
+					current,
+					next.assetId,
+					markedAt
 				)
 			}));
 
@@ -360,22 +379,27 @@ export function createBackgroundCollectionActions(
 				imageId: next.assetId,
 				markedAt,
 				poolPosition: nextIndex + 1,
-				reordered,
+				reordered: false,
 				enabledManualMode
 			};
 		},
 		resetAllManualTimestamps: imageIds =>
-			set(state => ({
-				slideshowEnabled: true,
-				slideshowAudioCheckpointsEnabled: true,
-				slideshowManualTimestampsEnabled: false,
-				slideshowTrackChangeSyncEnabled: false,
-				backgroundImages: state.backgroundImages.map(img =>
-					!imageIds || imageIds.includes(img.assetId)
-						? { ...img, playbackSwitchAt: null }
-						: img
-				)
-			})),
+			set(state => {
+				const carrierIds = imageIds
+					? timingCarrierIdsForOccupants(state, imageIds)
+					: null;
+				return {
+					slideshowEnabled: true,
+					slideshowAudioCheckpointsEnabled: true,
+					slideshowManualTimestampsEnabled: false,
+					slideshowTrackChangeSyncEnabled: false,
+					backgroundImages: state.backgroundImages.map(img =>
+						!carrierIds || carrierIds.has(img.assetId)
+							? { ...img, playbackSwitchAt: null }
+							: img
+					)
+				};
+			}),
 		setActiveImageId: id => {
 			set(state => {
 				const { patch, appliedScene } = buildActiveImageSelectionPatch(
@@ -431,9 +455,13 @@ export function createBackgroundCollectionActions(
 				const [moved] = next.splice(sourceIndex, 1);
 				if (!moved) return state;
 				next.splice(clamped, 0, moved);
+				const backgroundImages = preserveTimingSlotsAfterReorder(
+					state.backgroundImages,
+					next
+				);
 				return buildBackgroundImageCollectionPatch(
 					state,
-					next,
+					backgroundImages,
 					state.activeImageId
 				);
 			}),

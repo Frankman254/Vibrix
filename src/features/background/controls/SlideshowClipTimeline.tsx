@@ -1,10 +1,16 @@
-import { buildTimelineClips } from '../slideshow/slideshowTimeline';
+import {
+	buildTimelineClips,
+	formatTimelineTimestamp,
+	parseTimelineTimestamp,
+	resolveTimelineScrollLeft
+} from '../slideshow/slideshowTimeline';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAudioContext } from '@/context/useAudioContext';
 import { useT } from '@/lib/i18n';
 import { useWallpaperStore } from '@/store/wallpaperStore';
 import { resolveEditorImagePreviewUrl } from '@/lib/editorImagePreviews';
 import { resolveSlideshowPool } from '../slideshow/slideshowPlayback';
+import { Button } from '@/ui';
 
 const MIN_CLIP_DURATION = 0.5;
 const MIN_CLIP_WIDTH_PX = 220;
@@ -104,24 +110,6 @@ function buildTimelineTicks(
 	return ticks;
 }
 
-/**
- * True when the explicit marks stop ascending with the pool order. The resolver
- * sorts by time, so the pass then plays the images in an order the list does not
- * show — worth saying out loud instead of letting the clips silently clamp.
- */
-function hasOutOfOrderTimestamps(
-	images: ReturnType<typeof useWallpaperStore.getState>['backgroundImages']
-): boolean {
-	let previousMark = Number.NEGATIVE_INFINITY;
-	for (const image of images) {
-		const mark = image.playbackSwitchAt;
-		if (mark == null) continue;
-		if (mark < previousMark) return true;
-		previousMark = mark;
-	}
-	return false;
-}
-
 export default function SlideshowClipTimeline() {
 	const {
 		backgroundImages,
@@ -195,13 +183,6 @@ export default function SlideshowClipTimeline() {
 		observer.observe(element);
 		return () => observer.disconnect();
 	}, []);
-
-	const outOfOrder = useMemo(
-		() =>
-			slideshowManualTimestampsEnabled &&
-			hasOutOfOrderTimestamps(visibleBackgroundImages),
-		[visibleBackgroundImages, slideshowManualTimestampsEnabled]
-	);
 
 	const timeFromClientX = useCallback(
 		(clientX: number) => {
@@ -344,6 +325,29 @@ export default function SlideshowClipTimeline() {
 		[applyClipMutation, timeFromClientX]
 	);
 
+	const showTime = useCallback(
+		(time: number, selectContainingClip: boolean) => {
+			const viewport = viewportRef.current;
+			if (!viewport) return;
+			viewport.scrollTo({
+				left: resolveTimelineScrollLeft(
+					time,
+					duration,
+					timelineWidth,
+					viewport.clientWidth
+				),
+				behavior: 'smooth'
+			});
+			if (selectContainingClip) {
+				const clip =
+					clips.find(item => time >= item.start && time < item.end) ??
+					clips.at(-1);
+				if (clip) setSelectedId(clip.assetId);
+			}
+		},
+		[clips, duration, timelineWidth]
+	);
+
 	if (duration <= 0 || clips.length === 0) {
 		return (
 			<div
@@ -371,7 +375,15 @@ export default function SlideshowClipTimeline() {
 					<select
 						aria-label={t.slideshow_image_label}
 						value={selectedClip.assetId}
-						onChange={event => setSelectedId(event.target.value)}
+						onChange={event => {
+							const nextId = event.target.value;
+							setSelectedId(nextId);
+							const clip = clips.find(
+								item => item.assetId === nextId
+							);
+							if (clip)
+								showTime((clip.start + clip.end) / 2, false);
+						}}
 						className="rounded border bg-[var(--editor-surface-bg)] p-1"
 					>
 						{clips.map(clip => (
@@ -399,11 +411,11 @@ export default function SlideshowClipTimeline() {
 									: t.slideshow_end_seconds}
 								<input
 									key={`${selectedClip.assetId}-${value}`}
-									type="number"
-									min={0}
-									max={duration}
-									step="0.1"
-									defaultValue={Number(value.toFixed(3))}
+									type="text"
+									inputMode="decimal"
+									defaultValue={formatTimelineTimestamp(
+										value
+									)}
 									disabled={disabled}
 									className="w-24 rounded border bg-[var(--editor-surface-bg)] p-1"
 									onKeyDown={event => {
@@ -411,10 +423,12 @@ export default function SlideshowClipTimeline() {
 											event.currentTarget.blur();
 									}}
 									onBlur={event => {
-										const next =
-											event.currentTarget.valueAsNumber;
+										const next = parseTimelineTimestamp(
+											event.currentTarget.value
+										);
 										if (
-											Number.isFinite(next) &&
+											next != null &&
+											next <= duration &&
 											next !== Number(value.toFixed(3))
 										)
 											applyClipMutation(
@@ -423,7 +437,7 @@ export default function SlideshowClipTimeline() {
 												next
 											);
 										event.currentTarget.value =
-											String(value);
+											formatTimelineTimestamp(value);
 									}}
 								/>
 							</label>
@@ -433,27 +447,24 @@ export default function SlideshowClipTimeline() {
 			)}
 
 			<div
-				className="flex items-center justify-between text-[10px] tabular-nums"
+				className="flex flex-wrap items-center justify-between gap-2 text-[10px] tabular-nums"
 				style={{ color: 'var(--editor-accent-muted)' }}
 			>
 				<span>0:00</span>
-				<span>
-					{formatTime(playheadTime)} / {formatTime(duration)}
-				</span>
+				<Button
+					onClick={() => showTime(playheadTime, true)}
+					size="sm"
+					density="compact"
+					variant="secondary"
+					title={t.slideshow_jump_to_playhead_hint}
+				>
+					{t.slideshow_jump_to_playhead.replace(
+						'{time}',
+						formatTime(playheadTime)
+					)}
+				</Button>
 				<span>{formatTime(duration)}</span>
 			</div>
-			{outOfOrder ? (
-				<div
-					className="rounded border px-2.5 py-1.5 text-[11px] leading-snug"
-					style={{
-						borderColor: 'rgba(251, 191, 36, 0.55)',
-						background: 'rgba(251, 191, 36, 0.12)',
-						color: 'var(--editor-accent-fg)'
-					}}
-				>
-					{t.slideshow_order_warning}
-				</div>
-			) : null}
 			<div
 				ref={viewportRef}
 				className="timeline-scroll overflow-x-auto overflow-y-hidden rounded border pb-2"

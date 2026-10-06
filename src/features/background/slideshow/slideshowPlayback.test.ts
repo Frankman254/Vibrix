@@ -598,6 +598,50 @@ describe('resolveEffectiveImageForPlayback — empty pool', () => {
 // lastCheckpointIdRef value as lastAutoTargetId.
 
 describe('resolveEffectiveImageForPlayback — forceApply overrides no-change guard', () => {
+	it('keeps a manual preview after transition timing reseeds the cursor', () => {
+		const images = pool(['a', 'b', 'c']);
+		const current = resolveEffectiveImageForPlayback({
+			images,
+			setlists: NO_SETLISTS,
+			activeSetlistId: null,
+			currentTime: 10,
+			duration: 90,
+			slideshowEnabled: true,
+			manualTimestampsEnabled: false,
+			lastAutoTargetId: null
+		});
+		expect(current.targetImageId).toBe('a');
+
+		// SlideshowManager stores the currently resolved target after a timing
+		// edit. If the user previews another image, the same checkpoint must not
+		// immediately overwrite that choice.
+		const sameCheckpoint = resolveEffectiveImageForPlayback({
+			images,
+			setlists: NO_SETLISTS,
+			activeSetlistId: null,
+			currentTime: 10,
+			duration: 90,
+			slideshowEnabled: true,
+			manualTimestampsEnabled: false,
+			lastAutoTargetId: current.targetImageId
+		});
+		expect(sameCheckpoint.targetImageId).toBe('a');
+		expect(sameCheckpoint.shouldApply).toBe(false);
+
+		const nextCheckpoint = resolveEffectiveImageForPlayback({
+			images,
+			setlists: NO_SETLISTS,
+			activeSetlistId: null,
+			currentTime: 31,
+			duration: 90,
+			slideshowEnabled: true,
+			manualTimestampsEnabled: false,
+			lastAutoTargetId: current.targetImageId
+		});
+		expect(nextCheckpoint.targetImageId).toBe('b');
+		expect(nextCheckpoint.shouldApply).toBe(true);
+	});
+
 	it('scrub-to-zero: ref===target but visual is elsewhere — forceApply forces apply', () => {
 		// Scenario: user loaded, zero-position reset primed ref='a', then user
 		// manually moved to 'c' (activeImageId='c', ref='a' unchanged).
@@ -748,7 +792,6 @@ describe('resolveSlideshowImageIdAtTime', () => {
 			slideshowAudioCheckpointsEnabled: false,
 			slideshowManualTimestampsEnabled: false,
 			slideshowTrackChangeSyncEnabled: false,
-			slideshowTransitionAnchor: 'start',
 			slideshowTransitionDuration: 1,
 			...overrides
 		};
@@ -783,7 +826,7 @@ describe('resolveSlideshowImageIdAtTime', () => {
 		expect(resolveSlideshowImageIdAtTime(checkpoints, 89, 90)).toBe('c');
 	});
 
-	it('manual timestamps win over checkpoints', () => {
+	it('manual timing slots win over checkpoints without reordering occupants', () => {
 		const manual = settings({
 			backgroundImages: [
 				img('a', { playbackSwitchAt: 0 }),
@@ -793,9 +836,9 @@ describe('resolveSlideshowImageIdAtTime', () => {
 			slideshowAudioCheckpointsEnabled: true,
 			slideshowManualTimestampsEnabled: true
 		});
-		expect(resolveSlideshowImageIdAtTime(manual, 4, 90)).toBe('a');
-		expect(resolveSlideshowImageIdAtTime(manual, 20, 90)).toBe('c');
-		expect(resolveSlideshowImageIdAtTime(manual, 60, 90)).toBe('b');
+		expect(resolveSlideshowImageIdAtTime(manual, 3, 90)).toBe('a');
+		expect(resolveSlideshowImageIdAtTime(manual, 20, 90)).toBe('b');
+		expect(resolveSlideshowImageIdAtTime(manual, 60, 90)).toBe('c');
 	});
 
 	it('track-change sync keeps the active image on a single track', () => {
@@ -819,56 +862,37 @@ describe('resolveSlideshowImageIdAtTime', () => {
 	});
 });
 
-// ── Transition anchor (look-ahead) ─────────────────────────────────────────
+// ── Transition look-ahead ──────────────────────────────────────────────────
 
-describe('buildManualSwitchSchedule — anchors', () => {
+describe('buildManualSwitchSchedule — transition look-ahead', () => {
 	const images = [
-		img('a'),
-		img('b', { playbackSwitchAt: 60, transitionDuration: 2 }),
-		img('c', { playbackSwitchAt: 120, transitionDuration: 4 })
+		img('a', { transitionDuration: 2 }),
+		img('b', { playbackSwitchAt: 60, transitionDuration: 4 }),
+		img('c', { playbackSwitchAt: 120 })
 	];
 
-	it('start keeps the legacy behaviour: the switch fires on the mark', () => {
+	it('starts each transition early so the incoming image is complete on its mark', () => {
 		const schedule = buildManualSwitchSchedule({
 			pool: images,
-			duration: 180,
-			anchor: 'start'
-		});
-		expect(schedule.map(entry => entry.switchAt)).toEqual([0, 60, 120]);
-	});
-
-	it('end starts the transition a full duration early', () => {
-		const schedule = buildManualSwitchSchedule({
-			pool: images,
-			duration: 180,
-			anchor: 'end'
+			duration: 180
 		});
 		expect(schedule.map(entry => entry.switchAt)).toEqual([0, 58, 116]);
-		// The marked time is preserved — only the firing instant moves.
 		expect(schedule.map(entry => entry.markedAt)).toEqual([0, 60, 120]);
-	});
-
-	it('center splits the transition around the mark', () => {
-		const schedule = buildManualSwitchSchedule({
-			pool: images,
-			duration: 180,
-			anchor: 'center'
-		});
-		expect(schedule.map(entry => entry.switchAt)).toEqual([0, 59, 118]);
 	});
 
 	// Legacy persisted images can arrive without their own duration.
 	it('falls back to the global duration for images without one', () => {
 		const schedule = buildManualSwitchSchedule({
 			pool: [
-				img('a'),
 				{
-					...img('b', { playbackSwitchAt: 30 }),
+					...img('a'),
 					transitionDuration: undefined
+				} as unknown as BackgroundImageItem,
+				{
+					...img('b', { playbackSwitchAt: 30 })
 				} as unknown as BackgroundImageItem
 			],
 			duration: 60,
-			anchor: 'end',
 			defaultTransitionDuration: 3
 		});
 		expect(schedule[1]!.switchAt).toBe(27);
@@ -877,57 +901,30 @@ describe('buildManualSwitchSchedule — anchors', () => {
 	it('never pulls a switch below zero', () => {
 		const schedule = buildManualSwitchSchedule({
 			pool: [
-				img('a'),
-				img('b', { playbackSwitchAt: 0.5, transitionDuration: 4 })
+				img('a', { transitionDuration: 4 }),
+				img('b', { playbackSwitchAt: 0.5 })
 			],
-			duration: 60,
-			anchor: 'end'
+			duration: 60
 		});
 		expect(schedule.every(entry => entry.switchAt >= 0)).toBe(true);
 	});
 });
 
-describe('resolveEffectivePlaybackImageId — anchored manual timestamps', () => {
+describe('resolveEffectivePlaybackImageId — manual timestamp look-ahead', () => {
 	const images = [
-		img('a'),
-		img('b', { playbackSwitchAt: 60, transitionDuration: 2 })
+		img('a', { transitionDuration: 2 }),
+		img('b', { playbackSwitchAt: 60 })
 	];
 
-	it('with end, the new image is already resolved before the mark', () => {
+	it('resolves the incoming image early enough to finish on the mark', () => {
 		const res = resolveEffectivePlaybackImageId({
 			pool: images,
 			currentTime: 58.5,
-			duration: 180,
-			slideshowEnabled: true,
-			manualTimestampsEnabled: true,
-			currentActiveImageId: 'a',
-			transitionAnchor: 'end'
-		});
-		expect(res.resolvedId).toBe('b');
-	});
-
-	it('with start, the same instant still shows the old image', () => {
-		const res = resolveEffectivePlaybackImageId({
-			pool: images,
-			currentTime: 58.5,
-			duration: 180,
-			slideshowEnabled: true,
-			manualTimestampsEnabled: true,
-			currentActiveImageId: 'a',
-			transitionAnchor: 'start'
-		});
-		expect(res.resolvedId).toBe('a');
-	});
-
-	it('omitting the anchor keeps the pre-anchor behaviour', () => {
-		const res = resolveEffectivePlaybackImageId({
-			pool: images,
-			currentTime: 59,
 			duration: 180,
 			slideshowEnabled: true,
 			manualTimestampsEnabled: true,
 			currentActiveImageId: 'a'
 		});
-		expect(res.resolvedId).toBe('a');
+		expect(res.resolvedId).toBe('b');
 	});
 });

@@ -47,7 +47,6 @@ export type BackgroundImageSettings = Pick<
 	| 'transitionIntensity'
 	| 'transitionAudioDrive'
 	| 'transitionAudioChannel'
-	| 'transitionPresetId'
 	| 'logoProfileSlotId'
 	| 'spectrumProfileSlotId'
 	| 'particlesProfileSlotId'
@@ -101,7 +100,6 @@ export function getDefaultBackgroundImageSettings(): BackgroundImageSettings {
 		transitionIntensity: DEFAULT_STATE.slideshowTransitionIntensity,
 		transitionAudioDrive: DEFAULT_STATE.slideshowTransitionAudioDrive,
 		transitionAudioChannel: DEFAULT_STATE.slideshowTransitionAudioChannel,
-		transitionPresetId: null,
 		logoProfileSlotId: null,
 		spectrumProfileSlotId: null,
 		particlesProfileSlotId: null,
@@ -196,8 +194,6 @@ export function createBackgroundImageItem(
 			settings.transitionAudioDrive ?? defaults.transitionAudioDrive,
 		transitionAudioChannel:
 			settings.transitionAudioChannel ?? defaults.transitionAudioChannel,
-		transitionPresetId:
-			settings.transitionPresetId ?? defaults.transitionPresetId,
 		logoProfileSlotId:
 			settings.logoProfileSlotId ?? defaults.logoProfileSlotId,
 		spectrumProfileSlotId:

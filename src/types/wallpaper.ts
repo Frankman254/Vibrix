@@ -411,7 +411,6 @@ export type MotionLayerSettings = {
  *                fully on screen exactly on the beat. This is the one that
  *                needs look-ahead in the resolver, not a UI offset.
  */
-export type SlideshowTransitionAnchor = 'start' | 'center' | 'end';
 export type SlideshowTransitionType =
 	| 'fade'
 	| 'slide-left'
@@ -447,22 +446,13 @@ export type SlideshowTransitionType =
 	| 'wave'
 	| 'squeeze-horizontal'
 	| 'squeeze-vertical';
-/** The five dials that make a transition look the way it looks. */
-export interface TransitionPresetSettings {
+/** The five values that make one image's outgoing transition. */
+export interface ImageTransitionSettings {
 	transitionType: SlideshowTransitionType;
 	transitionDuration: number;
 	transitionIntensity: number;
 	transitionAudioDrive: number;
 	transitionAudioChannel: AudioReactiveChannel;
-}
-
-/** A transition look with a name, pointed at by any number of images. */
-export interface TransitionPreset {
-	id: string;
-	name: string;
-	/** Shipped with the app. Can be renamed and edited, but never deleted. */
-	builtIn: boolean;
-	settings: TransitionPresetSettings;
 }
 
 export type VisualTransitionSubsystem =
@@ -473,7 +463,7 @@ export type VisualTransitionSubsystem =
 	| 'logo'
 	| 'scene';
 export type ImageTransitionLayerTarget = 'spectrum' | 'spectrum2' | 'logo';
-export type LinkedImageTransition = TransitionPresetSettings & {
+export type LinkedImageTransition = ImageTransitionSettings & {
 	targets: ImageTransitionLayerTarget[];
 };
 
@@ -604,12 +594,6 @@ export interface BackgroundImageItem {
 	transitionIntensity: number;
 	transitionAudioDrive: number;
 	transitionAudioChannel: AudioReactiveChannel;
-	/**
-	 * The named preset this image's transition came from, or null when the
-	 * dials were moved by hand. Only a label: the five values above are what
-	 * the renderer reads, so a deleted or edited preset never breaks a look.
-	 */
-	transitionPresetId: string | null;
 	logoProfileSlotId: string | null;
 	spectrumProfileSlotId: string | null;
 	particlesProfileSlotId: string | null;
@@ -2309,10 +2293,6 @@ export type WallpaperState = {
 	slideshowTransitionAudioDrive: number;
 	slideshowTransitionAudioChannel: AudioReactiveChannel;
 	slideshowTransitionAudioSmoothing: number;
-	/** Named transition looks, factory ones included. */
-	transitionPresets: TransitionPreset[];
-	/** Where a manual timestamp sits inside its transition (manual mode only). */
-	slideshowTransitionAnchor: SlideshowTransitionAnchor;
 	slideshowResetPosition: boolean;
 	slideshowAudioCheckpointsEnabled: boolean;
 	slideshowTrackChangeSyncEnabled: boolean;

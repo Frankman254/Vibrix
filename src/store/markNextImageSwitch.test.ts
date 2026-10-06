@@ -11,6 +11,8 @@ const mem = new Map<string, string>();
 const { useWallpaperStore } = await import('@/store/wallpaperStore');
 const { createBackgroundImageItem } =
 	await import('@/features/background/backgroundImages');
+const { resolveSlideshowPool } =
+	await import('@/features/background/slideshow/slideshowPlayback');
 
 const store = () => useWallpaperStore.getState();
 
@@ -69,16 +71,16 @@ describe('markNextImageSwitchAt — the "mark here" gesture', () => {
 		expect(store().slideshowManualTimestampsEnabled).toBe(false);
 	});
 
-	it('reports a mark that breaks the pool order without refusing it', () => {
+	it('stores crossed marks as slot boundaries without reordering images', () => {
 		const images = store().backgroundImages;
 		useWallpaperStore.setState({ activeImageId: images[1]!.assetId });
 		expect(store().markNextImageSwitchAt(90).reordered).toBe(false);
 
 		useWallpaperStore.setState({ activeImageId: images[0]!.assetId });
 		const result = store().markNextImageSwitchAt(120);
-		expect(result.reordered).toBe(true);
-		// The edit still lands: the resolver sorts by time, so this is a
-		// different playing order, not corruption.
+		expect(result.reordered).toBe(false);
+		// The raw slot accepts the mark; schedule resolution keeps occupants in
+		// pool order and orders the boundaries instead of the images.
 		expect(switchTimes()).toEqual([null, 120, 90]);
 	});
 
@@ -96,7 +98,9 @@ describe('markNextImageSwitchAt — the "mark here" gesture', () => {
 		});
 		const result = store().markNextImageSwitchAt(30);
 		expect(result.imageId).toBe(images[2]!.assetId);
-		expect(switchTimes()).toEqual([null, null, 30]);
+		// Image 3 occupies slot 2 while image 2 is disabled, so the mark is
+		// stored in slot 2's carrier and image 2 can reclaim it when re-enabled.
+		expect(switchTimes()).toEqual([null, 30, null]);
 	});
 });
 
@@ -146,5 +150,62 @@ describe('slideshow timing modes and reset', () => {
 		expect(switchTimes()).toEqual([null, null, null]);
 		expect(store().slideshowEnabled).toBe(true);
 		expect(store().slideshowTrackChangeSyncEnabled).toBe(false);
+	});
+});
+
+describe('pool order uses positional timing slots', () => {
+	beforeEach(() => setup(4));
+
+	function seedSlotTimes() {
+		store().backgroundImages.forEach((image, index) =>
+			store().setBackgroundImagePlaybackSwitchAt(
+				image.assetId,
+				index * 10
+			)
+		);
+	}
+
+	it('moves an image without moving the timing slots', () => {
+		seedSlotTimes();
+		store().moveImageEntryToIndex('img-3', 0);
+		expect(store().backgroundImages.map(image => image.assetId)).toEqual([
+			'img-3',
+			'img-0',
+			'img-1',
+			'img-2'
+		]);
+		expect(switchTimes()).toEqual([0, 10, 20, 30]);
+	});
+
+	it('compacts over a disabled slot and restores it when re-enabled', () => {
+		seedSlotTimes();
+		store().setBackgroundImageEntryEnabled('img-1', false);
+		let pool = resolveSlideshowPool(
+			store().backgroundImages,
+			store().setlists,
+			store().activeSetlistId
+		);
+		expect(pool.map(image => image.assetId)).toEqual([
+			'img-0',
+			'img-2',
+			'img-3'
+		]);
+		expect(pool.map(image => image.playbackSwitchAt)).toEqual([0, 10, 20]);
+
+		store().setBackgroundImageEntryEnabled('img-1', true);
+		pool = resolveSlideshowPool(
+			store().backgroundImages,
+			store().setlists,
+			store().activeSetlistId
+		);
+		expect(pool.map(image => image.assetId)).toEqual([
+			'img-0',
+			'img-1',
+			'img-2',
+			'img-3'
+		]);
+		expect(pool.map(image => image.playbackSwitchAt)).toEqual([
+			0, 10, 20, 30
+		]);
 	});
 });

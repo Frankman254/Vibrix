@@ -2,9 +2,11 @@ import type { TranslationKey } from './en';
 import { APP_NAME } from '@/config/brand';
 
 export const es: Record<TranslationKey, string> = {
-	transition_linked_layers: 'Aplicar también a',
-	transition_linked_hint:
-		'Usa el estilo y la duración de esta imagen al pasar a la siguiente, en lugar del fundido automático de estas capas.',
+	transition_all_layers: 'Transicionar todo',
+	transition_all_layers_hint:
+		'Usa la transición de esta imagen para la imagen, ambos spectrums y el logo.',
+	transition_choose_layers:
+		'O elige qué capas adicionales siguen la transición de la imagen.',
 	transition_target_spectrum1: 'Spectrum 1',
 	transition_target_spectrum2: 'Spectrum 2',
 	transition_target_logo: 'Logo',
@@ -257,13 +259,6 @@ export const es: Record<TranslationKey, string> = {
 	section_transition_next: 'Transición a la Siguiente',
 	hint_transition_next:
 		'Estos ajustes de transición se guardan en la imagen activa y se usan al salir de ella hacia la siguiente.',
-	transition_preset_custom: 'Personalizada',
-	transition_preset_save: 'Guardar como preset',
-	transition_preset_name_placeholder: 'Nombre del preset',
-	transition_preset_limit: 'No caben más presets. Borra uno primero.',
-	transition_preset_delete_title: 'Borrar preset de transición',
-	transition_preset_delete_message:
-		'las imágenes que lo usan conservan su transición y vuelven a Personalizada.',
 	label_transition_style: 'Estilo de Transición',
 	label_mirror_image: 'Espejo',
 	section_layers: 'Inspector de Capas',
@@ -454,32 +449,24 @@ export const es: Record<TranslationKey, string> = {
 		'Audio Checkpoints reparte el audio en partes iguales. Manual usa tus marcas guardadas. Cambiar de modo conserva las marcas; «Repartir en partes iguales» las borra con confirmación.',
 	slideshow_load_audio: 'Carga una pista de audio para editar sus tiempos.',
 	slideshow_timeline_hint:
-		'En manual, selecciona una imagen para escribir su inicio y fin en segundos o arrastra sus bordes. Los tiempos indican las marcas; el anclaje determina cuándo comienza el fundido. En automático se muestran partes iguales, sin editar.',
+		'Selecciona una imagen para escribir cuándo entra y sale, o arrastra sus bordes. Los campos aceptan m:ss, h:mm:ss o segundos. La marca es el instante en que la imagen entrante ya está visible por completo. «Ahora» vuelve a la posición de la canción. En automático se muestran partes iguales sin editar.',
 	slideshow_image_label: 'Imagen para editar',
-	slideshow_start_seconds: 'Inicio (s)',
-	slideshow_end_seconds: 'Fin (s)',
+	slideshow_start_seconds: 'Entra',
+	slideshow_end_seconds: 'Sale',
+	slideshow_jump_to_playhead: 'Ahora · {time}',
+	slideshow_jump_to_playhead_hint:
+		'Centra la línea de tiempo en la posición actual de la canción y selecciona su imagen.',
 	slideshow_edit_timing: 'Editar tiempos de imágenes',
 	label_slideshow_audio_checkpoints: 'Checkpoints por Audio',
 	label_slideshow_track_change_sync: 'Sincronizar Cambio de Pista',
 	label_slideshow_mark_here: 'Marcar aquí',
 	hint_slideshow_mark_here:
-		'Escribe el tiempo de reproducción actual como inicio de la imagen SIGUIENTE, cerrando la actual. Pulsa M con la línea de tiempo abierta.',
-	slideshow_marked_toast: 'IMG {index} empieza en {time}{anchor}',
-	slideshow_marked_anchor_end: ' — la transición termina ahí',
-	slideshow_marked_anchor_center:
-		' — el tiempo queda en mitad de la transición',
+		'Marca el tiempo actual como el instante en que la imagen SIGUIENTE ya está visible por completo. Pulsa M con la línea de tiempo abierta.',
+	slideshow_marked_toast: 'IMG {index} queda visible por completo en {time}',
 	slideshow_mark_last_image:
 		'En pantalla está la última imagen del pool: no hay ninguna después que marcar.',
 	slideshow_mark_enabled_manual:
 		'Se activaron los tiempos manuales para que la marca tenga efecto.',
-	slideshow_order_warning:
-		'Los tiempos guardados ya no siguen el orden del pool, así que el pase reproduce las imágenes en otro orden que la lista. Arrastra los clips o borra los tiempos para volver a alinearlos.',
-	label_slideshow_transition_anchor: 'Anclaje del tiempo',
-	hint_slideshow_transition_anchor:
-		'Dónde queda el tiempo marcado dentro de su transición. Final = la imagen nueva está puesta del todo EN la marca (para los drops); Inicio = la transición empieza ahí (el comportamiento anterior).',
-	slideshow_anchor_start: 'Inicio',
-	slideshow_anchor_center: 'Centro',
-	slideshow_anchor_end: 'Final',
 	hint_slideshow_audio_checkpoints:
 		'Para mixes largos, reparte la canción actual sobre la cantidad de imágenes cargadas y cambia por checkpoints en vez de usar temporizador.',
 	hint_slideshow_track_change_sync:

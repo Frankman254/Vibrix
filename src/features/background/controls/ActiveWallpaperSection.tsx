@@ -7,7 +7,7 @@ import { Button, UI_COLORS } from '@/ui';
 import { CollapsibleSection } from '@/editor';
 import BackgroundCardShell from './BackgroundCardShell';
 import ImageCompositionPanel from './ImageCompositionPanel';
-import TransitionPresetPanel from './TransitionPresetPanel';
+import TransitionPanel from './TransitionPanel';
 import { SnapToNowButton } from './activeWallpaperAtoms';
 
 type Props = {
@@ -37,6 +37,7 @@ type Props = {
 	layoutReferenceHeight: number;
 	imageMinScale: number;
 	slideshowManualTimestampsEnabled: boolean;
+	playbackSwitchAt: number | null;
 	onChangePlaybackSwitchAt: (v: number | null) => void;
 	calculatedSwitchAt?: number | null;
 	onChangeFramingManualEnabled: (value: boolean) => void;
@@ -95,6 +96,7 @@ export default function ActiveWallpaperSection({
 	layoutReferenceHeight,
 	imageMinScale,
 	slideshowManualTimestampsEnabled,
+	playbackSwitchAt,
 	onChangePlaybackSwitchAt,
 	calculatedSwitchAt,
 	onChangeFramingManualEnabled,
@@ -137,9 +139,9 @@ export default function ActiveWallpaperSection({
 		return isNaN(plain) ? null : plain;
 	}
 
-	const isCalculatedTime = activeImage?.playbackSwitchAt == null;
+	const isCalculatedTime = playbackSwitchAt == null;
 	const displayTime = !isCalculatedTime
-		? activeImage.playbackSwitchAt
+		? playbackSwitchAt
 		: calculatedSwitchAt != null
 			? calculatedSwitchAt
 			: null;
@@ -333,7 +335,7 @@ export default function ActiveWallpaperSection({
 			</AdvancedOnly>
 			{activeImage ? (
 				<CollapsibleSection title={t.section_transition_next}>
-					<TransitionPresetPanel />
+					<TransitionPanel />
 				</CollapsibleSection>
 			) : null}
 		</BackgroundCardShell>

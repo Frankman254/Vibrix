@@ -38,7 +38,6 @@ import type {
 	RainParticleType,
 	ResolvedAudioReactiveChannel,
 	ScanlineMode,
-	SlideshowTransitionAnchor,
 	SlideshowTransitionType,
 	SpectrumBandMode,
 	SpectrumColorMode,
@@ -739,19 +738,11 @@ export type WallpaperStore = WallpaperState & {
 	setSlideshowTransitionAudioDrive: (v: number) => void;
 	setSlideshowTransitionAudioChannel: (v: AudioReactiveChannel) => void;
 	setSlideshowTransitionAudioSmoothing: (v: number) => void;
-	setSlideshowTransitionAnchor: (v: SlideshowTransitionAnchor) => void;
-	/** Point the active image at a named transition look. */
-	applyTransitionPreset: (id: string) => void;
 	applyTransitionBatch: (
 		plan: TransitionBatchPlan,
 		expectedImages: WallpaperState['backgroundImages'],
 		expectedSetlists: WallpaperState['setlists']
 	) => boolean;
-	/** Snapshot the active image's five dials as a new named preset. */
-	saveTransitionPreset: (name: string) => void;
-	renameTransitionPreset: (id: string, name: string) => void;
-	/** Factory presets are kept; user presets are removed. */
-	deleteTransitionPreset: (id: string) => void;
 	setSlideshowResetPosition: (v: boolean) => void;
 	setSlideshowAudioCheckpointsEnabled: (v: boolean) => void;
 	setSlideshowTrackChangeSyncEnabled: (v: boolean) => void;
@@ -765,8 +756,7 @@ export type WallpaperStore = WallpaperState & {
 	/**
 	 * Writes `timeSec` as the switch timestamp of the image AFTER the active
 	 * one — the "mark here" gesture: the end of a clip is the start of the next.
-	 * Turns manual mode on when it is off, and reports whether the mark left the
-	 * slideshow playing images out of pool order.
+	 * Turns manual mode on when it is off. Timing slots never change pool order.
 	 */
 	markNextImageSwitchAt: (timeSec: number) => MarkNextSwitchResult;
 	setActiveImageId: (id: string | null) => void;

@@ -1,4 +1,5 @@
 import type { StateCreator } from 'zustand';
+import { preserveTimingSlotsAfterReorder } from '@/features/background/slideshow/slideshowTimingSlots';
 import type { Setlist, WallpaperState } from '@/types/wallpaper';
 import type { WallpaperStore } from '@/store/wallpaperStoreTypes';
 
@@ -220,11 +221,48 @@ export function createSetlistsSlice(
 				)
 			})),
 		setSetlistImages: (id: string, assetIds: string[]) =>
-			set(state => ({
-				setlists: state.setlists.map(s =>
-					s.id === id ? { ...s, imageAssetIds: [...assetIds] } : s
-				)
-			})),
+			set(state => {
+				const previousSetlist = state.setlists.find(
+					item => item.id === id
+				);
+				const sameMembers =
+					previousSetlist?.imageAssetIds.length === assetIds.length &&
+					previousSetlist.imageAssetIds.every(assetId =>
+						assetIds.includes(assetId)
+					);
+				let backgroundImages = state.backgroundImages;
+				if (previousSetlist && sameMembers) {
+					const byId = new Map(
+						state.backgroundImages.map(image => [
+							image.assetId,
+							image
+						])
+					);
+					const previousOrder = previousSetlist.imageAssetIds.flatMap(
+						assetId =>
+							byId.has(assetId) ? [byId.get(assetId)!] : []
+					);
+					const nextOrder = assetIds.flatMap(assetId =>
+						byId.has(assetId) ? [byId.get(assetId)!] : []
+					);
+					const reordered = preserveTimingSlotsAfterReorder(
+						previousOrder,
+						nextOrder
+					);
+					const byReorderedId = new Map(
+						reordered.map(image => [image.assetId, image])
+					);
+					backgroundImages = state.backgroundImages.map(
+						image => byReorderedId.get(image.assetId) ?? image
+					);
+				}
+				return {
+					backgroundImages,
+					setlists: state.setlists.map(s =>
+						s.id === id ? { ...s, imageAssetIds: [...assetIds] } : s
+					)
+				};
+			}),
 		setSetlistTracks: (id: string, trackIds: string[]) =>
 			set(state => ({
 				setlists: state.setlists.map(s =>

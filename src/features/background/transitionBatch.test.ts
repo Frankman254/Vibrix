@@ -20,8 +20,7 @@ const images = (n: number) =>
 				transitionDuration: 0.2 + i / 10,
 				playbackSwitchAt: i * 8,
 				transitionIntensity: 0.7,
-				transitionAudioDrive: 0.3,
-				transitionPresetId: 'saved'
+				transitionAudioDrive: 0.3
 			}) as BackgroundImageItem
 	);
 
@@ -83,7 +82,6 @@ describe('transition distribution', () => {
 			expect(image.playbackSwitchAt).toBe(pool[i].playbackSwitchAt);
 			expect(image.transitionIntensity).toBe(0.7);
 			expect(image.transitionAudioDrive).toBe(0.9);
-			expect(image.transitionPresetId).toBeNull();
 		});
 	});
 });
