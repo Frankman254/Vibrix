@@ -196,4 +196,6 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // existing slots, and no timestamp can reorder playback behind the pool's back.
 // v149: manual timestamps have one meaning: the incoming image is fully visible
 // on the mark. The persisted start/center/end selector is removed.
-export const STORE_PERSIST_VERSION = 149;
+// v150: Stage Lights and Flash Light gain the shared complete colour modes and
+// an explicit manual bloom pass; Lights slots and per-image captures include it.
+export const STORE_PERSIST_VERSION = 150;

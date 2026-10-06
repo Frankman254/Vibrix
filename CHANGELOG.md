@@ -24,7 +24,10 @@ the version scheme in `src/lib/version.ts`.
 - **Editor de tiempos directo:** cada marca significa ahora que la imagen
   entrante ya está completamente visible; se eliminó el selector persistido de
   anclaje. El botón **Ahora** centra el playhead y selecciona su clip, mientras
-  que elegir una imagen centra su tramo. `STORE_PERSIST_VERSION` is at **149**.
+  que elegir una imagen centra su tramo. El HUD `Per img` ahora captura también
+  Camera FX, Lights y Now Playing. Stage Lights y Flash Light comparten modos
+  de color completos (incluido RGB completo) y glow manual, conservados en
+  slots, escenas y overrides por imagen. `STORE_PERSIST_VERSION` is at **150**.
 
 - Transiciones por imagen: se eliminó la colección redundante de presets con
   nombre; cada imagen ya era la fuente real de estilo, duración, intensidad y

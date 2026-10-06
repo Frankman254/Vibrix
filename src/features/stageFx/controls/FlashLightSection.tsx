@@ -5,11 +5,9 @@ import { useWallpaperStore } from '@/store/wallpaperStore';
 import { useT } from '@/lib/i18n';
 import { FACTORY_DEFAULT_STATE } from '@/store/factoryDefaults';
 import type { FlashLightShape } from '@/features/stageFx/stageFxConfig';
-import {
-	ColorField,
-	MotionSlider as Slider
-} from '@/editor/MotionSharedControls';
+import { MotionSlider as Slider } from '@/editor/MotionSharedControls';
 import { FxBandThresholdControls } from './FxBandThresholdControls';
+import { StageFxColorControls } from './StageFxColorControls';
 import { formatDecimal } from '@/editor/motionTabUtils';
 
 export function FlashLightSection() {
@@ -19,7 +17,13 @@ export function FlashLightSection() {
 			enabled: state.flashLightEnabled,
 			intensity: state.flashLightIntensity,
 			colorSource: state.flashLightColorSource,
+			colorMode: state.flashLightColorMode,
 			color: state.flashLightColor,
+			secondaryColor: state.flashLightSecondaryColor,
+			rainbowColors: state.flashLightRainbowColors,
+			manualGlow: state.flashLightManualGlow,
+			glowStrength: state.flashLightGlowStrength,
+			glowSize: state.flashLightGlowSize,
 			softness: state.flashLightSoftness,
 			brightness: state.flashLightBrightness,
 			decay: state.flashLightDecay,
@@ -37,7 +41,13 @@ export function FlashLightSection() {
 			enabled: state.setFlashLightEnabled,
 			intensity: state.setFlashLightIntensity,
 			colorSource: state.setFlashLightColorSource,
+			colorMode: state.setFlashLightColorMode,
 			color: state.setFlashLightColor,
+			secondaryColor: state.setFlashLightSecondaryColor,
+			rainbowColors: state.setFlashLightRainbowColors,
+			manualGlow: state.setFlashLightManualGlow,
+			glowStrength: state.setFlashLightGlowStrength,
+			glowSize: state.setFlashLightGlowSize,
 			softness: state.setFlashLightSoftness,
 			brightness: state.setFlashLightBrightness,
 			decay: state.setFlashLightDecay,
@@ -112,6 +122,25 @@ export function FlashLightSection() {
 						]}
 						size="sm"
 						full
+					/>
+					<StageFxColorControls
+						kind="flash"
+						colorSource={s.colorSource}
+						colorMode={s.colorMode}
+						primaryColor={s.color}
+						secondaryColor={s.secondaryColor}
+						rainbowColors={s.rainbowColors}
+						manualGlow={s.manualGlow}
+						glowStrength={s.glowStrength}
+						glowSize={s.glowSize}
+						onColorSourceChange={set.colorSource}
+						onColorModeChange={set.colorMode}
+						onPrimaryColorChange={set.color}
+						onSecondaryColorChange={set.secondaryColor}
+						onRainbowColorsChange={set.rainbowColors}
+						onManualGlowChange={set.manualGlow}
+						onGlowStrengthChange={set.glowStrength}
+						onGlowSizeChange={set.glowSize}
 					/>
 					{s.advanced ? (
 						<CollapsibleSection
@@ -214,33 +243,6 @@ export function FlashLightSection() {
 									}
 									onChange={set.bandThreshold}
 								/>
-								<SegmentedControl<'manual' | 'theme' | 'image'>
-									value={s.colorSource}
-									onChange={set.colorSource}
-									options={[
-										{
-											value: 'theme',
-											label: t.sfx_color_theme
-										},
-										{
-											value: 'image',
-											label: t.sfx_color_image
-										},
-										{
-											value: 'manual',
-											label: t.sfx_color_manual
-										}
-									]}
-									size="sm"
-									full
-								/>
-								{s.colorSource === 'manual' ? (
-									<ColorField
-										label={t.sfx_flash_color}
-										value={s.color}
-										onChange={set.color}
-									/>
-								) : null}
 								<SegmentedControl<
 									'lighter' | 'screen' | 'source-over'
 								>

@@ -2175,7 +2175,13 @@ export type WallpaperState = {
 	stageLightsSpeed: number;
 	stageLightsFixedMotion: boolean;
 	stageLightsColorSource: import('@/features/stageFx/stageFxConfig').StageLightsColorSource;
+	stageLightsColorMode: import('@/features/stageFx/stageFxConfig').StageFxColorMode;
 	stageLightsColor: string;
+	stageLightsSecondaryColor: string;
+	stageLightsRainbowColors: string[];
+	stageLightsManualGlow: boolean;
+	stageLightsGlowStrength: number;
+	stageLightsGlowSize: number;
 	stageLightsAudioReactive: boolean;
 	stageLightsAudioChannel: import('@/features/stageFx/stageFxConfig').FxAudioChannel;
 	stageLightsAudioAmount: number;
@@ -2198,7 +2204,13 @@ export type WallpaperState = {
 	flashLightEnabled: boolean;
 	flashLightIntensity: number;
 	flashLightColorSource: import('@/features/stageFx/stageFxConfig').StageLightsColorSource;
+	flashLightColorMode: import('@/features/stageFx/stageFxConfig').StageFxColorMode;
 	flashLightColor: string;
+	flashLightSecondaryColor: string;
+	flashLightRainbowColors: string[];
+	flashLightManualGlow: boolean;
+	flashLightGlowStrength: number;
+	flashLightGlowSize: number;
 	flashLightSoftness: number;
 	flashLightBrightness: number;
 	flashLightDecay: number;

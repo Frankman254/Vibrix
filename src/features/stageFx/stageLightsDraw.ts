@@ -17,6 +17,7 @@ import {
 	STAGE_FX_CAPS,
 	type StageLightsOrigin
 } from './stageFxConfig';
+import { sampleStageFxColor } from './stageFxColor';
 
 export type StageLightsSettings = Pick<
 	WallpaperState,
@@ -33,7 +34,13 @@ export type StageLightsSettings = Pick<
 	| 'stageLightsBeamWidth'
 	| 'stageLightsBlendMode'
 	| 'stageLightsColor'
+	| 'stageLightsColorMode'
 	| 'stageLightsColorSource'
+	| 'stageLightsSecondaryColor'
+	| 'stageLightsRainbowColors'
+	| 'stageLightsManualGlow'
+	| 'stageLightsGlowStrength'
+	| 'stageLightsGlowSize'
 	| 'stageLightsFixedMotion'
 	| 'stageLightsIntensity'
 	| 'stageLightsInvertDirection'
@@ -216,14 +223,6 @@ export function drawStageLights(
 			Math.round(minBeamCount + (maxBeamCount - minBeamCount) * response)
 		)
 	);
-	const activePalette =
-		settings.stageLightsColorSource === 'theme'
-			? palettes.theme
-			: palettes.background;
-	const color =
-		settings.stageLightsColorSource === 'manual'
-			? settings.stageLightsColor
-			: activePalette.dominant;
 	const halfWidth = 0.04 + clamp01(settings.stageLightsBeamWidth) * 0.22;
 	const beamLengthRatio = Math.max(
 		0.15,
@@ -252,11 +251,6 @@ export function drawStageLights(
 		return { drawn: false, beamCount: 0, passes: 0 };
 	}
 
-	// Parse color once per frame — not inside each gradient stop (~10× per beam).
-	const [cr, cg, cb] = parseHexColor(color);
-	const rgbaFast = (alpha: number) =>
-		`rgba(${cr}, ${cg}, ${cb}, ${clamp01(alpha)})`;
-
 	// Blur scale for the haze and (when active) core/flare passes.
 	const hazeBlurScale = quality === 'high' ? 1.3 : 0.8;
 	const coreBlurScale = 0.55;
@@ -265,9 +259,24 @@ export function drawStageLights(
 	ctx.clearRect(0, 0, w, h);
 	ctx.save();
 	ctx.globalCompositeOperation = settings.stageLightsBlendMode;
-	ctx.shadowColor = color;
 
 	for (let i = 0; i < beamCount; i += 1) {
+		const color = sampleStageFxColor(
+			{
+				colorSource: settings.stageLightsColorSource,
+				colorMode: settings.stageLightsColorMode,
+				primaryColor: settings.stageLightsColor,
+				secondaryColor: settings.stageLightsSecondaryColor,
+				rainbowColors: settings.stageLightsRainbowColors
+			},
+			palettes,
+			beamCount <= 1 ? 0 : i / (beamCount - 1),
+			runtime.time * 0.12
+		);
+		const [cr, cg, cb] = parseHexColor(color);
+		const rgbaFast = (alpha: number) =>
+			`rgba(${cr}, ${cg}, ${cb}, ${clamp01(alpha)})`;
+		ctx.shadowColor = color;
 		const edge = resolveBeamEdge(settings.stageLightsOrigin, i);
 		const edgeRatio = (i + 0.5) / beamCount;
 		let originX = edgeRatio * w;
@@ -327,6 +336,39 @@ export function drawStageLights(
 		const ry = originY + Math.sin(aim + halfWidth) * length;
 		const endX = originX + Math.cos(aim) * length;
 		const endY = originY + Math.sin(aim) * length;
+
+		// Optional authored aura. It is independent from beam softness: softness
+		// shapes the beam edge, while this pass adds a broad concert-light halo.
+		if (settings.stageLightsManualGlow) {
+			const glowSize = clamp01(settings.stageLightsGlowSize);
+			const glowWidth = halfWidth * (1.35 + glowSize * 1.8);
+			const glx = originX + Math.cos(aim - glowWidth) * length;
+			const gly = originY + Math.sin(aim - glowWidth) * length;
+			const grx = originX + Math.cos(aim + glowWidth) * length;
+			const gry = originY + Math.sin(aim + glowWidth) * length;
+			const glowGradient = ctx.createLinearGradient(
+				originX,
+				originY,
+				endX,
+				endY
+			);
+			glowGradient.addColorStop(0, rgbaFast(0.68));
+			glowGradient.addColorStop(0.5, rgbaFast(0.22));
+			glowGradient.addColorStop(1, rgbaFast(0));
+			ctx.globalAlpha = Math.min(
+				1,
+				beamAlpha * Math.max(0, settings.stageLightsGlowStrength) * 0.42
+			);
+			ctx.shadowBlur =
+				(10 + glowSize * STAGE_FX_CAPS.maxBeamBlurPx) * pixelScale;
+			ctx.fillStyle = glowGradient;
+			ctx.beginPath();
+			ctx.moveTo(originX, originY);
+			ctx.lineTo(glx, gly);
+			ctx.lineTo(grx, gry);
+			ctx.closePath();
+			ctx.fill();
+		}
 
 		// ── Pass 1: main beam triangle ────────────────────────────────
 		const mainGradient = ctx.createLinearGradient(
@@ -424,6 +466,10 @@ export function drawStageLights(
 		drawn: true,
 		beamCount,
 		passes:
-			1 + (drawHaze ? 1 : 0) + (drawCore ? 1 : 0) + (drawFlare ? 1 : 0)
+			1 +
+			(settings.stageLightsManualGlow ? 1 : 0) +
+			(drawHaze ? 1 : 0) +
+			(drawCore ? 1 : 0) +
+			(drawFlare ? 1 : 0)
 	};
 }

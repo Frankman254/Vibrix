@@ -17,6 +17,7 @@ import {
 	type FlashLightShape
 } from './stageFxConfig';
 import { parseHexColor, type StageLightsPalettes } from './stageLightsDraw';
+import { sampleStageFxColor } from './stageFxColor';
 
 export type FlashLightSettings = Pick<
 	WallpaperState,
@@ -25,7 +26,13 @@ export type FlashLightSettings = Pick<
 	| 'flashLightBlendMode'
 	| 'flashLightBrightness'
 	| 'flashLightColor'
+	| 'flashLightColorMode'
 	| 'flashLightColorSource'
+	| 'flashLightSecondaryColor'
+	| 'flashLightRainbowColors'
+	| 'flashLightManualGlow'
+	| 'flashLightGlowStrength'
+	| 'flashLightGlowSize'
 	| 'flashLightDecay'
 	| 'flashLightIntensity'
 	| 'flashLightRetriggerMs'
@@ -41,6 +48,8 @@ export type FlashLightRuntime = {
 	drive: number;
 	lastLevel: number;
 	lastTriggerMs: number;
+	/** Stable for one hit, then advances so rotating modes change per flash. */
+	colorPhase: number;
 	shapeCache: FlashShapeCache | null;
 };
 
@@ -49,6 +58,7 @@ export function createFlashLightRuntime(): FlashLightRuntime {
 		drive: 0,
 		lastLevel: 0,
 		lastTriggerMs: -Infinity,
+		colorPhase: 0,
 		shapeCache: null
 	};
 }
@@ -243,14 +253,21 @@ function getFlashShapeCanvas(
 /** The flash colour for these settings (also feeds Flash Edge live). */
 export function resolveFlashLightColor(
 	settings: FlashLightSettings,
-	palettes: StageLightsPalettes
+	palettes: StageLightsPalettes,
+	phase = 0
 ): string {
-	if (settings.flashLightColorSource === 'manual') {
-		return settings.flashLightColor;
-	}
-	return settings.flashLightColorSource === 'theme'
-		? palettes.theme.dominant
-		: palettes.background.dominant;
+	return sampleStageFxColor(
+		{
+			colorSource: settings.flashLightColorSource,
+			colorMode: settings.flashLightColorMode,
+			primaryColor: settings.flashLightColor,
+			secondaryColor: settings.flashLightSecondaryColor,
+			rainbowColors: settings.flashLightRainbowColors
+		},
+		palettes,
+		phase,
+		phase
+	);
 }
 
 /** Triggers on audio peaks and decays the drive by one frame. */
@@ -301,7 +318,10 @@ export function stepFlashLight(
 			STAGE_FX_CAPS.maxFlashOpacity,
 			Math.max(runtime.drive, peak * settings.flashLightIntensity)
 		);
-		if (triggered) runtime.lastTriggerMs = nowMs;
+		if (triggered) {
+			runtime.lastTriggerMs = nowMs;
+			runtime.colorPhase = (runtime.colorPhase + 0.61803398875) % 1;
+		}
 	}
 	runtime.lastLevel = level;
 	runtime.drive = Math.max(
@@ -344,6 +364,24 @@ export function drawFlashLight(
 		);
 	}
 	if (bleed > 0) {
+		if (settings.flashLightManualGlow) {
+			ctx.save();
+			ctx.globalCompositeOperation = 'lighter';
+			ctx.globalAlpha *=
+				Math.max(0, settings.flashLightGlowStrength) * 0.48;
+			ctx.filter = `blur(${(6 + clamp01(settings.flashLightGlowSize) * STAGE_FX_CAPS.maxFlashBlurPx) * pixelScale}px)`;
+			drawFlashShape(
+				ctx,
+				settings.flashLightShape,
+				width,
+				height,
+				color,
+				softness,
+				pixelScale,
+				bleed
+			);
+			ctx.restore();
+		}
 		drawFlashShape(
 			ctx,
 			settings.flashLightShape,
@@ -366,6 +404,14 @@ export function drawFlashLight(
 		softness,
 		pixelScale
 	);
+	if (settings.flashLightManualGlow) {
+		ctx.save();
+		ctx.globalCompositeOperation = 'lighter';
+		ctx.globalAlpha *= Math.max(0, settings.flashLightGlowStrength) * 0.48;
+		ctx.filter = `blur(${(6 + clamp01(settings.flashLightGlowSize) * STAGE_FX_CAPS.maxFlashBlurPx) * pixelScale}px)`;
+		ctx.drawImage(runtime.shapeCache.canvas, 0, 0);
+		ctx.restore();
+	}
 	ctx.drawImage(runtime.shapeCache.canvas, 0, 0);
 	ctx.restore();
 }

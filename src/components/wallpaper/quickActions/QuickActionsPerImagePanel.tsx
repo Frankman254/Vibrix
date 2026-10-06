@@ -23,15 +23,23 @@ import { resolveEffectiveSceneSlotId } from '@/features/scenes/sceneSlot';
  *   - Selection/Total mode toggle sits IN the action area, immediately next
  *     to Capture/Clear, so the user's cursor doesn't travel across the panel
  *     to switch mode.
- *   - Selection mode lays the 5 subsystems out as a 2-column grid of compact
+ *   - Selection mode lays the subsystems out as a 2-column grid of compact
  *     chips. Avoids each row stretching across the full panel width which
  *     made the layout feel hollow on wide panels.
  *
- * Total mode adds a `Saved n/5` summary row + per-subsystem dots so the user
+ * Total mode adds a saved-count summary row + per-subsystem dots so the user
  * gets immediate feedback after pressing "Capture all".
  */
 type SubsystemRow = {
-	id: 'logo' | 'spectrum' | 'particles' | 'rain' | 'looks';
+	id:
+		| 'logo'
+		| 'spectrum'
+		| 'particles'
+		| 'rain'
+		| 'looks'
+		| 'cameraFx'
+		| 'lights'
+		| 'trackTitle';
 };
 
 const ROWS: ReadonlyArray<SubsystemRow> = [
@@ -39,7 +47,10 @@ const ROWS: ReadonlyArray<SubsystemRow> = [
 	{ id: 'spectrum' },
 	{ id: 'particles' },
 	{ id: 'rain' },
-	{ id: 'looks' }
+	{ id: 'looks' },
+	{ id: 'cameraFx' },
+	{ id: 'lights' },
+	{ id: 'trackTitle' }
 ];
 
 export default function QuickActionsPerImagePanel() {
@@ -49,7 +60,10 @@ export default function QuickActionsPerImagePanel() {
 		spectrum: t.looks_target_spectrum,
 		particles: t.looks_target_particles,
 		rain: t.looks_target_rain,
-		looks: t.tab_looks
+		looks: t.tab_looks,
+		cameraFx: t.bg_override_camera_fx,
+		lights: t.bg_override_lights,
+		trackTitle: t.bg_override_track_title
 	};
 	const {
 		mode,
@@ -67,7 +81,13 @@ export default function QuickActionsPerImagePanel() {
 		captureImageRainOverride,
 		setImageRainOverride,
 		captureImageLooksOverride,
-		setImageLooksOverride
+		setImageLooksOverride,
+		captureImageCameraFxOverride,
+		setImageCameraFxOverride,
+		captureImageLightsOverride,
+		setImageLightsOverride,
+		captureImageTrackTitleOverride,
+		setImageTrackTitleOverride
 	} = useWallpaperStore(
 		useShallow(s => ({
 			mode: s.quickEditCaptureMode,
@@ -85,7 +105,13 @@ export default function QuickActionsPerImagePanel() {
 			captureImageRainOverride: s.captureImageRainOverride,
 			setImageRainOverride: s.setImageRainOverride,
 			captureImageLooksOverride: s.captureImageLooksOverride,
-			setImageLooksOverride: s.setImageLooksOverride
+			setImageLooksOverride: s.setImageLooksOverride,
+			captureImageCameraFxOverride: s.captureImageCameraFxOverride,
+			setImageCameraFxOverride: s.setImageCameraFxOverride,
+			captureImageLightsOverride: s.captureImageLightsOverride,
+			setImageLightsOverride: s.setImageLightsOverride,
+			captureImageTrackTitleOverride: s.captureImageTrackTitleOverride,
+			setImageTrackTitleOverride: s.setImageTrackTitleOverride
 		}))
 	);
 
@@ -119,6 +145,12 @@ export default function QuickActionsPerImagePanel() {
 				return activeImage.rainOverride != null;
 			case 'looks':
 				return activeImage.looksOverride != null;
+			case 'cameraFx':
+				return activeImage.cameraFxOverride != null;
+			case 'lights':
+				return activeImage.lightsOverride != null;
+			case 'trackTitle':
+				return activeImage.trackTitleOverride != null;
 		}
 	}
 	const savedCount = ROWS.filter(row => hasOverrideFor(row.id)).length;
@@ -131,6 +163,9 @@ export default function QuickActionsPerImagePanel() {
 		captureImageParticlesOverride();
 		captureImageRainOverride();
 		captureImageLooksOverride();
+		captureImageCameraFxOverride();
+		captureImageLightsOverride();
+		captureImageTrackTitleOverride();
 	}
 	function clearAll() {
 		if (captureBlocked) return;
@@ -139,6 +174,9 @@ export default function QuickActionsPerImagePanel() {
 		setImageParticlesOverride(null);
 		setImageRainOverride(null);
 		setImageLooksOverride(null);
+		setImageCameraFxOverride(null);
+		setImageLightsOverride(null);
+		setImageTrackTitleOverride(null);
 	}
 
 	function statusOf(id: SubsystemRow['id']) {
@@ -164,6 +202,15 @@ export default function QuickActionsPerImagePanel() {
 			case 'looks':
 				captureImageLooksOverride();
 				return;
+			case 'cameraFx':
+				captureImageCameraFxOverride();
+				return;
+			case 'lights':
+				captureImageLightsOverride();
+				return;
+			case 'trackTitle':
+				captureImageTrackTitleOverride();
+				return;
 		}
 	}
 	function clear(id: SubsystemRow['id']) {
@@ -182,6 +229,15 @@ export default function QuickActionsPerImagePanel() {
 				return;
 			case 'looks':
 				setImageLooksOverride(null);
+				return;
+			case 'cameraFx':
+				setImageCameraFxOverride(null);
+				return;
+			case 'lights':
+				setImageLightsOverride(null);
+				return;
+			case 'trackTitle':
+				setImageTrackTitleOverride(null);
 				return;
 		}
 	}

@@ -679,3 +679,55 @@ describe('v149 fixed slideshow timestamp meaning', () => {
 		expect(migrated.backgroundImages[0]?.playbackSwitchAt).toBe(42);
 	});
 });
+
+describe('v150 complete Lights colour snapshots', () => {
+	it('backfills live, slot, image and global Lights copies', () => {
+		const legacyLights = {
+			stageLightsEnabled: true,
+			stageLightsColor: '#123456',
+			flashLightEnabled: true,
+			flashLightColor: '#abcdef'
+		};
+		const migrated = migrateWallpaperStore(
+			{
+				...legacyLights,
+				lightsProfileSlots: [
+					{ id: 'lights-1', name: 'Legacy', values: legacyLights }
+				],
+				backgroundImages: [
+					{
+						assetId: 'image-1',
+						url: null,
+						lightsOverride: legacyLights
+					}
+				],
+				globalCompositionSlots: [
+					{
+						id: 'global-1',
+						name: 'Legacy global',
+						values: {
+							lights: legacyLights,
+							capturedAt: 1
+						}
+					}
+				]
+			} as never,
+			149
+		);
+
+		const copies = [
+			migrated,
+			migrated.lightsProfileSlots[0]?.values,
+			migrated.backgroundImages[0]?.lightsOverride,
+			migrated.globalCompositionSlots[0]?.values?.lights
+		];
+		for (const copy of copies) {
+			expect(copy?.stageLightsColorMode).toBe('solid');
+			expect(copy?.stageLightsSecondaryColor).toBeDefined();
+			expect(copy?.stageLightsRainbowColors).toHaveLength(6);
+			expect(copy?.stageLightsManualGlow).toBe(false);
+			expect(copy?.flashLightColorMode).toBe('solid');
+			expect(copy?.flashLightGlowStrength).toBeDefined();
+		}
+	});
+});

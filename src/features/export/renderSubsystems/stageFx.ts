@@ -153,10 +153,14 @@ export function createFlashLightSubsystem(): RenderSubsystem {
 				ctx.timeMs,
 				Math.min(ctx.deltaMs / 1000, MAX_STEP_SEC)
 			);
-			color = resolveFlashLightColor(ctx.state, {
-				background: ctx.palette,
-				theme: getEditorThemePalette(ctx.state.editorTheme)
-			});
+			color = resolveFlashLightColor(
+				ctx.state,
+				{
+					background: ctx.palette,
+					theme: getEditorThemePalette(ctx.state.editorTheme)
+				},
+				runtime.colorPhase
+			);
 			updateFlashEdgeDrive(runtime.drive, color, ctx.scope?.flashEdge);
 		},
 		render(ctx: RenderFrameContext) {

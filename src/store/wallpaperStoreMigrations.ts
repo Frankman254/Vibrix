@@ -72,6 +72,7 @@ import {
 	createDefaultSpectrumSecondProfileSlots,
 	createDefaultTrackTitleProfileSlots,
 	extractLooksProfileSettings,
+	extractLightsProfileSettings,
 	hydrateLooksProfileValues,
 	normalizeProfileSlots,
 	BACKGROUND_PROFILE_SLOT_COUNT,
@@ -312,6 +313,31 @@ function normalizeColorSourceMode(
 		return value;
 	if (value === 'background') return 'image';
 	return fallback;
+}
+
+function normalizeStageFxColorMode(
+	value: unknown,
+	fallback: WallpaperStore['stageLightsColorMode']
+): WallpaperStore['stageLightsColorMode'] {
+	if (
+		value === 'solid' ||
+		value === 'gradient' ||
+		value === 'rainbow' ||
+		value === 'visible-rotate' ||
+		value === 'complete-rotate'
+	) {
+		return value;
+	}
+	return fallback;
+}
+
+function normalizeColorArray(value: unknown, fallback: string[]): string[] {
+	if (!Array.isArray(value)) return [...fallback];
+	const colors = value.filter(
+		(color): color is string =>
+			typeof color === 'string' && color.length > 0
+	);
+	return colors.length > 0 ? colors : [...fallback];
 }
 
 function normalizeSpectrumRotationDrive(
@@ -1549,10 +1575,34 @@ export function migrateWallpaperStore(
 			state.stageLightsColorSource,
 			DEFAULT_STATE.stageLightsColorSource
 		),
+		stageLightsColorMode: normalizeStageFxColorMode(
+			state.stageLightsColorMode,
+			DEFAULT_STATE.stageLightsColorMode
+		),
 		stageLightsColor:
 			typeof state.stageLightsColor === 'string'
 				? state.stageLightsColor
 				: DEFAULT_STATE.stageLightsColor,
+		stageLightsSecondaryColor:
+			typeof state.stageLightsSecondaryColor === 'string'
+				? state.stageLightsSecondaryColor
+				: DEFAULT_STATE.stageLightsSecondaryColor,
+		stageLightsRainbowColors: normalizeColorArray(
+			state.stageLightsRainbowColors,
+			DEFAULT_STATE.stageLightsRainbowColors
+		),
+		stageLightsManualGlow:
+			typeof state.stageLightsManualGlow === 'boolean'
+				? state.stageLightsManualGlow
+				: DEFAULT_STATE.stageLightsManualGlow,
+		stageLightsGlowStrength: finiteOrDefault(
+			state.stageLightsGlowStrength,
+			DEFAULT_STATE.stageLightsGlowStrength
+		),
+		stageLightsGlowSize: finiteOrDefault(
+			state.stageLightsGlowSize,
+			DEFAULT_STATE.stageLightsGlowSize
+		),
 		stageLightsAudioReactive:
 			typeof state.stageLightsAudioReactive === 'boolean'
 				? state.stageLightsAudioReactive
@@ -1625,10 +1675,34 @@ export function migrateWallpaperStore(
 			state.flashLightColorSource,
 			DEFAULT_STATE.flashLightColorSource
 		),
+		flashLightColorMode: normalizeStageFxColorMode(
+			state.flashLightColorMode,
+			DEFAULT_STATE.flashLightColorMode
+		),
 		flashLightColor:
 			typeof state.flashLightColor === 'string'
 				? state.flashLightColor
 				: DEFAULT_STATE.flashLightColor,
+		flashLightSecondaryColor:
+			typeof state.flashLightSecondaryColor === 'string'
+				? state.flashLightSecondaryColor
+				: DEFAULT_STATE.flashLightSecondaryColor,
+		flashLightRainbowColors: normalizeColorArray(
+			state.flashLightRainbowColors,
+			DEFAULT_STATE.flashLightRainbowColors
+		),
+		flashLightManualGlow:
+			typeof state.flashLightManualGlow === 'boolean'
+				? state.flashLightManualGlow
+				: DEFAULT_STATE.flashLightManualGlow,
+		flashLightGlowStrength: finiteOrDefault(
+			state.flashLightGlowStrength,
+			DEFAULT_STATE.flashLightGlowStrength
+		),
+		flashLightGlowSize: finiteOrDefault(
+			state.flashLightGlowSize,
+			DEFAULT_STATE.flashLightGlowSize
+		),
 		flashLightSoftness: finiteOrDefault(
 			state.flashLightSoftness,
 			DEFAULT_STATE.flashLightSoftness
@@ -3700,6 +3774,42 @@ export function migrateWallpaperStore(
 				slideshowTransitionAnchor?: unknown;
 			}
 		).slideshowTransitionAnchor;
+	}
+
+	if (fromVersion < 150) {
+		// Lights snapshots predate the shared colour modes and authored glow.
+		// Hydrate every stored copy, not only the live state, so applying an old
+		// slot/per-image/global capture cannot write the new keys back as
+		// `undefined` or inherit unrelated values from the current image.
+		const liveLights = extractLightsProfileSettings(migratedState);
+		const hydrateLights = <T extends Record<string, unknown>>(values: T) =>
+			({ ...liveLights, ...values }) as typeof liveLights & T;
+		migratedState.lightsProfileSlots = migratedState.lightsProfileSlots.map(
+			slot => ({
+				...slot,
+				values: slot.values ? hydrateLights(slot.values) : null
+			})
+		);
+		migratedState.backgroundImages = migratedState.backgroundImages.map(
+			image => ({
+				...image,
+				lightsOverride: image.lightsOverride
+					? hydrateLights(image.lightsOverride)
+					: null
+			})
+		);
+		migratedState.globalCompositionSlots = (
+			migratedState.globalCompositionSlots ??
+			createDefaultGlobalCompositionSlots()
+		).map(slot => ({
+			...slot,
+			values: slot.values
+				? {
+						...slot.values,
+						lights: hydrateLights(slot.values.lights)
+					}
+				: null
+		}));
 	}
 
 	return normalizeSpectrumSettings(migratedState) as WallpaperStore;

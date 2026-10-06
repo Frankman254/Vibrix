@@ -1053,7 +1053,15 @@ export type WallpaperStore = WallpaperState & {
 	setStageLightsColorSource: (
 		v: import('@/features/stageFx/stageFxConfig').StageLightsColorSource
 	) => void;
+	setStageLightsColorMode: (
+		v: import('@/features/stageFx/stageFxConfig').StageFxColorMode
+	) => void;
 	setStageLightsColor: (v: string) => void;
+	setStageLightsSecondaryColor: (v: string) => void;
+	setStageLightsRainbowColors: (v: string[]) => void;
+	setStageLightsManualGlow: (v: boolean) => void;
+	setStageLightsGlowStrength: (v: number) => void;
+	setStageLightsGlowSize: (v: number) => void;
 	setStageLightsAudioReactive: (v: boolean) => void;
 	setStageLightsAudioChannel: (
 		v: import('@/features/stageFx/stageFxConfig').FxAudioChannel
@@ -1088,7 +1096,15 @@ export type WallpaperStore = WallpaperState & {
 	setFlashLightColorSource: (
 		v: import('@/features/stageFx/stageFxConfig').StageLightsColorSource
 	) => void;
+	setFlashLightColorMode: (
+		v: import('@/features/stageFx/stageFxConfig').StageFxColorMode
+	) => void;
 	setFlashLightColor: (v: string) => void;
+	setFlashLightSecondaryColor: (v: string) => void;
+	setFlashLightRainbowColors: (v: string[]) => void;
+	setFlashLightManualGlow: (v: boolean) => void;
+	setFlashLightGlowStrength: (v: number) => void;
+	setFlashLightGlowSize: (v: number) => void;
 	setFlashLightSoftness: (v: number) => void;
 	setFlashLightBrightness: (v: number) => void;
 	setFlashLightDecay: (v: number) => void;

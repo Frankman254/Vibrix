@@ -8,11 +8,9 @@ import type {
 	StageLightsMovementMode,
 	StageLightsOrigin
 } from '@/features/stageFx/stageFxConfig';
-import {
-	ColorField,
-	MotionSlider as Slider
-} from '@/editor/MotionSharedControls';
+import { MotionSlider as Slider } from '@/editor/MotionSharedControls';
 import { FxBandThresholdControls } from './FxBandThresholdControls';
+import { StageFxColorControls } from './StageFxColorControls';
 import { formatDecimal, formatInteger } from '@/editor/motionTabUtils';
 
 export function StageLightsSection() {
@@ -29,7 +27,13 @@ export function StageLightsSection() {
 			speed: state.stageLightsSpeed,
 			fixedMotion: state.stageLightsFixedMotion,
 			colorSource: state.stageLightsColorSource,
+			colorMode: state.stageLightsColorMode,
 			color: state.stageLightsColor,
+			secondaryColor: state.stageLightsSecondaryColor,
+			rainbowColors: state.stageLightsRainbowColors,
+			manualGlow: state.stageLightsManualGlow,
+			glowStrength: state.stageLightsGlowStrength,
+			glowSize: state.stageLightsGlowSize,
 			audioReactive: state.stageLightsAudioReactive,
 			audioChannel: state.stageLightsAudioChannel,
 			audioAmount: state.stageLightsAudioAmount,
@@ -59,7 +63,13 @@ export function StageLightsSection() {
 			speed: state.setStageLightsSpeed,
 			fixedMotion: state.setStageLightsFixedMotion,
 			colorSource: state.setStageLightsColorSource,
+			colorMode: state.setStageLightsColorMode,
 			color: state.setStageLightsColor,
+			secondaryColor: state.setStageLightsSecondaryColor,
+			rainbowColors: state.setStageLightsRainbowColors,
+			manualGlow: state.setStageLightsManualGlow,
+			glowStrength: state.setStageLightsGlowStrength,
+			glowSize: state.setStageLightsGlowSize,
 			audioReactive: state.setStageLightsAudioReactive,
 			audioChannel: state.setStageLightsAudioChannel,
 			audioAmount: state.setStageLightsAudioAmount,
@@ -142,6 +152,25 @@ export function StageLightsSection() {
 							full
 						/>
 					</div>
+					<StageFxColorControls
+						kind="stage"
+						colorSource={s.colorSource}
+						colorMode={s.colorMode}
+						primaryColor={s.color}
+						secondaryColor={s.secondaryColor}
+						rainbowColors={s.rainbowColors}
+						manualGlow={s.manualGlow}
+						glowStrength={s.glowStrength}
+						glowSize={s.glowSize}
+						onColorSourceChange={set.colorSource}
+						onColorModeChange={set.colorMode}
+						onPrimaryColorChange={set.color}
+						onSecondaryColorChange={set.secondaryColor}
+						onRainbowColorsChange={set.rainbowColors}
+						onManualGlowChange={set.manualGlow}
+						onGlowStrengthChange={set.glowStrength}
+						onGlowSizeChange={set.glowSize}
+					/>
 
 					{s.advanced ? (
 						<CollapsibleSection
@@ -425,33 +454,6 @@ export function StageLightsSection() {
 											onChange={set.bandThreshold}
 										/>
 									</>
-								) : null}
-								<SegmentedControl<'manual' | 'theme' | 'image'>
-									value={s.colorSource}
-									onChange={set.colorSource}
-									options={[
-										{
-											value: 'theme',
-											label: t.sfx_color_theme
-										},
-										{
-											value: 'image',
-											label: t.sfx_color_image
-										},
-										{
-											value: 'manual',
-											label: t.sfx_color_manual
-										}
-									]}
-									size="sm"
-									full
-								/>
-								{s.colorSource === 'manual' ? (
-									<ColorField
-										label={t.sfx_beam_color}
-										value={s.color}
-										onChange={set.color}
-									/>
 								) : null}
 								<SegmentedControl<
 									'lighter' | 'screen' | 'source-over'

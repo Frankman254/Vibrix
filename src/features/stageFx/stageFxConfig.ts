@@ -17,6 +17,12 @@ export type SpectrumRotationChannel = 'kick' | 'bass' | 'full' | 'selected';
 export type RotationDirection = 'cw' | 'ccw';
 
 export type StageLightsColorSource = 'manual' | 'theme' | 'image';
+export type StageFxColorMode =
+	| 'solid'
+	| 'gradient'
+	| 'rainbow'
+	| 'visible-rotate'
+	| 'complete-rotate';
 export type StageLightsBlendMode = 'lighter' | 'screen' | 'source-over';
 export type StageLightsOrigin =
 	| 'top'

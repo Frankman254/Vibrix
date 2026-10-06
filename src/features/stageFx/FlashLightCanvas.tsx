@@ -82,10 +82,14 @@ export default function FlashLightCanvas({ zIndex = 90 }: { zIndex?: number }) {
 				runtime.lastLevel = 0;
 			}
 
-			const resolvedFlashColor = resolveFlashLightColor(state, {
-				background: paletteRef.current,
-				theme: themePaletteRef.current
-			});
+			const resolvedFlashColor = resolveFlashLightColor(
+				state,
+				{
+					background: paletteRef.current,
+					theme: themePaletteRef.current
+				},
+				runtime.colorPhase
+			);
 
 			// Expose drive + color for Flash Edge consumers in other layers.
 			updateFlashEdgeDrive(runtime.drive, resolvedFlashColor);
