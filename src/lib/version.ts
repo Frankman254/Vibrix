@@ -198,4 +198,8 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // on the mark. The persisted start/center/end selector is removed.
 // v150: Stage Lights and Flash Light gain the shared complete colour modes and
 // an explicit manual bloom pass; Lights slots and per-image captures include it.
-export const STORE_PERSIST_VERSION = 150;
+// v151: `offlineExportQualityId` — bitrate is its own control (low / medium /
+// original) now that a resolution preset means the monitor's geometry rather
+// than the video's quality. Seeded `original`, which is what every stored
+// project was already encoded at.
+export const STORE_PERSIST_VERSION = 151;

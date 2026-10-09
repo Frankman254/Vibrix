@@ -1311,6 +1311,14 @@ export const es: Record<TranslationKey, string> = {
 	offline_label_resolution: 'Resolución',
 	offline_resolution_auto: 'Auto',
 	offline_resolution_auto_hint: 'Igualando tu pantalla de {screen}.',
+	offline_resolution_geometry_hint:
+		'El preset es el lado corto; el ancho lo pone este monitor. Se exporta {size}.',
+	offline_label_quality: 'Calidad',
+	offline_quality_low: 'Baja',
+	offline_quality_medium: 'Media',
+	offline_quality_original: 'Original',
+	offline_quality_hint:
+		'Solo el bitrate. Archivo m\u00e1s peque\u00f1o y escritura m\u00e1s r\u00e1pida; el render tarda lo mismo, eso lo decide la resoluci\u00f3n.',
 	offline_label_render_quality: 'Calidad del render',
 	offline_render_quality_value: 'Máxima · editor en {mode}',
 	offline_render_quality_mismatch:

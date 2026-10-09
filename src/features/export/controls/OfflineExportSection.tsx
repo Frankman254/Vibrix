@@ -4,8 +4,10 @@ import type {
 } from '@/features/export/offlineExportTypes';
 import {
 	OFFLINE_EXPORT_FPS_OPTIONS,
+	OFFLINE_EXPORT_QUALITY_PRESETS,
 	OFFLINE_EXPORT_RESOLUTION_PRESETS,
 	type OfflineExportFps,
+	type OfflineExportQualityId,
 	type OfflineExportResolutionPresetId
 } from '@/features/export/offlineExportTypes';
 import type { OfflineVideoExportProgress } from '@/features/export/video/offlineVideoFormat';
@@ -41,6 +43,10 @@ type OfflineExportSectionProps = {
 	onResolutionAutoChange: (auto: boolean) => void;
 	/** The display's real pixels (`2560×1440`), or '' when unknown. */
 	screenLabel: string;
+	/** What the encoder is negotiated for (`3440×1440`). */
+	dimensionsLabel: string;
+	qualityId: OfflineExportQualityId;
+	onQualityChange: (id: OfflineExportQualityId) => void;
 	/** The EDITOR's performance mode; the render always uses `high`. */
 	performanceMode: PerformanceMode;
 	fps: OfflineExportFps;
@@ -90,6 +96,9 @@ export default function OfflineExportSection({
 	resolutionAuto,
 	onResolutionAutoChange,
 	screenLabel,
+	dimensionsLabel,
+	qualityId,
+	onQualityChange,
 	performanceMode,
 	fps,
 	onFpsChange,
@@ -183,6 +192,41 @@ export default function OfflineExportSection({
 						])
 					)}
 				/>
+				{/* A preset names the short side; the width comes from this
+				    monitor's own shape, so an ultrawide gets 3440×1440 rather
+				    than a 16:9 crop of it. Spelled out because the number is
+				    the one the encoder was negotiated for. */}
+				<span className="text-[11px] text-gray-500">
+					{t.offline_resolution_geometry_hint.replace(
+						'{size}',
+						dimensionsLabel
+					)}
+				</span>
+			</div>
+
+			<div className="flex flex-col gap-1">
+				<span
+					className="text-xs"
+					style={{ color: 'var(--editor-accent-soft)' }}
+				>
+					{t.offline_label_quality}
+				</span>
+				<EnumButtons<OfflineExportQualityId>
+					options={OFFLINE_EXPORT_QUALITY_PRESETS.map(
+						preset => preset.id
+					)}
+					value={qualityId}
+					onChange={onQualityChange}
+					disabled={busy}
+					labels={{
+						low: t.offline_quality_low,
+						medium: t.offline_quality_medium,
+						original: t.offline_quality_original
+					}}
+				/>
+				<span className="text-[11px] text-gray-500">
+					{t.offline_quality_hint}
+				</span>
 			</div>
 
 			<div className="flex flex-col gap-1">

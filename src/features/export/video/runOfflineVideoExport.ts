@@ -13,14 +13,17 @@
  * song of encoded audio waiting for video.
  */
 import { formatTrackTitle } from '@/lib/audio/trackTitle';
-import { getCurrentViewportResolution } from '@/features/layout/viewportMetrics';
+import { readExportViewport } from '@/features/export/exportViewport';
 import {
 	collectBundleFontSpecs,
 	loadTrackFonts
 } from '@/lib/canvasText/trackFonts';
 import { pinRenderClock } from '@/lib/visual/renderClock';
 import { buildOfflineContext } from '../buildRenderContext';
-import { getRenderStateSnapshot } from '../getRenderStateSnapshot';
+import {
+	getRenderStateSnapshot,
+	type RenderStateSnapshot
+} from '../getRenderStateSnapshot';
 import { createOfflineAudioAnalysisSourceFromReader } from '../offlineAudioAnalysis';
 import type { OfflineAudioTrack } from './offlineAudioTrack';
 import { renderFrameAt } from '../renderFrame';
@@ -63,6 +66,14 @@ export type RunOfflineVideoExportOptions = {
 	trackTitle: string;
 	fftSize: number;
 	audioSmoothing: number;
+	/**
+	 * The project, captured the moment the export was asked for. Passed in
+	 * rather than read here because everything between the click and this
+	 * function — the save picker, the storage sweep, the audio decode — takes
+	 * seconds, and an editor change landing in that window would end up in the
+	 * video. Omitted only by callers with no live store (tests).
+	 */
+	frozen?: RenderStateSnapshot;
 	/**
 	 * Subsystems owned by the presentation layer (the background renderer
 	 * lives under `components/`), injected so this domain never imports it.
@@ -130,7 +141,7 @@ export async function runOfflineVideoExport(
 		registerRenderSubsystem(subsystem);
 	}
 
-	const frozen = getRenderStateSnapshot();
+	const frozen = options.frozen ?? getRenderStateSnapshot();
 	const segments = await prepareSlideshowSegments(
 		buildSlideshowSegments(frozen.state, durationMs, fps),
 		frozen.state
@@ -170,10 +181,7 @@ export async function runOfflineVideoExport(
 	});
 
 	const cameraFx = createOfflineCameraFx(
-		Math.min(
-			getCurrentViewportResolution().width,
-			getCurrentViewportResolution().height
-		)
+		Math.min(readExportViewport().width, readExportViewport().height)
 	);
 
 	try {

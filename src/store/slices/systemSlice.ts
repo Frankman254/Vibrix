@@ -136,6 +136,7 @@ export function createSystemSlice(
 		setOfflineExportResolutionAuto: v =>
 			set({ offlineExportResolutionAuto: v }),
 		setOfflineExportFps: v => set({ offlineExportFps: v }),
+		setOfflineExportQualityId: v => set({ offlineExportQualityId: v }),
 		setControlPanelAnchor: v =>
 			set({
 				controlPanelAnchor: v,

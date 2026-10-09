@@ -263,6 +263,9 @@ export default function ExportTabBody() {
 				resolutionAuto={videoExport.resolutionAuto}
 				onResolutionAutoChange={videoExport.setResolutionAuto}
 				screenLabel={videoExport.screenLabel}
+				dimensionsLabel={videoExport.dimensionsLabel}
+				qualityId={videoExport.qualityId}
+				onQualityChange={videoExport.setQualityId}
 				performanceMode={videoExport.performanceMode}
 				fps={videoExport.fps}
 				onFpsChange={videoExport.setFps}

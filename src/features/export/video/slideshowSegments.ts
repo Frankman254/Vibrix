@@ -11,7 +11,7 @@ import {
 	loadImageDimensions,
 	resolveSlideshowImageIdAtTime
 } from '@/features/background';
-import { getCurrentViewportResolution } from '@/features/layout/viewportMetrics';
+import { readExportViewport } from '@/features/export/exportViewport';
 import {
 	getBackgroundPalette,
 	resolvePaletteSourceUrl,
@@ -122,7 +122,7 @@ export async function prepareSlideshowSegments(
 	segments: readonly SlideshowSegment[],
 	capturedState: Readonly<WallpaperState>
 ): Promise<PreparedSlideshowSegment[]> {
-	const viewport = getCurrentViewportResolution();
+	const viewport = readExportViewport();
 	const prepared: PreparedSlideshowSegment[] = [];
 	for (const segment of segments) {
 		let state = segment.state;

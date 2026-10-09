@@ -3149,6 +3149,12 @@ export function migrateWallpaperStore(
 		migratedState.offlineExportResolutionAuto ??=
 			(migratedState.offlineExportResolutionId ?? '1080p') === '1080p';
 	}
+	if (fromVersion < 151) {
+		// Quality used to be implicit in the resolution. Every stored project
+		// was encoded at the full table, so that is the only value that keeps
+		// their next export looking like their last one.
+		migratedState.offlineExportQualityId ??= 'original';
+	}
 	if (fromVersion < 119) {
 		// The single Looks stack becomes the first effect layer. Its values are
 		// still the legacy `filter*` keys — the entry is the snapshot — so the

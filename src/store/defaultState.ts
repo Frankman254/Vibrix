@@ -117,6 +117,7 @@ const BASE_STATE: Omit<
 	showAutoZoomDebug: false,
 	offlineExportResolutionId: '1080p',
 	offlineExportResolutionAuto: true,
+	offlineExportQualityId: 'original',
 	offlineExportFps: 30,
 	showSpectrumDiagnosticsHud: false,
 	showLogoDiagnosticsHud: false,

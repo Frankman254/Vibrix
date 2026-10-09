@@ -15,6 +15,24 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+- **La resolución es la geometría del monitor, no la calidad.** Un preset nombra
+  el lado corto y el ancho lo pone la pantalla: en un ultrawide de 34" `1440p`
+  significa 3440×1440, no un recorte 16:9. El cuadro entero se reescala si un
+  lado pasa del límite que aceptan los codificadores (4096), nunca se recorta,
+  y la sección de Export dice qué tamaño se va a codificar.
+- **La calidad es un control aparte: baja / media / original.** Solo toca el
+  bitrate — fichero más pequeño y escritura más rápida — y se dice en claro que
+  el render tarda lo mismo, porque dibujar los fotogramas lo decide la
+  resolución. `original` es la tabla completa de siempre, así que un proyecto
+  guardado exporta exactamente igual que antes.
+  `STORE_PERSIST_VERSION` is at **151**.
+- **El render congela todo al empezar.** El estado se leía después del selector
+  de guardado, del barrido de OPFS y de la decodificación del audio: segundos
+  de reloj en los que mover un slider todavía entraba en el vídeo. Ahora se
+  captura en la primera línea del export, y el viewport se fija con él
+  (`features/export/exportViewport.ts`), así que redimensionar la ventana a
+  mitad de render ya no cambia la forma de los fotogramas.
+
 - **El render ya aplica la marca.** Cambiar de imagen dispara tres efectos en
   el editor —el patch de escena/slots, el reencuadre de Keep Covered y
   re-aplicar «la marca sigue la imagen»—; el export offline replicaba los dos

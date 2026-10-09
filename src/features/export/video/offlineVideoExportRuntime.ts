@@ -48,6 +48,11 @@ import {
 	type StorageEstimateSnapshot
 } from '@/lib/db/storageDiagnostics';
 import { runOfflineVideoExport } from '@/features/export/video/runOfflineVideoExport';
+import { getRenderStateSnapshot } from '@/features/export/getRenderStateSnapshot';
+import {
+	beginExportViewport,
+	endExportViewport
+} from '@/features/export/exportViewport';
 
 type SavePicker = (options: {
 	suggestedName: string;
@@ -191,6 +196,14 @@ export async function startOfflineVideoExport({
 		return;
 	}
 	const { format } = plan;
+	// Everything the render will work with, read HERE — before the save picker,
+	// the OPFS sweep and the audio decode, which together are seconds of wall
+	// clock the user can spend back in the editor. From this line on, touching
+	// a slider changes the editor and nothing else: the video is already
+	// decided. The viewport is part of it (the window can be resized mid
+	// render, and the frames must not change shape half way through).
+	const frozen = getRenderStateSnapshot();
+	beginExportViewport();
 
 	const fileName = buildDescriptiveExportFileName({
 		kind: 'recording',
@@ -234,7 +247,10 @@ export async function startOfflineVideoExport({
 				)
 			};
 		} catch (pickerError) {
-			if (isAbortError(pickerError)) return;
+			if (isAbortError(pickerError)) {
+				endExportViewport();
+				return;
+			}
 			// No usable picker (permissions, iframe): disk via OPFS below.
 		}
 	}
@@ -311,6 +327,7 @@ export async function startOfflineVideoExport({
 		}
 		const result = await runOfflineVideoExport({
 			audioTrack,
+			frozen,
 			plan,
 			sink,
 			width,
@@ -385,6 +402,7 @@ export async function startOfflineVideoExport({
 		}
 	} finally {
 		audioTrack?.dispose();
+		endExportViewport();
 		abortController = null;
 	}
 }

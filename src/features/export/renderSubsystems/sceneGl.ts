@@ -15,7 +15,7 @@ import {
 	resolveModeDrivenColors
 } from '@/lib/backgroundPalette';
 import { buildSceneLayers } from '@/lib/layers';
-import { getCurrentViewportResolution } from '@/features/layout/viewportMetrics';
+import { readExportViewport } from '@/features/export/exportViewport';
 import {
 	applyParticleUniforms,
 	createParticleBuffers,
@@ -145,7 +145,7 @@ function readLiveParticleDpr(): number {
 }
 
 function readViewportMin(): number {
-	const viewport = getCurrentViewportResolution();
+	const viewport = readExportViewport();
 	return Math.max(1, Math.min(viewport.width, viewport.height));
 }
 
@@ -255,10 +255,7 @@ function createParticleLayerSubsystem(
 		id,
 		async prepare() {
 			viewportMin = readViewportMin();
-			liveViewportHeight = Math.max(
-				1,
-				getCurrentViewportResolution().height
-			);
+			liveViewportHeight = Math.max(1, readExportViewport().height);
 			liveDpr = readLiveParticleDpr();
 		},
 		render(ctx: RenderFrameContext) {

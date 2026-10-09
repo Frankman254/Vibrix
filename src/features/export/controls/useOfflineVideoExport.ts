@@ -3,9 +3,10 @@ import { useShallow } from 'zustand/react/shallow';
 import { useWallpaperStore } from '@/store/wallpaperStore';
 import type { OfflineExportAudioAssetRef } from '@/features/export/offlineExportPlanner';
 import {
-	OFFLINE_EXPORT_RESOLUTION_PRESETS,
+	qualityScaleFor,
 	readScreenMetrics,
 	resolutionPresetForScreen,
+	resolveExportDimensions,
 	type ScreenMetrics
 } from '@/features/export/offlineExportTypes';
 import type { ExportNamingState } from '@/features/export/exportFileUtils';
@@ -56,22 +57,26 @@ export function useOfflineVideoExport({
 		storedResolutionId,
 		resolutionAuto,
 		fps,
+		qualityId,
 		performanceMode,
 		setResolutionId,
 		setResolutionAuto,
-		setFps
+		setFps,
+		setQualityId
 	} = useWallpaperStore(
 		useShallow(state => ({
 			storedResolutionId: state.offlineExportResolutionId,
 			resolutionAuto: state.offlineExportResolutionAuto,
 			fps: state.offlineExportFps,
+			qualityId: state.offlineExportQualityId,
 			// Reported, not used: the render forces `high`, and `high` lifts the
 			// ceilings that clamp the particle sliders — so an editor below it
 			// is previewing something the video will not reproduce.
 			performanceMode: state.performanceMode,
 			setResolutionId: state.setOfflineExportResolutionId,
 			setResolutionAuto: state.setOfflineExportResolutionAuto,
-			setFps: state.setOfflineExportFps
+			setFps: state.setOfflineExportFps,
+			setQualityId: state.setOfflineExportQualityId
 		}))
 	);
 	// Re-read on resize: `screen.*` reports the display the window is ON, so
@@ -104,10 +109,10 @@ export function useOfflineVideoExport({
 		getOfflineVideoExportSnapshot
 	);
 
-	const resolution =
-		OFFLINE_EXPORT_RESOLUTION_PRESETS.find(
-			preset => preset.id === resolutionId
-		) ?? OFFLINE_EXPORT_RESOLUTION_PRESETS[0];
+	// The preset names the short side; the long one comes from the display's
+	// own aspect, because a wallpaper's target is this monitor full screen.
+	const resolution = resolveExportDimensions(resolutionId, screen);
+	const qualityScale = qualityScaleFor(qualityId);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -131,7 +136,8 @@ export function useOfflineVideoExport({
 		void negotiateOfflineVideoEncoder(webCodecsEncoderProbe, {
 			width: resolution.width,
 			height: resolution.height,
-			fps
+			fps,
+			qualityScale
 		})
 			.catch(() => null)
 			.then(next => {
@@ -142,7 +148,7 @@ export function useOfflineVideoExport({
 		return () => {
 			cancelled = true;
 		};
-	}, [resolution.width, resolution.height, fps]);
+	}, [resolution.width, resolution.height, fps, qualityScale]);
 
 	const busy = isOfflineVideoExportBusyPhase(run.progress.phase);
 
@@ -170,6 +176,10 @@ export function useOfflineVideoExport({
 		setResolutionId,
 		resolutionAuto,
 		setResolutionAuto,
+		qualityId,
+		setQualityId,
+		/** `3440\u00d71440`, what the encoder was actually negotiated for. */
+		dimensionsLabel: `${resolution.width}\u00d7${resolution.height}`,
 		/** `2560\u00d71440`, the display's real pixels, for the Auto hint. */
 		screenLabel: screen
 			? `${Math.round(screen.width * (screen.devicePixelRatio || 1))}\u00d7${Math.round(

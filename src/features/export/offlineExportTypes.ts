@@ -87,6 +87,82 @@ export function resolutionPresetForScreen(
 	return best ?? OFFLINE_EXPORT_RESOLUTION_PRESETS[0]!.id;
 }
 
+/**
+ * Encoder dimensions for a preset on THIS display.
+ *
+ * The preset names the short side and nothing else. A wallpaper's target is a
+ * monitor running it full screen, so the shape of the file is the shape of that
+ * monitor: on a 34" ultrawide `1440p` means 3440×1440, not a 16:9 crop of it.
+ * Quality is a separate control (`OFFLINE_EXPORT_QUALITY_PRESETS`) — resolution
+ * is geometry, not how many bits each frame gets.
+ *
+ * Both sides are rounded to even numbers because H.264 chroma is subsampled and
+ * an odd dimension is rejected outright, and the whole frame is scaled down
+ * when a side would pass what encoders accept (an ultrawide at 2160 asks for
+ * 5160 across, which no hardware encoder here will take).
+ */
+export const MAX_EXPORT_DIMENSION = 4096;
+
+function evenRound(value: number): number {
+	return Math.max(2, Math.round(value / 2) * 2);
+}
+
+export function resolveExportDimensions(
+	presetId: OfflineExportResolutionPresetId,
+	metrics: ScreenMetrics | null
+): { width: number; height: number } {
+	const preset =
+		OFFLINE_EXPORT_RESOLUTION_PRESETS.find(item => item.id === presetId) ??
+		OFFLINE_EXPORT_RESOLUTION_PRESETS[1]!;
+	const aspect =
+		metrics && metrics.width > 0 && metrics.height > 0
+			? metrics.width / metrics.height
+			: preset.width / preset.height;
+	let height = preset.height;
+	let width = evenRound(height * aspect);
+	const overflow = Math.max(
+		width / MAX_EXPORT_DIMENSION,
+		height / MAX_EXPORT_DIMENSION
+	);
+	if (overflow > 1) {
+		width = evenRound(width / overflow);
+		height = evenRound(height / overflow);
+	}
+	return { width, height: evenRound(height) };
+}
+
+/**
+ * How many bits per frame, independent of how many pixels. The top rung is the
+ * quality table in `offlineVideoFormat` exactly as written; the rungs below it
+ * buy back file size and write time on content the eye cannot tell apart at
+ * normal viewing distance. It does NOT shorten the render: drawing the frames
+ * is the slow part and that cost belongs to the resolution.
+ */
+export type OfflineExportQualityId = 'low' | 'medium' | 'original';
+
+export type OfflineExportQualityPreset = {
+	id: OfflineExportQualityId;
+	/** Multiplier on the recommended bitrate for the size being exported. */
+	scale: number;
+};
+
+export const OFFLINE_EXPORT_QUALITY_PRESETS: OfflineExportQualityPreset[] = [
+	// 1440p60: ~19 Mbps. Visible softening on dense particle fields, but a
+	// third of the file — the rung for sending somebody the video.
+	{ id: 'low', scale: 0.28 },
+	// 1440p60: ~33 Mbps, comfortably above the ~24 Mbps where neon edges and
+	// particles started to smear in testing. Half the bytes of the top rung.
+	{ id: 'medium', scale: 0.5 },
+	{ id: 'original', scale: 1 }
+];
+
+export function qualityScaleFor(id: OfflineExportQualityId): number {
+	return (
+		OFFLINE_EXPORT_QUALITY_PRESETS.find(preset => preset.id === id)
+			?.scale ?? 1
+	);
+}
+
 export type OfflineExportQualityMode = 'draft' | 'balanced' | 'production';
 export type OfflineExportContainerTarget = 'mp4-friendly' | 'webm';
 export type OfflineExportReadinessStatus = 'ready' | 'warning' | 'blocked';

@@ -50,7 +50,13 @@ export type VideoEncoderCandidate = {
 	hardwareAcceleration: HardwareAccelerationHint;
 };
 
-export type VideoProbeSize = { width: number; height: number; fps: number };
+export type VideoProbeSize = {
+	width: number;
+	height: number;
+	fps: number;
+	/** The chosen quality rung; 1 (or omitted) is the full quality table. */
+	qualityScale?: number;
+};
 
 export type OfflineEncoderProbe = {
 	canEncodeVideo(
@@ -163,8 +169,11 @@ const MIN_BITRATE = 8_000_000;
 
 function bitrateLadder(size: VideoProbeSize): number[] {
 	const target = recommendedVideoBitrateFor(size);
+	// The floor is a guard against a degenerate ladder, not a quality policy:
+	// a deliberately low rung may legitimately sit under it.
+	const floor = Math.min(MIN_BITRATE, target);
 	const rungs = BITRATE_SCALES.map(scale =>
-		Math.max(MIN_BITRATE, Math.round((target * scale) / 100_000) * 100_000)
+		Math.max(floor, Math.round((target * scale) / 100_000) * 100_000)
 	);
 	return [...new Set(rungs)];
 }
@@ -179,11 +188,13 @@ export function buildVideoEncoderCandidates(options: {
 	width: number;
 	height: number;
 	fps: number;
+	qualityScale?: number;
 }): VideoEncoderCandidate[] {
 	const size = {
 		width: options.width,
 		height: options.height,
-		fps: options.fps
+		fps: options.fps,
+		qualityScale: options.qualityScale
 	};
 	const bitrates = bitrateLadder(size);
 	const candidates: VideoEncoderCandidate[] = [];
@@ -242,6 +253,7 @@ export async function negotiateOfflineVideoEncoder(
 		width: number;
 		height: number;
 		fps: number;
+		qualityScale?: number;
 		platform?: RuntimePlatform;
 		audio?: { sampleRate: number; numberOfChannels: number };
 	}
@@ -251,7 +263,8 @@ export async function negotiateOfflineVideoEncoder(
 	const size = {
 		width: options.width,
 		height: options.height,
-		fps: options.fps
+		fps: options.fps,
+		qualityScale: options.qualityScale
 	};
 	// One audio probe per container, not per video candidate: the AAC answer
 	// does not change because the video level did.

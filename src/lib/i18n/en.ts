@@ -1304,6 +1304,14 @@ export const en = {
 	offline_label_resolution: 'Resolution',
 	offline_resolution_auto: 'Auto',
 	offline_resolution_auto_hint: 'Matching your {screen} display.',
+	offline_resolution_geometry_hint:
+		'The preset is the short side; the width follows this monitor. Exporting {size}.',
+	offline_label_quality: 'Quality',
+	offline_quality_low: 'Low',
+	offline_quality_medium: 'Medium',
+	offline_quality_original: 'Original',
+	offline_quality_hint:
+		'Bitrate only. Smaller file and a faster write; the render itself takes the same time, which is set by the resolution.',
 	offline_label_render_quality: 'Render quality',
 	offline_render_quality_value: 'Maximum · editor on {mode}',
 	offline_render_quality_mismatch:

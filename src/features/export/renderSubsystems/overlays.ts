@@ -19,7 +19,7 @@ import {
 import { resolveImagePostProcessQuality } from '@/lib/visual/performanceQuality';
 import { createAudioChannelSelectionState } from '@/lib/audio/audioChannels';
 import { createAudioEnvelope } from '@/utils/audioEnvelope';
-import { getCurrentViewportResolution } from '@/features/layout/viewportMetrics';
+import { readExportViewport } from '@/features/export/exportViewport';
 import { buildOverlayLayers } from '@/lib/layers';
 import { resolveFilterStack } from '@/features/filterLooks/filterStack';
 import type { OverlayImageLayer } from '@/types/layers';
@@ -147,7 +147,7 @@ export function createOverlaysSubsystem(): RenderSubsystem {
 		async prepare(state: Readonly<WallpaperState>) {
 			images.clear();
 			filterAudio = freshFilterAudio();
-			liveViewport = getCurrentViewportResolution();
+			liveViewport = readExportViewport();
 			const layers = buildOverlayLayers(state).filter(isDrawableOverlay);
 			await Promise.all(
 				layers.map(async layer => {

@@ -606,7 +606,11 @@ export const LEGACY_TAB_KEYS: Record<string, (keyof WallpaperState)[]> = {
 		'quickActionsManualSurfaceOpacity'
 	],
 	overlays: [],
-	export: ['offlineExportResolutionId', 'offlineExportFps'],
+	export: [
+		'offlineExportResolutionId',
+		'offlineExportFps',
+		'offlineExportQualityId'
+	],
 	perf: ['performanceMode']
 };
 

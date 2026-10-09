@@ -10,7 +10,7 @@
  * same hand-off the live `FlashLightCanvas` makes every rAF.
  */
 import { getEditorThemePalette } from '@/lib/backgroundPalette';
-import { getCurrentViewportResolution } from '@/features/layout/viewportMetrics';
+import { readExportViewport } from '@/features/export/exportViewport';
 import {
 	createFlashLightRuntime,
 	createStageLightsRuntime,
@@ -66,7 +66,7 @@ function createScratch() {
 }
 
 function readViewportMin(): number {
-	const viewport = getCurrentViewportResolution();
+	const viewport = readExportViewport();
 	return Math.min(viewport.width, viewport.height);
 }
 

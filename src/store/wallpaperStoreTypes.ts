@@ -23,6 +23,7 @@ import type {
 	LogoBandMode,
 	NowPlayingTextTreatment,
 	OfflineExportFps,
+	OfflineExportQualityId,
 	OfflineExportResolutionPresetId,
 	LogoProfileSettings,
 	ParticleColorMode,
@@ -933,6 +934,7 @@ export type WallpaperStore = WallpaperState & {
 	setSceneServiceBaseUrl: (v: string) => void;
 	setSceneServiceModel: (v: string) => void;
 	setOfflineExportResolutionId: (v: OfflineExportResolutionPresetId) => void;
+	setOfflineExportQualityId: (v: OfflineExportQualityId) => void;
 	setOfflineExportResolutionAuto: (v: boolean) => void;
 	setOfflineExportFps: (v: OfflineExportFps) => void;
 	setControlPanelAnchor: (v: ControlPanelAnchor) => void;

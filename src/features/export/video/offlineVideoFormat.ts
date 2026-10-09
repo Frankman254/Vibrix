@@ -108,10 +108,21 @@ export function recommendedVideoBitrateFor(options: {
 	width: number;
 	height: number;
 	fps: number;
+	/**
+	 * The quality rung, 1 = the table above. Resolution decides how many
+	 * pixels; this decides how many bits those pixels get, and the two are
+	 * deliberately separate controls — a 1440p ultrawide wallpaper is still a
+	 * 1440p ultrawide wallpaper at half the bitrate.
+	 */
+	qualityScale?: number;
 }): number {
 	const pixelScale = (options.width * options.height) / (1920 * 1080);
 	const fpsScale = options.fps >= 120 ? 2 : options.fps >= 60 ? 1.5 : 1;
-	const bitrate = 28_000_000 * Math.pow(pixelScale, 0.8) * fpsScale;
+	const quality =
+		typeof options.qualityScale === 'number' && options.qualityScale > 0
+			? options.qualityScale
+			: 1;
+	const bitrate = 28_000_000 * Math.pow(pixelScale, 0.8) * fpsScale * quality;
 	return Math.round(bitrate / 100_000) * 100_000;
 }
 

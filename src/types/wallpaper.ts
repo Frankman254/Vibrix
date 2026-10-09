@@ -7,6 +7,11 @@ export type PerformanceMode = 'low' | 'medium' | 'high';
  *  persisted store can name them without importing a feature. */
 export type OfflineExportFps = 30 | 60 | 120;
 export type OfflineExportResolutionPresetId = '720p' | '1080p' | '1440p' | '4k';
+/**
+ * How many bits each frame gets, which is NOT how many pixels it has. The
+ * resolution preset decides the geometry; this decides the encode rate.
+ */
+export type OfflineExportQualityId = 'low' | 'medium' | 'original';
 export type UIMode = 'simple' | 'advanced';
 export type LogoVariantMode = 'vector' | 'pixel' | 'auto';
 export type ActiveTool =
@@ -2338,6 +2343,12 @@ export type WallpaperState = {
 	 */
 	offlineExportResolutionAuto: boolean;
 	offlineExportFps: OfflineExportFps;
+	/**
+	 * Encode quality, separate from the resolution. `original` is the full
+	 * quality table; the lower rungs trade bitrate for a smaller file and a
+	 * faster write, and do not change the frame geometry or the draw cost.
+	 */
+	offlineExportQualityId: OfflineExportQualityId;
 
 	// System
 	performanceMode: PerformanceMode;
