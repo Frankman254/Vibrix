@@ -181,6 +181,9 @@ export const es: Record<TranslationKey, string> = {
 	qa_pi_total_t: 'Captura todos los subsistemas de una vez',
 	qa_pi_no_active_image: 'Sin imagen activa',
 	qa_pi_saved_suffix: 'guardados',
+	qa_pi_camera_fx: 'Camera FX',
+	qa_pi_lights: 'Luces',
+	qa_pi_now_playing: 'Now Playing',
 	qa_pi_scene_locked:
 		'La escena "{name}" está activa — los overrides se ignoran',
 	qa_pi_capture_all: 'Capturar todo',
@@ -1308,6 +1311,10 @@ export const es: Record<TranslationKey, string> = {
 	offline_label_resolution: 'Resolución',
 	offline_resolution_auto: 'Auto',
 	offline_resolution_auto_hint: 'Igualando tu pantalla de {screen}.',
+	offline_label_render_quality: 'Calidad del render',
+	offline_render_quality_value: 'Máxima · editor en {mode}',
+	offline_render_quality_mismatch:
+		'Tu editor está recortado por debajo del render: el vídeo mostrará más brillo de partículas, puntos más grandes y más desenfoque que la vista previa. Pon el Modo de Rendimiento en Alto para ver lo que vas a exportar.',
 	offline_label_fps: 'Fotogramas por segundo',
 	offline_format_checking: 'Comprobando codificador...',
 	offline_encoder_title: 'Codificador',

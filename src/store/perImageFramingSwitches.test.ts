@@ -69,3 +69,55 @@ describe('per-image framing switches', () => {
 		expect(useWallpaperStore.getState().logoFollowImageFocus).toBe(true);
 	});
 });
+
+/**
+ * Turning the switch ON moves the logo at once. Turning it OFF used to do
+ * nothing at all, so the logo stayed on the mark and the switch read as dead —
+ * the position only came back when the user cycled to another image and
+ * returned, which is the moment the selection patch re-applies the composition
+ * that owns it.
+ */
+describe('turning "the mark follows the picture" off', () => {
+	beforeEach(seedImages);
+
+	it("puts the logo back where the image's own composition says", async () => {
+		const { extractLogoProfileSettings } =
+			await import('@/store/featureProfiles');
+		const authored = {
+			...extractLogoProfileSettings(useWallpaperStore.getState()),
+			logoPositionX: 0.42,
+			logoPositionY: -0.3
+		};
+		useWallpaperStore.setState(state => ({
+			backgroundImages: state.backgroundImages.map(img =>
+				img.assetId === 'img-1'
+					? { ...img, logoOverride: authored }
+					: img
+			)
+		}));
+		// Where the mark had parked it.
+		useWallpaperStore.setState({
+			logoPositionX: -0.9,
+			logoPositionY: 0.8,
+			logoFollowImageFocus: true
+		});
+
+		useWallpaperStore.getState().setLogoFollowImageFocus(false);
+
+		expect(useWallpaperStore.getState().logoPositionX).toBe(0.42);
+		expect(useWallpaperStore.getState().logoPositionY).toBe(-0.3);
+	});
+
+	it('leaves the logo alone when the image carries no composition', () => {
+		useWallpaperStore.setState({
+			logoPositionX: -0.9,
+			logoPositionY: 0.8,
+			logoFollowImageFocus: true
+		});
+
+		useWallpaperStore.getState().setLogoFollowImageFocus(false);
+
+		expect(useWallpaperStore.getState().logoPositionX).toBe(-0.9);
+		expect(useWallpaperStore.getState().logoPositionY).toBe(0.8);
+	});
+});

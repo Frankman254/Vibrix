@@ -21,6 +21,7 @@ import {
 	buildActiveImageSelectionPatch,
 	buildCoveredAutoFitPatch
 } from '@/store/activeImageSelection';
+import { resolveImageLogoPosition } from '@/store/imageLogoFocus';
 import { createVisualTransitionSnapshot } from '@/features/visualTransition/visualTransitionCoordinator';
 import type { WallpaperState } from '@/types/wallpaper';
 import { computeOfflineFrameCount } from './offlineVideoFormat';
@@ -105,9 +106,17 @@ export function findSlideshowSegmentAt<T extends SlideshowSegment>(
 }
 
 /**
- * Async half: Keep Covered refits each newly selected image to the viewport
- * (as `setActiveImageId` does once the image's size is known) and every
- * segment gets its background palette.
+ * Async half: the two side effects `setActiveImageId` fires once the image's
+ * size is known — the Keep Covered refit and "the mark follows the picture" —
+ * plus each segment's background palette.
+ *
+ * The mark matters more than it looks. The switch does not make the renderer
+ * read the mark; it moves `logoPositionX/Y` on every image switch. The
+ * selection patch above RESTORES that pair from the image's scene / override /
+ * logo slot, so a prepare step that skipped the mark would leave every segment
+ * showing the slot's stored position — the logo (and the spectrum, when it
+ * follows the logo) parked on the face the mark exists to avoid, for the whole
+ * video, while the editor shows it correctly placed.
  */
 export async function prepareSlideshowSegments(
 	segments: readonly SlideshowSegment[],
@@ -117,6 +126,9 @@ export async function prepareSlideshowSegments(
 	const prepared: PreparedSlideshowSegment[] = [];
 	for (const segment of segments) {
 		let state = segment.state;
+		// The captured segment is the editor's own live state: its framing and
+		// its mark are already applied, and re-deriving them would overwrite a
+		// logo the user dragged by hand after the last image switch.
 		if (state !== capturedState && state.imageUrl) {
 			try {
 				const imageSize = await loadImageDimensions(state.imageUrl);
@@ -126,6 +138,28 @@ export async function prepareSlideshowSegments(
 					viewport
 				);
 				if (patch) state = Object.freeze({ ...state, ...patch });
+				if (state.logoFollowImageFocus) {
+					// Read the entry back out of the refitted state: the mark
+					// maps through the rect the renderer actually draws.
+					const image = state.backgroundImages.find(
+						item => item.assetId === segment.imageId
+					);
+					const position = image
+						? resolveImageLogoPosition({
+								image,
+								imageSize,
+								viewport,
+								layout: state
+							})
+						: null;
+					if (position) {
+						state = Object.freeze({
+							...state,
+							logoPositionX: position.x,
+							logoPositionY: position.y
+						});
+					}
+				}
 			} catch {
 				// Same as live: an unreadable size leaves the framing as saved.
 			}

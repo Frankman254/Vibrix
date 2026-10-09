@@ -56,6 +56,7 @@ export function useOfflineVideoExport({
 		storedResolutionId,
 		resolutionAuto,
 		fps,
+		performanceMode,
 		setResolutionId,
 		setResolutionAuto,
 		setFps
@@ -64,6 +65,10 @@ export function useOfflineVideoExport({
 			storedResolutionId: state.offlineExportResolutionId,
 			resolutionAuto: state.offlineExportResolutionAuto,
 			fps: state.offlineExportFps,
+			// Reported, not used: the render forces `high`, and `high` lifts the
+			// ceilings that clamp the particle sliders — so an editor below it
+			// is previewing something the video will not reproduce.
+			performanceMode: state.performanceMode,
 			setResolutionId: state.setOfflineExportResolutionId,
 			setResolutionAuto: state.setOfflineExportResolutionAuto,
 			setFps: state.setOfflineExportFps
@@ -171,6 +176,7 @@ export function useOfflineVideoExport({
 					screen.height * (screen.devicePixelRatio || 1)
 				)}`
 			: '',
+		performanceMode,
 		fps,
 		setFps,
 		plan,

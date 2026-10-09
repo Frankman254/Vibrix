@@ -15,6 +15,26 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+- **El render ya aplica la marca.** Cambiar de imagen dispara tres efectos en
+  el editor —el patch de escena/slots, el reencuadre de Keep Covered y
+  re-aplicar «la marca sigue la imagen»—; el export offline replicaba los dos
+  primeros y no el tercero. Como el slot de logo por imagen trae su propio
+  `logoPositionX/Y`, el vídeo restauraba la posición guardada del slot y dejaba
+  el logo (y el spectrum, cuando sigue al logo) sobre la cara durante todo el
+  render, mientras el editor lo mostraba bien colocado. El mapeo vive ahora en
+  `store/imageLogoFocus.ts` y lo usan tanto la acción del store como
+  `prepareSlideshowSegments`.
+- **El interruptor de la marca ya se deshace.** Apagar «la marca sigue la
+  imagen» no hacía nada: el logo se quedaba donde lo había puesto la marca y la
+  posición solo volvía al cambiar de imagen y regresar. Ahora apagarlo
+  restituye la posición que dicta la composición propia de la imagen (escena,
+  override o slot).
+- **La sección de Export dice a qué calidad renderiza.** El vídeo offline usa
+  siempre `high` —no hereda el presupuesto de tiempo real—, pero `high` también
+  levanta los topes que recortan los sliders de partículas (glow, tamaño de
+  punto, deriva). Con el editor por debajo de Alto se avisa en amarillo de que
+  la vista previa no reproduce lo que va a salir en el vídeo.
+
 - Timeline manual: los tiempos ahora son slots posicionales y las imágenes son
   sus ocupantes. Reordenar el pool cambia la imagen del slot sin arrastrar sus
   tiempos; apagar una imagen compacta las siguientes sobre los slots existentes

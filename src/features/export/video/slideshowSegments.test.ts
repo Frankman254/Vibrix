@@ -1,11 +1,28 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+// Real `resolveImageTransform` maths, fake image loading: jsdom has no decoder,
+// and every assertion here is about geometry, not about file IO.
+vi.mock('@/features/background', async importOriginal => ({
+	...(await importOriginal<typeof import('@/features/background')>()),
+	loadImageDimensions: vi.fn(async () => ({ width: 1600, height: 900 }))
+}));
+vi.mock('@/lib/backgroundPalette', async importOriginal => ({
+	...(await importOriginal<typeof import('@/lib/backgroundPalette')>()),
+	getBackgroundPalette: vi.fn(async () => ({
+		dominant: '#ffffff',
+		accent: '#ffffff',
+		muted: '#ffffff',
+		colors: ['#ffffff']
+	}))
+}));
 import { createBackgroundImageItem } from '@/features/background/backgroundImages';
 import { createEmptySceneSlot } from '@/features/scenes/sceneSlot';
 import { DEFAULT_STATE } from '@/store/defaultState';
 import type { WallpaperState } from '@/types/wallpaper';
 import {
 	buildSlideshowSegments,
-	findSlideshowSegmentAt
+	findSlideshowSegmentAt,
+	prepareSlideshowSegments
 } from './slideshowSegments';
 
 function projectState(overrides: Partial<WallpaperState> = {}): WallpaperState {
@@ -97,5 +114,83 @@ describe('findSlideshowSegmentAt', () => {
 		expect(findSlideshowSegmentAt(segments, 9_999).imageId).toBe('a');
 		expect(findSlideshowSegmentAt(segments, 10_000).imageId).toBe('b');
 		expect(findSlideshowSegmentAt(segments, 34_000).imageId).toBe('a');
+	});
+});
+
+describe('prepareSlideshowSegments', () => {
+	/**
+	 * The regression this guards: the logo (and the spectrum that follows it)
+	 * landing on the subject's face for a whole video while the editor shows it
+	 * correctly placed. The selection patch restores `logoPositionX/Y` from the
+	 * image's logo slot, so the export has to re-apply the mark exactly like
+	 * `setActiveImageId` does — otherwise every segment wears slot 1's position.
+	 */
+	it("re-applies each image's mark, as selecting it in the editor does", async () => {
+		const images = ['a', 'b'].map(id =>
+			createBackgroundImageItem(id, `virtual://img/${id}`)
+		);
+		// Marks on opposite sides, so a missing re-apply is unmistakable.
+		// "The mark follows the picture" is PER IMAGE, so every picture that
+		// should follow has to say so — selecting one syncs the flat key from
+		// the image, exactly as the editor does.
+		images[0].logoFocusX = 0.2;
+		images[0].logoFocusY = 0.5;
+		images[0].logoFollowsFocus = true;
+		images[1].logoFocusX = 0.8;
+		images[1].logoFocusY = 0.5;
+		images[1].logoFollowsFocus = true;
+		const state = projectState({
+			backgroundImages: images,
+			logoFollowImageFocus: true,
+			// What the editor had on screen for image 'a'.
+			logoPositionX: -0.6,
+			logoPositionY: 0
+		});
+		const segments = buildSlideshowSegments(state, 15_000, 30);
+		const prepared = await prepareSlideshowSegments(segments, state);
+		expect(prepared).toHaveLength(2);
+		// The captured segment is the editor's live state: left untouched.
+		expect(prepared[0].state.logoPositionX).toBe(-0.6);
+		// Image 'b' marks the RIGHT half, so the logo has to move there.
+		expect(prepared[1].state.imageUrl).toBe('virtual://img/b');
+		expect(prepared[1].state.logoPositionX).toBeGreaterThan(0);
+	});
+
+	it('leaves the logo alone when the mark does not follow the picture', async () => {
+		const images = ['a', 'b'].map(id =>
+			createBackgroundImageItem(id, `virtual://img/${id}`)
+		);
+		images[1].logoFocusX = 0.8;
+		images[1].logoFocusY = 0.5;
+		images[1].logoFollowsFocus = false;
+		const state = projectState({
+			backgroundImages: images,
+			logoFollowImageFocus: false,
+			logoPositionX: -0.6,
+			logoPositionY: 0
+		});
+		const prepared = await prepareSlideshowSegments(
+			buildSlideshowSegments(state, 15_000, 30),
+			state
+		);
+		expect(prepared[1].state.logoPositionX).toBe(-0.6);
+	});
+
+	it('leaves the logo alone for an image that has no mark', async () => {
+		const images = ['a', 'b'].map(id =>
+			createBackgroundImageItem(id, `virtual://img/${id}`)
+		);
+		images[1].logoFollowsFocus = true;
+		const state = projectState({
+			backgroundImages: images,
+			logoFollowImageFocus: true,
+			logoPositionX: -0.6,
+			logoPositionY: 0
+		});
+		const prepared = await prepareSlideshowSegments(
+			buildSlideshowSegments(state, 15_000, 30),
+			state
+		);
+		expect(prepared[1].state.logoPositionX).toBe(-0.6);
 	});
 });

@@ -178,6 +178,9 @@ export const en = {
 	qa_pi_total_t: 'Capture all subsystems in one shot',
 	qa_pi_no_active_image: 'No active image',
 	qa_pi_saved_suffix: 'saved',
+	qa_pi_camera_fx: 'Camera FX',
+	qa_pi_lights: 'Lights',
+	qa_pi_now_playing: 'Now Playing',
 	qa_pi_scene_locked: 'Scene "{name}" is active — overrides are ignored',
 	qa_pi_capture_all: 'Capture all',
 	qa_pi_capture_all_t:
@@ -1301,6 +1304,10 @@ export const en = {
 	offline_label_resolution: 'Resolution',
 	offline_resolution_auto: 'Auto',
 	offline_resolution_auto_hint: 'Matching your {screen} display.',
+	offline_label_render_quality: 'Render quality',
+	offline_render_quality_value: 'Maximum · editor on {mode}',
+	offline_render_quality_mismatch:
+		'Your editor is capped below the render: the video will show more particle glow, bigger points and fuller blur than the preview. Set Performance Mode to High to see what you are exporting.',
 	offline_label_fps: 'Frame rate',
 	offline_format_checking: 'Checking encoder...',
 	offline_encoder_title: 'Encoder',

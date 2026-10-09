@@ -997,7 +997,7 @@ export function useQuickActionsViewModel({
 				onClick: () => toggleExpand('title')
 			},
 			{
-				// Per-image override snapshots (logo/spectrum/particles/rain/looks).
+				// Per-image override snapshots for all eight captured families.
 				// Lives inside the HUD instead of as a floating window so the
 				// user controls position/design through the same HUD frame.
 				label: t.qa_per_img,

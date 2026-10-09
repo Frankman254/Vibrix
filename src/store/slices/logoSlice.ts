@@ -7,6 +7,7 @@ import {
 } from '@/store/featureProfiles';
 import { DEFAULT_STATE } from '@/store/defaultState';
 import { syncActiveBackgroundImage } from '@/store/backgroundStoreUtils';
+import { buildActiveImageSelectionPatch } from '@/store/activeImageSelection';
 import { APP_LOGO_URL } from '@/config/appLogo';
 import type { WallpaperStore } from '@/store/wallpaperStoreTypes';
 
@@ -32,7 +33,28 @@ export function createLogoSlice(
 			}));
 			// Turning it ON must move the mark right now: waiting for the next
 			// image switch would make the switch look broken.
-			if (v) void get().applyImageLogoFocus(get().activeImageId);
+			if (v) {
+				void get().applyImageLogoFocus(get().activeImageId);
+				return;
+			}
+			// And turning it OFF has to put the logo back where the image's own
+			// composition says it goes. Without this the mark's position simply
+			// stays, and the switch reads as dead until the user cycles to
+			// another image and back — which is the moment the selection patch
+			// re-applies the scene / override / slot that owns the position.
+			set(state => {
+				const { patch } = buildActiveImageSelectionPatch(
+					state,
+					state.activeImageId
+				);
+				return typeof patch.logoPositionX === 'number' &&
+					typeof patch.logoPositionY === 'number'
+					? {
+							logoPositionX: patch.logoPositionX,
+							logoPositionY: patch.logoPositionY
+						}
+					: {};
+			});
 		},
 		setLogoUrl: v => set({ logoUrl: v }),
 		setLogoId: v => set({ logoId: v }),

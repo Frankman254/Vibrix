@@ -20,6 +20,7 @@ import {
 	offlineExportErrorLabel,
 	offlineExportPhaseLabel
 } from '@/features/export/video/offlineVideoExportLabels';
+import type { PerformanceMode } from '@/types/wallpaper';
 import { useT, type Translations } from '@/lib/i18n';
 import { Button, UI_COLORS } from '@/ui';
 import EnumButtons from '@/ui/EnumButtonGroup';
@@ -40,6 +41,8 @@ type OfflineExportSectionProps = {
 	onResolutionAutoChange: (auto: boolean) => void;
 	/** The display's real pixels (`2560×1440`), or '' when unknown. */
 	screenLabel: string;
+	/** The EDITOR's performance mode; the render always uses `high`. */
+	performanceMode: PerformanceMode;
 	fps: OfflineExportFps;
 	onFpsChange: (fps: OfflineExportFps) => void;
 	plan: OfflineVideoEncoderPlan | null;
@@ -55,6 +58,14 @@ type OfflineExportSectionProps = {
 	onStartExport: () => void;
 	onCancelExport: () => void;
 };
+
+function performanceModeLabel(t: Translations, mode: PerformanceMode): string {
+	return mode === 'low'
+		? t.perf_mode_short_low
+		: mode === 'medium'
+			? t.perf_mode_short_medium
+			: t.perf_mode_short_high;
+}
 
 function issueLabel(t: Translations, issue: OfflineExportIssue): string {
 	const labels: Record<string, string> = {
@@ -79,6 +90,7 @@ export default function OfflineExportSection({
 	resolutionAuto,
 	onResolutionAutoChange,
 	screenLabel,
+	performanceMode,
 	fps,
 	onFpsChange,
 	plan,
@@ -198,6 +210,31 @@ export default function OfflineExportSection({
 					{t.offline_label_audio}: {offlineExportPlan.audio.label}
 				</span>
 			</div>
+
+			{/* Which quality the render runs at, spelled out. The export always
+			    renders at `high` — it owns its clock, so the real-time budget
+			    does not apply — but `high` also raises the ceilings that clamp
+			    the particle sliders, so an editor below it is showing a
+			    composition the video will NOT reproduce. The user has to be
+			    able to see that before spending an hour on the export. */}
+			<span
+				className={`text-[11px] ${
+					performanceMode === 'high'
+						? 'text-gray-400'
+						: 'text-yellow-400'
+				}`}
+			>
+				{t.offline_label_render_quality}:{' '}
+				{t.offline_render_quality_value.replace(
+					'{mode}',
+					performanceModeLabel(t, performanceMode)
+				)}
+			</span>
+			{performanceMode !== 'high' ? (
+				<span className="text-[11px] text-yellow-400">
+					{t.offline_render_quality_mismatch}
+				</span>
+			) : null}
 
 			{/* The negotiated encoder, spelled out: which codec profile and
 			    level passed `isConfigSupported`, at what bitrate, and whether

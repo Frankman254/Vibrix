@@ -5,13 +5,13 @@ import {
 	loadImageDimensions
 } from '@/features/background';
 import {
-	imagePointToLogoPosition,
 	lowMassBoxToLogoPosition,
 	logoBoxSizeForViewport,
 	spectrumAnnulusInImageSpace
 } from '@/features/logo';
 import { bestPlacementBox, type SaliencyAvoidRegion } from '@/lib/saliency';
 import { revokeObjectUrlsSoon } from '@/lib/objectUrlLifecycle';
+import { resolveImageLogoPosition } from '@/store/imageLogoFocus';
 import {
 	resolveSpectrumPlacement,
 	resolveScaledSpectrumSettings
@@ -595,43 +595,24 @@ export function createBackgroundCollectionActions(
 				item => item.assetId === assetId
 			);
 			if (!image?.url) return;
-			const { logoFocusX: x, logoFocusY: y } = image;
-			if (typeof x !== 'number' || typeof y !== 'number') return;
+			if (
+				typeof image.logoFocusX !== 'number' ||
+				typeof image.logoFocusY !== 'number'
+			) {
+				return;
+			}
 			const viewport = stageViewport();
 			try {
 				const dimensions = await loadImageDimensions(image.url);
-				// The stored point is in IMAGE space, so it has to travel
-				// through the image's own draw rect: the same point means a
-				// different place on screen once the picture is zoomed or panned.
-				const primary = resolveImageTransform({
-					viewportWidth: viewport.width,
-					viewportHeight: viewport.height,
-					imageWidth: dimensions.width,
-					imageHeight: dimensions.height,
-					fitMode: image.fitMode,
-					scale: image.scale,
-					positionX: image.positionX,
-					positionY: image.positionY,
-					rotation: image.rotation,
-					mirror: image.mirror,
-					// Same rect the renderer draws: manual framing means no
-					// coverage raise, and a mark mapped through a rect nobody
-					// draws lands next to the thing it was pointing at.
-					keepCovered: !image.framingManual,
-					focusX: image.focusX,
-					focusY: image.focusY,
-					mirrorFill: image.mirrorFill,
-					mirrorFillInvert: image.mirrorFillInvert,
-					mirrorFillCount: image.mirrorFillCount,
+				// The mapping is shared with the offline export, which has to
+				// replay this same side effect once per slideshow segment.
+				const position = resolveImageLogoPosition({
+					image,
+					imageSize: dimensions,
+					viewport,
 					layout: state
-				}).drawRects[0];
-				if (!primary) return;
-				const position = imagePointToLogoPosition({
-					point: { x, y },
-					imageRect: primary,
-					viewportWidth: viewport.width,
-					viewportHeight: viewport.height
 				});
+				if (!position) return;
 				set(current =>
 					// Still the same image? A slideshow can have moved on while
 					// the dimensions were loading.
