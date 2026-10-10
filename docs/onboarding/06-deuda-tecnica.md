@@ -66,14 +66,14 @@ números salen". El coste de arrancar es bajo; lo caro es seguir sin nada.
 
 Síntomas medibles (cuenta de líneas real):
 
-| Archivo                             | Líneas | Qué es                                                                                  |
-| ----------------------------------- | ------ | --------------------------------------------------------------------------------------- |
-| `lib/canonicalFactoryPresets.ts`    | 5.136  | Los presets de fábrica "canónicos" (generados/importados con `npm run defaults:import`) |
-| `store/wallpaperStoreMigrations.ts` | 3.518  | El normalizador universal del Nivel 01                                                  |
-| `types/wallpaper.ts`                | 1.685  | La ficha técnica de TODO el estado                                                      |
-| `store/wallpaperStoreTypes.ts`      | 1.087  | Las firmas de TODAS las acciones                                                        |
-| `store/featureProfiles.ts`          | 1.006  | Extractores/hidratadores de todos los perfiles                                          |
-| `store/defaultState.ts`             | 815    | Los valores de fábrica                                                                  |
+| Archivo                             | Líneas | Qué es                                                                               |
+| ----------------------------------- | ------ | ------------------------------------------------------------------------------------ |
+| `lib/canonicalFactoryPresets.ts`    | 6.244  | Los presets de fábrica "canónicos" (generados/importados con `pnpm defaults:import`) |
+| `store/wallpaperStoreMigrations.ts` | 3.518  | El normalizador universal del Nivel 01                                               |
+| `types/wallpaper.ts`                | 1.685  | La ficha técnica de TODO el estado                                                   |
+| `store/wallpaperStoreTypes.ts`      | 1.087  | Las firmas de TODAS las acciones                                                     |
+| `store/featureProfiles.ts`          | 1.006  | Extractores/hidratadores de todos los perfiles                                       |
+| `store/defaultState.ts`             | 815    | Los valores de fábrica                                                               |
 
 Los problemas concretos, no estéticos:
 

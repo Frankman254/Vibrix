@@ -1,16 +1,40 @@
+/**
+ * Re-snapshot the factory look from a settings export.
+ *
+ * Calibrate the wallpaper in the editor, export settings, then:
+ *
+ *   pnpm defaults:import -- /absolute/path/to/settings.json
+ *
+ * The export is the source of truth for WHICH keys exist — it comes out of the
+ * running app, so a feature shipped today is in it. Every key it carries that
+ * `src/store/factoryLookKeys.ts` classifies as part of the look is captured;
+ * assets, runtime state, the user's slot library, editor preferences, export
+ * targets and playback transport are not.
+ *
+ * This replaced an allowlist importer that only re-read keys already present in
+ * the snapshot plus a hand-maintained list. Everything added after the last run
+ * was invisible to it, which is how the shipped look ended up with no opinion
+ * about 179 visible settings while still carrying 103 `spectrumClone*` keys from
+ * a model deleted in store v86.
+ */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
 
-const sourcePath = process.argv[2];
+// `npm run x -- file` swallows the separator; `pnpm run x -- file` passes it
+// through as its own argument. Accept both so the documented command works.
+const sourcePath = process.argv.slice(2).find(arg => arg !== '--');
 if (!sourcePath) {
 	throw new Error(
-		'Usage: npm run defaults:import -- /absolute/path/to/settings.json'
+		'Usage: pnpm defaults:import -- /absolute/path/to/settings.json'
 	);
 }
 
 const projectRoot = resolve(import.meta.dirname, '..');
 const targetPath = resolve(projectRoot, 'src/lib/canonicalFactoryPresets.ts');
+const classificationPath = resolve(projectRoot, 'src/store/factoryLookKeys.ts');
+const debtPath = resolve(projectRoot, 'src/store/factoryLookDebt.ts');
+
 const targetSource = readFileSync(targetPath, 'utf8');
 const settingsEnvelope = JSON.parse(readFileSync(resolve(sourcePath), 'utf8'));
 
@@ -29,125 +53,52 @@ if (
 }
 
 const state = settingsEnvelope.state;
+
+/**
+ * The classification lives in TypeScript because it is typed against
+ * `WallpaperState`; this script cannot import it, so it reads the quoted keys
+ * out of the source. `factoryLookCoverage.test.ts` asserts this same expression
+ * still yields the module's own list, so a rewrite of that file in a shape this
+ * cannot read is a test failure rather than a silent import of asset keys.
+ */
+function readNonLookKeys() {
+	const source = readFileSync(classificationPath, 'utf8');
+	const blocks = source.matchAll(
+		/const [A-Z_]+_KEYS = \[([^\]]*)\] as const satisfies readonly StateKey\[\];/g
+	);
+	const keys = new Set();
+	for (const block of blocks) {
+		for (const match of block[1].matchAll(/'([^']+)'/g)) {
+			keys.add(match[1]);
+		}
+	}
+	// Sentinels: one per category, so a partial parse cannot pass unnoticed.
+	for (const sentinel of [
+		'backgroundImages',
+		'motionPaused',
+		'sceneSlots',
+		'language',
+		'offlineExportFps',
+		'audioFileVolume'
+	]) {
+		if (!keys.has(sentinel)) {
+			throw new Error(
+				`Could not read the look classification: expected ${sentinel} among the non-look keys. Has src/store/factoryLookKeys.ts changed shape?`
+			);
+		}
+	}
+	return keys;
+}
+
+const nonLookKeys = readNonLookKeys();
+// Mirrors `FACTORY_LOOK_OWNED_EXCEPTIONS`: the bundled logo and the shipped
+// spectrum profile library are factory-owned despite looking like content.
+const OWNED_EXCEPTIONS = new Set(['logoId', 'logoUrl', 'spectrumProfileSlots']);
+const isLookKey = key => !nonLookKeys.has(key) || OWNED_EXCEPTIONS.has(key);
+
 const FACTORY_LOGO_TOKEN = '__CANONICAL_FACTORY_LOGO_URL__';
-
-const ADDITIONAL_SETTINGS_KEYS = [
-	'rgbShiftAudioAttack',
-	'rgbShiftAudioRelease',
-	'rgbShiftAudioReactivitySpeed',
-	'rgbShiftAudioPeakWindow',
-	'rgbShiftAudioPeakFloor',
-	'rgbShiftAudioPunch',
-	'particleAudioSmoothing',
-	'particleAudioAttack',
-	'particleAudioRelease',
-	'particleAudioReactivitySpeed',
-	'particleAudioPeakWindow',
-	'particleAudioPeakFloor',
-	'particleAudioPunch',
-	'particleAudioDriftEnabled',
-	'particleAudioDriftAngle',
-	'particleAudioDriftAmount',
-	'particleAudioDriftBase',
-	'particleAudioDriftChannel',
-	'particleAudioDriftThreshold',
-	'particleAudioDriftRelease',
-	'particleAudioDriftMode',
-	'particleAudioDriftInvertOnLowEnergy',
-	'particleDepthFlowEnabled',
-	'particleDepthFlowAmount',
-	'particleDepthFlowDirection',
-	'particleDepthFlowChannel',
-	'particleDepthFlowThreshold',
-	'particleDepthFlowSensitivity',
-	'particleDepthFlowAttack',
-	'particleDepthFlowRelease',
-	'particleDepthFlowSpeed',
-	'particleDepthFlowSpread',
-	'particleDepthFlowFocusX',
-	'particleDepthFlowFocusY',
-	'particleDepthFlowMode',
-	'stageLightsEnabled',
-	'stageLightsIntensity',
-	'stageLightsBeamCount',
-	'stageLightsMinBeamCount',
-	'stageLightsMaxBeamCount',
-	'stageLightsBeamWidth',
-	'stageLightsBeamLength',
-	'stageLightsSoftness',
-	'stageLightsSpeed',
-	'stageLightsFixedMotion',
-	'stageLightsColorSource',
-	'stageLightsColor',
-	'stageLightsAudioReactive',
-	'stageLightsAudioChannel',
-	'stageLightsAudioAmount',
-	'stageLightsAudioOscillationAmount',
-	'stageLightsAudioHoldMs',
-	'stageLightsAudioDecay',
-	'stageLightsAudioGateEnabled',
-	'stageLightsPeakFlash',
-	'stageLightsPeakThreshold',
-	'stageLightsBandThresholds',
-	'stageLightsOpacity',
-	'stageLightsBlendMode',
-	'stageLightsOrigin',
-	'stageLightsMovementMode',
-	'stageLightsInvertDirection',
-	'stageLightsMirrorDirections',
-	'flashLightEnabled',
-	'flashLightIntensity',
-	'flashLightColorSource',
-	'flashLightColor',
-	'flashLightSoftness',
-	'flashLightBrightness',
-	'flashLightDecay',
-	'flashLightAudioChannel',
-	'flashLightThreshold',
-	'flashLightBandThresholds',
-	'flashLightSensitivity',
-	'flashLightRetriggerMs',
-	'flashLightShape',
-	'flashLightBlendMode',
-	'cameraFxEnabled',
-	'cameraMotionEnabled',
-	'cameraMotionMode',
-	'cameraMotionAmount',
-	'cameraMotionSpeed',
-	'cameraMotionDrive',
-	'cameraMotionAudioInfluence',
-	'cameraMotionAudioChannel',
-	'cameraMotionDirection',
-	'cameraMotionTarget',
-	'cameraMotionTargets',
-	'cameraShakeEnabled',
-	'cameraShakeAmount',
-	'cameraShakeDecay',
-	'cameraShakeThreshold',
-	'cameraShakeBandThresholds',
-	'cameraShakeTargets',
-	'cameraShakeSensitivity',
-	'cameraShakeRetriggerMs',
-	'cameraShakeChannel',
-	'cameraShakeMode',
-	'cameraShakeFrequency',
-	'cameraShakeRoughness'
-];
-
-const ADDITIONAL_SPECTRUM_KEYS = [
-	'spectrumShockwaveBandThresholds',
-	'spectrumCloneShockwaveBandThresholds',
-	'spectrumRotationDrive',
-	'spectrumRotationAudioAmount',
-	'spectrumRotationChannel',
-	'spectrumRotationDirection',
-	'spectrumRotationSmoothing',
-	'spectrumCloneRotationDrive',
-	'spectrumCloneRotationAudioAmount',
-	'spectrumCloneRotationChannel',
-	'spectrumCloneRotationDirection',
-	'spectrumCloneRotationSmoothing'
-];
+const VIBRIX_LOGO_TOKEN = '__VIBRIX_FACTORY_LOGO_URL__';
+const PATCH_END = /\n\} as (?:unknown as )?Partial<WallpaperState>;/;
 
 function readCanonicalObject(exportName) {
 	const marker = `export const ${exportName} = `;
@@ -155,97 +106,41 @@ function readCanonicalObject(exportName) {
 	if (start < 0) throw new Error(`Could not find ${exportName}.`);
 
 	const objectStart = start + marker.length;
-	const objectEnd = targetSource.indexOf(
-		'\n} as Partial<WallpaperState>;',
-		objectStart
-	);
-	if (objectEnd < 0) throw new Error(`Could not parse ${exportName}.`);
+	const rest = targetSource.slice(objectStart);
+	const end = rest.match(PATCH_END);
+	if (!end) throw new Error(`Could not parse ${exportName}.`);
 
 	return Function(
 		'CANONICAL_FACTORY_LOGO_URL',
-		`"use strict"; return (${targetSource.slice(objectStart, objectEnd + 2)});`
-	)(FACTORY_LOGO_TOKEN);
+		'VIBRIX_FACTORY_LOGO_URL',
+		`"use strict"; return (${rest.slice(0, end.index + 2)});`
+	)(FACTORY_LOGO_TOKEN, VIBRIX_LOGO_TOKEN);
 }
 
-function importKeys(existing, additionalKeys) {
-	const next = {};
-	for (const key of new Set([...Object.keys(existing), ...additionalKeys])) {
-		if (key === 'stageLightsBeamLength' && !(key in state)) {
-			next[key] = 0.95;
-			continue;
-		}
-		if (key === 'stageLightsAudioHoldMs' && !(key in state)) {
-			next[key] = 90;
-			continue;
-		}
-		if (key === 'stageLightsAudioDecay' && !(key in state)) {
-			next[key] = 0.82;
-			continue;
-		}
-		if (key === 'cameraMotionTargets' && !(key in state)) {
-			if (state.cameraMotionTarget === 'all') {
-				next[key] = [
-					'global-background',
-					'background',
-					'selected-overlay',
-					'logo',
-					'spectrum',
-					'particles',
-					'rain',
-					'track-title',
-					'lyrics',
-					'stage-lights',
-					'flash-light'
-				];
-			} else if (state.cameraMotionTarget === 'background-spectrum') {
-				next[key] = ['background', 'spectrum'];
-			} else {
-				next[key] =
-					typeof state.cameraMotionTarget === 'string'
-						? [state.cameraMotionTarget]
-						: ['background'];
-			}
-			continue;
-		}
-		if (key === 'cameraShakeTargets' && !(key in state)) {
-			next[key] = [
-				'global-background',
-				'background',
-				'selected-overlay',
-				'logo',
-				'spectrum',
-				'particles',
-				'rain',
-				'track-title',
-				'lyrics',
-				'stage-lights',
-				'flash-light'
-			];
-			continue;
-		}
-		if (!(key in state)) {
-			throw new Error(`Settings export is missing expected key: ${key}`);
-		}
-		next[key] = state[key];
-	}
-	return next;
-}
+const previous = {
+	...readCanonicalObject('CANONICAL_FACTORY_SETTINGS_PATCH'),
+	...readCanonicalObject('CANONICAL_FACTORY_SPECTRUM_PATCH')
+};
 
-function renderObject(value) {
-	return JSON.stringify(value, null, '\t').replace(
-		`"${FACTORY_LOGO_TOKEN}"`,
-		'CANONICAL_FACTORY_LOGO_URL'
-	);
+// Spectrum settings live in their own patch; everything else in the first one.
+// Nothing but the file's shape depends on the split.
+const nextSettings = {};
+const nextSpectrum = {};
+for (const key of Object.keys(state).sort()) {
+	if (!isLookKey(key)) continue;
+	const target = key.startsWith('spectrum') ? nextSpectrum : nextSettings;
+	target[key] = state[key];
 }
-
-const currentSettings = readCanonicalObject('CANONICAL_FACTORY_SETTINGS_PATCH');
-const currentSpectrum = readCanonicalObject('CANONICAL_FACTORY_SPECTRUM_PATCH');
-const nextSettings = importKeys(currentSettings, ADDITIONAL_SETTINGS_KEYS);
-const nextSpectrum = importKeys(currentSpectrum, ADDITIONAL_SPECTRUM_KEYS);
 
 // Factory defaults must stay independent from local IndexedDB asset references.
 nextSettings.logoId = null;
-nextSettings.logoUrl = FACTORY_LOGO_TOKEN;
+nextSettings.logoUrl = VIBRIX_LOGO_TOKEN;
+
+function renderObject(value) {
+	return JSON.stringify(value, null, '\t')
+		.replaceAll(`"${FACTORY_LOGO_TOKEN}"`, 'CANONICAL_FACTORY_LOGO_URL')
+		.replaceAll(`"${VIBRIX_LOGO_TOKEN}"`, 'VIBRIX_FACTORY_LOGO_URL');
+}
 
 const settingsMarker = 'export const CANONICAL_FACTORY_SETTINGS_PATCH = ';
 const header = targetSource.slice(0, targetSource.indexOf(settingsMarker));
@@ -261,9 +156,45 @@ export const CANONICAL_DEFAULT_STATE_PATCH = {
 	...CANONICAL_FACTORY_SETTINGS_PATCH,
 	...CANONICAL_FACTORY_SPECTRUM_PATCH,
 	logoId: null,
-	logoUrl: CANONICAL_FACTORY_LOGO_URL
+	logoUrl: VIBRIX_FACTORY_LOGO_URL
 } as Partial<WallpaperState>;
 `;
 
 writeFileSync(targetPath, output);
-process.exit(0);
+
+/**
+ * Prune the declared debt. A look key the export just supplied has an opinion
+ * now, and leaving it listed would make `factoryLookCoverage.test.ts` fail for
+ * lying — the list is meant to shrink to nothing.
+ */
+const covered = new Set([
+	...Object.keys(nextSettings),
+	...Object.keys(nextSpectrum)
+]);
+const remainingDebt = Object.keys(state)
+	.filter(
+		key => isLookKey(key) && !covered.has(key) && !OWNED_EXCEPTIONS.has(key)
+	)
+	.sort();
+const debtSource = readFileSync(debtPath, 'utf8');
+const debtMarker = 'export const FACTORY_LOOK_WITHOUT_OPINION = [';
+const debtHeader = debtSource.slice(0, debtSource.indexOf(debtMarker));
+writeFileSync(
+	debtPath,
+	`${debtHeader}${debtMarker}\n${remainingDebt
+		.map(key => `\t'${key}',\n`)
+		.join('')}] as const satisfies readonly (keyof WallpaperState)[];\n`
+);
+
+const previousKeys = new Set(Object.keys(previous));
+const added = [...covered].filter(key => !previousKeys.has(key));
+const dropped = [...previousKeys].filter(key => !covered.has(key));
+console.log(
+	`Factory look re-snapshotted from ${sourcePath}\n` +
+		`  settings keys: ${Object.keys(nextSettings).length}\n` +
+		`  spectrum keys: ${Object.keys(nextSpectrum).length}\n` +
+		`  newly covered: ${added.length}${added.length ? ` (${added.slice(0, 8).join(', ')}${added.length > 8 ? ', …' : ''})` : ''}\n` +
+		`  no longer covered: ${dropped.length}${dropped.length ? ` (${dropped.slice(0, 8).join(', ')}${dropped.length > 8 ? ', …' : ''})` : ''}\n` +
+		`  still without an opinion: ${remainingDebt.length}\n\n` +
+		'Run `pnpm format` and `pnpm test:run` next.'
+);

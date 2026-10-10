@@ -15,6 +15,31 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+- **El look de fábrica estaba podrido y el importador no podía arreglarlo.** El
+  snapshot de fábrica seguía cargando 103 claves `spectrumClone*` de un modelo
+  de spectrum borrado en la v86 — por eso el fichero necesitaba
+  `as unknown as Partial<WallpaperState>`, el `unknown` tapaba que miles de
+  líneas estaban muertas. Y `defaults:import` solo releía claves que YA estaban
+  en el snapshot más una lista escrita a mano, así que todo lo añadido después
+  jamás podía entrar: 178 ajustes visibles (todo el bloque de estilo de letras,
+  los FX de spectrum, los glow reach, los flash edge, Now Playing, layout
+  responsive) se quedaban en el neutro de `defaultState`.
+    - Las claves `spectrumClone*` se **migran** a `spectrumInstances` en vez de
+      borrarse (un test comprueba que el valor tras hidratar es idéntico), así
+      que el look de fábrica no pierde nada y el fichero vuelve a estar tipado:
+      renombrar una clave de estado ahora es error de compilación.
+    - La regla del importador se invirtió: **todo es look salvo lo que se declare
+      que no** (`store/factoryLookKeys.ts`, por categorías — assets, runtime,
+      librería del usuario, preferencias de editor, export, transporte de audio).
+      Una función nueva entra en el look de fábrica el día que existe.
+    - `store/factoryLookCoverage.test.ts` sostiene las tres reglas: cero claves
+      muertas, cero assets o estado de runtime fijados, y toda clave de look o
+      tiene opinión de fábrica o está declarada como deuda en
+      `store/factoryLookDebt.ts` — que se poda solo al importar.
+    - `pnpm defaults:import -- fichero.json` además acepta el `--` que pnpm no se
+      come (antes fallaba con ENOENT) y dice en claro qué cubrió, qué dejó de
+      cubrir y cuánta deuda queda.
+
 - **El filtro de partículas estaba muerto en el editor y vivo en el vídeo.**
   Camera FX es el dueño de `style.filter` en cada `[data-camera-motion-layer]`:
   escribe ahí la estela de movimiento en cada fotograma y la borra a `''`
