@@ -46,9 +46,13 @@ export function resolveActiveGlobalCompositionSlot(
 /**
  * Flatten a captured composition into a state patch.
  *
- * Every family keeps its `*Enabled` flag from the live state: a slot captured
- * while the spectrum was hidden configures the spectrum, it does not hide it.
- * That is the same rule the per-image overrides follow.
+ * Logo and Spectrum keep their `*Enabled` flag from the live state: those are
+ * global visibility switches, so a slot captured while the spectrum was hidden
+ * configures the spectrum, it does not hide it. Every other family — Particles,
+ * Rain, Camera FX, Lights, Track Title — carries its own flag as captured,
+ * because there the flag IS the effect and "this composition has no rain" is
+ * something a composition has to be able to say. Same rule as the per-image
+ * overrides in `activeImageSelection.ts`.
  */
 export function buildGlobalCompositionPatch(
 	state: WallpaperState,
@@ -59,10 +63,8 @@ export function buildGlobalCompositionPatch(
 	Object.assign(patch, values.spectrum, {
 		spectrumEnabled: state.spectrumEnabled
 	});
-	Object.assign(patch, values.particles, {
-		particlesEnabled: state.particlesEnabled
-	});
-	Object.assign(patch, values.rain, { rainEnabled: state.rainEnabled });
+	Object.assign(patch, values.particles);
+	Object.assign(patch, values.rain);
 	Object.assign(
 		patch,
 		hydrateLooksProfileValues(
@@ -70,10 +72,8 @@ export function buildGlobalCompositionPatch(
 			extractLooksProfileSettings(state)
 		)
 	);
-	// Camera FX, Lights and Track Title carry their own enable flags on purpose
-	// — that is how a captured composition says "and no shake here" — so unlike
-	// logo/spectrum they apply exactly as saved, over the live defaults so a
-	// snapshot from an older build is not missing keys.
+	// Camera FX, Lights and Track Title also apply exactly as saved, over the
+	// live defaults so a snapshot from an older build is not missing keys.
 	Object.assign(
 		patch,
 		extractCameraFxProfileSettings(state),

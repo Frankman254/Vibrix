@@ -15,6 +15,16 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+- **Rain y Particles por imagen ya guardan su propio on/off.** Un slot o una
+  captura per-image llevaba el largo, el ángulo, el color y la velocidad de la
+  lluvia… y el aplicador le pisaba el `rainEnabled` con el del estado vivo, así
+  que la imagen nunca podía decidir si llovía: quedaba lo que marcase el
+  interruptor global y se arrastraba por todo el proyecto. `logoEnabled` y
+  `spectrumEnabled` siguen pisados a propósito (son «oculta esto en todas
+  partes»), pero `rainEnabled` y `particlesEnabled` **son** el efecto, y así
+  funcionaban ya las escenas, Camera FX, Lights y Track Title. Mismo arreglo en
+  los slots de composición global, que tenían la misma pisada.
+
 - **El proyecto demo ya es un proyecto, no un degradado.** «Probar escena demo»
   pintaba un solo fondo plano y paraba ahí: sin audio, sin segunda imagen y con
   `audioReactive` en `false` (que es como lo deja el estado por defecto y sobre

@@ -204,23 +204,28 @@ export function buildActiveImageSelectionPatch(
 		});
 	}
 	// Particles / Rain / Looks: same precedence as logo+spectrum — inline
-	// override > slot binding > nothing. Inline overrides keep the
-	// corresponding enabled flag from current state so a saved-when-disabled
-	// snapshot never silently turns visibility off.
+	// override > slot binding > nothing — with one deliberate difference above.
+	//
+	// `logoEnabled` and `spectrumEnabled` are global visibility switches ("hide
+	// the logo everywhere"), so a per-image snapshot must not fight them and is
+	// clamped to live state. `particlesEnabled` and `rainEnabled` are the effect
+	// ITSELF: "this image has rain and that one doesn't" is the entire point of
+	// binding them per image, and it is how Camera FX, Lights, Track Title and
+	// `buildSceneSlotActivationPatch` have always behaved. Clamping them here
+	// meant a per-image capture could carry every drop's length, angle and
+	// colour and still not decide whether it rained — the saved on/off was
+	// written, read back by the HUD as present, and then thrown away on apply.
 	const particlesSlot = findSlotByRef(
 		state.particlesProfileSlots,
 		match.particlesProfileSlotId
 	);
 	if (match.particlesOverride) {
-		Object.assign(patch, match.particlesOverride, {
-			particlesEnabled: state.particlesEnabled
-		});
+		Object.assign(patch, match.particlesOverride);
 	} else if (particlesSlot?.values) {
 		Object.assign(
 			patch,
 			extractParticlesProfileSettings(state),
-			particlesSlot.values,
-			{ particlesEnabled: state.particlesEnabled }
+			particlesSlot.values
 		);
 	}
 	const rainSlot = findSlotByRef(
@@ -228,15 +233,12 @@ export function buildActiveImageSelectionPatch(
 		match.rainProfileSlotId
 	);
 	if (match.rainOverride) {
-		Object.assign(patch, match.rainOverride, {
-			rainEnabled: state.rainEnabled
-		});
+		Object.assign(patch, match.rainOverride);
 	} else if (rainSlot?.values) {
 		Object.assign(
 			patch,
 			extractRainProfileSettings(state),
-			rainSlot.values,
-			{ rainEnabled: state.rainEnabled }
+			rainSlot.values
 		);
 	}
 	const looksSlot = findSlotByRef(
