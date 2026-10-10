@@ -15,6 +15,31 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+- **El proyecto demo ya es un proyecto, no un degradado.** «Probar escena demo»
+  pintaba un solo fondo plano y paraba ahí: sin audio, sin segunda imagen y con
+  `audioReactive` en `false` (que es como lo deja el estado por defecto y sobre
+  lo que el look de fábrica no tiene opinión), así que el visitante veía una
+  foto quieta con todos los controles reactivos del editor conectados a nada. El
+  botón ahora arma el proyecto entero, sin pedir ni un fichero y sin licencias:
+    - **Tres fondos pintados** en canvas (`features/demoProject/demoBackgrounds`)
+      con semilla fija: Neon Dusk, Glitch Grid y Crimson Bloom. Entran al pool
+      como imágenes normales, con su miniatura, y la primera queda activa.
+    - **Un remix sintetizado de 32 s con intro y cierre**
+      (`features/demoProject/demoTrackScore` + `demoAudioTrack`): 4 compases de
+      subida (pad, hats, redoble de semicorcheas y un riser que aterriza justo
+      en el drop), 8 de groove (bombo, caja, bajo, pads, Am–F–C–G) y 4 de cierre
+      que se adelgaza, con impacto, downlifter y la cola del acorde. Se renderiza
+      con `OfflineAudioContext` y se escribe como WAV (`lib/audio/wavFile`), así
+      que para la playlist, IndexedDB y el export offline es un fichero normal.
+      Medido en el navegador: 0 muestras recortadas, pico 0.956, y el RMS sube
+      del 0.055 de la intro al 0.129 del drop y baja al 0.108 del cierre.
+    - **La intro y el cierre generados encendidos** sobre esas mismas ventanas de
+      8 s, con título, tagline y spectrum — estaban apagados de fábrica (son una
+      decisión de proyecto, no un look), y un recién llegado no se enteraba de
+      que la app sabe abrir y cerrar un vídeo sola.
+    - Y los interruptores que hacen falta para que todo eso se mueva:
+      `audioReactive`, partículas y slideshow a 12 s.
+
 - **El look de fábrica estaba podrido y el importador no podía arreglarlo.** El
   snapshot de fábrica seguía cargando 103 claves `spectrumClone*` de un modelo
   de spectrum borrado en la v86 — por eso el fichero necesitaba

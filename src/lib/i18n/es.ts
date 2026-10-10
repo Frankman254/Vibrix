@@ -2768,8 +2768,8 @@ export const es: Record<TranslationKey, string> = {
 	// First-run empty state
 	firstrun_title: 'Empieza tu fondo',
 	firstrun_body:
-		'Agrega una imagen de fondo, carga una pista o prueba una escena demo para verla reaccionar.',
-	firstrun_try_demo: 'Probar escena demo',
+		'Agrega una imagen de fondo, carga una pista o deja que el demo arme un proyecto completo: tres escenas, un remix con su intro y su cierre, y todo reaccionando ya.',
+	firstrun_try_demo: 'Armar el proyecto demo',
 	firstrun_working: 'Preparando…',
 	firstrun_load_image: 'Cargar imagen',
 	firstrun_load_audio: 'Cargar audio',

@@ -2740,8 +2740,8 @@ export const en = {
 	// First-run empty state
 	firstrun_title: 'Start your wallpaper',
 	firstrun_body:
-		'Add a background image, load a track, or try a demo scene to see it react.',
-	firstrun_try_demo: 'Try a demo scene',
+		'Add a background image, load a track, or let the demo build a whole project: three scenes, a remix with its own intro and ending, and everything already reacting.',
+	firstrun_try_demo: 'Build the demo project',
 	firstrun_working: 'Setting up…',
 	firstrun_load_image: 'Load image',
 	firstrun_load_audio: 'Load audio',

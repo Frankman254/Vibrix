@@ -5,53 +5,18 @@ import { useAudioData } from '@/hooks/useAudioData';
 import { useT } from '@/lib/i18n';
 import { saveImage, loadImage } from '@/lib/db/imageDb';
 import { generatePoolThumbnail } from '@/lib/thumbnailUtils';
+import { startDemoProject } from '@/features/demoProject/startDemoProject';
 
 /**
  * First-run guidance shown over an empty wallpaper (no background image yet).
  * Inline overlay — NOT a modal — so the canvas stays visible behind it. The
  * three CTAs are the golden-path entry: load an image, load audio, or one-click
- * a demo scene. Disappears the moment any background image exists; can also be
- * dismissed for the session (no persisted flag, so no store migration needed).
+ * the demo project (three painted backgrounds, a synthesised remix with an
+ * intro and an ending, the generated montage over both, and the switches that
+ * make them move — see `features/demoProject`). Disappears the
+ * moment any background image exists; can also be dismissed for the session (no
+ * persisted flag, so no store migration needed).
  */
-async function generateDemoBackgroundFile(): Promise<File | null> {
-	const width = 1600;
-	const height = 900;
-	const canvas = document.createElement('canvas');
-	canvas.width = width;
-	canvas.height = height;
-	const ctx = canvas.getContext('2d');
-	if (!ctx) return null;
-
-	// Anime-glitch flavored gradient: deep indigo → magenta → cyan.
-	const grad = ctx.createLinearGradient(0, 0, width, height);
-	grad.addColorStop(0, '#1a0b2e');
-	grad.addColorStop(0.45, '#7b2ff7');
-	grad.addColorStop(0.7, '#f72fb0');
-	grad.addColorStop(1, '#2ff7e5');
-	ctx.fillStyle = grad;
-	ctx.fillRect(0, 0, width, height);
-
-	// Soft radial glow off-center for depth.
-	const glow = ctx.createRadialGradient(
-		width * 0.32,
-		height * 0.4,
-		0,
-		width * 0.32,
-		height * 0.4,
-		height * 0.9
-	);
-	glow.addColorStop(0, 'rgba(255,255,255,0.28)');
-	glow.addColorStop(1, 'rgba(255,255,255,0)');
-	ctx.fillStyle = glow;
-	ctx.fillRect(0, 0, width, height);
-
-	const blob = await new Promise<Blob | null>(resolve =>
-		canvas.toBlob(resolve, 'image/png')
-	);
-	if (!blob) return null;
-	return new File([blob], 'demo-scene.png', { type: 'image/png' });
-}
-
 export default function FirstRunEmptyState() {
 	const t = useT();
 	const { addTrackToPlaylist } = useAudioData();
@@ -106,8 +71,7 @@ export default function FirstRunEmptyState() {
 	async function startDemo() {
 		setBusy(true);
 		try {
-			const file = await generateDemoBackgroundFile();
-			if (file) await ingestImageFile(file, 'Demo Scene');
+			await startDemoProject({ addAudioTrack: addTrackToPlaylist });
 		} finally {
 			setBusy(false);
 		}
