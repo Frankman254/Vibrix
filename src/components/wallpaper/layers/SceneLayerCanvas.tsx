@@ -104,6 +104,18 @@ export default function SceneLayerCanvas({ layer }: { layer: SceneLayer }) {
 	// plane inside the scene (`RainLayer`) and the particle fields offset their
 	// points. Only the image background still takes an element translation.
 	const drawsOwnCameraMotion = particleFilterActive || layer.type === 'rain';
+	// Lives on the <Canvas> INSIDE the motion root, never on the root itself.
+	// Camera FX owns `style.filter` on every `[data-camera-motion-layer]`
+	// element — it writes the movement trail there each frame and clears it to
+	// '' when there is no trail or when the camera is switched off — so a
+	// filter set here by React was wiped and never restored (React only
+	// rewrites the style prop when one of these five values changes). The
+	// particle filter was therefore dead in the editor for anybody with Camera
+	// Motion or Screen Shake on, while the offline export read the same keys
+	// straight from the state and applied them: a blur nobody could see in the
+	// preview turned up in the video. Every other camera layer already keeps
+	// its own filter on an inner element (`OverlayImageLayerView`); this is the
+	// same rule.
 	const canvasFilter =
 		particleFilterActive && layer.enabled
 			? `brightness(${particleFilterBrightness}) contrast(${particleFilterContrast}) saturate(${particleFilterSaturation}) blur(${particleFilterBlur}px) hue-rotate(${particleFilterHueRotate}deg)`
@@ -141,8 +153,7 @@ export default function SceneLayerCanvas({ layer }: { layer: SceneLayer }) {
 				width: '100%',
 				height: '100%',
 				pointerEvents: 'none',
-				zIndex: layer.zIndex,
-				filter: canvasFilter
+				zIndex: layer.zIndex
 			}}
 		>
 			<Canvas
@@ -152,7 +163,8 @@ export default function SceneLayerCanvas({ layer }: { layer: SceneLayer }) {
 					inset: 0,
 					width: '100%',
 					height: '100%',
-					pointerEvents: 'none'
+					pointerEvents: 'none',
+					filter: canvasFilter
 				}}
 				// `preserveDrawingBuffer` is what makes the visual-transition
 				// crossfade possible: without it the drawing buffer is already

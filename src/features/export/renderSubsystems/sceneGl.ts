@@ -328,10 +328,20 @@ function createParticleLayerSubsystem(
 					blitCtx.translate(-width / 2, -height / 2);
 				}
 				if (hasParticleFilter(ctx.state)) {
-					blitCtx.filter = resolveParticleCanvasFilter(
+					// Composed, not replaced. The frame loop may already have
+					// put Camera Motion's trail on this context, and live the
+					// two stack as nested elements: the particle filter on the
+					// canvas, the trail on the motion root. Assigning here
+					// would drop whichever of the two came second.
+					const own = resolveParticleCanvasFilter(
 						ctx.state,
 						outputMin / viewportMin
 					);
+					const trail =
+						blitCtx.filter && blitCtx.filter !== 'none'
+							? blitCtx.filter
+							: '';
+					blitCtx.filter = trail ? `${own} ${trail}` : own;
 				}
 				blitCtx.drawImage(glCanvas, 0, 0);
 			});

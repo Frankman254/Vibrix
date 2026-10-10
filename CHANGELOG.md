@@ -15,6 +15,20 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+- **El filtro de partículas estaba muerto en el editor y vivo en el vídeo.**
+  Camera FX es el dueño de `style.filter` en cada `[data-camera-motion-layer]`:
+  escribe ahí la estela de movimiento en cada fotograma y la borra a `''`
+  cuando no hay estela. `SceneLayerCanvas` ponía el filtro de partículas
+  (brillo / contraste / saturación / blur / hue-rotate) en ese mismo nodo raíz,
+  así que Camera FX lo barría a los dos fotogramas y React no lo volvía a
+  escribir. Resultado: con Camera Motion o Screen Shake encendidos el editor no
+  mostraba el filtro, mientras el export lo leía del estado y lo aplicaba
+  fielmente — el difuminado que aparecía en el vídeo y en ningún preset. El
+  filtro vive ahora en el `<Canvas>` de dentro, como ya hacía
+  `OverlayImageLayerView` con su `<img>`, y el export compone su filtro con la
+  estela en vez de reemplazarla. Un test de fuente
+  (`features/stageFx/cameraMotionRootFilter.test.ts`) vigila la regla.
+
 - **La resolución es la geometría del monitor, no la calidad.** Un preset nombra
   el lado corto y el ancho lo pone la pantalla: en un ultrawide de 34" `1440p`
   significa 3440×1440, no un recorte 16:9. El cuadro entero se reescala si un

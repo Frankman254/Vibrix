@@ -17,6 +17,19 @@ import {
 } from '@/features/stageFx/cameraDrawOffset';
 
 /**
+ * Camera FX owns `style.filter` on every motion root.
+ *
+ * It writes the movement trail there each frame and clears it to '' when the
+ * trail is zero or the camera is switched off, so a layer that ALSO wants a
+ * filter of its own must keep it on an inner element — `OverlayImageLayerView`
+ * puts it on the <img>, `SceneLayerCanvas` on the <Canvas>. A filter set by
+ * React on the root itself is wiped on the next frame and never comes back,
+ * which is how the particle blur/brightness stack went missing from the
+ * preview while the offline export (which reads the state, not the DOM) kept
+ * applying it.
+ */
+
+/**
  * Whether this root paints its camera translation itself.
  *
  * A canvas that carries `data-camera-motion-draw` translates its drawing
