@@ -67,6 +67,7 @@ export default function BackgroundTab({
 	const { getDuration } = useAudioContext();
 	const [trackDuration, setTrackDuration] = useState(0);
 	const multiRef = useRef<HTMLInputElement>(null);
+	const replaceRef = useRef<HTMLInputElement>(null);
 	const globalRef = useRef<HTMLInputElement>(null);
 	const [showPoolThumbnails, setShowPoolThumbnails] = useState(true);
 	const currentActiveSetlistId = store.activeSetlistId;
@@ -141,7 +142,8 @@ export default function BackgroundTab({
 		handleMultiFiles,
 		handleVirtualImageSelect,
 		removeGlobalBackground,
-		removeImage
+		removeImage,
+		replaceActiveImageFile
 	} = useBackgroundImageActions({
 		activeImage,
 		activeSetlist,
@@ -311,6 +313,7 @@ export default function BackgroundTab({
 					onPreviousImage={() => cycleActiveImage(-1)}
 					onNextImage={() => cycleActiveImage(1)}
 					onDownloadImage={() => void downloadActiveImage()}
+					onReplaceImage={() => replaceRef.current?.click()}
 					onChangeFitMode={handleChangeFitMode}
 					onChangeScale={handleChangeScale}
 					onChangePositionX={handleChangePositionX}
@@ -387,6 +390,15 @@ export default function BackgroundTab({
 				accept="image/*"
 				multiple
 				onChange={handleMultiFiles}
+				className="hidden"
+			/>
+			{/* Replacing the contents of ONE entry: single file, its own input
+			    so a replacement can never be read as an upload. */}
+			<input
+				ref={replaceRef}
+				type="file"
+				accept="image/*"
+				onChange={event => void replaceActiveImageFile(event)}
 				className="hidden"
 			/>
 

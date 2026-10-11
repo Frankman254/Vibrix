@@ -701,6 +701,26 @@ export type WallpaperStore = WallpaperState & {
 		originalFileName?: string | null
 	) => void;
 	setImageThumbnailUrl: (id: string, thumbnailUrl: string | null) => void;
+	/**
+	 * Swap the FILE inside one pool entry, keeping the entry.
+	 *
+	 * The entry — not the picture — is what the rest of the app references:
+	 * setlists and the intro montage point at `assetId`, and the per-image
+	 * framing, focus points, scene binding and eight inline overrides live on
+	 * it. Replacing the picture therefore hands the SAME entry a new url,
+	 * thumbnail and name; a new entry would be a new box with no presets.
+	 * The bytes are expected to be written under the same asset id first.
+	 *
+	 * Measurements of the old picture do not survive the swap: an auto-placed
+	 * face / logo point was estimated from pixels that are gone. Hand-placed
+	 * points stay, because those are the user's intent, not a measurement.
+	 */
+	replaceImageEntryAsset: (
+		id: string,
+		url: string,
+		thumbnailUrl?: string | null,
+		originalFileName?: string | null
+	) => void;
 	removeImageEntry: (id: string) => void;
 	addOverlay: (overlay: WallpaperState['overlays'][number]) => void;
 	updateOverlay: (

@@ -7,6 +7,7 @@ import { Button } from '@/ui';
 import BgFitModeSelector from './BgFitModeSelector';
 import BgSectionCard from './BgSectionCard';
 import BackgroundQuickControls from './BackgroundQuickControls';
+import { isReplaceableImageAssetId } from './backgroundImageReplace';
 import ImagePointsPanel, { type ImagePointKind } from './ImagePointsPanel';
 import InteractiveImagePreview, {
 	type ImageFocusPointKind
@@ -21,6 +22,7 @@ export default function BackgroundCardShell({
 	onPreviousImage,
 	onNextImage,
 	onDownloadImage,
+	onReplaceImage,
 	children,
 	imageFitMode,
 	imageFramingManualEnabled,
@@ -68,6 +70,7 @@ export default function BackgroundCardShell({
 	onPreviousImage: () => void;
 	onNextImage: () => void;
 	onDownloadImage: () => void;
+	onReplaceImage: () => void;
 	children: ReactNode;
 	imageFitMode: Parameters<typeof BgFitModeSelector>[0]['value'];
 	imageFramingManualEnabled: boolean;
@@ -318,6 +321,12 @@ export default function BackgroundCardShell({
 						onCoverFitAll={onCoverFitAll}
 						onResetFraming={onResetFraming}
 						onDownloadImage={onDownloadImage}
+						onReplaceImage={onReplaceImage}
+						canReplaceImage={
+							activeImage
+								? isReplaceableImageAssetId(activeImage.assetId)
+								: false
+						}
 					/>
 				) : null}
 

@@ -320,6 +320,13 @@ export const es: Record<TranslationKey, string> = {
 	label_download_original_image_asset: 'Descargar imagen original',
 	confirm_download_original_image_asset:
 		'Esto descarga el archivo original guardado en el pool de imágenes, no una previsualización renderizada o encuadrada.',
+	label_replace_image_file: 'Sustituir archivo',
+	hint_replace_image_file:
+		'Pon otra foto en esta caja. Su nombre, su encuadre, sus puntos focales, su escena y todos los presets por imagen se quedan igual.',
+	confirm_replace_image_file:
+		'¿Sustituir la foto de esta caja por otro archivo? La caja conserva su encuadre, sus puntos focales, su escena y todos sus presets por imagen — sólo cambia la foto. El archivo que hay ahora se sobrescribe y no se puede recuperar desde la app.',
+	hint_replace_image_file_unavailable:
+		'Esta caja apunta a un archivo de una carpeta local, no a una copia guardada, así que su contenido no se puede sustituir desde aquí. Cambia el archivo en la propia carpeta.',
 	label_remove_image: 'Quitar imagen',
 	confirm_remove_image_asset:
 		'¿Quitar esta imagen del pool/vista de proyecto actual? Esto no elimina el archivo fuente de tu computadora.',

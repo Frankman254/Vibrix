@@ -15,6 +15,29 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+- **Sustituir el archivo de una imagen sin perder sus ajustes.** La entrada del
+  pool es una caja: su nombre, su encuadre, sus puntos focales, su escena, su
+  marca de tiempo y los ocho overrides por imagen son lo que el usuario
+  construyó, y la foto es sólo su contenido. Hasta ahora cambiar la foto
+  obligaba a borrar la entrada y subir otra, es decir, a tirar todo eso.
+  **Active Wallpaper → «Sustituir archivo»** escribe los bytes nuevos bajo el
+  **mismo `assetId`**, así que ni los setlists, ni el montaje de intro/cierre,
+  ni las escenas, ni el exportador se enteran: todos apuntan a la caja, no al
+  archivo.
+    - Lo que **no** sobrevive al cambio son las _medidas_ de la foto vieja: un
+      punto de cara o de logo con `source: 'auto'` se estimó sobre píxeles que
+      ya no existen, así que vuelve a «sin medir» y se re-escanea. Los puntos
+      puestos **a mano** y un encuadre **hecho a mano**
+      (`coverageFramingEdited`) son intención del usuario y se quedan intactos.
+    - También se regenera la miniatura (si no, la tarjeta del pool seguía
+      mostrando la foto anterior), se revoca el object URL saliente —un 4K
+      retenido se queda en memoria toda la sesión— y se invalida la firma
+      cacheada del AI Director, que está indexada por `assetId`.
+    - Las entradas de **carpetas locales** (`virtual://`) no se pueden
+      sustituir desde aquí: no tienen bytes propios, apuntan a un archivo de
+      una carpeta y `loadImageAsset` lee la carpeta antes que IndexedDB. El
+      botón queda deshabilitado explicando por qué.
+
 - **Un export parcial ya no se come la intro, el cierre ni otras 100 claves al
   importar.** El fichero exportado **siempre estuvo completo** —comprobado
   byte a byte contra un `.vibrix` real de 1,16 GB—; el que se perdía cosas era

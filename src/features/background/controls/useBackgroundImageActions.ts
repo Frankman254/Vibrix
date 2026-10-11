@@ -4,8 +4,11 @@ import {
 	deleteImage,
 	loadImage,
 	loadImageBlob,
-	saveImage
+	saveImage,
+	saveImageAsset
 } from '@/lib/db/imageDb';
+import { invalidateCachedSignature } from '@/features/aiDirector/analysis/signatureCache';
+import { isReplaceableImageAssetId } from './backgroundImageReplace';
 import { downloadBlobFallback } from '@/features/export';
 import type { BackgroundImageItem, Setlist } from '@/types/wallpaper';
 import { resolveBackgroundDownloadFileName } from './backgroundImageDownload';
@@ -82,6 +85,50 @@ export function useBackgroundImageActions({
 		event.target.value = '';
 	}
 
+	/**
+	 * Put another file inside an EXISTING pool entry.
+	 *
+	 * The entry is the box: its name, framing, focus points, scene binding
+	 * and inline overrides are what the user built, and the picture is only
+	 * its contents. So the bytes go to IndexedDB under the entry's own asset
+	 * id — overwriting what was there — and nothing that references that id
+	 * (setlists, the intro montage, scenes, the project exporter) has to
+	 * learn anything.
+	 */
+	async function replaceImageFile(assetId: string, file: File) {
+		if (!isReplaceableImageAssetId(assetId)) return false;
+		const existing = store.backgroundImages.some(
+			image => image.assetId === assetId
+		);
+		if (!existing) return false;
+
+		await saveImageAsset(assetId, await file.arrayBuffer(), file.type);
+		const url = await loadImage(assetId);
+		if (!url) return false;
+
+		store.replaceImageEntryAsset(assetId, url, null, file.name);
+		queuePoolThumbnail(assetId, url);
+		// Cached by asset id, so without this the Director keeps describing
+		// the picture that is no longer there.
+		await invalidateCachedSignature(assetId);
+		// Both measurements belong to the new pixels: the covered framing and
+		// the two focus annotations whose source is still `auto`.
+		if (store.activeImageId === assetId) {
+			void store.autoFitCoveredActiveImage();
+		}
+		void store.analyzeBackgroundImageFocus(assetId);
+		return true;
+	}
+
+	async function replaceActiveImageFile(
+		event: ChangeEvent<HTMLInputElement>
+	) {
+		const file = event.target.files?.[0];
+		event.target.value = '';
+		if (!file || !activeImage) return;
+		await replaceImageFile(activeImage.assetId, file);
+	}
+
 	async function handleVirtualImageSelect(
 		virtualId: string,
 		fileName: string
@@ -146,6 +193,8 @@ export function useBackgroundImageActions({
 		handleMultiFiles,
 		handleVirtualImageSelect,
 		removeGlobalBackground,
-		removeImage
+		removeImage,
+		replaceActiveImageFile,
+		replaceImageFile
 	};
 }

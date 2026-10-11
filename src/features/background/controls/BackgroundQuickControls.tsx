@@ -34,7 +34,9 @@ export default function BackgroundQuickControls({
 	onCoverFitCurrent,
 	onCoverFitAll,
 	onResetFraming,
-	onDownloadImage
+	onDownloadImage,
+	onReplaceImage,
+	canReplaceImage
 }: {
 	t: Record<string, string>;
 	imageScale: number;
@@ -65,6 +67,9 @@ export default function BackgroundQuickControls({
 	onCoverFitAll: () => void;
 	onResetFraming: () => void;
 	onDownloadImage: () => void;
+	onReplaceImage: () => void;
+	/** False for a pool entry whose file lives in a local folder. */
+	canReplaceImage: boolean;
 }) {
 	return (
 		<div
@@ -234,6 +239,21 @@ export default function BackgroundQuickControls({
 					{t.label_download_original_image_asset}
 				</Button>
 			</div>
+			<Button
+				onClick={onReplaceImage}
+				disabled={imageCount === 0 || !canReplaceImage}
+				size="sm"
+				density="compact"
+				variant="secondary"
+				title={
+					canReplaceImage
+						? t.hint_replace_image_file
+						: t.hint_replace_image_file_unavailable
+				}
+				full
+			>
+				{t.label_replace_image_file}
+			</Button>
 		</div>
 	);
 }

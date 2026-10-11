@@ -317,6 +317,13 @@ export const en = {
 	label_download_original_image_asset: 'Download original image asset',
 	confirm_download_original_image_asset:
 		'This downloads the original image file stored in the image pool, not a rendered or framed preview.',
+	label_replace_image_file: 'Replace file',
+	hint_replace_image_file:
+		'Put another picture in this slot. Its name, framing, focus points, scene binding and every saved per-image preset stay exactly as they are.',
+	confirm_replace_image_file:
+		'Replace the picture in this slot with another file? The slot keeps its framing, its focus points, its scene and all its per-image presets — only the picture changes. The file currently stored here is overwritten and cannot be recovered from the app.',
+	hint_replace_image_file_unavailable:
+		'This slot points at a file in a local folder, not at a stored copy, so its contents cannot be replaced from here. Change the file in the folder itself.',
 	label_remove_image: 'Remove image',
 	confirm_remove_image_asset:
 		'Remove this image from the current pool/project view? This does not delete the source file from your computer.',

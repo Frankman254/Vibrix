@@ -867,6 +867,50 @@ export function createBackgroundCollectionActions(
 
 				return didUpdate ? { backgroundImages } : state;
 			}),
+		replaceImageEntryAsset: (
+			id,
+			url,
+			thumbnailUrl = null,
+			originalFileName = null
+		) => {
+			const previous = get().backgroundImages.find(
+				image => image.assetId === id
+			);
+			if (!previous) return;
+			// Same reason as `removeImageEntry`: the outgoing object URL pins
+			// its blob for the life of the document, and dropping it from
+			// state is not something the browser can see.
+			revokeObjectUrlsSoon([previous.url, previous.thumbnailUrl]);
+			set(state => {
+				const backgroundImages = state.backgroundImages.map(image => {
+					if (image.assetId !== id) return image;
+					// A `manual` point was placed by hand on purpose; an
+					// `auto` one was measured on a picture that no longer
+					// exists, so it goes back to unmeasured and the caller
+					// re-scans. The framing is left alone: Keep-Covered
+					// refits it unless `coverageFramingEdited` says the user
+					// framed it by hand.
+					const keepFace = image.faceFocusSource === 'manual';
+					const keepLogo = image.logoFocusSource === 'manual';
+					return {
+						...image,
+						url,
+						thumbnailUrl,
+						originalFileName:
+							originalFileName ?? image.originalFileName,
+						faceFocusX: keepFace ? image.faceFocusX : null,
+						faceFocusY: keepFace ? image.faceFocusY : null,
+						logoFocusX: keepLogo ? image.logoFocusX : null,
+						logoFocusY: keepLogo ? image.logoFocusY : null
+					};
+				});
+				return buildBackgroundImageCollectionPatch(
+					state,
+					backgroundImages,
+					state.activeImageId
+				);
+			});
+		},
 		removeImageEntry: id => {
 			// Before the entry is gone: an object URL pins its blob for the
 			// life of the document, and dropping the url from state is not

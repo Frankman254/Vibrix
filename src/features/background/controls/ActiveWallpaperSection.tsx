@@ -48,6 +48,8 @@ type Props = {
 	onPreviousImage: () => void;
 	onNextImage: () => void;
 	onDownloadImage: () => void;
+	/** Open the file picker that swaps the active entry's picture. */
+	onReplaceImage: () => void;
 	onChangeFitMode: (
 		value: Parameters<typeof BgFitModeSelector>[0]['value']
 	) => void;
@@ -106,6 +108,7 @@ export default function ActiveWallpaperSection({
 	onPreviousImage,
 	onNextImage,
 	onDownloadImage,
+	onReplaceImage,
 	onChangeFitMode,
 	onChangeScale,
 	onChangePositionX,
@@ -158,6 +161,18 @@ export default function ActiveWallpaperSection({
 		onDownloadImage();
 	}
 
+	async function handleReplaceImage() {
+		const ok = await confirm({
+			title: t.label_replace_image_file,
+			message: t.confirm_replace_image_file,
+			confirmLabel: t.label_replace_image_file,
+			cancelLabel: t.label_cancel,
+			tone: 'warning'
+		});
+		if (!ok) return;
+		onReplaceImage();
+	}
+
 	async function handleResetFraming() {
 		const ok = await confirm({
 			title: t.label_reset_framing,
@@ -197,6 +212,7 @@ export default function ActiveWallpaperSection({
 			onPreviousImage={onPreviousImage}
 			onNextImage={onNextImage}
 			onDownloadImage={handleDownloadImage}
+			onReplaceImage={() => void handleReplaceImage()}
 			imageFitMode={imageFitMode}
 			imageFramingManualEnabled={imageFramingManualEnabled}
 			imageScale={imageScale}
