@@ -5,6 +5,13 @@
 > El otro lado: `Lyrixa/.agents/TAREA_SECUENCIADOR.md`.
 > Orden general: [docs/plans/PLAN_ATAQUE_CONGELACION_Y_LYRIXA.md](../docs/plans/PLAN_ATAQUE_CONGELACION_Y_LYRIXA.md).
 
+> **SUPERADA — 2026-10-03.** Este doc describe el manifiesto **v1**, que sólo
+> publica slots. El modelo vivo es el **v2** (imágenes como objetos y
+> activaciones sostenidas por carril):
+> [TAREA_COMPOSE_TIMELINE.md](TAREA_COMPOSE_TIMELINE.md). Esto se queda como
+> historia de cómo se cerró la Fase A y por qué el contrato dice lo que dice; no
+> es la lista de trabajo de nadie.
+
 > **HECHA — 2026-10-02.** A1, A2 y A3 están en código con 54 tests nuevos, y el
 > circuito se verificó contra el **parser real de Lyrixa**, no contra este doc.
 > Lo que sigue abierto es la Fase C (`resolveVisualStateAt`), en su propia

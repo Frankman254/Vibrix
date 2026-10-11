@@ -9,6 +9,26 @@
 > de imagen, conectarlo al preview/Play y al export offline, y persistir el score
 > con su migración cuando exista una superficie real que lo consuma.
 
+> **Repaso 2026-10-11 — esto lleva una semana parado y conviene saberlo.**
+> Verificado por grep, no por memoria: `resolveVisualStateAt` **no se importa
+> desde ningún sitio de `src/`** (la única mención fuera de su módulo es un
+> comentario en `vibrixScore.ts`). O sea: 234 líneas de evaluador y 241 de tests
+> que no llegan a la pantalla. Desde el 2026-10-04 los 20 commits siguientes
+> fueron a export offline, slideshow, storage, WebGL, stage FX, demo y legacy
+> — nada de compose.
+>
+> El tramo que queda está secuenciado como **W1→W5** en
+> [el plan de ataque](../docs/plans/PLAN_ATAQUE_CONGELACION_Y_LYRIXA.md), §Vía 3,
+> con el orden y el riesgo de cada paso. Dos avisos que se pierden si sólo se lee
+> la lista de abajo:
+>
+> - **El punto 5 de V2.2 («no persistir el score») caduca en cuanto se haga el
+>   modo Compose.** En la Fase A no se persistía porque nada lo consumía; con
+>   consumidor, toca clave nueva **con bump de `STORE_PERSIST_VERSION` y
+>   migración**. Hoy va por 152.
+> - **El tag de congelación sigue sin existir** (sólo hay `v0.4.1-alpha`), y el
+>   punto 5 de V2.3 es precisamente la cirugía para la que era la red.
+
 ## Resultado que debe verse
 
 Lyrixa muestra un catálogo de objetos publicados por Vibrix. El usuario arrastra
