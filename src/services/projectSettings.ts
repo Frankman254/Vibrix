@@ -306,8 +306,6 @@ function normalizeBackgroundImages(
 						image.transitionAudioChannel ??
 						source.slideshowTransitionAudioChannel ??
 						DEFAULT_STATE.slideshowTransitionAudioChannel,
-					logoProfileSlotId: image.logoProfileSlotId ?? null,
-					spectrumProfileSlotId: image.spectrumProfileSlotId ?? null,
 					logoOverride: image.logoOverride ?? null,
 					spectrumOverride: image.spectrumOverride ?? null,
 					playbackSwitchAt: image.playbackSwitchAt ?? null,

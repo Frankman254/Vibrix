@@ -69,10 +69,7 @@ export {
 	writeSlotTargetSettings
 } from './domain/spectrumTargetProfile';
 export type { SpectrumProfileTarget } from './domain/spectrumTargetProfile';
-export {
-	buildSpectrumMacroPatch,
-	normalizeSpectrumSettings
-} from './domain/spectrumStateTransforms';
+export { normalizeSpectrumSettings } from './domain/spectrumStateTransforms';
 export {
 	normalizeSpectrumFamily,
 	normalizeSpectrumShape

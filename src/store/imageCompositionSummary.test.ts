@@ -112,35 +112,23 @@ describe('describeImageComposition', () => {
 		expect(summary.usedDefaultScene).toBe(true);
 	});
 
-	it('an inline override beats the image slot binding', () => {
+	it('an inline snapshot is the only thing an image can carry per subsystem', () => {
+		// The image used to be able to point at a saved slot instead. That
+		// binding is gone — nothing could write one — so an image either holds
+		// its own snapshot or leaves the subsystem on the globals.
 		const summary = describeImageComposition(
 			state({
 				logoProfileSlots: [
 					{ id: 'logo-slot-1', name: 'Big', values: {} }
 				] as never
 			}),
-			image({
-				logoProfileSlotId: 'logo-slot-1',
-				logoOverride: { logoScale: 2 } as never
-			})
+			image({ logoOverride: { logoScale: 2 } as never })
 		);
 		expect(row(summary, 'logo').source).toBe('override');
+		expect(row(summary, 'spectrum').source).toBe('global');
 	});
 
-	it('reports the slot binding when there is no inline override', () => {
-		const summary = describeImageComposition(
-			state({
-				logoProfileSlots: [
-					{ id: 'logo-slot-1', name: 'Big', values: {} }
-				] as never
-			}),
-			image({ logoProfileSlotId: 'logo-slot-1' })
-		);
-		expect(row(summary, 'logo').source).toBe('slot');
-		expect(row(summary, 'logo').detail).toBe('Big');
-	});
-
-	it('covers the three new overrides, which have no slot binding of their own', () => {
+	it('covers the overrides that never had a slot binding of their own', () => {
 		const summary = describeImageComposition(
 			state(),
 			image({

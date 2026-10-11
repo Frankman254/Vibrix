@@ -15,6 +15,50 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+- **Barrido de legado: fuera el código muerto que sólo existía para no romper
+  proyectos viejos.** Siete grupos de código que ninguna ruta viva alcanzaba, y
+  que se mantenían para que un guardado antiguo siguiera cargando. Ahora manda
+  el código nuevo: un export viejo puede perder lo que ya no se renderizaba.
+    - **Enlaces de slot por imagen (`*ProfileSlotId`).** Una imagen podía
+      apuntar a un slot guardado de Logo, Spectrum, Particles, Rain o Looks.
+      Desde que el editor pasó a escenas **nada podía escribir uno**: sólo
+      contenían valores migrados de proyectos pre-escena. Se van los 5 campos,
+      sus 5 setters muertos, la fuente `slot` del panel de composición, las 5
+      comprobaciones de «slot colgado» del informe de salud y la migración v104
+      que los creaba. Ligar un slot guardado es trabajo de la escena; lo que
+      lleva la imagen son sus capturas inline (`logoOverride`, …) y su escena.
+    - **Sistema de macros del Spectrum (Energy / Softness / Chaos), entero.** La
+      acción (`applySpectrumMacro`), el constructor del parche
+      (`buildSpectrumMacroPatch`), la inferencia inversa
+      (`inferSpectrumMacroValues`) y los rangos `macroTuning` de las 6 familias:
+      ninguna UI los llamaba. Los sliders por instancia los sustituyeron.
+    - **78 acciones del Spectrum huérfanas** (`setSpectrumOpacity`,
+      `setSpectrumFamily`, `setSpectrumTunnel*`, `setSpectrumSpiral*`, …) y
+      `randomizeSpectrum`. Las reemplazaron `patchSpectrumMain` —que cubre las
+      148 claves por instancia— y `randomizeSpectrumTarget`, que trabajan sobre
+      el spectrum elegido en vez de sobre el principal a ciegas.
+    - **Claves de Lights sin lector:** `stageLightsBeamCount` (el conteo pasó a
+      ser el par min/máx) y `stageLightsPeakFlash` (lo hace `flashLightEnabled`).
+      La intención «concert» del AI Director ahora escribe las claves vivas.
+    - **`cameraFxEnabled`** (lo es `cameraMotionEnabled`), **`quickEditCaptureMode`**
+      (su selector no existe) y **`cameraMotionTarget`**, el espejo escalar
+      marcado `@deprecated` del array `cameraMotionTargets`.
+    - **El banco de presets de BG Bass Zoom** (`Smooth` / `Punchy` y su
+      `imageBassZoomPresetId`): el selector se fue cuando la envolvente pasó a
+      ser sliders de Calibration. `IMAGE_BASS_ZOOM_CLASSIC` se queda porque
+      **es** el valor por defecto de fábrica.
+    - **Arreglo de paso:** el informe de salud del proyecto marcaba como «slot
+      colgado» un `'off'` de escena, que es un enlace válido («apaga este
+      subsistema aquí») y no apunta a ningún slot. Contradecía su propio
+      comentario y ensuciaba la revisión con avisos falsos.
+    - `STORE_PERSIST_VERSION` is at **152**. La migración borra las claves
+      retiradas **de todo el árbol guardado**, no sólo de la raíz: un slot de
+      perfil, una escena, un slot de composición global y una captura por imagen
+      guardan los mismos nombres, así que aplicar uno las revivía. Las
+      migraciones que siembran los reemplazos siguen leyendo los nombres viejos
+      del guardado entrante (`retiredKey`), así que un proyecto de v151 llega
+      igual de completo.
+
 - **Rain y Particles por imagen ya guardan su propio on/off.** Un slot o una
   captura per-image llevaba el largo, el ángulo, el color y la velocidad de la
   lluvia… y el aplicador le pisaba el `rainEnabled` con el del estado vivo, así

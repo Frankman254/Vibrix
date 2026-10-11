@@ -1,5 +1,4 @@
 import type { TransitionBatchPlan } from '@/features/background';
-import type { ImageBassZoomPresetId } from '@/features/presets/imageBassZoomProfiles';
 import type {
 	AudioLyricsTrackEntry,
 	LyricsLayerColorMode
@@ -37,17 +36,10 @@ import type {
 	PerformanceMode,
 	RainColorMode,
 	RainParticleType,
-	ResolvedAudioReactiveChannel,
 	ScanlineMode,
 	SlideshowTransitionType,
-	SpectrumBandMode,
-	SpectrumColorMode,
-	SpectrumLinearDirection,
-	SpectrumLinearOrientation,
-	SpectrumMode,
 	SpectrumProfileSettings,
 	SpectrumRadialShape,
-	SpectrumShape,
 	ThemeColorSource,
 	TrackTitleFontStyle,
 	TrackTitleLayoutMode,
@@ -110,7 +102,6 @@ export type WallpaperStore = WallpaperState & {
 	setImageBlurReactiveInvert: (v: boolean) => void;
 	setImageBlurReactiveThreshold: (v: number) => void;
 	setImageBlurReactiveSoftness: (v: number) => void;
-	applyImageBassZoomPreset: (id: ImageBassZoomPresetId) => void;
 	setImageBassAttack: (v: number) => void;
 	setImageBassRelease: (v: number) => void;
 	setImageBassReactivitySpeed: (v: number) => void;
@@ -123,11 +114,6 @@ export type WallpaperStore = WallpaperState & {
 	removeBackgroundProfileSlot: (index: number) => void;
 	saveBackgroundProfileSlot: (index: number) => void;
 	loadBackgroundProfileSlot: (index: number) => void;
-	setImageLogoProfileSlotIndex: (v: number | null) => void;
-	setImageSpectrumProfileSlotIndex: (v: number | null) => void;
-	setImageParticlesProfileSlotIndex: (v: number | null) => void;
-	setImageRainProfileSlotIndex: (v: number | null) => void;
-	setImageLooksProfileSlotIndex: (v: number | null) => void;
 	setImageLogoOverride: (v: LogoProfileSettings | null) => void;
 	setImageSpectrumOverride: (v: SpectrumProfileSettings | null) => void;
 	setImageParticlesOverride: (
@@ -429,49 +415,17 @@ export type WallpaperStore = WallpaperState & {
 		patch: Partial<import('@/types/wallpaper').SpectrumInstanceSettings>
 	) => void;
 	setSpectrumInstanceEnabled: (id: string, v: boolean) => void;
-	setSpectrumMode: (v: SpectrumMode) => void;
-	setSpectrumLinearOrientation: (v: SpectrumLinearOrientation) => void;
-	setSpectrumLinearDirection: (v: SpectrumLinearDirection) => void;
-	setSpectrumRadialShape: (v: SpectrumRadialShape) => void;
-	setSpectrumRadialAngle: (v: number) => void;
 	setSpectrumRadialFitLogo: (v: boolean) => void;
 	setSpectrumFollowLogo: (v: boolean) => void;
-	setSpectrumLogoGap: (v: number) => void;
-	setSpectrumSpan: (v: number) => void;
-	setSpectrumInnerRadius: (v: number) => void;
 	setSpectrumBarCount: (v: number) => void;
-	setSpectrumBarWidth: (v: number) => void;
-	setSpectrumMinHeight: (v: number) => void;
-	setSpectrumMaxHeight: (v: number) => void;
-	setSpectrumSmoothing: (v: number) => void;
-	setSpectrumOpacity: (v: number) => void;
-	setSpectrumGlowIntensity: (v: number) => void;
-	setSpectrumGlowReach: (v: number) => void;
-	setSpectrumGlowAudioAmount: (v: number) => void;
-	setSpectrumShadowBlur: (v: number) => void;
-	setSpectrumPrimaryColor: (v: string) => void;
-	setSpectrumSecondaryColor: (v: string) => void;
-	setSpectrumColorSource: (v: ColorSourceMode) => void;
-	setSpectrumColorMode: (v: SpectrumColorMode) => void;
-	setSpectrumBandMode: (v: SpectrumBandMode) => void;
-	setSpectrumAudioSmoothing: (v: number) => void;
-	setSpectrumShape: (v: SpectrumShape) => void;
-	setSpectrumWaveFillOpacity: (v: number) => void;
-	setSpectrumRotationSpeed: (v: number) => void;
 	setSpectrumMirror: (v: boolean) => void;
 	setSpectrumPeakHold: (v: boolean) => void;
-	setSpectrumPeakDecay: (v: number) => void;
 	setSpectrumPositionX: (v: number) => void;
 	setSpectrumPositionY: (v: number) => void;
-	applySpectrumMacro: (
-		macro: 'energy' | 'softness' | 'chaos',
-		value: number
-	) => void;
 	applySpectrumFrameMemoryPreset: (
 		preset: import('@/features/spectrum').SpectrumFrameMemoryPresetId,
 		target: import('@/features/spectrum').SpectrumFrameMemoryTarget
 	) => void;
-	randomizeSpectrum: (colorSource: ColorSourceMode) => void;
 	randomizeSpectrumTarget: (
 		target: import('@/features/spectrum').SpectrumProfileTarget,
 		colorSource: ColorSourceMode
@@ -497,47 +451,6 @@ export type WallpaperStore = WallpaperState & {
 	resetSpectrumToDefaults: () => void;
 	restoreFactorySpectrumDefaults: () => void;
 	recoverAudioOverlays: () => void;
-	setSpectrumFamily: (v: import('@/types/wallpaper').SpectrumFamily) => void;
-	setSpectrumFrameMemoryEnabled: (v: boolean) => void;
-	setSpectrumAfterglow: (v: number) => void;
-	setSpectrumMotionTrails: (v: number) => void;
-	setSpectrumGhostFrames: (v: number) => void;
-	setSpectrumFrameHistoryDepth: (v: number) => void;
-	setSpectrumGainExpressiveness: (v: number) => void;
-	setSpectrumEnvelopeAttack: (v: number) => void;
-	setSpectrumEnvelopeRelease: (v: number) => void;
-	setSpectrumEnvelopeReactivitySpeed: (v: number) => void;
-	setSpectrumEnvelopePeakWindow: (v: number) => void;
-	setSpectrumEnvelopePeakFloor: (v: number) => void;
-	setSpectrumEnvelopePunch: (v: number) => void;
-	setSpectrumPeakRibbonsEnabled: (v: boolean) => void;
-	setSpectrumPeakRibbons: (v: number) => void;
-	setSpectrumPeakRibbonAngle: (v: number) => void;
-	setSpectrumBassShockwaveEnabled: (v: boolean) => void;
-	setSpectrumBassShockwave: (v: number) => void;
-	setSpectrumShockwaveBandMode: (
-		v: import('@/types/wallpaper').SpectrumBandMode
-	) => void;
-	setSpectrumShockwaveBandThreshold: (
-		channel: ResolvedAudioReactiveChannel,
-		value: number
-	) => void;
-	setSpectrumShockwaveThickness: (v: number) => void;
-	setSpectrumShockwaveOpacity: (v: number) => void;
-	setSpectrumShockwaveBlur: (v: number) => void;
-	setSpectrumShockwaveColorMode: (
-		v: import('@/types/wallpaper').SpectrumShockwaveColorMode
-	) => void;
-	setSpectrumEnergyBloomEnabled: (v: boolean) => void;
-	setSpectrumEnergyBloom: (v: number) => void;
-	setSpectrumFigureRotationSpeed: (v: number) => void;
-	setSpectrumOscilloscopeLineWidth: (v: number) => void;
-	setSpectrumTunnelRingCount: (v: number) => void;
-	setSpectrumTunnelDepthFalloff: (v: number) => void;
-	setSpectrumTunnelRingSpacing: (v: number) => void;
-	setSpectrumTunnelWallOpacity: (v: number) => void;
-	setSpectrumTunnelPulseStrength: (v: number) => void;
-	setSpectrumTunnelAlternateRotation: (v: boolean) => void;
 	setSpectrumLiquidLayerRigidShape: (layer: 1 | 2 | 3, v: boolean) => void;
 	setSpectrumLiquidLayerPixelate: (layer: 1 | 2 | 3, v: boolean) => void;
 	applySpectrumTunnelPreset: (
@@ -556,26 +469,6 @@ export type WallpaperStore = WallpaperState & {
 		layer: 1 | 2 | 3,
 		shape: import('@/types/wallpaper').SpectrumRadialShape
 	) => void;
-	setSpectrumSpiralTurns: (v: number) => void;
-	setSpectrumSpiralOuterRadius: (v: number) => void;
-	setSpectrumSpiralTightness: (v: number) => void;
-	setSpectrumSpiralShape: (
-		v: import('@/types/wallpaper').SpectrumRadialShape
-	) => void;
-	setSpectrumSpiralLogarithmic: (v: boolean) => void;
-	setSpectrumSpiralGradientStroke: (v: boolean) => void;
-	setSpectrumSpiralArms: (v: number) => void;
-	setSpectrumSpiralAudioTurns: (v: number) => void;
-	setSpectrumSpiralDotShape: (
-		v: import('@/types/wallpaper').SpectrumSpiralDotShape
-	) => void;
-	setSpectrumSpiralStrokeWidth: (v: number) => void;
-	setSpectrumOscilloscopeScrollSpeed: (v: number) => void;
-	setSpectrumOscilloscopeReactiveWidth: (v: boolean) => void;
-	setSpectrumOscilloscopePhosphor: (v: boolean) => void;
-	setSpectrumOscilloscopePhosphorDecay: (v: number) => void;
-	setSpectrumOscilloscopeGrid: (v: boolean) => void;
-	setSpectrumOscilloscopeGridDivisions: (v: number) => void;
 	setSpectrumDriveMode: (
 		v: import('@/types/wallpaper').SpectrumDriveMode
 	) => void;
@@ -940,7 +833,6 @@ export type WallpaperStore = WallpaperState & {
 	setControlPanelAnchor: (v: ControlPanelAnchor) => void;
 	setControlPanelOffset: (x: number, y: number) => void;
 	setHudLiquidGlassEnabled: (v: boolean) => void;
-	setQuickEditCaptureMode: (v: 'total' | 'selection') => void;
 	addColorFavorite: (hex: string) => void;
 	removeColorFavorite: (hex: string) => void;
 	setColorFavorites: (list: string[]) => void;
@@ -1044,7 +936,6 @@ export type WallpaperStore = WallpaperState & {
 	// Stage Lights FX
 	setStageLightsEnabled: (v: boolean) => void;
 	setStageLightsIntensity: (v: number) => void;
-	setStageLightsBeamCount: (v: number) => void;
 	setStageLightsMinBeamCount: (v: number) => void;
 	setStageLightsMaxBeamCount: (v: number) => void;
 	setStageLightsBeamWidth: (v: number) => void;
@@ -1073,7 +964,6 @@ export type WallpaperStore = WallpaperState & {
 	setStageLightsAudioHoldMs: (v: number) => void;
 	setStageLightsAudioDecay: (v: number) => void;
 	setStageLightsAudioGateEnabled: (v: boolean) => void;
-	setStageLightsPeakFlash: (v: boolean) => void;
 	setStageLightsPeakThreshold: (v: number) => void;
 	setStageLightsBandThreshold: (
 		channel: import('@/features/stageFx/stageFxConfig').FxAudioChannel,
@@ -1144,7 +1034,6 @@ export type WallpaperStore = WallpaperState & {
 	setBgFlashEdgeColor: (v: string) => void;
 
 	// Camera FX
-	setCameraFxEnabled: (v: boolean) => void;
 	setCameraMotionEnabled: (v: boolean) => void;
 	setCameraMotionMode: (
 		v: import('@/features/stageFx/stageFxConfig').CameraMotionMode
@@ -1170,9 +1059,6 @@ export type WallpaperStore = WallpaperState & {
 	setCameraMotionSmoothing: (v: number) => void;
 	setCameraMotionTrail: (v: number) => void;
 	setCameraMotionTrailColor: (v: string) => void;
-	setCameraMotionTarget: (
-		v: import('@/features/stageFx/stageFxConfig').CameraMotionTarget
-	) => void;
 	setCameraMotionTargets: (
 		v: import('@/features/stageFx/stageFxConfig').CameraMotionTarget[]
 	) => void;

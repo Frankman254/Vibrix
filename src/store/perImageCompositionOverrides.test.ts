@@ -179,28 +179,39 @@ describe('per-image Particles / Rain carry their own on/off', () => {
 		expect(patch.particleCount).toBe(42);
 	});
 
-	it('a bound rain SLOT brings its own switch too', () => {
+	it('a rain SLOT bound through the image own scene brings its switch too', async () => {
+		// Binding a saved slot is a scene job — the image carries snapshots.
+		// Both paths have to agree on the switch, which is the whole point.
 		useWallpaperStore.setState({ rainEnabled: true, rainDropCount: 700 });
 		const values = extractRainProfileSettings(useWallpaperStore.getState());
 		const slots = useWallpaperStore.getState().rainProfileSlots;
+		const { createEmptySceneSlot } =
+			await import('@/features/scenes/sceneSlot');
+		const scene = {
+			...createEmptySceneSlot('Rainy'),
+			rainSlotId: slots[0]!.id
+		};
 		useWallpaperStore.setState({
 			rainEnabled: false,
+			rainDropCount: 1,
 			rainProfileSlots: slots.map((slot, index) =>
 				index === 0 ? { ...slot, values } : slot
 			),
+			sceneSlots: [scene],
 			backgroundImages: useWallpaperStore
 				.getState()
 				.backgroundImages.map(img =>
 					img.assetId === 'img-1'
-						? { ...img, rainProfileSlotId: slots[0]!.id }
+						? { ...img, sceneSlotId: scene.id }
 						: img
 				)
 		});
 
-		const { patch } = buildActiveImageSelectionPatch(
+		const { patch, appliedScene } = buildActiveImageSelectionPatch(
 			useWallpaperStore.getState(),
 			'img-1'
 		);
+		expect(appliedScene).toBe(true);
 		expect(patch.rainEnabled).toBe(true);
 		expect(patch.rainDropCount).toBe(700);
 	});

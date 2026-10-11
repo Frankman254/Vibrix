@@ -134,8 +134,7 @@ export function createMotionLayerActions(set: WallpaperSet) {
 									)
 								}
 					),
-					cameraMotionTargets: targets,
-					cameraMotionTarget: targets[0] ?? 'background'
+					cameraMotionTargets: targets
 				};
 			}),
 		moveMotionLayer: (id, direction) =>

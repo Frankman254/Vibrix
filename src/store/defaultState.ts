@@ -103,7 +103,6 @@ const BASE_STATE: Omit<
 	imageBlurReactiveThreshold: 0.74,
 	imageBlurReactiveSoftness: 0.14,
 	...IMAGE_BASS_ZOOM_CLASSIC,
-	imageBassZoomPresetId: 'classic',
 	imageAudioChannel: 'kick',
 	backgroundProfileSlots: createDefaultBackgroundProfileSlots(),
 	imageFitMode: 'contain',
@@ -454,7 +453,6 @@ const BASE_STATE: Omit<
 	// Stage Lights FX (Task 2)
 	stageLightsEnabled: false,
 	stageLightsIntensity: 0.6,
-	stageLightsBeamCount: 5,
 	stageLightsMinBeamCount: 3,
 	stageLightsMaxBeamCount: 5,
 	stageLightsBeamWidth: 0.4,
@@ -484,7 +482,6 @@ const BASE_STATE: Omit<
 	stageLightsAudioHoldMs: 90,
 	stageLightsAudioDecay: 0.82,
 	stageLightsAudioGateEnabled: true,
-	stageLightsPeakFlash: true,
 	stageLightsPeakThreshold: 0.6,
 	stageLightsBandThresholds: { kick: 0.32, bass: 0.42, full: 0.28 },
 	stageLightsOpacity: 0.5,
@@ -541,7 +538,6 @@ const BASE_STATE: Omit<
 	bgFlashEdgeColor: '#ff00cc',
 
 	// Camera FX (Task 3)
-	cameraFxEnabled: false,
 	cameraMotionEnabled: false,
 	cameraMotionMode: 'none',
 	cameraMotionAmount: 0.3,
@@ -561,7 +557,6 @@ const BASE_STATE: Omit<
 	cameraMotionAmplitudeAudio: 0,
 	cameraMotionAudioChannel: 'full',
 	cameraMotionDirection: 'cw',
-	cameraMotionTarget: 'background',
 	cameraMotionTargets: ['background'],
 	cameraShakeEnabled: false,
 	cameraShakeAmount: 0.5,
@@ -630,7 +625,6 @@ const BASE_STATE: Omit<
 	controlPanelOffsetX: 0,
 	controlPanelOffsetY: 0,
 	hudLiquidGlassEnabled: false,
-	quickEditCaptureMode: 'selection',
 	colorFavorites: DEFAULT_COLOR_FAVORITES,
 	controlPanelActiveTab: null,
 	activeSpectrumTarget: 'main',

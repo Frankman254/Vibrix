@@ -102,7 +102,6 @@ describe('motion layers — the active layer is the flat keys', () => {
 			})
 		);
 		expect(patch.cameraMotionTargets).toEqual(['spectrum', 'logo']);
-		expect(patch.cameraMotionTarget).toBe('spectrum');
 		expect(patch.cameraMotionMode).toBe('pendulum');
 		expect(patch.cameraMotionAmount).toBe(0.2);
 	});

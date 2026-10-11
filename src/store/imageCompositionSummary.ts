@@ -54,8 +54,6 @@ export type CompositionSourceId =
 	| 'scene-off'
 	/** The image carries an inline snapshot of this subsystem. */
 	| 'override'
-	/** The image points at a saved slot of this subsystem. */
-	| 'slot'
 	/** Nothing per-image: the global controls are what you see. */
 	| 'global';
 
@@ -96,7 +94,6 @@ const SUBSYSTEMS: ReadonlyArray<{
 	id: CompositionSubsystemId;
 	sceneKey: keyof SceneSlot;
 	overrideKey: keyof BackgroundImageItem | null;
-	slotKey: keyof BackgroundImageItem | null;
 	slots: (
 		state: CompositionStateSource
 	) => ReadonlyArray<{ id: string; name: string }>;
@@ -105,56 +102,48 @@ const SUBSYSTEMS: ReadonlyArray<{
 		id: 'logo',
 		sceneKey: 'logoSlotId',
 		overrideKey: 'logoOverride',
-		slotKey: 'logoProfileSlotId',
 		slots: state => state.logoProfileSlots
 	},
 	{
 		id: 'spectrum',
 		sceneKey: 'spectrumSlotId',
 		overrideKey: 'spectrumOverride',
-		slotKey: 'spectrumProfileSlotId',
 		slots: state => state.spectrumProfileSlots
 	},
 	{
 		id: 'particles',
 		sceneKey: 'particlesSlotId',
 		overrideKey: 'particlesOverride',
-		slotKey: 'particlesProfileSlotId',
 		slots: state => state.particlesProfileSlots
 	},
 	{
 		id: 'rain',
 		sceneKey: 'rainSlotId',
 		overrideKey: 'rainOverride',
-		slotKey: 'rainProfileSlotId',
 		slots: state => state.rainProfileSlots
 	},
 	{
 		id: 'looks',
 		sceneKey: 'looksSlotId',
 		overrideKey: 'looksOverride',
-		slotKey: 'looksProfileSlotId',
 		slots: state => state.looksProfileSlots
 	},
 	{
 		id: 'cameraFx',
 		sceneKey: 'cameraFxSlotId',
 		overrideKey: 'cameraFxOverride',
-		slotKey: null,
 		slots: state => state.cameraFxProfileSlots
 	},
 	{
 		id: 'lights',
 		sceneKey: 'lightsSlotId',
 		overrideKey: 'lightsOverride',
-		slotKey: null,
 		slots: state => state.lightsProfileSlots
 	},
 	{
 		id: 'trackTitle',
 		sceneKey: 'trackTitleSlotId',
 		overrideKey: 'trackTitleOverride',
-		slotKey: null,
 		slots: state => state.trackTitleProfileSlots
 	}
 ];
@@ -205,13 +194,6 @@ export function describeImageComposition(
 		if (hasOverride) {
 			return { ...base, source: 'override', detail: null };
 		}
-		const slot = subsystem.slotKey
-			? findSlotByRef(
-					subsystem.slots(state),
-					image[subsystem.slotKey] as SceneSlotRef
-				)
-			: null;
-		if (slot) return { ...base, source: 'slot', detail: slot.name };
 		return { ...base, source: 'global', detail: null };
 	});
 

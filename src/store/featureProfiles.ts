@@ -151,7 +151,6 @@ export type RainProfileSettings = Pick<
 export const LIGHTS_PROFILE_KEYS = [
 	'stageLightsEnabled',
 	'stageLightsIntensity',
-	'stageLightsBeamCount',
 	'stageLightsMinBeamCount',
 	'stageLightsMaxBeamCount',
 	'stageLightsBeamWidth',
@@ -174,7 +173,6 @@ export const LIGHTS_PROFILE_KEYS = [
 	'stageLightsAudioHoldMs',
 	'stageLightsAudioDecay',
 	'stageLightsAudioGateEnabled',
-	'stageLightsPeakFlash',
 	'stageLightsPeakThreshold',
 	'stageLightsBandThresholds',
 	'stageLightsOpacity',

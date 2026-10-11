@@ -112,13 +112,10 @@ export function syncActiveMotionLayer(
 /** The flat keys that must follow when a different layer becomes active. */
 export function motionLayerToStatePatch(
 	layer: MotionLayer
-): MotionLayerSettings &
-	Pick<WallpaperState, 'cameraMotionTargets' | 'cameraMotionTarget'> {
+): MotionLayerSettings & Pick<WallpaperState, 'cameraMotionTargets'> {
 	return {
 		...layer.settings,
-		cameraMotionTargets: [...layer.targets],
-		// Kept in step with the array for the deprecated scalar readers.
-		cameraMotionTarget: layer.targets[0] ?? 'background'
+		cameraMotionTargets: [...layer.targets]
 	};
 }
 

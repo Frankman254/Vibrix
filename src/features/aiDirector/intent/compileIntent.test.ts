@@ -67,7 +67,8 @@ const NUMERIC_RANGES: Record<string, SliderRange> = {
 	scanlineThickness: { min: 0.5, max: 6, step: 0.1 },
 
 	stageLightsIntensity: { min: 0, max: 1, step: 0.01 },
-	stageLightsBeamCount: { min: 1, max: 24, step: 1 },
+	stageLightsMinBeamCount: { min: 1, max: 24, step: 1 },
+	stageLightsMaxBeamCount: { min: 1, max: 24, step: 1 },
 	stageLightsBeamWidth: { min: 0, max: 1, step: 0.01 },
 	stageLightsSoftness: { min: 0, max: 1, step: 0.01 },
 	stageLightsSpeed: { min: 0, max: 3, step: 0.01 },

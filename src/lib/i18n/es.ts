@@ -1999,7 +1999,6 @@ export const es: Record<TranslationKey, string> = {
 	img_carry_src_scene: 'Escena',
 	img_carry_src_scene_off: 'Apagado por la escena',
 	img_carry_src_override: 'Esta imagen',
-	img_carry_src_slot: 'Slot guardado',
 	img_carry_src_global: 'Controles globales',
 	img_carry_override_shadowed: 'guardado, no gana',
 	img_carry_global_mode_banner:

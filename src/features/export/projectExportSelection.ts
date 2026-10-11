@@ -355,7 +355,6 @@ export function filterWallpaperStateForProjectExport(
 	if (!selection.logo) {
 		nextState.backgroundImages = nextState.backgroundImages.map(image => ({
 			...image,
-			logoProfileSlotId: null,
 			logoOverride: null
 		}));
 		nextState.sceneSlots = nextState.sceneSlots.map(scene => ({
@@ -367,7 +366,6 @@ export function filterWallpaperStateForProjectExport(
 	if (!selection.spectrum) {
 		nextState.backgroundImages = nextState.backgroundImages.map(image => ({
 			...image,
-			spectrumProfileSlotId: null,
 			spectrumOverride: null
 		}));
 		nextState.sceneSlots = nextState.sceneSlots.map(scene => ({
@@ -380,9 +378,7 @@ export function filterWallpaperStateForProjectExport(
 	if (!selection.motion) {
 		nextState.backgroundImages = nextState.backgroundImages.map(image => ({
 			...image,
-			particlesProfileSlotId: null,
 			particlesOverride: null,
-			rainProfileSlotId: null,
 			rainOverride: null
 		}));
 		nextState.sceneSlots = nextState.sceneSlots.map(scene => ({
@@ -395,7 +391,6 @@ export function filterWallpaperStateForProjectExport(
 	if (!selection.looks) {
 		nextState.backgroundImages = nextState.backgroundImages.map(image => ({
 			...image,
-			looksProfileSlotId: null,
 			looksOverride: null
 		}));
 		nextState.sceneSlots = nextState.sceneSlots.map(scene => ({

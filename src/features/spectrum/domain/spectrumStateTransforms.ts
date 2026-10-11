@@ -1,13 +1,9 @@
 import { SPECTRUM_RANGES, type SliderRange } from '@/config/ranges';
-import { clamp, lerp } from '@/lib/math';
+import { clamp } from '@/lib/math';
 import type {
 	ResolvedAudioReactiveChannel,
-	SpectrumFamily,
-	SpectrumMode,
-	SpectrumProfileSettings,
-	WallpaperState
+	SpectrumProfileSettings
 } from '@/types/wallpaper';
-import { getSpectrumFamilyDefinition } from './spectrumFamilyRegistry';
 import { RADIAL_SHAPE_IDS } from '../geometry/radialGeometry';
 import {
 	DEFAULT_SHOCKWAVE_BAND_THRESHOLDS,
@@ -33,26 +29,6 @@ const RETIRED_RADIAL_SHAPES: Readonly<Record<string, string>> = Object.freeze({
 	moon: 'oval',
 	wings: 'lens'
 });
-
-export type SpectrumMacroName = 'energy' | 'softness' | 'chaos';
-
-type SpectrumMacroContext = Pick<
-	WallpaperState,
-	| 'spectrumMode'
-	| 'spectrumFamily'
-	| 'spectrumShape'
-	| 'spectrumOpacity'
-	| 'spectrumMaxHeight'
-	| 'spectrumGlowIntensity'
-	| 'spectrumGlowReach'
-	| 'spectrumGlowAudioAmount'
-	| 'spectrumSmoothing'
-	| 'spectrumShadowBlur'
-	| 'spectrumAfterglow'
-	| 'spectrumRotationSpeed'
-	| 'spectrumMotionTrails'
-	| 'spectrumPeakRibbons'
->;
 
 function clampToRange(value: number, range: SliderRange): number {
 	return clamp(value, range.min, range.max);
@@ -82,185 +58,6 @@ function normalizeShockwaveBandThresholds(
 		}
 	}
 	return next;
-}
-
-// Macro ranges live on the family registry (`macroTuning`) — adding a new
-// family means filling in those numbers there, not editing this file.
-function getEnergyHeightRange(
-	spectrumMode: SpectrumMode,
-	spectrumFamily: SpectrumFamily
-): readonly [number, number] {
-	const tuning = getSpectrumFamilyDefinition(spectrumFamily).macroTuning;
-	return spectrumMode === 'linear'
-		? tuning.energyHeightLinear
-		: tuning.energyHeightRadial;
-}
-
-function getEnergyGlowRange(
-	spectrumFamily: SpectrumFamily
-): readonly [number, number] {
-	return getSpectrumFamilyDefinition(spectrumFamily).macroTuning.energyGlow;
-}
-
-function getChaosRotationMax(
-	spectrumMode: SpectrumMode,
-	spectrumFamily: SpectrumFamily
-): number {
-	const tuning = getSpectrumFamilyDefinition(spectrumFamily).macroTuning;
-	return spectrumMode === 'linear'
-		? tuning.chaosRotationLinear
-		: tuning.chaosRotationRadial;
-}
-
-function inverseLerp(value: number, min: number, max: number): number {
-	if (max <= min) return 0;
-	return clamp((value - min) / (max - min), 0, 1);
-}
-
-function inferEnergy(
-	opacity: number,
-	maxHeight: number,
-	glowIntensity: number,
-	spectrumMode: SpectrumMode,
-	spectrumFamily: SpectrumFamily
-): number {
-	const [heightMin, heightMax] = getEnergyHeightRange(
-		spectrumMode,
-		spectrumFamily
-	);
-	const [glowMin, glowMax] = getEnergyGlowRange(spectrumFamily);
-	const heightT = inverseLerp(maxHeight, heightMin, heightMax);
-	const opacityT = inverseLerp(opacity, 0.5, 1);
-	const glowT = inverseLerp(glowIntensity, glowMin, glowMax);
-	return clamp(heightT * 0.55 + opacityT * 0.25 + glowT * 0.2, 0, 1);
-}
-
-function inferSoftness(
-	smoothing: number,
-	shadowBlur: number,
-	afterglow: number
-): number {
-	const smoothingT = inverseLerp(smoothing, 0.18, 0.94);
-	const blurT = inverseLerp(shadowBlur, 0, 26);
-	const afterglowT = inverseLerp(afterglow, 0, 0.28);
-	return clamp(smoothingT * 0.6 + blurT * 0.25 + afterglowT * 0.15, 0, 1);
-}
-
-function inferChaos(
-	rotation: number,
-	motionTrails: number,
-	peakRibbons: number,
-	spectrumMode: SpectrumMode,
-	spectrumFamily: SpectrumFamily
-): number {
-	const rotationT = inverseLerp(
-		Math.abs(rotation),
-		0,
-		getChaosRotationMax(spectrumMode, spectrumFamily)
-	);
-	const trailT = inverseLerp(motionTrails, 0, 0.32);
-	const ribbonT = inverseLerp(peakRibbons, 0, 0.42);
-	return clamp(rotationT * 0.45 + trailT * 0.3 + ribbonT * 0.25, 0, 1);
-}
-
-function supportsFillControl(
-	spectrumShape: WallpaperState['spectrumShape'],
-	spectrumFamily: SpectrumFamily
-): boolean {
-	return (
-		spectrumShape === 'wave' ||
-		spectrumFamily === 'liquid' ||
-		spectrumFamily === 'oscilloscope'
-	);
-}
-
-export function inferSpectrumMacroValues(
-	settings: SpectrumMacroContext
-): Record<SpectrumMacroName, number> {
-	return {
-		energy: inferEnergy(
-			settings.spectrumOpacity,
-			settings.spectrumMaxHeight,
-			settings.spectrumGlowIntensity,
-			settings.spectrumMode,
-			settings.spectrumFamily
-		),
-		softness: inferSoftness(
-			settings.spectrumSmoothing,
-			settings.spectrumShadowBlur,
-			settings.spectrumAfterglow
-		),
-		chaos: inferChaos(
-			settings.spectrumRotationSpeed,
-			settings.spectrumMotionTrails,
-			settings.spectrumPeakRibbons,
-			settings.spectrumMode,
-			settings.spectrumFamily
-		)
-	};
-}
-
-export function buildSpectrumMacroPatch(
-	settings: SpectrumMacroContext,
-	macro: SpectrumMacroName,
-	value: number
-): Partial<SpectrumProfileSettings> {
-	const v = clamp(value, 0, 1);
-	const [energyHeightMin, energyHeightMax] = getEnergyHeightRange(
-		settings.spectrumMode,
-		settings.spectrumFamily
-	);
-	const [energyGlowMin, energyGlowMax] = getEnergyGlowRange(
-		settings.spectrumFamily
-	);
-	const chaosRotationMax = getChaosRotationMax(
-		settings.spectrumMode,
-		settings.spectrumFamily
-	);
-
-	if (macro === 'energy') {
-		return normalizeSpectrumSettings({
-			spectrumOpacity: lerp(0.5, 1, v),
-			spectrumGlowIntensity: lerp(energyGlowMin, energyGlowMax, v),
-			spectrumMaxHeight: lerp(energyHeightMin, energyHeightMax, v),
-			spectrumMinHeight: lerp(1, 4.5, v)
-		});
-	}
-
-	if (macro === 'softness') {
-		return normalizeSpectrumSettings({
-			spectrumSmoothing: lerp(0.18, 0.94, v),
-			spectrumShadowBlur: lerp(0, 26, v),
-			spectrumPeakDecay: lerp(0.016, 0.002, v),
-			spectrumAfterglow: lerp(
-				0,
-				getSpectrumFamilyDefinition(settings.spectrumFamily).macroTuning
-					.afterglowMax,
-				v
-			),
-			...(supportsFillControl(
-				settings.spectrumShape,
-				settings.spectrumFamily
-			)
-				? {
-						spectrumWaveFillOpacity: lerp(0.05, 0.32, v)
-					}
-				: {})
-		});
-	}
-
-	const sign = settings.spectrumRotationSpeed >= 0 ? 1 : -1;
-	return normalizeSpectrumSettings({
-		spectrumRotationSpeed: sign * lerp(0, chaosRotationMax, v),
-		spectrumMotionTrails: lerp(
-			0,
-			getSpectrumFamilyDefinition(settings.spectrumFamily).macroTuning
-				.motionTrailsMax,
-			v
-		),
-		spectrumPeakRibbons: lerp(0, 0.42, v),
-		spectrumGhostFrames: lerp(0, 0.18, v * 0.9)
-	});
 }
 
 export function normalizeSpectrumSettings<

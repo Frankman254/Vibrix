@@ -352,7 +352,8 @@ function compileLights(intent: SceneIntent): Partial<LightsProfileSettings> {
 		stageLightsColor: color,
 		stageLightsColorSource: 'manual',
 		stageLightsIntensity: concert ? 0.8 : 0.4,
-		stageLightsBeamCount: concert ? 6 : 3,
+		stageLightsMinBeamCount: concert ? 4 : 2,
+		stageLightsMaxBeamCount: concert ? 8 : 4,
 		stageLightsBeamWidth: concert ? 0.12 : 0.2,
 		stageLightsSoftness: concert ? 0.5 : 0.8,
 		stageLightsSpeed: lerp(0.2, 0.9, intent.motion),
@@ -361,7 +362,6 @@ function compileLights(intent: SceneIntent): Partial<LightsProfileSettings> {
 		stageLightsAudioAmount: concert ? 0.8 : 0.35,
 		// Peak flashes are the difference between "lit" and "a show". Ambient
 		// keeps them off so a calm scene never strobes.
-		stageLightsPeakFlash: concert,
 		flashLightEnabled: concert && intent.energy > 0.6,
 		flashLightColor: color,
 		flashLightColorSource: 'manual',

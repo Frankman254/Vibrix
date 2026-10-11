@@ -102,28 +102,6 @@ export type SpectrumRenderKind =
 	| 'orbital'
 	| 'spiral';
 
-/**
- * Numeric ranges used by the macro inference helpers in
- * `spectrumStateTransforms.ts`. Lifting them into the registry means a new
- * family doesn't have to add itself to every `if (family === ...)` chain in
- * that file — define them here, the inference functions read from the
- * registry.
- */
-export interface SpectrumFamilyMacroTuning {
-	/** [min, max] pixel height range used to infer the Energy macro. */
-	energyHeightLinear: readonly [number, number];
-	energyHeightRadial: readonly [number, number];
-	/** [min, max] glow intensity used by Energy inference. */
-	energyGlow: readonly [number, number];
-	/** Max abs rotation speed considered "max chaos" for Chaos inference. */
-	chaosRotationLinear: number;
-	chaosRotationRadial: number;
-	/** Max afterglow used by frame-memory inference. */
-	afterglowMax: number;
-	/** Max motion-trails value used by Chaos / frame-memory inference. */
-	motionTrailsMax: number;
-}
-
 export interface SpectrumFamilyDefinition {
 	id: SpectrumFamily;
 	label: string;
@@ -132,8 +110,6 @@ export interface SpectrumFamilyDefinition {
 	capabilities: SpectrumFamilyCapabilities;
 	/** Which renderer ABI this family uses. */
 	renderKind: SpectrumRenderKind;
-	/** Macro range tunings consumed by `spectrumStateTransforms`. */
-	macroTuning: SpectrumFamilyMacroTuning;
 }
 
 const FAMILY_DEFINITIONS: Record<SpectrumFamily, SpectrumFamilyDefinition> = {
@@ -143,16 +119,7 @@ const FAMILY_DEFINITIONS: Record<SpectrumFamily, SpectrumFamilyDefinition> = {
 		description: 'Bars, blocks, wave or dots — linear or radial layout.',
 		categories: ['geometric'],
 		capabilities: getSpectrumFamilyCapabilities('classic'),
-		renderKind: 'classic-linear',
-		macroTuning: {
-			energyHeightLinear: [55, 220],
-			energyHeightRadial: [40, 180],
-			energyGlow: [0.15, 2.2],
-			chaosRotationLinear: 0.25,
-			chaosRotationRadial: 0.85,
-			afterglowMax: 0.18,
-			motionTrailsMax: 0.24
-		}
+		renderKind: 'classic-linear'
 	},
 	oscilloscope: {
 		id: 'oscilloscope',
@@ -160,16 +127,7 @@ const FAMILY_DEFINITIONS: Record<SpectrumFamily, SpectrumFamilyDefinition> = {
 		description: 'Time-domain trace with adjustable history + line width.',
 		categories: ['temporal', 'analytic'],
 		capabilities: getSpectrumFamilyCapabilities('oscilloscope'),
-		renderKind: 'oscilloscope',
-		macroTuning: {
-			energyHeightLinear: [50, 165],
-			energyHeightRadial: [40, 145],
-			energyGlow: [0.1, 1.8],
-			chaosRotationLinear: 0.3,
-			chaosRotationRadial: 0.75,
-			afterglowMax: 0.28,
-			motionTrailsMax: 0.24
-		}
+		renderKind: 'oscilloscope'
 	},
 	tunnel: {
 		id: 'tunnel',
@@ -177,16 +135,7 @@ const FAMILY_DEFINITIONS: Record<SpectrumFamily, SpectrumFamilyDefinition> = {
 		description: 'Concentric depth rings driven by frequency bands.',
 		categories: ['depth', 'geometric'],
 		capabilities: getSpectrumFamilyCapabilities('tunnel'),
-		renderKind: 'tunnel',
-		macroTuning: {
-			energyHeightLinear: [70, 220],
-			energyHeightRadial: [70, 220],
-			energyGlow: [0.1, 1.8],
-			chaosRotationLinear: 1.15,
-			chaosRotationRadial: 1.15,
-			afterglowMax: 0.28,
-			motionTrailsMax: 0.24
-		}
+		renderKind: 'tunnel'
 	},
 	liquid: {
 		id: 'liquid',
@@ -194,16 +143,7 @@ const FAMILY_DEFINITIONS: Record<SpectrumFamily, SpectrumFamilyDefinition> = {
 		description: 'Stacked sine layers that breathe with audio energy.',
 		categories: ['generative'],
 		capabilities: getSpectrumFamilyCapabilities('liquid'),
-		renderKind: 'liquid',
-		macroTuning: {
-			energyHeightLinear: [60, 190],
-			energyHeightRadial: [45, 165],
-			energyGlow: [0.1, 1.8],
-			chaosRotationLinear: 0.45,
-			chaosRotationRadial: 0.9,
-			afterglowMax: 0.28,
-			motionTrailsMax: 0.24
-		}
+		renderKind: 'liquid'
 	},
 	orbital: {
 		id: 'orbital',
@@ -211,16 +151,7 @@ const FAMILY_DEFINITIONS: Record<SpectrumFamily, SpectrumFamilyDefinition> = {
 		description: 'Particles orbiting the center, modulated by audio.',
 		categories: ['generative', 'depth'],
 		capabilities: getSpectrumFamilyCapabilities('orbital'),
-		renderKind: 'orbital',
-		macroTuning: {
-			energyHeightLinear: [60, 170],
-			energyHeightRadial: [60, 170],
-			energyGlow: [0.1, 1.8],
-			chaosRotationLinear: 1.4,
-			chaosRotationRadial: 1.4,
-			afterglowMax: 0.28,
-			motionTrailsMax: 0.36
-		}
+		renderKind: 'orbital'
 	},
 	spiral: {
 		id: 'spiral',
@@ -228,16 +159,7 @@ const FAMILY_DEFINITIONS: Record<SpectrumFamily, SpectrumFamilyDefinition> = {
 		description: 'Frequency bins glow along a logarithmic spiral.',
 		categories: ['depth', 'generative'],
 		capabilities: getSpectrumFamilyCapabilities('spiral'),
-		renderKind: 'spiral',
-		macroTuning: {
-			energyHeightLinear: [55, 195],
-			energyHeightRadial: [55, 195],
-			energyGlow: [0.1, 2.0],
-			chaosRotationLinear: 1.2,
-			chaosRotationRadial: 1.2,
-			afterglowMax: 0.28,
-			motionTrailsMax: 0.3
-		}
+		renderKind: 'spiral'
 	}
 };
 

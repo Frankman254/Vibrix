@@ -48,7 +48,6 @@ export function createStageCameraSlice(
 		// Stage Lights FX
 		setStageLightsEnabled: v => set({ stageLightsEnabled: v }),
 		setStageLightsIntensity: v => set({ stageLightsIntensity: v }),
-		setStageLightsBeamCount: v => set({ stageLightsBeamCount: v }),
 		setStageLightsMinBeamCount: v => set({ stageLightsMinBeamCount: v }),
 		setStageLightsMaxBeamCount: v => set({ stageLightsMaxBeamCount: v }),
 		setStageLightsBeamWidth: v => set({ stageLightsBeamWidth: v }),
@@ -74,7 +73,6 @@ export function createStageCameraSlice(
 		setStageLightsAudioDecay: v => set({ stageLightsAudioDecay: v }),
 		setStageLightsAudioGateEnabled: v =>
 			set({ stageLightsAudioGateEnabled: v }),
-		setStageLightsPeakFlash: v => set({ stageLightsPeakFlash: v }),
 		setStageLightsPeakThreshold: v => set({ stageLightsPeakThreshold: v }),
 		setStageLightsBandThreshold: (channel, v) =>
 			set(state => ({
@@ -138,7 +136,6 @@ export function createStageCameraSlice(
 		setBgFlashEdgeColor: v => set({ bgFlashEdgeColor: v }),
 
 		// Camera FX
-		setCameraFxEnabled: v => set({ cameraFxEnabled: v }),
 		setCameraMotionEnabled: v => set({ cameraMotionEnabled: v }),
 		setCameraMotionMode: v => set({ cameraMotionMode: v }),
 		setCameraMotionAmount: v => set({ cameraMotionAmount: v }),
@@ -160,13 +157,7 @@ export function createStageCameraSlice(
 		setCameraMotionSmoothing: v => set({ cameraMotionSmoothing: v }),
 		setCameraMotionTrail: v => set({ cameraMotionTrail: v }),
 		setCameraMotionTrailColor: v => set({ cameraMotionTrailColor: v }),
-		setCameraMotionTarget: v =>
-			set({ cameraMotionTarget: v, cameraMotionTargets: [v] }),
-		setCameraMotionTargets: v =>
-			set({
-				cameraMotionTargets: v,
-				cameraMotionTarget: v[0] ?? 'background'
-			}),
+		setCameraMotionTargets: v => set({ cameraMotionTargets: v }),
 		setCameraShakeEnabled: v => set({ cameraShakeEnabled: v }),
 		setCameraShakeAmount: v => set({ cameraShakeAmount: v }),
 		setCameraShakeDecay: v => set({ cameraShakeDecay: v }),

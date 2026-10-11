@@ -202,4 +202,11 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // original) now that a resolution preset means the monitor's geometry rather
 // than the video's quality. Seeded `original`, which is what every stored
 // project was already encoded at.
-export const STORE_PERSIST_VERSION = 151;
+// v152: el barrido de legado. Caen las claves que ya no lee nadie
+// (`stageLightsBeamCount`, `stageLightsPeakFlash`, `cameraFxEnabled`,
+// `cameraMotionTarget`, `quickEditCaptureMode`, `imageBassZoomPresetId`) y los
+// enlaces de slot por imagen (`*ProfileSlotId` / `*ProfileSlotIndex`): ligar un
+// slot guardado es trabajo de las escenas. Se borran de todo el árbol guardado,
+// no solo de la raíz, porque un slot o una captura por imagen las revivía al
+// aplicarse.
+export const STORE_PERSIST_VERSION = 152;

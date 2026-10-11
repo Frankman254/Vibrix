@@ -1,10 +1,6 @@
 import { applyTransitionBatchPlan } from '@/features/background';
 import type { StateCreator } from 'zustand';
-import {
-	IMAGE_BASS_ZOOM_PRESETS,
-	releaseToLegacyDecay,
-	type ImageBassZoomPresetId
-} from '@/features/presets/imageBassZoomProfiles';
+import { releaseToLegacyDecay } from '@/features/presets/imageBassZoomProfiles';
 import {
 	createProfileSlotId,
 	buildBackgroundProfileName,
@@ -171,45 +167,35 @@ export function createBackgroundSlice(
 					bassReactive: v
 				}))
 			})),
-		setImageAudioSmoothing: v =>
-			set({ imageAudioSmoothing: v, imageBassZoomPresetId: null }),
-		setImageOpacityReactive: v =>
-			set({ imageOpacityReactive: v, imageBassZoomPresetId: null }),
+		setImageAudioSmoothing: v => set({ imageAudioSmoothing: v }),
+		setImageOpacityReactive: v => set({ imageOpacityReactive: v }),
 		setImageOpacityReactiveAmount: v =>
-			set({ imageOpacityReactiveAmount: v, imageBassZoomPresetId: null }),
+			set({ imageOpacityReactiveAmount: v }),
 		setImageOpacityReactiveInvert: v =>
 			set({
-				imageOpacityReactiveInvert: v,
-				imageBassZoomPresetId: null
+				imageOpacityReactiveInvert: v
 			}),
 		setImageOpacityReactiveThreshold: v =>
 			set({
-				imageOpacityReactiveThreshold: v,
-				imageBassZoomPresetId: null
+				imageOpacityReactiveThreshold: v
 			}),
 		setImageOpacityReactiveSoftness: v =>
 			set({
-				imageOpacityReactiveSoftness: v,
-				imageBassZoomPresetId: null
+				imageOpacityReactiveSoftness: v
 			}),
-		setImageBlurReactive: v =>
-			set({ imageBlurReactive: v, imageBassZoomPresetId: null }),
-		setImageBlurReactiveAmount: v =>
-			set({ imageBlurReactiveAmount: v, imageBassZoomPresetId: null }),
+		setImageBlurReactive: v => set({ imageBlurReactive: v }),
+		setImageBlurReactiveAmount: v => set({ imageBlurReactiveAmount: v }),
 		setImageBlurReactiveInvert: v =>
 			set({
-				imageBlurReactiveInvert: v,
-				imageBassZoomPresetId: null
+				imageBlurReactiveInvert: v
 			}),
 		setImageBlurReactiveThreshold: v =>
 			set({
-				imageBlurReactiveThreshold: v,
-				imageBassZoomPresetId: null
+				imageBlurReactiveThreshold: v
 			}),
 		setImageBlurReactiveSoftness: v =>
 			set({
-				imageBlurReactiveSoftness: v,
-				imageBassZoomPresetId: null
+				imageBlurReactiveSoftness: v
 			}),
 		setImageBassScaleIntensity: v =>
 			set(state => ({
@@ -223,58 +209,35 @@ export function createBackgroundSlice(
 			set(state => ({
 				imageAudioReactiveDecay: v,
 				imageBassRelease: 0.02 + (1 - v) * 0.2,
-				imageBassZoomPresetId: null,
 				backgroundImages: state.backgroundImages.map(image => ({
 					...image,
 					audioReactiveDecay: v
 				}))
 			})),
-		applyImageBassZoomPreset: (id: ImageBassZoomPresetId) =>
-			set(state => {
-				const patch = IMAGE_BASS_ZOOM_PRESETS[id];
-				const decay = releaseToLegacyDecay(patch.imageBassRelease);
-				return {
-					...patch,
-					imageBassZoomPresetId: id,
-					imageAudioReactiveDecay: decay,
-					backgroundImages: state.backgroundImages.map(image => ({
-						...image,
-						audioReactiveDecay: decay
-					}))
-				};
-			}),
-		setImageBassAttack: v =>
-			set({ imageBassAttack: v, imageBassZoomPresetId: null }),
+		setImageBassAttack: v => set({ imageBassAttack: v }),
 		setImageBassRelease: v =>
 			set(state => {
 				const decay = releaseToLegacyDecay(v);
 				return {
 					imageBassRelease: v,
 					imageAudioReactiveDecay: decay,
-					imageBassZoomPresetId: null,
 					backgroundImages: state.backgroundImages.map(image => ({
 						...image,
 						audioReactiveDecay: decay
 					}))
 				};
 			}),
-		setImageBassReactivitySpeed: v =>
-			set({ imageBassReactivitySpeed: v, imageBassZoomPresetId: null }),
-		setImageBassPeakWindow: v =>
-			set({ imageBassPeakWindow: v, imageBassZoomPresetId: null }),
-		setImageBassPeakFloor: v =>
-			set({ imageBassPeakFloor: v, imageBassZoomPresetId: null }),
-		setImageBassPunch: v =>
-			set({ imageBassPunch: v, imageBassZoomPresetId: null }),
+		setImageBassReactivitySpeed: v => set({ imageBassReactivitySpeed: v }),
+		setImageBassPeakWindow: v => set({ imageBassPeakWindow: v }),
+		setImageBassPeakFloor: v => set({ imageBassPeakFloor: v }),
+		setImageBassPunch: v => set({ imageBassPunch: v }),
 		setImageBassReactiveScaleIntensity: v =>
 			set({
-				imageBassReactiveScaleIntensity: v,
-				imageBassZoomPresetId: null
+				imageBassReactiveScaleIntensity: v
 			}),
 		setImageAudioChannel: v =>
 			set(state => ({
 				imageAudioChannel: v,
-				imageBassZoomPresetId: null,
 				backgroundImages: state.backgroundImages.map(image => ({
 					...image,
 					audioChannel: v
@@ -338,7 +301,6 @@ export function createBackgroundSlice(
 
 				return {
 					...hydratedValues,
-					imageBassZoomPresetId: null,
 					backgroundImages: state.backgroundImages.map(image => ({
 						...image,
 						bassReactive: hydratedValues.imageBassReactive,
@@ -414,22 +376,6 @@ export function createBackgroundSlice(
 					activeFilterLookId: toFilterLookSlotSelectionId(slot.id)
 				};
 			}),
-		setImageLogoProfileSlotIndex: v =>
-			set(state => ({
-				backgroundImages: state.backgroundImages.map(img =>
-					img.assetId === state.activeImageId
-						? { ...img, logoProfileSlotIndex: v }
-						: img
-				)
-			})),
-		setImageSpectrumProfileSlotIndex: v =>
-			set(state => ({
-				backgroundImages: state.backgroundImages.map(img =>
-					img.assetId === state.activeImageId
-						? { ...img, spectrumProfileSlotIndex: v }
-						: img
-				)
-			})),
 		setImageLogoOverride: v =>
 			set(state => ({
 				backgroundImages: state.backgroundImages.map(img =>
@@ -615,30 +561,6 @@ export function createBackgroundSlice(
 								spectrumOverride:
 									extractSpectrumProfileSettings(state)
 							}
-						: img
-				)
-			})),
-		setImageParticlesProfileSlotIndex: v =>
-			set(state => ({
-				backgroundImages: state.backgroundImages.map(img =>
-					img.assetId === state.activeImageId
-						? { ...img, particlesProfileSlotIndex: v }
-						: img
-				)
-			})),
-		setImageRainProfileSlotIndex: v =>
-			set(state => ({
-				backgroundImages: state.backgroundImages.map(img =>
-					img.assetId === state.activeImageId
-						? { ...img, rainProfileSlotIndex: v }
-						: img
-				)
-			})),
-		setImageLooksProfileSlotIndex: v =>
-			set(state => ({
-				backgroundImages: state.backgroundImages.map(img =>
-					img.assetId === state.activeImageId
-						? { ...img, looksProfileSlotIndex: v }
 						: img
 				)
 			})),

@@ -411,11 +411,6 @@ export function normalizePersistedBackgroundImages(
 			transitionAudioChannel:
 				image.transitionAudioChannel ??
 				fallbackImageConfig.slideshowTransitionAudioChannel,
-			logoProfileSlotId: image.logoProfileSlotId ?? null,
-			spectrumProfileSlotId: image.spectrumProfileSlotId ?? null,
-			particlesProfileSlotId: image.particlesProfileSlotId ?? null,
-			rainProfileSlotId: image.rainProfileSlotId ?? null,
-			looksProfileSlotId: image.looksProfileSlotId ?? null,
 			logoOverride: image.logoOverride ?? null,
 			spectrumOverride: image.spectrumOverride ?? null,
 			particlesOverride: image.particlesOverride ?? null,

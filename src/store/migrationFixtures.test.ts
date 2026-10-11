@@ -56,16 +56,16 @@ describe.each(MIGRATION_FIXTURES)('$label', fixture => {
 
 	it('resolves every binding to the slot it was meant to point at', () => {
 		// The whole point of v104: whatever the save used (index or id), the
-		// binding must land on the SAME named slot.
+		// binding must land on the SAME named slot. Scenes are where a binding
+		// lives now — the per-image one was retired — so they carry the test.
 		const hype = slotNamed(migrated.spectrumProfileSlots, 'Hype');
 		const bigLogo = slotNamed(migrated.logoProfileSlots, 'Big logo');
 
-		expect(migrated.backgroundImages[0]?.spectrumProfileSlotId).toBe(
-			hype?.id
-		);
-		expect(migrated.backgroundImages[1]?.logoProfileSlotId).toBe(
-			bigLogo?.id
-		);
+		for (const image of migrated.backgroundImages) {
+			const raw = image as unknown as Record<string, unknown>;
+			expect(raw.spectrumProfileSlotId).toBeUndefined();
+			expect(raw.logoProfileSlotId).toBeUndefined();
+		}
 
 		const scene = migrated.sceneSlots.find(s => s.id === 'scene-main');
 		expect(scene, 'the saved scene survived').toBeDefined();
@@ -177,9 +177,6 @@ describe.each(MIGRATION_FIXTURES)('$label', fixture => {
 		);
 		expect(again.spectrumProfileSlots.map(s => s.id)).toEqual(
 			migrated.spectrumProfileSlots.map(s => s.id)
-		);
-		expect(again.backgroundImages[0]?.spectrumProfileSlotId).toBe(
-			migrated.backgroundImages[0]?.spectrumProfileSlotId
 		);
 		expect(again.sceneSlots[0]?.spectrumSlotId).toBe(
 			migrated.sceneSlots[0]?.spectrumSlotId
@@ -329,10 +326,6 @@ describe('per-version specifics', () => {
 				migrated.spectrumProfileSlots.slice(0, 2).map(s => s.id),
 				`v${version}`
 			).toEqual(['slot-calm', 'slot-hype']);
-			expect(
-				migrated.backgroundImages[0]?.spectrumProfileSlotId,
-				`v${version}`
-			).toBe('slot-hype');
 			expect(migrated.sceneSlots[0]?.spectrumSlotId, `v${version}`).toBe(
 				'slot-hype'
 			);
@@ -363,7 +356,7 @@ describe('binding stability under slot churn', () => {
 	);
 
 	it('survives reordering the slot array', () => {
-		const boundId = migrated.backgroundImages[0]?.spectrumProfileSlotId;
+		const boundId = migrated.sceneSlots[0]?.spectrumSlotId;
 		const reordered = [...migrated.spectrumProfileSlots].reverse();
 		expect(reordered.find(slot => slot.id === boundId)?.name).toBe('Hype');
 	});
@@ -377,7 +370,7 @@ describe('binding stability under slot churn', () => {
 	});
 
 	it('resolves to nothing — not to the wrong slot — when its slot is deleted', () => {
-		const boundId = migrated.backgroundImages[0]?.spectrumProfileSlotId;
+		const boundId = migrated.sceneSlots[0]?.spectrumSlotId;
 		const remaining = migrated.spectrumProfileSlots.filter(
 			slot => slot.id !== boundId
 		);

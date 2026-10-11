@@ -26,7 +26,6 @@ const SOURCE_LABEL_KEYS: Record<CompositionRow['source'], keyof Translations> =
 		scene: 'img_carry_src_scene',
 		'scene-off': 'img_carry_src_scene_off',
 		override: 'img_carry_src_override',
-		slot: 'img_carry_src_slot',
 		global: 'img_carry_src_global'
 	};
 
@@ -117,8 +116,7 @@ export default function ImageCompositionPanel() {
 			<ImageSceneAssignment />
 			<div className="flex flex-col gap-1.5">
 				{summary.rows.map(row => {
-					const winning =
-						row.source === 'override' || row.source === 'slot';
+					const winning = row.source === 'override';
 					return (
 						<div
 							key={row.id}

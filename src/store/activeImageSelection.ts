@@ -7,7 +7,6 @@
  */
 import {
 	buildSceneSlotActivationPatch,
-	findSlotByRef,
 	normalizeSceneSlotAgainstState,
 	resolveEffectiveSceneSlotId
 } from '@/features/scenes/sceneSlot';
@@ -16,8 +15,6 @@ import {
 	extractCameraFxProfileSettings,
 	extractLightsProfileSettings,
 	extractLooksProfileSettings,
-	extractParticlesProfileSettings,
-	extractRainProfileSettings,
 	extractTrackTitleProfileSettings,
 	hydrateLooksProfileValues
 } from '@/store/featureProfiles';
@@ -172,96 +169,46 @@ export function buildActiveImageSelectionPatch(
 	}
 
 	patch.activeSceneSlotId = null;
-	// Legacy back-compat fallback only — used when the image has no effective
-	// scene. Inline overrides take priority over slot indices.
-	// Overrides configure appearance, not visibility — preserve the current
-	// enabled state so a saved-when-disabled override never silently hides the
-	// logo or spectrum.
-	const logoSlot = findSlotByRef(
-		state.logoProfileSlots,
-		match.logoProfileSlotId
-	);
+	// No effective scene: what the image carries are its own inline snapshots,
+	// captured by the HUD's PER IMG panel. That is the entire per-image
+	// composition path. The `*ProfileSlotId` bindings that used to sit beside
+	// these were removed: nothing could write one once the editor moved to
+	// scenes, so they only ever held values migrated out of a pre-scene project.
+	//
+	// Logo and Spectrum keep the live `*Enabled` flag. Those two are global
+	// visibility switches ("hide the logo everywhere"), so a snapshot captured
+	// while the logo was hidden configures the logo, it does not hide it.
 	if (match.logoOverride) {
 		Object.assign(patch, match.logoOverride, {
 			logoEnabled: state.logoEnabled
 		});
-	} else if (logoSlot?.values) {
-		Object.assign(patch, logoSlot.values, {
-			logoEnabled: state.logoEnabled
-		});
 	}
-	const spectrumSlot = findSlotByRef(
-		state.spectrumProfileSlots,
-		match.spectrumProfileSlotId
-	);
 	if (match.spectrumOverride) {
 		Object.assign(patch, match.spectrumOverride, {
 			spectrumEnabled: state.spectrumEnabled
 		});
-	} else if (spectrumSlot?.values) {
-		Object.assign(patch, spectrumSlot.values, {
-			spectrumEnabled: state.spectrumEnabled
-		});
 	}
-	// Particles / Rain / Looks: same precedence as logo+spectrum — inline
-	// override > slot binding > nothing — with one deliberate difference above.
-	//
-	// `logoEnabled` and `spectrumEnabled` are global visibility switches ("hide
-	// the logo everywhere"), so a per-image snapshot must not fight them and is
-	// clamped to live state. `particlesEnabled` and `rainEnabled` are the effect
-	// ITSELF: "this image has rain and that one doesn't" is the entire point of
-	// binding them per image, and it is how Camera FX, Lights, Track Title and
-	// `buildSceneSlotActivationPatch` have always behaved. Clamping them here
-	// meant a per-image capture could carry every drop's length, angle and
-	// colour and still not decide whether it rained — the saved on/off was
-	// written, read back by the HUD as present, and then thrown away on apply.
-	const particlesSlot = findSlotByRef(
-		state.particlesProfileSlots,
-		match.particlesProfileSlotId
-	);
+	// Particles and Rain carry their own `*Enabled` flag exactly as captured,
+	// unlike the two above. There the flag IS the effect: "this image has rain
+	// and that one doesn't" is the entire point of capturing it per image, and
+	// it is how Camera FX, Lights, Track Title and `buildSceneSlotActivationPatch`
+	// have always behaved. Clamping them meant a capture could carry every
+	// drop's length, angle and colour and still not decide whether it rained.
 	if (match.particlesOverride) {
 		Object.assign(patch, match.particlesOverride);
-	} else if (particlesSlot?.values) {
-		Object.assign(
-			patch,
-			extractParticlesProfileSettings(state),
-			particlesSlot.values
-		);
 	}
-	const rainSlot = findSlotByRef(
-		state.rainProfileSlots,
-		match.rainProfileSlotId
-	);
 	if (match.rainOverride) {
 		Object.assign(patch, match.rainOverride);
-	} else if (rainSlot?.values) {
-		Object.assign(
-			patch,
-			extractRainProfileSettings(state),
-			rainSlot.values
-		);
 	}
-	const looksSlot = findSlotByRef(
-		state.looksProfileSlots,
-		match.looksProfileSlotId
-	);
-	// Both paths hydrate: an override or slot saved before effect layers
-	// existed holds only the flat `filter*` keys, and writing those raw would
-	// land them on whichever layer happens to be active — which is how a
-	// per-image look could end up masked by a layer above it.
+	// Looks hydrates: a snapshot captured before effect layers existed holds
+	// only the flat `filter*` keys, and writing those raw would land them on
+	// whichever layer happens to be active — which is how a per-image look
+	// could end up masked by a layer above it.
 	if (match.looksOverride) {
 		Object.assign(
 			patch,
 			hydrateLooksProfileValues(
 				match.looksOverride,
-				extractLooksProfileSettings(state)
-			)
-		);
-	} else if (looksSlot?.values) {
-		Object.assign(
-			patch,
-			hydrateLooksProfileValues(
-				looksSlot.values,
 				extractLooksProfileSettings(state)
 			)
 		);

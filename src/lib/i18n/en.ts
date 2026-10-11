@@ -1981,7 +1981,6 @@ export const en = {
 	img_carry_src_scene: 'Scene',
 	img_carry_src_scene_off: 'Off by scene',
 	img_carry_src_override: 'This image',
-	img_carry_src_slot: 'Saved slot',
 	img_carry_src_global: 'Global controls',
 	img_carry_override_shadowed: 'stored, not winning',
 	img_carry_global_mode_banner:

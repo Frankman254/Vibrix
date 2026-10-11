@@ -121,7 +121,11 @@ describe('migrateWallpaperStore v103 legacy pruning', () => {
 		}
 	});
 
-	it('v104: converts per-image slot indexes to ids and keeps id-based refs intact', () => {
+	it('drops the retired per-image slot bindings off a legacy image', () => {
+		// Pre-scene saves bound a subsystem per image, first by index and then
+		// by id. Both are gone: an image carries inline snapshots, and binding
+		// a saved slot is what a scene does. Image normalization is what drops
+		// them, so the keys must not survive the load.
 		const migrated = migrateWallpaperStore(
 			{
 				logoProfileSlots: [
@@ -133,16 +137,25 @@ describe('migrateWallpaperStore v103 legacy pruning', () => {
 						assetId: 'img-1',
 						name: 'Pic',
 						url: null,
-						logoProfileSlotIndex: 1
+						logoProfileSlotIndex: 1,
+						rainProfileSlotId: 'rain-slot-1'
 					}
 				]
 			} as never,
 			103
 		);
 
-		expect(migrated.backgroundImages[0]!.logoProfileSlotId).toBe(
-			migrated.logoProfileSlots[1]!.id
-		);
+		const image = migrated.backgroundImages[0]! as unknown as Record<
+			string,
+			unknown
+		>;
+		for (const key of [
+			'logoProfileSlotIndex',
+			'logoProfileSlotId',
+			'rainProfileSlotId'
+		]) {
+			expect(image[key]).toBeUndefined();
+		}
 	});
 
 	it('v104: id-based refs pass through untouched (idempotent re-migration)', () => {
@@ -729,5 +742,82 @@ describe('v150 complete Lights colour snapshots', () => {
 			expect(copy?.flashLightColorMode).toBe('solid');
 			expect(copy?.flashLightGlowStrength).toBeDefined();
 		}
+	});
+});
+
+describe('v152 retired keys are scrubbed from the whole saved tree', () => {
+	it('drops them at the root and inside every nested copy', () => {
+		const retired = {
+			stageLightsBeamCount: 7,
+			stageLightsPeakFlash: true,
+			cameraFxEnabled: true,
+			cameraMotionTarget: 'spectrum',
+			quickEditCaptureMode: 'slot',
+			imageBassZoomPresetId: 'punchy'
+		};
+		const migrated = migrateWallpaperStore(
+			{
+				...retired,
+				lightsProfileSlots: [
+					{ id: 'lights-1', name: 'Old', values: { ...retired } }
+				],
+				globalCompositionSlots: [
+					{
+						id: 'global-1',
+						name: 'Old global',
+						values: { lights: { ...retired }, capturedAt: 1 }
+					}
+				],
+				backgroundImages: [
+					{
+						assetId: 'img-1',
+						fileName: 'one.png',
+						lightsOverride: { ...retired }
+					}
+				]
+			} as never,
+			151
+		);
+
+		const copies: Array<Record<string, unknown> | null | undefined> = [
+			migrated as unknown as Record<string, unknown>,
+			migrated.lightsProfileSlots[0]?.values as unknown as Record<
+				string,
+				unknown
+			>,
+			migrated.globalCompositionSlots[0]?.values
+				?.lights as unknown as Record<string, unknown>,
+			migrated.backgroundImages[0]?.lightsOverride as unknown as Record<
+				string,
+				unknown
+			>
+		];
+		for (const copy of copies) {
+			expect(copy).toBeTruthy();
+			for (const key of Object.keys(retired)) {
+				expect(copy?.[key], key).toBeUndefined();
+			}
+		}
+	});
+
+	it('still seeds the live replacements off the old root values', () => {
+		const migrated = migrateWallpaperStore(
+			{
+				stageLightsEnabled: true,
+				stageLightsBeamCount: 8,
+				stageLightsPeakFlash: true,
+				cameraFxEnabled: true,
+				cameraMotionTarget: 'spectrum'
+			} as never,
+			151
+		);
+
+		// The beam count became a range, the peak flash became its own effect,
+		// and the single motion target became the array.
+		expect(migrated.stageLightsMinBeamCount).toBeLessThanOrEqual(8);
+		expect(migrated.stageLightsMaxBeamCount).toBeGreaterThanOrEqual(8);
+		expect(migrated.flashLightEnabled).toBe(true);
+		expect(migrated.cameraMotionEnabled).toBe(true);
+		expect(migrated.cameraMotionTargets).toContain('spectrum');
 	});
 });

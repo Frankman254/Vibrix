@@ -599,28 +599,25 @@ export interface BackgroundImageItem {
 	transitionIntensity: number;
 	transitionAudioDrive: number;
 	transitionAudioChannel: AudioReactiveChannel;
-	logoProfileSlotId: string | null;
-	spectrumProfileSlotId: string | null;
-	particlesProfileSlotId: string | null;
-	rainProfileSlotId: string | null;
-	looksProfileSlotId: string | null;
-	/** Inline per-image logo config. When set, takes priority over logoProfileSlotId. */
+	/**
+	 * Inline per-image snapshots. These — plus the image's own `sceneSlotId` —
+	 * are the whole per-image composition model: the HUD's PER IMG panel
+	 * captures the live subsystem into one of them, and `activeImageSelection`
+	 * applies it when no scene wins the image. There is deliberately no
+	 * per-image *slot reference*: binding a saved slot is what scenes are for.
+	 */
 	logoOverride: LogoProfileSettings | null;
-	/** Inline per-image spectrum config. When set, takes priority over spectrumProfileSlotIndex. */
 	spectrumOverride: SpectrumProfileSettings | null;
-	/** Inline per-image particles config. When set, takes priority over particlesProfileSlotIndex. */
 	particlesOverride:
 		| import('@/store/featureProfiles').ParticlesProfileSettings
 		| null;
-	/** Inline per-image rain config. When set, takes priority over rainProfileSlotIndex. */
 	rainOverride: import('@/store/featureProfiles').RainProfileSettings | null;
-	/** Inline per-image looks config. When set, takes priority over looksProfileSlotIndex. */
 	looksOverride:
 		| import('@/store/featureProfiles').LooksProfileSettings
 		| null;
 	/**
 	 * Inline per-image Camera FX (motion stack + shake). A scene could already
-	 * carry it through `cameraFxSlotIndex`; an image could not, which is the
+	 * carry it through `cameraFxSlotId`; an image could not, which is the
 	 * asymmetry this closes.
 	 */
 	cameraFxOverride:
@@ -1448,7 +1445,6 @@ export type WallpaperState = {
 	imageBassPunch: number;
 	imageBassReactiveScaleIntensity: number;
 	/** Last applied built-in BG zoom envelope preset; `null` after manual edits. */
-	imageBassZoomPresetId: 'classic' | 'smooth' | 'punchy' | null;
 	imageAudioChannel: AudioReactiveChannel;
 	backgroundProfileSlots: ProfileSlot<BackgroundProfileSettings>[];
 	imageFitMode: ImageFitMode;
@@ -2170,8 +2166,6 @@ export type WallpaperState = {
 	// ── Stage Lights FX (Task 2) ─────────────────────────────────────────────
 	stageLightsEnabled: boolean;
 	stageLightsIntensity: number;
-	/** @deprecated Compatibility source for pre-split Stage Lights settings. */
-	stageLightsBeamCount: number;
 	stageLightsMinBeamCount: number;
 	stageLightsMaxBeamCount: number;
 	stageLightsBeamWidth: number;
@@ -2194,8 +2188,6 @@ export type WallpaperState = {
 	stageLightsAudioHoldMs: number;
 	stageLightsAudioDecay: number;
 	stageLightsAudioGateEnabled: boolean;
-	/** @deprecated Migrated into the independent Flash Light layer. */
-	stageLightsPeakFlash: boolean;
 	stageLightsPeakThreshold: number;
 	stageLightsBandThresholds: import('@/features/stageFx/stageFxConfig').FxBandThresholds;
 	stageLightsOpacity: number;
@@ -2248,8 +2240,6 @@ export type WallpaperState = {
 	bgFlashEdgeColor: string;
 
 	// ── Camera FX (Task 3) ───────────────────────────────────────────────────
-	/** @deprecated Compatibility source for pre-split Camera FX settings. */
-	cameraFxEnabled: boolean;
 	cameraMotionEnabled: boolean;
 	/**
 	 * Every motion layer, top-down. The ACTIVE layer's live values are the
@@ -2285,8 +2275,6 @@ export type WallpaperState = {
 	/** Movement trail strength (the flat live value of the active motion layer). */
 	cameraMotionTrail: number;
 	cameraMotionTrailColor: string;
-	/** @deprecated Use `cameraMotionTargets` for multi-layer targeting. */
-	cameraMotionTarget: import('@/features/stageFx/stageFxConfig').CameraMotionTarget;
 	cameraMotionTargets: import('@/features/stageFx/stageFxConfig').CameraMotionTarget[];
 	cameraShakeEnabled: boolean;
 	cameraShakeAmount: number;
@@ -2372,12 +2360,6 @@ export type WallpaperState = {
 	/** macOS-style liquid-glass surface (frosted, translucent) for the floating
 	 *  media HUD instead of the default solid panel. */
 	hudLiquidGlassEnabled: boolean;
-	/**
-	 * Quick Edit capture flow:
-	 *  - 'selection': per-row Capture/Clear (default, fine-grained).
-	 *  - 'total':     one button captures all 5 subsystems at once.
-	 */
-	quickEditCaptureMode: 'total' | 'selection';
 	/**
 	 * Global color palette shared across every subsystem that exposes a
 	 * color picker (spectrum, logo, BG, particles, etc.). Hex strings only;

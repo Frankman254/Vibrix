@@ -47,13 +47,30 @@ const IMAGE = {
 	assetId: 'asset-1',
 	url: 'blob:one',
 	originalFileName: 'one.png',
-	sceneSlotId: null,
-	logoProfileSlotId: null,
-	spectrumProfileSlotId: null,
-	particlesProfileSlotId: null,
-	rainProfileSlotId: null,
-	looksProfileSlotId: null
+	sceneSlotId: null
 } as unknown as BackgroundImageItem;
+
+/**
+ * A scene binds subsystems by slot id; an image carries inline snapshots and
+ * its own `sceneSlotId`. There is no per-image slot reference to dangle, so
+ * the empty-slot checks live entirely on the scene side.
+ */
+function scene(overrides: Record<string, unknown>) {
+	return {
+		id: 'scene-1',
+		name: 'Scene 1',
+		spectrumSlotId: null,
+		spectrumSecondSlotId: null,
+		looksSlotId: null,
+		particlesSlotId: null,
+		rainSlotId: null,
+		lightsSlotId: null,
+		cameraFxSlotId: null,
+		logoSlotId: null,
+		trackTitleSlotId: null,
+		...overrides
+	} as never;
+}
 
 function codesFor(overrides: Partial<ProjectHealthState>): string[] {
 	return createProjectHealthReport({
@@ -71,8 +88,8 @@ function emptySlot(id: string) {
 	return { id, name: id, values: null } as never;
 }
 
-describe('createProjectHealthReport — per-image profile slots', () => {
-	it('reports nothing for a pool image with no slot references', () => {
+describe('createProjectHealthReport — scene slot bindings', () => {
+	it('reports nothing for a pool image with no scene', () => {
 		const report = createProjectHealthReport({
 			...EMPTY_STATE,
 			backgroundImages: [IMAGE],
@@ -82,54 +99,62 @@ describe('createProjectHealthReport — per-image profile slots', () => {
 		expect(report.issues).toEqual([]);
 	});
 
-	it('flags an empty particles slot', () => {
+	it('flags an image pointing at a scene that no longer exists', () => {
 		expect(
 			codesFor({
 				backgroundImages: [
-					{ ...IMAGE, particlesProfileSlotId: 'slot-p' }
+					{ ...IMAGE, sceneSlotId: 'gone' } as BackgroundImageItem
 				],
-				imageIds: ['asset-1'],
+				imageIds: ['asset-1']
+			})
+		).toContain('image-scene-missing');
+	});
+
+	it('flags an empty particles slot', () => {
+		expect(
+			codesFor({
+				sceneSlots: [scene({ particlesSlotId: 'slot-p' })],
 				particlesProfileSlots: [emptySlot('slot-p')]
 			})
-		).toContain('image-particles-slot-missing');
+		).toContain('scene-particles-slot-missing');
 	});
 
 	it('flags an empty rain slot', () => {
 		expect(
 			codesFor({
-				backgroundImages: [{ ...IMAGE, rainProfileSlotId: 'slot-r' }],
-				imageIds: ['asset-1'],
+				sceneSlots: [scene({ rainSlotId: 'slot-r' })],
 				rainProfileSlots: [emptySlot('slot-r')]
 			})
-		).toContain('image-rain-slot-missing');
+		).toContain('scene-rain-slot-missing');
 	});
 
 	it('flags an empty looks slot', () => {
 		expect(
 			codesFor({
-				backgroundImages: [{ ...IMAGE, looksProfileSlotId: 'slot-l' }],
-				imageIds: ['asset-1'],
+				sceneSlots: [scene({ looksSlotId: 'slot-l' })],
 				looksProfileSlots: [emptySlot('slot-l')]
 			})
-		).toContain('image-looks-slot-missing');
+		).toContain('scene-looks-slot-missing');
 	});
 
 	it('flags a reference to a slot that no longer exists at all', () => {
 		expect(
-			codesFor({
-				backgroundImages: [{ ...IMAGE, rainProfileSlotId: 'gone' }],
-				imageIds: ['asset-1']
-			})
-		).toContain('image-rain-slot-missing');
+			codesFor({ sceneSlots: [scene({ rainSlotId: 'gone' })] })
+		).toContain('scene-rain-slot-missing');
 	});
 
 	it('stays quiet when the referenced slot has values', () => {
 		expect(
 			codesFor({
-				backgroundImages: [{ ...IMAGE, rainProfileSlotId: 'slot-r' }],
-				imageIds: ['asset-1'],
+				sceneSlots: [scene({ rainSlotId: 'slot-r' })],
 				rainProfileSlots: [filledSlot('slot-r')]
 			})
-		).not.toContain('image-rain-slot-missing');
+		).not.toContain('scene-rain-slot-missing');
+	});
+
+	it("stays quiet for a scene that binds nothing — 'off' is not a slot", () => {
+		expect(
+			codesFor({ sceneSlots: [scene({ rainSlotId: 'off' })] })
+		).not.toContain('scene-rain-slot-missing');
 	});
 });

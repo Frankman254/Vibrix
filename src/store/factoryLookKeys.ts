@@ -103,7 +103,6 @@ const EDITOR_PREF_KEYS = [
 	'controlPanelOffsetX',
 	'controlPanelOffsetY',
 	'hudLiquidGlassEnabled',
-	'quickEditCaptureMode',
 	'discoveryOnboardingDismissed',
 	'mediaSessionEnabled'
 ] as const satisfies readonly StateKey[];

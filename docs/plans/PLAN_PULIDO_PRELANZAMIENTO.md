@@ -642,24 +642,27 @@ como está es el coste de Dissolve.
 
 ---
 
-## 10. Los tres sitios donde se guarda lo mismo
+## 10. Los dos sitios donde se guarda lo mismo
 
-Hoy una composición puede vivir en tres capas de guardado y **nadie ha escrito
-la jerarquía**. Leída del código (`src/store/activeImageSelection.ts:48-63`),
-la real es ésta, y tiene una sorpresa:
+> **Resuelto en el barrido v152.** La tercera capa (la referencia a slot por
+> imagen, `*ProfileSlotId`) ya no existe: nada podía escribirla desde que el
+> editor pasó a escenas, así que sólo contenía valores migrados de proyectos
+> pre-escena. Ligar un slot guardado es trabajo de la escena.
+
+Hoy una composición puede vivir en dos capas de guardado. Leída del código
+(`src/store/activeImageSelection.ts`), la jerarquía real es ésta:
 
 1. **Escena** de la imagen, o la escena por defecto global
    (`resolveEffectiveSceneSlotId`, `sceneSlot.ts:45`).
    → **Si hay escena, la función devuelve ahí mismo.**
-2. Override inline por imagen (`logoOverride`, `spectrumOverride`, …).
-3. Referencia a slot por imagen (`spectrumProfileSlotId`, …).
-4. Lo que hubiera en el estado (heredado de la imagen anterior).
+2. Override inline por imagen (`logoOverride`, `spectrumOverride`, …), que es lo
+   que captura el panel PER IMG del HUD.
+3. Lo que hubiera en el estado (heredado de la imagen anterior).
 
-**La sorpresa: los pasos 2 y 3 no se ejecutan nunca si la imagen tiene escena**
-— ni siquiera si el override existe. El código los llama literalmente
-_"legacy back-compat fallback"_. O sea: el codebase ya decidió que el modelo
-bueno es la escena y que per-image es lo viejo, pero la UI de escenas es tan
-incómoda que el usuario vive en el camino "viejo" sin saberlo.
+**El paso 2 no se ejecuta nunca si la imagen tiene escena** — ni siquiera si el
+override existe. O sea: el codebase ya decidió que el modelo bueno es la escena,
+pero la UI de escenas es tan incómoda que el usuario vive en el camino per-image
+sin saberlo.
 
 Hay que elegir una de las dos y decirlo:
 

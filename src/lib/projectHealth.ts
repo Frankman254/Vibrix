@@ -62,8 +62,10 @@ function hasSlotValue<T>(
 	slots: Array<{ id: string; values: T | null }>,
 	ref: import('@/types/wallpaper').SceneSlotRef
 ): boolean {
-	// Only a string ref points at a slot; 'off'/null never reference one.
-	if (typeof ref !== 'string') return true;
+	// Only a slot id points at a slot. `null` means "no change" and 'off'
+	// means "force this subsystem off" — both are valid bindings with nothing
+	// to dangle, and 'off' is a string, so it has to be excluded by name.
+	if (typeof ref !== 'string' || ref === 'off') return true;
 	return Boolean(slots.find(slot => slot.id === ref)?.values);
 }
 
@@ -257,67 +259,6 @@ export function createProjectHealthReport(
 				'warning',
 				'image-scene-missing',
 				`Image "${image.originalFileName ?? image.assetId}" references a missing scene slot.`
-			);
-		}
-		if (
-			image.logoProfileSlotId != null &&
-			!hasSlotValue(state.logoProfileSlots, image.logoProfileSlotId)
-		) {
-			addIssue(
-				issues,
-				'warning',
-				'image-logo-slot-missing',
-				`Image "${image.originalFileName ?? image.assetId}" references an empty logo slot.`
-			);
-		}
-		if (
-			image.spectrumProfileSlotId != null &&
-			!hasSlotValue(
-				state.spectrumProfileSlots,
-				image.spectrumProfileSlotId
-			)
-		) {
-			addIssue(
-				issues,
-				'warning',
-				'image-spectrum-slot-missing',
-				`Image "${image.originalFileName ?? image.assetId}" references an empty spectrum slot.`
-			);
-		}
-		if (
-			image.particlesProfileSlotId != null &&
-			!hasSlotValue(
-				state.particlesProfileSlots,
-				image.particlesProfileSlotId
-			)
-		) {
-			addIssue(
-				issues,
-				'warning',
-				'image-particles-slot-missing',
-				`Image "${image.originalFileName ?? image.assetId}" references an empty particles slot.`
-			);
-		}
-		if (
-			image.rainProfileSlotId != null &&
-			!hasSlotValue(state.rainProfileSlots, image.rainProfileSlotId)
-		) {
-			addIssue(
-				issues,
-				'warning',
-				'image-rain-slot-missing',
-				`Image "${image.originalFileName ?? image.assetId}" references an empty rain slot.`
-			);
-		}
-		if (
-			image.looksProfileSlotId != null &&
-			!hasSlotValue(state.looksProfileSlots, image.looksProfileSlotId)
-		) {
-			addIssue(
-				issues,
-				'warning',
-				'image-looks-slot-missing',
-				`Image "${image.originalFileName ?? image.assetId}" references an empty looks slot.`
 			);
 		}
 	}

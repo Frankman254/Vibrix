@@ -491,9 +491,12 @@ function normalizeCameraMotionDrive(
 	return DEFAULT_STATE.cameraMotionDrive;
 }
 
-function normalizeCameraMotionTarget(
-	value: unknown
-): WallpaperStore['cameraMotionTarget'] {
+/** What a retired single-target save falls back to when it names nothing. */
+const DEFAULT_CAMERA_MOTION_TARGET = 'background' as const;
+
+type CameraMotionTargetValue = WallpaperStore['cameraMotionTargets'][number];
+
+function normalizeCameraMotionTarget(value: unknown): CameraMotionTargetValue {
 	if (
 		value === 'global-background' ||
 		value === 'background' ||
@@ -510,7 +513,7 @@ function normalizeCameraMotionTarget(
 	) {
 		return value;
 	}
-	return DEFAULT_STATE.cameraMotionTarget;
+	return DEFAULT_CAMERA_MOTION_TARGET;
 }
 
 function normalizeCameraMotionTargets(
@@ -523,8 +526,8 @@ function normalizeCameraMotionTargets(
 		if (target === 'all') return null;
 		if (target === 'background-spectrum') return null;
 		const normalized = normalizeCameraMotionTarget(target);
-		return normalized === DEFAULT_STATE.cameraMotionTarget &&
-			target !== DEFAULT_STATE.cameraMotionTarget
+		return normalized === DEFAULT_CAMERA_MOTION_TARGET &&
+			target !== DEFAULT_CAMERA_MOTION_TARGET
 			? null
 			: normalized;
 	};
@@ -579,6 +582,68 @@ function finiteOrDefault(value: unknown, fallback: number): number {
 	return typeof value === 'number' && Number.isFinite(value)
 		? value
 		: fallback;
+}
+
+/**
+ * Read a key that is no longer part of `WallpaperState` off the incoming save.
+ *
+ * A retired key is gone from the type — nothing in the app may write or read it
+ * again — but a migration still has to SEE what an old project wrote, so it can
+ * seed whatever replaced it. Spelling the key as a string is the point: it says
+ * "this name only exists in old files" and it cannot be renamed by accident.
+ */
+function retiredKey(state: Partial<WallpaperStore>, key: string): unknown {
+	return (state as unknown as Record<string, unknown>)[key];
+}
+
+/**
+ * Persisted key names that no longer exist anywhere in the app (v152).
+ *
+ * `stageLightsBeamCount` became the min/max pair, `stageLightsPeakFlash` became
+ * `flashLightEnabled`, `cameraFxEnabled` became `cameraMotionEnabled`,
+ * `cameraMotionTarget` became the `cameraMotionTargets` array,
+ * `quickEditCaptureMode` and `imageBassZoomPresetId` belonged to pickers that
+ * are gone, and the per-image `*ProfileSlot*` fields were slot bindings only a
+ * scene can hold now.
+ */
+const RETIRED_PERSIST_KEYS: readonly string[] = [
+	'stageLightsBeamCount',
+	'stageLightsPeakFlash',
+	'cameraFxEnabled',
+	'cameraMotionTarget',
+	'quickEditCaptureMode',
+	'imageBassZoomPresetId',
+	'logoProfileSlotId',
+	'spectrumProfileSlotId',
+	'particlesProfileSlotId',
+	'rainProfileSlotId',
+	'looksProfileSlotId',
+	'logoProfileSlotIndex',
+	'spectrumProfileSlotIndex',
+	'particlesProfileSlotIndex',
+	'rainProfileSlotIndex',
+	'looksProfileSlotIndex'
+];
+
+/**
+ * Delete `keys` from a saved payload and from every plain object inside it.
+ *
+ * Saved projects nest the same key names many levels down — profile slots,
+ * scene slots, global-composition slots, per-image snapshots, spectrum
+ * instances — so a root-level `delete` leaves copies that come back alive the
+ * moment the user applies that slot. Arrays are walked, class instances and
+ * typed arrays are not touched.
+ */
+function scrubRetiredKeys(value: unknown, keys: readonly string[]): void {
+	if (Array.isArray(value)) {
+		for (const entry of value) scrubRetiredKeys(entry, keys);
+		return;
+	}
+	if (value === null || typeof value !== 'object') return;
+	if (Object.getPrototypeOf(value) !== Object.prototype) return;
+	const record = value as Record<string, unknown>;
+	for (const key of keys) delete record[key];
+	for (const entry of Object.values(record)) scrubRetiredKeys(entry, keys);
 }
 
 function normalizeAudioLyricsTrackEntries(
@@ -1147,6 +1212,19 @@ export function migrateWallpaperStore(
 		}
 	}
 
+	// v152: the legacy purge. Each of these was read by nothing — a UI that was
+	// replaced, a mirror of a key that became an array, or a preset bank whose
+	// picker is gone — and they were kept only so old projects would still load.
+	// They are dropped from the whole saved tree, not just the root, because a
+	// profile slot, a scene, a global-composition slot and a per-image snapshot
+	// all store the same key names and applying one would write the dead key
+	// straight back into live state.
+	//
+	// The migrations below still read these names off `state` (via `retiredKey`)
+	// to seed what replaced them, so the scrub deliberately works on
+	// `sanitizedState` — the shallow copy — and never on `state` itself.
+	scrubRetiredKeys(sanitizedState, RETIRED_PERSIST_KEYS);
+
 	const persistedParticleColorMode = (state as { particleColorMode?: string })
 		.particleColorMode;
 	const legacyFilterTarget = legacyState.filterTarget;
@@ -1530,24 +1608,23 @@ export function migrateWallpaperStore(
 			state.stageLightsIntensity,
 			DEFAULT_STATE.stageLightsIntensity
 		),
-		stageLightsBeamCount: finiteOrDefault(
-			state.stageLightsBeamCount,
-			DEFAULT_STATE.stageLightsBeamCount
-		),
+		// A pre-split save had one `stageLightsBeamCount`; the live model is a
+		// min/max range. The old scalar is no longer part of the state, but it
+		// is still read here so an old project lands on the range it meant.
 		stageLightsMinBeamCount: finiteOrDefault(
 			state.stageLightsMinBeamCount,
 			Math.min(
 				DEFAULT_STATE.stageLightsMinBeamCount,
 				finiteOrDefault(
-					state.stageLightsBeamCount,
-					DEFAULT_STATE.stageLightsBeamCount
+					retiredKey(state, 'stageLightsBeamCount'),
+					DEFAULT_STATE.stageLightsMinBeamCount
 				)
 			)
 		),
 		stageLightsMaxBeamCount: finiteOrDefault(
 			state.stageLightsMaxBeamCount,
 			finiteOrDefault(
-				state.stageLightsBeamCount,
+				retiredKey(state, 'stageLightsBeamCount'),
 				DEFAULT_STATE.stageLightsMaxBeamCount
 			)
 		),
@@ -1631,10 +1708,6 @@ export function migrateWallpaperStore(
 			typeof state.stageLightsAudioGateEnabled === 'boolean'
 				? state.stageLightsAudioGateEnabled
 				: DEFAULT_STATE.stageLightsAudioGateEnabled,
-		stageLightsPeakFlash:
-			typeof state.stageLightsPeakFlash === 'boolean'
-				? state.stageLightsPeakFlash
-				: DEFAULT_STATE.stageLightsPeakFlash,
 		stageLightsPeakThreshold: finiteOrDefault(
 			state.stageLightsPeakThreshold,
 			DEFAULT_STATE.stageLightsPeakThreshold
@@ -1666,7 +1739,7 @@ export function migrateWallpaperStore(
 			typeof state.flashLightEnabled === 'boolean'
 				? state.flashLightEnabled
 				: state.stageLightsEnabled === true &&
-					state.stageLightsPeakFlash === true,
+					retiredKey(state, 'stageLightsPeakFlash') === true,
 		flashLightIntensity: finiteOrDefault(
 			state.flashLightIntensity,
 			DEFAULT_STATE.flashLightIntensity
@@ -1742,15 +1815,14 @@ export function migrateWallpaperStore(
 		flashLightBlendMode: normalizeStageLightsBlendMode(
 			state.flashLightBlendMode
 		),
-		cameraFxEnabled:
-			typeof state.cameraFxEnabled === 'boolean'
-				? state.cameraFxEnabled
-				: DEFAULT_STATE.cameraFxEnabled,
+		// A pre-split save had one `cameraFxEnabled` switch for the whole
+		// subsystem; `cameraMotionEnabled` replaced it. The old key is retired,
+		// still read here so an old project keeps its motion turned on.
 		cameraMotionEnabled:
 			typeof state.cameraMotionEnabled === 'boolean'
 				? state.cameraMotionEnabled
-				: typeof state.cameraFxEnabled === 'boolean'
-					? state.cameraFxEnabled
+				: typeof retiredKey(state, 'cameraFxEnabled') === 'boolean'
+					? retiredKey(state, 'cameraFxEnabled') === true
 					: DEFAULT_STATE.cameraMotionEnabled,
 		cameraMotionMode: normalizeCameraMotionMode(state.cameraMotionMode),
 		cameraMotionAmount: finiteOrDefault(
@@ -1773,12 +1845,11 @@ export function migrateWallpaperStore(
 		cameraMotionDirection: normalizeCameraMotionDirection(
 			state.cameraMotionDirection
 		),
-		cameraMotionTarget: normalizeCameraMotionTarget(
-			state.cameraMotionTarget
-		),
+		// Camera Motion targets a LIST of layers. The single `cameraMotionTarget`
+		// it grew out of is retired, still read here to seed that list.
 		cameraMotionTargets: normalizeCameraMotionTargets(
 			state.cameraMotionTargets,
-			state.cameraMotionTarget
+			retiredKey(state, 'cameraMotionTarget')
 		),
 		cameraShakeEnabled:
 			typeof state.cameraShakeEnabled === 'boolean'
@@ -2399,8 +2470,6 @@ export function migrateWallpaperStore(
 		imageBassReactiveScaleIntensity:
 			state.imageBassReactiveScaleIntensity ??
 			DEFAULT_STATE.imageBassReactiveScaleIntensity,
-		imageBassZoomPresetId:
-			state.imageBassZoomPresetId ?? DEFAULT_STATE.imageBassZoomPresetId,
 		imageAudioChannel: normalizeAudioChannel(
 			state.imageAudioChannel,
 			DEFAULT_STATE.imageAudioChannel
@@ -2596,11 +2665,6 @@ export function migrateWallpaperStore(
 			typeof state.hudLiquidGlassEnabled === 'boolean'
 				? state.hudLiquidGlassEnabled
 				: DEFAULT_STATE.hudLiquidGlassEnabled,
-		quickEditCaptureMode:
-			state.quickEditCaptureMode === 'total' ||
-			state.quickEditCaptureMode === 'selection'
-				? state.quickEditCaptureMode
-				: DEFAULT_STATE.quickEditCaptureMode,
 		colorFavorites: (() => {
 			const stored = Array.isArray(state.colorFavorites)
 				? state.colorFavorites.filter(
@@ -3049,45 +3113,6 @@ export function migrateWallpaperStore(
 	for (const image of migratedState.backgroundImages ?? []) {
 		delete (image as unknown as Record<string, unknown>)
 			.spectrumSecondOverride;
-	}
-
-	// v104: per-image slot bindings reference slots by id. Legacy saves carry
-	// numeric `*ProfileSlotIndex` fields (dropped by image normalization) —
-	// translate them here against the migrated families. Idempotent: post-v104
-	// images already have the id fields and no legacy keys.
-	const rawImages = Array.isArray(state.backgroundImages)
-		? (state.backgroundImages as unknown as Array<Record<string, unknown>>)
-		: [];
-	const imageSlotRef = (
-		value: unknown,
-		family: ReadonlyArray<{ id: string }>
-	): string | null => {
-		const ref = migrateSlotRef(value, family);
-		return typeof ref === 'string' && ref !== 'off' ? ref : null;
-	};
-	for (const image of migratedState.backgroundImages ?? []) {
-		const raw = rawImages.find(r => r?.assetId === image.assetId);
-		if (!raw) continue;
-		image.logoProfileSlotId ??= imageSlotRef(
-			raw.logoProfileSlotIndex,
-			migratedSlotFamilies.logoProfileSlots
-		);
-		image.spectrumProfileSlotId ??= imageSlotRef(
-			raw.spectrumProfileSlotIndex,
-			migratedSlotFamilies.spectrumProfileSlots
-		);
-		image.particlesProfileSlotId ??= imageSlotRef(
-			raw.particlesProfileSlotIndex,
-			migratedSlotFamilies.particlesProfileSlots
-		);
-		image.rainProfileSlotId ??= imageSlotRef(
-			raw.rainProfileSlotIndex,
-			migratedSlotFamilies.rainProfileSlots
-		);
-		image.looksProfileSlotId ??= imageSlotRef(
-			raw.looksProfileSlotIndex,
-			migratedSlotFamilies.looksProfileSlots
-		);
 	}
 
 	// v109: the ten `rgbShiftAudio*` keys joined the Looks snapshot. Until now

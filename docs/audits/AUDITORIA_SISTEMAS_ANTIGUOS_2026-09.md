@@ -60,6 +60,12 @@ tres comprobaciones con su test.
 etiqueta, los cinco valores viven en la imagen, así que un preset borrado nunca
 rompe nada y avisar sería ruido.
 
+> **Superado en el barrido v152:** las cinco comprobaciones por imagen se
+> borraron junto con los enlaces `*ProfileSlotId`, que ninguna ruta viva podía
+> escribir desde que el editor pasó a escenas. Quedan las de escena, que son las
+> que de verdad pueden colgarse — y ahí se arregló un falso positivo: un `'off'`
+> («apaga este subsistema aquí») se contaba como slot colgado.
+
 ### A4 — El aviso de carga pesada no ve el Spectrum 2 · **ARREGLADO**
 
 `getVisualWorkloadHint` (`src/features/discovery/workloadHint.ts`) leía sólo el
