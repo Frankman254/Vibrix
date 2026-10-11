@@ -20,6 +20,7 @@ const PROJECT_EXPORT_SECTION_LABEL_KEYS: Record<
 	looks: 'project_export_section_looks',
 	track: 'project_export_section_track',
 	lyrics: 'project_export_section_lyrics',
+	intro: 'project_export_section_intro',
 	audio: 'project_export_section_audio',
 	editor: 'project_export_section_editor'
 };

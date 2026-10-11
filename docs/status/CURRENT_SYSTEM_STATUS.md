@@ -329,7 +329,7 @@ Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 
 **Status: Stable**
 
-- Vitest: 172 files / 1927 tests (version, output modes, pixel helpers, spectrum, intro windows, store migrations, authoring manifest / slot revisions / Lyrixa score, etc.)
+- Vitest: 173 files / 1931 tests (version, output modes, pixel helpers, spectrum, intro windows, store migrations, cobertura del mapa de secciones del export, authoring manifest / slot revisions / Lyrixa score, etc.)
 - CI: `format:check`, `lint`, `test:types`, `test:run`, `docs:check`, `build`
 - DEV harness: `#/dev/spectrum-fx`
 

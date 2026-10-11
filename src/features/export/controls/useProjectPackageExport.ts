@@ -140,6 +140,7 @@ export function useProjectPackageExport({
 					looks: false,
 					track: false,
 					lyrics: false,
+					intro: false,
 					audio: false,
 					editor: false
 				});
@@ -154,6 +155,7 @@ export function useProjectPackageExport({
 					looks: false,
 					track: false,
 					lyrics: false,
+					intro: false,
 					audio: false,
 					editor: false
 				});

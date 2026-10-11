@@ -1381,6 +1381,7 @@ export const es: Record<TranslationKey, string> = {
 	project_export_section_looks: 'Looks / Filtros',
 	project_export_section_track: 'Info de pista',
 	project_export_section_lyrics: 'Letras',
+	project_export_section_intro: 'Intro / Cierre',
 	project_export_section_audio: 'Audio / Playlist',
 	project_export_section_editor: 'HUD / UI del editor',
 	label_export_settings: 'Exportar Ajustes JSON',

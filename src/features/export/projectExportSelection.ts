@@ -19,6 +19,7 @@ export type ProjectExportSectionId =
 	| 'looks'
 	| 'track'
 	| 'lyrics'
+	| 'intro'
 	| 'audio'
 	| 'editor';
 
@@ -33,6 +34,7 @@ export const PROJECT_EXPORT_SECTION_ORDER: ProjectExportSectionId[] = [
 	'looks',
 	'track',
 	'lyrics',
+	'intro',
 	'audio',
 	'editor'
 ];
@@ -46,11 +48,41 @@ export const DEFAULT_PROJECT_EXPORT_SELECTION: ProjectExportSelection = {
 	looks: true,
 	track: true,
 	lyrics: true,
+	intro: true,
 	audio: true,
 	editor: true
 };
 
-const PROJECT_EXPORT_SECTION_KEYS: Record<
+/**
+ * Live state that deliberately belongs to NO section.
+ *
+ * Everything else must be claimed by exactly one section — see
+ * `projectExportSelection.test.ts`, which fails when a new key is added and
+ * left out. That test exists because this map was a hand-kept whitelist that
+ * went stale: a partial import silently dropped the intro / ending windows,
+ * the effect and motion layers, the global compositions, the calibration
+ * slots, the Lights colour modes and ~100 other live keys, replacing them with
+ * whatever the importing session happened to have.
+ *
+ * These are object URLs rebuilt from IndexedDB, capture handles, or flags the
+ * importer resets on purpose (`normalizeWallpaperState`). Carrying them would
+ * import a dead `blob:` URL or a stale "running" state.
+ */
+const PROJECT_EXPORT_RUNTIME_KEYS: readonly (keyof WallpaperState)[] = [
+	'imageUrl',
+	'globalBackgroundUrl',
+	'audioCaptureState',
+	'visualTransition',
+	'isPresetDirty',
+	'sleepModeActive',
+	'calibrationSyntheticGroups'
+];
+
+export function isProjectExportRuntimeKey(key: keyof WallpaperState): boolean {
+	return PROJECT_EXPORT_RUNTIME_KEYS.includes(key);
+}
+
+export const PROJECT_EXPORT_SECTION_KEYS: Record<
 	ProjectExportSectionId,
 	(keyof WallpaperState)[]
 > = {
@@ -68,14 +100,43 @@ const PROJECT_EXPORT_SECTION_KEYS: Record<
 			'activeSceneSlotId',
 			'defaultSceneSlotId',
 			'setlists',
-			'activeSetlistId'
+			'activeSetlistId',
+			'imageFocusX',
+			'imageFocusY',
+			'imageFramingManualEnabled',
+			'globalBackgroundId',
+			// The global composition mode is a layer over the pool, so it
+			// belongs with the images and scenes it composes.
+			'globalCompositionOverride',
+			'globalCompositionSlots',
+			'activeGlobalCompositionSlotId'
 		])
 	),
 	spectrum: Array.from(
 		new Set<keyof WallpaperState>([
 			...(LEGACY_TAB_KEYS.spectrum ?? []),
 			'spectrumProfileSlots',
-			'spectrumSecondProfileSlots'
+			'spectrumSecondProfileSlots',
+			'spectrumFamily',
+			'spectrumAfterglow',
+			'spectrumMotionTrails',
+			'spectrumGhostFrames',
+			'spectrumPeakRibbonsEnabled',
+			'spectrumPeakRibbons',
+			'spectrumPeakRibbonAngle',
+			'spectrumBassShockwaveEnabled',
+			'spectrumBassShockwave',
+			'spectrumShockwaveBandMode',
+			'spectrumShockwaveBandThresholds',
+			'spectrumShockwaveThickness',
+			'spectrumShockwaveOpacity',
+			'spectrumShockwaveBlur',
+			'spectrumShockwaveColorMode',
+			'spectrumEnergyBloomEnabled',
+			'spectrumEnergyBloom',
+			'spectrumLiquidLayer1Pixelate',
+			'spectrumLiquidLayer2Pixelate',
+			'spectrumLiquidLayer3Pixelate'
 		])
 	),
 	logo: Array.from(
@@ -83,7 +144,17 @@ const PROJECT_EXPORT_SECTION_KEYS: Record<
 			...(LEGACY_TAB_KEYS.logo ?? []),
 			'logoId',
 			'logoUrl',
-			'logoProfileSlots'
+			'logoProfileSlots',
+			'logoVariantMode',
+			'logoFollowImageFocus',
+			'logoCircularCrop',
+			'logoCropRadius',
+			'logoFlashEdgeEnabled',
+			'logoFlashEdgeIntensityMult',
+			'logoFlashEdgeThickness',
+			'logoFlashEdgeRadius',
+			'logoFlashEdgeColorMode',
+			'logoFlashEdgeColor'
 		])
 	),
 	overlays: ['overlays', 'selectedOverlayId'],
@@ -95,27 +166,75 @@ const PROJECT_EXPORT_SECTION_KEYS: Record<
 			'particlesProfileSlots',
 			'rainProfileSlots',
 			'lightsProfileSlots',
-			'cameraFxProfileSlots'
+			'cameraFxProfileSlots',
+			'activeMotionLayerId',
+			'motionLayers',
+			'cameraMotionAmplitudeAudio',
+			'stageLightsColorMode',
+			'stageLightsSecondaryColor',
+			'stageLightsRainbowColors',
+			'stageLightsManualGlow',
+			'stageLightsGlowStrength',
+			'stageLightsGlowSize',
+			'flashLightColorMode',
+			'flashLightSecondaryColor',
+			'flashLightRainbowColors',
+			'flashLightManualGlow',
+			'flashLightGlowStrength',
+			'flashLightGlowSize',
+			'bgFlashEdgeEnabled',
+			'bgFlashEdgeIntensityMult',
+			'bgFlashEdgeThickness',
+			'bgFlashEdgeRadius',
+			'bgFlashEdgeColorMode',
+			'bgFlashEdgeColor'
 		])
 	),
 	looks: Array.from(
 		new Set<keyof WallpaperState>([
 			...(LEGACY_TAB_KEYS.filters ?? []),
-			'looksProfileSlots'
+			'looksProfileSlots',
+			'customFilterLookSettings',
+			// Effect layers ARE the look: the live `filter*` values are the
+			// active layer's values.
+			'activeEffectLayerId',
+			'effectLayers'
 		])
 	),
 	track: Array.from(
 		new Set<keyof WallpaperState>([
 			...(LEGACY_TAB_KEYS.track ?? []),
-			'trackTitleProfileSlots'
+			'trackTitleProfileSlots',
+			'audioTrackTimeWidth'
 		])
 	),
 	lyrics: Array.from(
 		new Set<keyof WallpaperState>([
 			...(LEGACY_TAB_KEYS.lyrics ?? []),
-			'audioLyricsByTrackAssetId'
+			'audioLyricsByTrackAssetId',
+			'audioLyricsActiveColorMode',
+			'audioLyricsActiveColorSecondary',
+			'audioLyricsStrokeColorMode',
+			'audioLyricsStrokeColorSecondary',
+			'audioLyricsGlowColorMode',
+			'audioLyricsGlowColorSecondary',
+			'audioLyricsBackdropColorMode',
+			'audioLyricsBackdropColorSecondary',
+			'audioLyricsBackdropFollowAnimation'
 		])
 	),
+	/**
+	 * The generated intro / ending. Both windows, the saved slots and the park
+	 * where a setlist-bound intro stashes the project's own windows travel
+	 * together: splitting them would import an ending without its intro, or a
+	 * setlist whose binding points at a slot that did not come along.
+	 */
+	intro: [
+		'introSequence',
+		'outroSequence',
+		'introProfileSlots',
+		'setlistIntroFallback'
+	],
 	audio: Array.from(
 		new Set<keyof WallpaperState>([
 			...(LEGACY_TAB_KEYS.audio ?? []),
@@ -134,14 +253,42 @@ const PROJECT_EXPORT_SECTION_KEYS: Record<
 			'audioAutoAdvance',
 			'audioMixMode',
 			'audioTransitionStyle',
-			'mediaSessionEnabled'
+			'mediaSessionEnabled',
+			'audioSmoothing',
+			'audioChannelSmoothing'
 		])
 	),
 	editor: Array.from(
 		new Set<keyof WallpaperState>([
 			...(LEGACY_TAB_KEYS.editor ?? []),
 			...(LEGACY_TAB_KEYS.diagnostics ?? []),
-			...(LEGACY_TAB_KEYS.perf ?? [])
+			...(LEGACY_TAB_KEYS.perf ?? []),
+			...(LEGACY_TAB_KEYS.layers ?? []),
+			...(LEGACY_TAB_KEYS.export ?? []),
+			// Everything the author tuned that is not a visual subsystem: the
+			// offline-export choices, the AI Director endpoint, the Calibration
+			// ranges and slots, the preset bank and the editor's own settings.
+			'offlineExportResolutionId',
+			'offlineExportResolutionAuto',
+			'offlineExportQualityId',
+			'offlineExportFps',
+			'sceneServiceBaseUrl',
+			'sceneServiceModel',
+			'calibrationRangeOverrides',
+			'calibrationProfileSlots',
+			'customPresets',
+			'activePreset',
+			'colorFavorites',
+			'language',
+			'layerZIndices',
+			'sleepModeEnabled',
+			'sleepModeDelaySeconds',
+			'virtualFoldersEnabled',
+			'discoveryOnboardingDismissed',
+			'performanceSafeEnabled',
+			'performanceModeBeforeSafe',
+			'uiMode',
+			'enableDragMode'
 		])
 	)
 };

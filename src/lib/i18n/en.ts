@@ -1373,6 +1373,7 @@ export const en = {
 	project_export_section_looks: 'Looks / Filters',
 	project_export_section_track: 'Track Info',
 	project_export_section_lyrics: 'Lyrics',
+	project_export_section_intro: 'Intro / Ending',
 	project_export_section_audio: 'Audio / Playlist',
 	project_export_section_editor: 'HUD / Editor UI',
 	status_settings_idle: 'Settings ready',

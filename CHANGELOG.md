@@ -15,6 +15,40 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+- **Un export parcial ya no se come la intro, el cierre ni otras 100 claves al
+  importar.** El fichero exportado **siempre estuvo completo** —comprobado
+  byte a byte contra un `.vibrix` real de 1,16 GB—; el que se perdía cosas era
+  el **import**. La importación tiene dos caminos: si el fichero se guardó con
+  todas las secciones marcadas se aplica entero, pero si falta **una sola**
+  (bastaba destildar «Audio») se recorre un mapa de secciones → claves y se
+  trae **sólo lo que ese mapa nombra**. Ese mapa era una lista a mano que se
+  quedó atrás: nombraba 10 secciones y **se olvidaba de 121 de las 710 claves**
+  del estado, así que todo lo que no nombraba se quedaba con el valor de la
+  sesión que importaba en vez del valor del proyecto.
+    - **Lo que se perdía:** la intro y el cierre enteros (`introSequence`,
+      `outroSequence`, sus slots guardados y el `setlistIntroFallback`), las
+      **capas de efectos** y las **capas de movimiento**, los **slots de
+      composición global**, los **slots y rangos de Calibration**, los modos de
+      color de Lights y Flash Light, **todo** el bloque de Flash Edge (logo y
+      fondo), el shockwave de graves y el energy bloom del Spectrum, los modos
+      de color de las letras, el encuadre manual del fondo, el banco de presets
+      y las opciones del export offline.
+    - **Nueva sección «Intro / Cierre»** en la lista de secciones del export,
+      para poder traer (o dejar fuera) la intro y el cierre a propósito. Un
+      fichero antiguo que no la lleva en su cabecera la da por marcada, así que
+      sigue importándose completo.
+    - **Las 104 claves restantes van a su sección natural** (el encuadre y las
+      composiciones globales con las imágenes, el Flash Edge del logo con el
+      logo, los colores de Lights con Movimiento, las capas de efectos con
+      Looks, Calibration y el export offline con Editor, …) y las 7 que son
+      estado de ejecución —URLs `blob:` que se reconstruyen desde IndexedDB, el
+      handle de captura de audio, la transición en curso— quedan declaradas
+      como deliberadamente sin sección, con el motivo escrito al lado.
+    - **Y queda cerrado:** un test nuevo recorre `DEFAULT_STATE` y falla con el
+      nombre de la clave si alguna no es del workspace, no está en exactamente
+      una sección y no está en la lista de runtime. Añadir una clave persistida
+      y olvidarse de mapearla ya no compila en verde.
+
 - **Barrido de legado: fuera el código muerto que sólo existía para no romper
   proyectos viejos.** Siete grupos de código que ninguna ruta viva alcanzaba, y
   que se mantenían para que un guardado antiguo siguiera cargando. Ahora manda
