@@ -2836,7 +2836,7 @@ export const en = {
 	vibrix_authoring_subtitle:
 		'Publish images, scenes and prepared effects so Lyrixa can sequence them.',
 	vibrix_authoring_export: 'Export authoring package',
-	vibrix_authoring_import_score: 'Check a score',
+	vibrix_authoring_import_score: 'Load a score',
 	vibrix_authoring_catalog_summary:
 		'{images} images · {slots} slots · {scenes} scenes · catalogue {revision}',
 	vibrix_authoring_exported: 'Authoring package exported.',
@@ -2846,7 +2846,14 @@ export const en = {
 		'{n} scene binding(s) pointed at slots that no longer exist and were left out.',
 	vibrix_authoring_dialog_import_title: 'Check a Lyrixa score',
 	vibrix_authoring_dialog_import_message:
-		'This reads the score and reports what it would do. It does not change your project.',
+		'This stores the score with a frozen copy of the current visual setup. Compose stays off until you activate it.',
+	vibrix_authoring_activate_compose: 'Activate Compose',
+	vibrix_authoring_disable_compose: 'Disable Compose',
+	vibrix_authoring_dialog_activate_title: 'Activate Lyrixa Compose?',
+	vibrix_authoring_dialog_activate_message:
+		'Compose will take control of visual timing from the imported score. Your frozen base remains available when you seek or replay.',
+	vibrix_authoring_compose_enabled: 'Compose is active.',
+	vibrix_authoring_compose_disabled: 'Compose is disabled.',
 	vibrix_authoring_score_summary: '{ready} of {total} cues ready',
 	vibrix_authoring_score_no_cues: 'That score has no cues yet.',
 	vibrix_authoring_score_invalid: 'That file is not a Lyrixa score.',
@@ -2862,7 +2869,7 @@ export const en = {
 	vibrix_authoring_status_disabled: 'Image is disabled',
 	vibrix_authoring_status_not_cueable: 'Not cueable',
 	vibrix_authoring_playback_note:
-		'Checking only. Playing a score back needs time-independent visual state, which is the next phase.',
+		'The score and its frozen base are saved. Preview and export playback are connected in the next step.',
 	storage_persistence_dismiss: 'Dismiss storage warning'
 } as const;
 

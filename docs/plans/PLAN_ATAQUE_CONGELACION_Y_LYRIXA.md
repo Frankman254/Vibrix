@@ -34,7 +34,8 @@ familia a los agregados.
   `inherit`.
 - Tiene `resolveVisualStateAt(base, score, T)` puro y probado.
 - El evaluador no dirige el viewport ni el export offline.
-- El score todavía no vive en el store; `STORE_PERSIST_VERSION` es 152.
+- Score, base congelada y estado Compose viven en el store v153; importar deja
+  el modo apagado y activarlo pide confirmación.
 - La transición de imagen ya usa la configuración saliente y el reloj absoluto
   del score dentro del evaluador puro.
 - Sólo importa el score JSON legacy, no el contenedor `.vibrix-score`.
@@ -61,7 +62,7 @@ archivos fuente. Cada paso debe ser revisable por sí mismo.
 | Paso  | Entrega                                                                  | Dependencia |
 | ----- | ------------------------------------------------------------------------ | ----------- |
 | W1 ✅ | Progreso de transición de imagen en tiempo absoluto dentro del evaluador | Ninguna     |
-| W2    | Score/base/mode Compose persistidos; store 152→153 y migración           | W1          |
+| W2 ✅ | Score/base/mode Compose persistidos; store 152→153 y migración           | W1          |
 | W3    | Preview, Play y seek consumen `resolveVisualStateAt`                     | W2          |
 | W4    | Export offline consume el mismo estado resuelto                          | W3          |
 | W5    | Import del contenedor `.vibrix-score`; JSON queda legacy                 | Paquete L5  |
@@ -129,6 +130,7 @@ Pasa cuando:
 
 ## Primer movimiento en cada repo
 
-- **Vibrix:** W2 en `src/store/`: sesión Compose, store 152→153 y migración.
+- **Vibrix:** W3 en el runtime del viewport: preview, Play y seek desde la misma
+  base congelada y el mismo reloj.
 - **Lyrixa:** L1 en `src/core/composition/`, empezando por el parser del paquete
   y el fixture v2 antes de tocar componentes React.

@@ -588,6 +588,9 @@ export function createSystemSlice(
 		reset: () =>
 			set(state => ({
 				...FACTORY_DEFAULT_STATE,
+				composeScore: null,
+				composeBaseState: null,
+				composeEnabled: false,
 				customPresets: state.customPresets,
 				sceneSlots: state.sceneSlots,
 				particlesProfileSlots: state.particlesProfileSlots,

@@ -17,3 +17,4 @@ export { createCalibrationSlice } from '@/store/slices/calibrationSlice';
 export { createSetlistsSlice } from '@/store/slices/setlistsSlice';
 export { createStageCameraSlice } from '@/store/slices/stageCameraSlice';
 export { createAiDirectorSlice } from '@/store/slices/aiDirectorSlice';
+export { createCompositionSlice } from '@/store/slices/compositionSlice';

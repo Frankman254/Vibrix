@@ -15,6 +15,22 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
+`STORE_PERSIST_VERSION` is at **153**; `PROJECT_SCHEMA_VERSION` and
+`SETTINGS_SCHEMA_VERSION` remain at **1**. `APP_VERSION` / `package.json`:
+**0.7.0-alpha**.
+
+- **Compose ya tiene una sesión persistida para el score de Lyrixa.** Importar
+  un score guarda una copia independiente del archivo y congela la base visual
+  actual sin URLs `blob:` ni transiciones en curso; el modo queda apagado hasta
+  que el usuario confirma que Compose tomará el control temporal. Score, base y
+  estado enabled sobreviven a una recarga, y cargar o resetear otro proyecto
+  limpia la sesión para que no se cruce con el proyecto equivocado.
+    - La transición de cada cue de imagen usa la configuración de la imagen
+      saliente, el reloj absoluto del score y un id determinista, por lo que un
+      seek directo produce el mismo estado que la reproducción continua.
+    - `STORE_PERSIST_VERSION` sube de **152 a 153**; la migración abre proyectos
+      anteriores sin sesión Compose y bajo control temporal manual.
+
 - **Sustituir el archivo de una imagen sin perder sus ajustes.** La entrada del
   pool es una caja: su nombre, su encuadre, sus puntos focales, su escena, su
   marca de tiempo y los ocho overrides por imagen son lo que el usuario

@@ -91,7 +91,12 @@ function cloneDefaultState(): WallpaperState {
 
 async function hardResetProjectState() {
 	await clearAllImages();
-	useWallpaperStore.setState(cloneDefaultState());
+	useWallpaperStore.setState({
+		...cloneDefaultState(),
+		composeScore: null,
+		composeBaseState: null,
+		composeEnabled: false
+	});
 	await yieldToUi();
 }
 

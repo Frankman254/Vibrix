@@ -5,8 +5,8 @@
 > sección «Versión 2 — activaciones sostenidas».
 
 > **Estado Vibrix, revisado el 2026-10-13:** V2.1, V2.1b y V2.2 implementadas. De V2.3
-> están implementados y probados el evaluador puro y la transición temporal de
-> imagen. Falta persistir la sesión Compose con su migración, conectarla al
+> están implementados y probados el evaluador puro, la transición temporal de
+> imagen y la sesión Compose persistida (store v153). Falta conectarla al
 > preview/Play y al export offline.
 
 > **Repaso 2026-10-13 — ésta vuelve a ser la tarea prioritaria.**
@@ -23,10 +23,8 @@
 > con el orden y el riesgo de cada paso. Dos avisos que se pierden si sólo se lee
 > la lista de abajo:
 >
-> - **El punto 5 de V2.2 («no persistir el score») caduca en cuanto se haga el
->   modo Compose.** En la Fase A no se persistía porque nada lo consumía; con
->   consumidor, toca clave nueva **con bump de `STORE_PERSIST_VERSION` y
->   migración**. Hoy va por 152.
+> - **El punto 5 de V2.2 ya caducó.** W2 persiste score, base y enabled con
+>   `STORE_PERSIST_VERSION` 153 y migración desde 152.
 > - **El tag de congelación sigue sin existir** (sólo hay `v0.4.1-alpha`), y el
 >   punto 5 de V2.3 es precisamente la cirugía para la que era la red.
 
@@ -97,8 +95,7 @@ muestra la secuencia durante Play y quien la renderiza en el export offline.
 3. ✅ Seguir leyendo scores v1 sin reinterpretarlos silenciosamente.
 4. ✅ Revisar dependencias tanto de slots como de imágenes y reportar `ready`,
    `updated`, `missing`, `empty` o `disabled` según corresponda.
-5. No persistir el score hasta que el runtime lo consuma; cuando se persista,
-   subir `STORE_PERSIST_VERSION` y añadir migración.
+5. ✅ Persistir score, base congelada y estado Compose; store v153 con migración.
 6. Importar el contenedor `.vibrix-score` producido por Lyrixa y conservar el
    JSON suelto como compatibilidad legacy.
 
@@ -136,8 +133,8 @@ sostenidas ni `inherit`. Su orden ejecutable vive en
 4. ✅ El cambio de imagen usa la transición de la imagen saliente y tiempo
    absoluto.
 5. Conectar el mismo evaluador al preview y al export offline.
-6. En modo Compose, Play y seek siguen el score importado. Al activarlo,
-   confirmar antes de sustituir el control temporal manual.
+6. La activación de Compose ya confirma antes de sustituir el control temporal
+   manual. Pendiente en W3: que Play y seek sigan el score importado.
 7. Tests obligatorios: seek = reproducción desde cero; Spectrum 2 aislado;
    escena seguida de override granular; `inherit`; dos cues en el mismo ms;
    transición de imagen; slot o imagen cambiada/borrada.

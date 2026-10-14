@@ -1,4 +1,5 @@
 import type { TransitionBatchPlan } from '@/features/background';
+import type { VibrixScoreEnvelope } from '@/features/composition/vibrixScore';
 import type {
 	AudioLyricsTrackEntry,
 	LyricsLayerColorMode
@@ -63,6 +64,15 @@ export type MarkNextSwitchResult = {
 };
 
 export type WallpaperStore = WallpaperState & {
+	// Lyrixa Compose session. Persisted, but inert until W3 reads it.
+	composeScore: VibrixScoreEnvelope | null;
+	composeBaseState: WallpaperState | null;
+	composeEnabled: boolean;
+	/** Store a score against an independent snapshot; importing never enables it. */
+	stageComposeScore: (score: VibrixScoreEnvelope) => void;
+	setComposeEnabled: (enabled: boolean) => void;
+	clearComposeSession: () => void;
+
 	// FX
 	setNoiseIntensity: (v: number) => void;
 	setRgbShift: (v: number) => void;

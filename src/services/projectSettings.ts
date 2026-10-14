@@ -569,7 +569,12 @@ export async function applyWallpaperSettingsJson(
 	raw: string
 ): Promise<{ missingAssets: boolean }> {
 	const nextState = parseWallpaperSettingsJson(raw);
-	useWallpaperStore.setState(nextState);
+	useWallpaperStore.setState({
+		...nextState,
+		composeScore: null,
+		composeBaseState: null,
+		composeEnabled: false
+	});
 	await restoreWallpaperAssets();
 
 	const restoredState = useWallpaperStore.getState();

@@ -264,7 +264,7 @@ re-sincroniza cuando convenga, no una dependencia.
 	"exportKind": "vibrix-manifest",
 	"exportedAt": "2026-10-02T00:00:00.000Z",
 	"rendererVersion": "0.7.0-alpha",
-	"storePersistVersion": 152,
+	"storePersistVersion": 153,
 	"projectName": "Demo",
 	"revision": "169bbe48d6a777",
 	"slots": [
@@ -580,7 +580,7 @@ resolveVisualStateAt(base, score, timeMs) => ResolvedVisualState
 ```
 
 La función es determinista y ya tiene pruebas para orden, overrides sostenidos,
-`inherit` y seek directo. Lo pendiente es completar el progreso de transición
-de imagen, persistir score + base y usar el resultado en el viewport y el
-export offline. Hasta que esos consumidores existan, importar un score en
-Vibrix sólo valida y presenta su informe de compatibilidad.
+`inherit`, transición de imagen y seek directo. Vibrix persiste el score, una
+base visual congelada sin URLs temporales y el estado enabled de Compose bajo
+store v153. Importar revisa y guarda la sesión; activarla exige confirmación. Lo
+pendiente es usar esa sesión en el viewport y el export offline.

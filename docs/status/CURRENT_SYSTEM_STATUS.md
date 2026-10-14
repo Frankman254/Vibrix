@@ -1,6 +1,6 @@
 # Current System Status
 
-**As of:** `chore/fase-0-higiene` (`main`) · App `0.7.0-alpha` · Store persist **v152**
+**As of:** `main` · App `0.7.0-alpha` · Store persist **v153**
 
 This document describes the product **as implemented in code**, not aspirational roadmaps.
 
@@ -21,13 +21,13 @@ This document describes the product **as implemented in code**, not aspirational
 
 ## Runtime architecture
 
-| Component                        | Status | Notes                                                       |
-| -------------------------------- | ------ | ----------------------------------------------------------- |
-| Vite + React 19 SPA              | Stable | HashRouter (`#/edit`, `#/present`, `#/record`, `#/preview`) |
-| Shared `WallpaperAppProviders`   | Stable | Single `AudioDataProvider` above route shells               |
-| Zustand + `localStorage` persist | Stable | `STORE_PERSIST_VERSION = 152`                               |
-| IndexedDB assets                 | Stable | Images, audio blobs; las 5 bases abren por `openStoreDb`    |
-| Vitest + GitHub Actions CI       | Stable | format, lint, types, tests, docs:check, build               |
+| Component                      | Status | Notes                                                       |
+| ------------------------------ | ------ | ----------------------------------------------------------- |
+| Vite + React 19 SPA            | Stable | HashRouter (`#/edit`, `#/present`, `#/record`, `#/preview`) |
+| Shared `WallpaperAppProviders` | Stable | Single `AudioDataProvider` above route shells               |
+| Zustand + IndexedDB persist    | Stable | `STORE_PERSIST_VERSION = 153`                               |
+| IndexedDB assets               | Stable | Images, audio blobs; las 5 bases abren por `openStoreDb`    |
+| Vitest + GitHub Actions CI     | Stable | format, lint, types, tests, docs:check, build               |
 
 Las cinco rutas de IndexedDB (`imageDb`, `localFoldersDb`, `signatureCache`,
 `localSyncRepository`, `indexedDbStorage`) abren por
@@ -139,8 +139,10 @@ Does **not** include an internal video encoder — see Recording subsystem.
 - Image cues freeze the outgoing image transition at the cue's absolute score
   time with a deterministic transition id, so direct seeks resolve the same
   transition state as continuous playback.
-- The score is not persisted and does not drive the live viewport or offline
-  export yet. Import currently validates and reports compatibility only.
+- The score, a transport-safe frozen visual base and the Compose enabled flag
+  persist in store v153. Import stages Compose disabled; activation requires a
+  confirmation. The session does not drive the live viewport or offline export
+  yet.
 
 ---
 
@@ -272,7 +274,7 @@ See `docs/features/SPECTRUM_ENGINE.md` (ownership model) and
 | Constant                  | Value         | Location                                    |
 | ------------------------- | ------------- | ------------------------------------------- |
 | `APP_VERSION`             | `0.7.0-alpha` | `src/lib/version.ts`, `package.json`        |
-| `STORE_PERSIST_VERSION`   | **152**       | Migrations in `wallpaperStoreMigrations.ts` |
+| `STORE_PERSIST_VERSION`   | **153**       | Migrations in `wallpaperStoreMigrations.ts` |
 | `PROJECT_SCHEMA_VERSION`  | 1             |                                             |
 | `SETTINGS_SCHEMA_VERSION` | 1             |                                             |
 
@@ -326,6 +328,7 @@ Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 | v134    | Divisiones del montaje (`divisionPattern`, `divisionAngleDeg`) + variantes (`montageArrival`, `montageMove`) + imágenes a mano (`imageSourceMode`, `imageAssetIds`) + rellenos (`backdropFillMode`) + marco del título (`titleFrameShape/Style/Animation/Color*`)                    |
 | v149    | Marca manual única: la imagen entrante queda completamente visible en el tiempo indicado; se retira `slideshowTransitionAnchor`                                                                                                                                                      |
 | v152    | Barrido de legado: se retiran `stageLightsBeamCount`, `stageLightsPeakFlash`, `cameraFxEnabled`, `quickEditCaptureMode`, `cameraMotionTarget`, `imageBassZoomPresetId` y los enlaces de slot por imagen (`*ProfileSlotId` / `*ProfileSlotIndex`), borrados de todo el árbol guardado |
+| v153    | Sesión Compose persistida: score de Lyrixa, base visual congelada sin URLs temporales y estado enabled; proyectos anteriores migran a control manual sin sesión                                                                                                                      |
 | v151    | `offlineExportQualityId`: el bitrate del export es un control aparte (baja/media/original) ahora que un preset de resolución significa la geometría del monitor                                                                                                                      |
 | v150    | Lights: modos de color compartidos, paleta RGB completa y glow manual; backfill de slots, composiciones y overrides por imagen                                                                                                                                                       |
 
@@ -407,8 +410,8 @@ Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 
 ## Immediate priorities
 
-1. Persist the imported score and Compose session with store v153 + migration.
-2. Wire the evaluator to live Play/seek and then to offline export.
+1. Wire the persisted Compose session to live Play/seek.
+2. Feed the same resolved state into offline export.
 3. Import Lyrixa's `.vibrix-score` package and pass the cross-app exit fixture.
 4. Resume long-video export QA and public-alpha polish after Compose parity.
 

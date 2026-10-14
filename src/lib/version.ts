@@ -209,4 +209,7 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // slot guardado es trabajo de las escenas. Se borran de todo el árbol guardado,
 // no solo de la raíz, porque un slot o una captura por imagen las revivía al
 // aplicarse.
-export const STORE_PERSIST_VERSION = 152;
+// v153: sesión Compose persistida: score de Lyrixa, base visual congelada y
+// estado enabled. Los proyectos anteriores arrancan sin sesión y bajo control
+// temporal manual.
+export const STORE_PERSIST_VERSION = 153;

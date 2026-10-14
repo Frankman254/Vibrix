@@ -3180,6 +3180,14 @@ export function migrateWallpaperStore(
 		// their next export looking like their last one.
 		migratedState.offlineExportQualityId ??= 'original';
 	}
+	if (fromVersion < 153) {
+		// Compose did not exist in persisted projects. An old project always
+		// opens under manual control until the user imports and explicitly
+		// enables a Lyrixa score.
+		migratedState.composeScore = null;
+		migratedState.composeBaseState = null;
+		migratedState.composeEnabled = false;
+	}
 	if (fromVersion < 119) {
 		// The single Looks stack becomes the first effect layer. Its values are
 		// still the legacy `filter*` keys — the entry is the snapshot — so the

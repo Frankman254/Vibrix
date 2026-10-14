@@ -34,11 +34,9 @@ import {
  * what exists and to *report* what a score would do; composing is Lyrixa's, and
  * granular timeline UI in here would be the same feature built twice.
  *
- * Importing a score only reviews it. It is not persisted either, and that is a
- * decision rather than an omission: nothing can play a score back until visual
- * state at time T stops depending on the path taken to reach it, so persisting
- * one now would mean a new store key, a `STORE_PERSIST_VERSION` bump and a
- * migration for data no code reads.
+ * Importing stages the score with a frozen visual base. Compose remains inert
+ * until the user explicitly confirms activation; W3 is responsible for making
+ * preview/Play consume that persisted session.
  */
 
 const STATUS_LABEL_KEYS: Record<ScoreCueStatus, TranslationKey> = {
@@ -84,8 +82,20 @@ export default function VibrixAuthoringSection() {
 	const [message, setMessage] = useState('');
 	const [tone, setTone] = useState<'muted' | 'ok' | 'error'>('muted');
 	const [dropped, setDropped] = useState<DroppedBindingWarning[]>([]);
-	const [review, setReview] = useState<VibrixScoreReview | null>(null);
 	const [issues, setIssues] = useState<string[]>([]);
+	const {
+		composeScore,
+		composeEnabled,
+		stageComposeScore,
+		setComposeEnabled
+	} = useWallpaperStore(
+		useShallow(state => ({
+			composeScore: state.composeScore,
+			composeEnabled: state.composeEnabled,
+			stageComposeScore: state.stageComposeScore,
+			setComposeEnabled: state.setComposeEnabled
+		}))
+	);
 
 	// Exactly the banks the manifest is derived from. Subscribing to all of them
 	// rather than a couple is the point: a summary that silently stops counting
@@ -110,19 +120,29 @@ export default function VibrixAuthoringSection() {
 			})
 		)
 	);
-	const summary = useMemo(() => {
+	const catalogue = useMemo(() => {
 		const { manifest } = buildAuthoringManifestReport(source, {
 			exportedAt: '1970-01-01T00:00:00.000Z',
 			projectName: 'preview'
 		});
 		return {
-			slots: manifest.slots.length,
-			images: manifest.images.length,
-			scenes: manifest.slots.filter(slot => slot.family === 'scene')
-				.length,
-			revision: manifest.revision.slice(0, 8)
+			manifest,
+			summary: {
+				slots: manifest.slots.length,
+				images: manifest.images.length,
+				scenes: manifest.slots.filter(slot => slot.family === 'scene')
+					.length,
+				revision: manifest.revision.slice(0, 8)
+			}
 		};
 	}, [source]);
+	const review = useMemo<VibrixScoreReview | null>(
+		() =>
+			composeScore
+				? reviewVibrixScore(composeScore, catalogue.manifest)
+				: null,
+		[catalogue.manifest, composeScore]
+	);
 
 	function resolveProjectName(): string {
 		const state = useWallpaperStore.getState();
@@ -165,8 +185,8 @@ export default function VibrixAuthoringSection() {
 		const file = event.target.files?.[0];
 		event.target.value = '';
 		if (!file) return;
-		// Reading a score changes nothing, but the user cannot know that from a
-		// button labelled "import", so say it before doing it.
+		// Loading replaces the staged score and frozen base, but does not hand
+		// temporal control to Compose until the separate activation confirmation.
 		const go = await confirm({
 			title: t.vibrix_authoring_dialog_import_title,
 			message: t.vibrix_authoring_dialog_import_message,
@@ -177,15 +197,10 @@ export default function VibrixAuthoringSection() {
 		if (!go) return;
 		setBusy(true);
 		setIssues([]);
-		setReview(null);
 		try {
 			const { score } = await loadVibrixScoreFromFile(file);
-			const { manifest } = buildAuthoringManifestReport(source, {
-				exportedAt: new Date().toISOString(),
-				projectName: resolveProjectName()
-			});
-			const result = reviewVibrixScore(score, manifest);
-			setReview(result);
+			const result = reviewVibrixScore(score, catalogue.manifest);
+			stageComposeScore(score);
 			setTone(result.readyCount === result.totalCount ? 'ok' : 'muted');
 			setMessage(
 				result.totalCount === 0
@@ -209,6 +224,27 @@ export default function VibrixAuthoringSection() {
 		}
 	}
 
+	async function toggleCompose() {
+		if (composeEnabled) {
+			setComposeEnabled(false);
+			setTone('muted');
+			setMessage(t.vibrix_authoring_compose_disabled);
+			return;
+		}
+		if (!composeScore) return;
+		const go = await confirm({
+			title: t.vibrix_authoring_dialog_activate_title,
+			message: t.vibrix_authoring_dialog_activate_message,
+			confirmLabel: t.vibrix_authoring_activate_compose,
+			cancelLabel: t.label_cancel,
+			tone: 'warning'
+		});
+		if (!go) return;
+		setComposeEnabled(true);
+		setTone('ok');
+		setMessage(t.vibrix_authoring_compose_enabled);
+	}
+
 	const messageColor =
 		tone === 'ok' ? '#4ade80' : tone === 'error' ? '#f87171' : undefined;
 
@@ -221,10 +257,10 @@ export default function VibrixAuthoringSection() {
 			<div className="flex flex-col gap-3">
 				<Caption className="text-xs">
 					{t.vibrix_authoring_catalog_summary
-						.replace('{slots}', String(summary.slots))
-						.replace('{scenes}', String(summary.scenes))
-						.replace('{images}', String(summary.images))
-						.replace('{revision}', summary.revision)}
+						.replace('{slots}', String(catalogue.summary.slots))
+						.replace('{scenes}', String(catalogue.summary.scenes))
+						.replace('{images}', String(catalogue.summary.images))
+						.replace('{revision}', catalogue.summary.revision)}
 				</Caption>
 
 				<div className="flex gap-2">
@@ -326,6 +362,17 @@ export default function VibrixAuthoringSection() {
 						<Caption className="text-[11px]">
 							{t.vibrix_authoring_playback_note}
 						</Caption>
+						<Button
+							onClick={() => void toggleCompose()}
+							size="sm"
+							density="compact"
+							variant={composeEnabled ? 'secondary' : 'primary'}
+							full
+						>
+							{composeEnabled
+								? t.vibrix_authoring_disable_compose
+								: t.vibrix_authoring_activate_compose}
+						</Button>
 					</div>
 				) : null}
 			</div>

@@ -35,8 +35,9 @@ revisa dependencias de escenas, imágenes, slots granulares e `inherit`.
 
 `src/features/composition/resolveVisualStateAt.ts` ya resuelve de forma pura el
 estado visual en un instante. Sus tests cubren orden, overrides sostenidos,
-`inherit` y seek determinista. En el estado actual ningún runtime lo importa:
-el score se valida en Export, pero no dirige el viewport ni el export offline.
+`inherit`, transición de imagen y seek determinista. El score y su base
+congelada ya se guardan como sesión Compose, pero ningún runtime consume aún
+esa sesión: todavía no dirige el viewport ni el export offline.
 
 El historial posterior se concentró en bugs, slideshow, storage, WebGL, Stage
 FX, proyecto demo y export. Esos cambios no cierran Compose. La tarea activa es
@@ -44,11 +45,10 @@ conectar el dominio ya construido, no volver a diseñarlo.
 
 ## Próximo movimiento
 
-**W1 está implementado:** el evaluador crea una transición determinista en el
-tiempo absoluto del cue y congela la configuración de la imagen saliente.
-Continúa con **W2**, la sesión Compose persistida, tal como está delimitada en
-`TAREAS.md`. No conectes todavía preview ni Play: primero el score y la base
-congelada deben tener dueño y migración.
+**W1 y W2 están implementados:** la transición es determinista y la sesión
+Compose persiste score, base congelada y estado enabled bajo store v153. El
+siguiente paso es **W3**: conectar esa sesión al preview, Play y seek sin
+encadenar mutaciones históricas del store.
 
 Lyrixa avanza en paralelo desde su propio repo. Su código actual sigue en v1:
 manifiesto JSON, pista Scene y bloques con `endTimeMs`. Sus documentos ya deben
@@ -60,7 +60,7 @@ probarlo con un archivo real.
 - `types/`, `ui/` y `lib/` son hojas; `features/*` no importa `components/` ni
   `pages/`; `store/` no importa presentación.
 - Toda clave persistida nueva exige bump de `STORE_PERSIST_VERSION` y migración.
-  El valor actual es 152.
+  El valor actual es 153.
 - Toda acción destructiva espera `useDialog().confirm()`.
 - Los textos visibles pasan por i18n.
 - Preview y export offline deben consumir el mismo evaluador y la misma base.

@@ -8,6 +8,7 @@ import {
 	createAudioLyricsSlice,
 	createBackgroundSlice,
 	createCalibrationSlice,
+	createCompositionSlice,
 	createLayoutSlice,
 	createLogoSlice,
 	createParticlesRainSlice,
@@ -61,7 +62,8 @@ export const useWallpaperStore = create<WallpaperStore>()(
 			...createCalibrationSlice(set, get, api),
 			...createSetlistsSlice(set, get, api),
 			...createStageCameraSlice(set, get, api),
-			...createAiDirectorSlice(set, get, api)
+			...createAiDirectorSlice(set, get, api),
+			...createCompositionSlice(set, get, api)
 		}),
 		{
 			name: 'vibrix-state',

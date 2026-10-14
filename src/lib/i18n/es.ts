@@ -2865,7 +2865,7 @@ export const es: Record<TranslationKey, string> = {
 	vibrix_authoring_subtitle:
 		'Publica imágenes, escenas y efectos preparados para que Lyrixa los secuencie.',
 	vibrix_authoring_export: 'Exportar paquete de autoría',
-	vibrix_authoring_import_score: 'Revisar un score',
+	vibrix_authoring_import_score: 'Cargar un score',
 	vibrix_authoring_catalog_summary:
 		'{images} imágenes · {slots} slots · {scenes} escenas · catálogo {revision}',
 	vibrix_authoring_exported: 'Paquete de autoría exportado.',
@@ -2875,7 +2875,14 @@ export const es: Record<TranslationKey, string> = {
 		'{n} enlace(s) de escena apuntaban a slots que ya no existen y quedaron fuera.',
 	vibrix_authoring_dialog_import_title: 'Revisar un score de Lyrixa',
 	vibrix_authoring_dialog_import_message:
-		'Esto lee el score e informa de qué haría. No cambia tu proyecto.',
+		'Esto guarda el score con una copia congelada de la configuración visual actual. Compose seguirá apagado hasta que lo actives.',
+	vibrix_authoring_activate_compose: 'Activar Compose',
+	vibrix_authoring_disable_compose: 'Desactivar Compose',
+	vibrix_authoring_dialog_activate_title: '¿Activar Compose de Lyrixa?',
+	vibrix_authoring_dialog_activate_message:
+		'Compose tomará el control del tiempo visual desde el score importado. La base congelada seguirá disponible al hacer seek o reproducir de nuevo.',
+	vibrix_authoring_compose_enabled: 'Compose está activo.',
+	vibrix_authoring_compose_disabled: 'Compose está desactivado.',
 	vibrix_authoring_score_summary: '{ready} de {total} cues listos',
 	vibrix_authoring_score_no_cues: 'Ese score todavía no tiene cues.',
 	vibrix_authoring_score_invalid: 'Ese archivo no es un score de Lyrixa.',
@@ -2891,6 +2898,6 @@ export const es: Record<TranslationKey, string> = {
 	vibrix_authoring_status_disabled: 'Imagen desactivada',
 	vibrix_authoring_status_not_cueable: 'No se puede encolar',
 	vibrix_authoring_playback_note:
-		'Solo revisa. Reproducir un score necesita estado visual independiente del tiempo, que es la fase siguiente.',
+		'El score y su base congelada están guardados. La reproducción en preview y export se conecta en el siguiente paso.',
 	storage_persistence_dismiss: 'Cerrar aviso de almacenamiento'
 };

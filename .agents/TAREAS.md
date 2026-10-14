@@ -25,13 +25,13 @@ o exportar el caso de integración.
 | Activaciones `scene`, `image`, `feature-slot` e `inherit`          | Hecho en dominio puro                 |
 | `resolveVisualStateAt(base, score, T)` determinista                | Hecho y probado, todavía desconectado |
 | Transición temporal entre imágenes                                 | Hecha en el evaluador puro            |
-| Score persistido y modo Compose                                    | Pendiente                             |
+| Score persistido y modo Compose                                    | Hecho; store v153 + confirmación      |
 | Preview, Play y seek consumiendo el score                          | Pendiente                             |
 | Export offline consumiendo el mismo estado                         | Pendiente                             |
 | Import del contenedor `.vibrix-score`                              | Pendiente; sólo JSON legacy           |
 
-`STORE_PERSIST_VERSION` está en **152**. El paso que añada el score al store
-debe subirlo a 153 y añadir su migración en el mismo cambio.
+`STORE_PERSIST_VERSION` está en **153**. La migración abre proyectos anteriores
+sin score y bajo control temporal manual.
 
 ## Orden de implementación en Vibrix
 
@@ -40,9 +40,9 @@ Un dominio y un commit por paso:
 1. ✅ **W1 · Transición de imagen pura.** El evaluador usa la transición de la
    imagen saliente, el tiempo absoluto del cue y un id determinista. Hay casos
    de seek dentro y fuera de la transición.
-2. **W2 · Sesión Compose persistida.** Guardar score, base congelada y estado
-   enabled/disabled; bump 152→153 y migración. Activar Compose pide confirmación
-   porque sustituye el control temporal manual.
+2. ✅ **W2 · Sesión Compose persistida.** Score, base congelada y estado
+   enabled/disabled; store 152→153 con migración. Activar Compose pide
+   confirmación porque sustituye el control temporal manual.
 3. **W3 · Preview, Play y seek.** Conectar `resolveVisualStateAt` al viewport sin
    encadenar mutaciones históricas del store. El mismo `T` debe producir el
    mismo estado después de seek y de reproducción continua.
@@ -57,10 +57,10 @@ Un dominio y un commit por paso:
 
 ### Siguiente paso concreto
 
-Empieza por **W2**: modela la sesión Compose (score, base congelada y estado
-enabled/disabled) en el store, sube `STORE_PERSIST_VERSION` de 152 a 153 y añade
-la migración. La activación debe esperar `useDialog().confirm()`. No conectes
-preview/Play todavía; ése es W3.
+Empieza por **W3** en el runtime del viewport: hidrata los asset URLs de la base
+congelada desde el proyecto vivo y resuelve el estado con el reloj de audio para
+Play y seek. No encadenes parches sobre el estado anterior; cada instante parte
+de `composeBaseState` y `composeScore`.
 
 ## Trabajo que queda en Lyrixa, en paralelo
 

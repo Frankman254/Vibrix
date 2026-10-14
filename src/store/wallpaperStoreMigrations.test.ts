@@ -821,3 +821,37 @@ describe('v152 retired keys are scrubbed from the whole saved tree', () => {
 		expect(migrated.cameraMotionTargets).toContain('spectrum');
 	});
 });
+
+describe('v153 Compose session defaults', () => {
+	it('keeps older projects under manual timing control', () => {
+		const migrated = migrateWallpaperStore(
+			{
+				composeScore: { stale: true },
+				composeBaseState: { stale: true },
+				composeEnabled: true
+			} as never,
+			152
+		);
+
+		expect(migrated.composeScore).toBeNull();
+		expect(migrated.composeBaseState).toBeNull();
+		expect(migrated.composeEnabled).toBe(false);
+	});
+
+	it('preserves a current Compose session', () => {
+		const composeScore = { app: 'Lyrixa', schemaVersion: 2 };
+		const composeBaseState = { activeImageId: 'image-a' };
+		const migrated = migrateWallpaperStore(
+			{
+				composeScore,
+				composeBaseState,
+				composeEnabled: true
+			} as never,
+			153
+		);
+
+		expect(migrated.composeScore).toBe(composeScore);
+		expect(migrated.composeBaseState).toBe(composeBaseState);
+		expect(migrated.composeEnabled).toBe(true);
+	});
+});
