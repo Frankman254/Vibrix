@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createBackgroundImageItem } from '@/features/background/backgroundImages';
 import { createDefaultSpectrumInstance } from '@/features/spectrum';
+import { linkedTransitionProgress } from '@/features/visualTransition/linkedImageTransition';
 import { cloneFactoryDefaultState } from '@/store/factoryDefaults';
 import type { SceneSlot, WallpaperState } from '@/types/wallpaper';
 import type {
@@ -111,6 +112,63 @@ describe('resolveVisualStateAt', () => {
 		expect(
 			resolveVisualStateAt(baseState(), envelope, 180000).activeImageId
 		).toBe('image-b');
+	});
+
+	it('uses the outgoing image transition on the absolute score clock', () => {
+		const base = baseState();
+		base.backgroundImages = [
+			createBackgroundImageItem('image-a', 'a.png', null, {
+				transitionType: 'cross-zoom',
+				transitionDuration: 2,
+				transitionIntensity: 1.4,
+				transitionLayerTargets: []
+			}),
+			createBackgroundImageItem('image-b', 'b.png', null, {
+				transitionType: 'iris',
+				transitionDuration: 0.3
+			})
+		];
+		const envelope = score(
+			[track('image')],
+			[
+				cue('a', 0, {
+					kind: 'image',
+					family: 'image',
+					id: 'image-a',
+					revision: 'a'
+				}),
+				cue('b', 180000, {
+					kind: 'image',
+					family: 'image',
+					id: 'image-b',
+					revision: 'b'
+				})
+			]
+		);
+
+		const atCut = resolveVisualStateAt(base, envelope, 180000);
+		const midway = resolveVisualStateAt(base, envelope, 181000);
+		const settled = resolveVisualStateAt(base, envelope, 182000);
+
+		expect(atCut.visualTransition).toMatchObject({
+			id: 'compose-image-b',
+			fromImageId: 'image-a',
+			toImageId: 'image-b',
+			startedAtMs: 180000,
+			imageTransition: {
+				transitionType: 'cross-zoom',
+				transitionDuration: 2,
+				transitionIntensity: 1.4,
+				targets: []
+			}
+		});
+		expect(linkedTransitionProgress(midway.visualTransition!, 181000)).toBe(
+			0.5
+		);
+		expect(
+			linkedTransitionProgress(settled.visualTransition!, 182000)
+		).toBe(1);
+		expect(resolveVisualStateAt(base, envelope, 181000)).toEqual(midway);
 	});
 
 	it('keeps a granular override above later scenes until inherit', () => {

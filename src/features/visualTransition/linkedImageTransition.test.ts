@@ -70,7 +70,7 @@ describe('image transitions linked to audio layers', () => {
 			'instances'
 		]);
 	});
-	it('does not link scene-only edits, unchecked images or reduced motion', () => {
+	it('does not link scene-only edits, unchecked targets or reduced motion', () => {
 		const { state } = fixture();
 		const base = {
 			state,
@@ -88,12 +88,12 @@ describe('image transitions linked to audio layers', () => {
 			createVisualTransitionSnapshot({ ...base, toImageId: 'from' })
 				?.imageTransition
 		).toBeUndefined();
-		expect(
-			createVisualTransitionSnapshot({
-				...base,
-				state: { ...state, activeImageId: 'to' },
-				toImageId: 'from'
-			})?.imageTransition
-		).toBeUndefined();
+		const unchecked = createVisualTransitionSnapshot({
+			...base,
+			state: { ...state, activeImageId: 'to' },
+			toImageId: 'from'
+		});
+		expect(unchecked?.imageTransition).toMatchObject({ targets: [] });
+		expect(linkedImageTransition(unchecked, 'spectrum')).toBeNull();
 	});
 });

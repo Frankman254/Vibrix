@@ -70,6 +70,7 @@ export function createVisualTransitionSnapshot(params: {
 		Partial<Pick<WallpaperState, 'backgroundImages'>>;
 	patch: Partial<WallpaperState>;
 	toImageId: string | null;
+	id?: string;
 	startedAtMs?: number;
 	prefersReducedMotion?: boolean;
 }): VisualTransitionSnapshot | null {
@@ -81,7 +82,7 @@ export function createVisualTransitionSnapshot(params: {
 		image => image.assetId === params.state.activeImageId
 	);
 	const imageTransition =
-		imageChanged && !reduced && outgoing?.transitionLayerTargets?.length
+		imageChanged && !reduced && outgoing
 			? {
 					transitionType: outgoing.transitionType,
 					transitionDuration: outgoing.transitionDuration,
@@ -99,7 +100,9 @@ export function createVisualTransitionSnapshot(params: {
 				? 420
 				: 520;
 	return {
-		id: `vt-${startedAtMs}-${Math.random().toString(36).slice(2, 8)}`,
+		id:
+			params.id ??
+			`vt-${startedAtMs}-${Math.random().toString(36).slice(2, 8)}`,
 		fromImageId: params.state.activeImageId,
 		...(imageTransition ? { imageTransition } : {}),
 		toImageId: params.toImageId,

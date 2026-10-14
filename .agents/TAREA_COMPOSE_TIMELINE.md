@@ -4,18 +4,19 @@
 > [docs/features/VIBRIX_AUTHORING_CONTRACT.md](../docs/features/VIBRIX_AUTHORING_CONTRACT.md),
 > sección «Versión 2 — activaciones sostenidas».
 
-> **Estado Vibrix, 2026-10-04:** V2.1, V2.1b y V2.2 implementadas. De V2.3
-> está implementado y probado el evaluador puro; faltan la transición temporal
-> de imagen, conectarlo al preview/Play y al export offline, y persistir el score
-> con su migración cuando exista una superficie real que lo consuma.
+> **Estado Vibrix, revisado el 2026-10-13:** V2.1, V2.1b y V2.2 implementadas. De V2.3
+> están implementados y probados el evaluador puro y la transición temporal de
+> imagen. Falta persistir la sesión Compose con su migración, conectarla al
+> preview/Play y al export offline.
 
-> **Repaso 2026-10-11 — esto lleva una semana parado y conviene saberlo.**
+> **Repaso 2026-10-13 — ésta vuelve a ser la tarea prioritaria.**
 > Verificado por grep, no por memoria: `resolveVisualStateAt` **no se importa
 > desde ningún sitio de `src/`** (la única mención fuera de su módulo es un
 > comentario en `vibrixScore.ts`). O sea: 234 líneas de evaluador y 241 de tests
 > que no llegan a la pantalla. Desde el 2026-10-04 los 20 commits siguientes
-> fueron a export offline, slideshow, storage, WebGL, stage FX, demo y legacy
-> — nada de compose.
+> fueron a export offline, slideshow, storage, WebGL, stage FX, demo y legacy.
+> Esos arreglos se conservan, pero ya no desplazan W1→W5 salvo que una regresión
+> bloquee el circuito de integración.
 >
 > El tramo que queda está secuenciado como **W1→W5** en
 > [el plan de ataque](../docs/plans/PLAN_ATAQUE_CONGELACION_Y_LYRIXA.md), §Vía 3,
@@ -118,13 +119,21 @@ muestra la secuencia durante Play y quien la renderiza en el export offline.
 8. Exportar `.vibrix-score` con `score.json` y sólo los snapshots/previews/assets
    realmente referenciados por sus cues.
 
+**Estado comprobado en Lyrixa el 2026-10-13:** existe el primer corte v1:
+parser de `.vibrix-manifest.json`, catálogo de escenas, una pista Scene, bloques
+con `endTimeMs`, detección de slots actualizados/faltantes y export
+`.vibrix-score.json`. No existen todavía el parser del paquete
+`.vibrix-authoring`, schema v2, imágenes, carriles granulares, activaciones
+sostenidas ni `inherit`. Su orden ejecutable vive en
+`Lyrixa/.agents/TAREA_SECUENCIADOR.md`.
+
 ## V2.3 · Evaluador y modo Compose en Vibrix
 
 1. ✅ Implementar `resolveVisualStateAt(base, score, timeMs)` como función pura.
 2. ✅ Partir siempre de una base congelada y plegar cues ordenados hasta `timeMs`.
 3. ✅ Reutilizar `buildSceneSlotActivationPatch` y
    `buildActiveImageSelectionPatch`; no duplicar sus reglas.
-4. El cambio de imagen usa la transición de la imagen saliente y tiempo
+4. ✅ El cambio de imagen usa la transición de la imagen saliente y tiempo
    absoluto.
 5. Conectar el mismo evaluador al preview y al export offline.
 6. En modo Compose, Play y seek siguen el score importado. Al activarlo,

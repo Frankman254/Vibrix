@@ -10,10 +10,11 @@
 > letras. Diseño del secuenciador, en Lyrixa:
 > `Lyrixa/docs/03-vibrix-composition-sequencer.md`.
 >
-> **Estado:** la versión 1 del catálogo de slots y del score está implementada.
-> La versión 2, acordada el 2026-10-03, añade las imágenes como objetos de
-> autoría y cambia el timeline a activaciones sostenidas. La tarea ejecutable
-> está en
+> **Estado:** Vibrix ya produce el paquete de autoría v2, lee scores v1/v2 y
+> evalúa activaciones de forma pura. Lyrixa conserva todavía su primer corte v1
+> y debe migrar al paquete, las imágenes y las activaciones sostenidas. Falta
+> conectar el evaluador de Vibrix a Play/seek y al export offline. La tarea
+> ejecutable está en
 > [.agents/TAREA_COMPOSE_TIMELINE.md](../../.agents/TAREA_COMPOSE_TIMELINE.md).
 
 ## Regla que hace posible trabajar en paralelo
@@ -569,25 +570,17 @@ El archivo se llama `<proyecto>.vibrix-authoring`. Las previews transportables
 viven en `manifest.images[].thumbnailDataUrl`; los snapshots nunca llevan
 `blob:` URLs ni timestamps del slideshow anterior.
 
-## Lo que este contrato NO resuelve
+## Estado del runtime de Vibrix
 
-**El estado visual en T todavía depende del camino recorrido**, así que un score
-determinista no se puede evaluar aún. Verificado en
-`src/features/scenes/sceneSlot.ts:156`: `buildSceneSlotActivationPatch(state,
-slot)` ya es **pura** en `(state, slot)` —no lee el store— pero no es **total**:
-una referencia `null` significa «no toques este subsistema» y hay composición
-explícita sobre lo que ya había (`patch.spectrumInstances ??
-state.spectrumInstances`). Reproducir 0→1:42 y saltar a 1:42 dan frames
-distintos.
-
-Que el constructor de parches ya sea puro es la buena noticia: el arreglo **lo
-reutiliza sin tocarlo**. Consiste en plegar los cues desde una **base declarada**
-en vez de desde el estado vivo:
+`src/features/composition/resolveVisualStateAt.ts` ya pliega los cues desde una
+base declarada y reutiliza los constructores de parches de imágenes y escenas:
 
 ```ts
-resolveVisualStateAt(base, score, timeMs) => Partial<WallpaperState>
+resolveVisualStateAt(base, score, timeMs) => ResolvedVisualState
 ```
 
-Lo caro no es el pliegue, es decidir qué es `base` y dejarlo escrito en las
-`dependencies` del score, para que el mismo score dé el mismo frame en otra
-máquina. Eso es la Fase C de Vibrix y va en su propia ventana, después del tag.
+La función es determinista y ya tiene pruebas para orden, overrides sostenidos,
+`inherit` y seek directo. Lo pendiente es completar el progreso de transición
+de imagen, persistir score + base y usar el resultado en el viewport y el
+export offline. Hasta que esos consumidores existan, importar un score en
+Vibrix sólo valida y presenta su informe de compatibilidad.

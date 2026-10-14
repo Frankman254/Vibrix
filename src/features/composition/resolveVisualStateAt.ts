@@ -1,4 +1,5 @@
 import { buildSceneSlotActivationPatch } from '@/features/scenes/sceneSlot';
+import { createVisualTransitionSnapshot } from '@/features/visualTransition/visualTransitionCoordinator';
 import { buildActiveImageSelectionPatch } from '@/store/activeImageSelection';
 import type { SceneSlot, WallpaperState } from '@/types/wallpaper';
 import type {
@@ -171,10 +172,15 @@ function applyAggregate(
 			: state;
 	}
 	if (activation.family === 'image') {
-		return applyPatch(
+		const patch = buildActiveImageSelectionPatch(state, targetId).patch;
+		const visualTransition = createVisualTransitionSnapshot({
 			state,
-			buildActiveImageSelectionPatch(state, targetId).patch
-		);
+			patch,
+			toImageId: patch.activeImageId ?? null,
+			id: `compose-image-${activation.cue.id}`,
+			startedAtMs: activation.cue.startTimeMs
+		});
+		return applyPatch(state, { ...patch, visualTransition });
 	}
 	return state;
 }

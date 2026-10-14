@@ -48,6 +48,18 @@ describe('visualTransitionCoordinator', () => {
 		expect(transition?.id).toMatch(/^vt-1000-/);
 	});
 
+	it('accepts a deterministic id for clock-derived evaluators', () => {
+		const transition = createVisualTransitionSnapshot({
+			state: { activeImageId: 'img-a', performanceMode: 'high' },
+			patch: {},
+			toImageId: 'img-b',
+			id: 'compose-image-cue-b',
+			startedAtMs: 1000
+		});
+
+		expect(transition?.id).toBe('compose-image-cue-b');
+	});
+
 	it('creates a reduced-motion transition without extending animation time', () => {
 		const transition = createVisualTransitionSnapshot({
 			state: { activeImageId: 'img-a', performanceMode: 'medium' },

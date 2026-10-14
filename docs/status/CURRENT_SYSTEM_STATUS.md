@@ -136,6 +136,9 @@ Does **not** include an internal video encoder — see Recording subsystem.
   activations (`scene`, `feature-slot`, `image`, `inherit`).
 - `resolveVisualStateAt(base, score, T)` is pure and deterministic. Granular
   overrides remain above later scenes/images until another cue or `inherit`.
+- Image cues freeze the outgoing image transition at the cue's absolute score
+  time with a deterministic transition id, so direct seeks resolve the same
+  transition state as continuous playback.
 - The score is not persisted and does not drive the live viewport or offline
   export yet. Import currently validates and reports compatibility only.
 
@@ -195,7 +198,7 @@ See `docs/features/SPECTRUM_ENGINE.md` (ownership model) and
 
 ## Authoring catalogue for Lyrixa (`vibrix-manifest`)
 
-**Status: Stable (publish + review); playback is not implemented**
+**Status: Stable (publish + review + pure evaluation); playback wiring pending**
 
 - `features/scenes/slotRevision.ts` — content hash of a slot's `values`
   (cyrb53 over a canonical tagged serialization, 14 hex digits). Derived on
@@ -214,11 +217,14 @@ See `docs/features/SPECTRUM_ENGINE.md` (ownership model) and
 - UI: `features/export/controls/VibrixAuthoringSection.tsx` in the Export tab.
   Importing a score confirms first and **does not touch the project**; the review
   is the deliverable.
-- Transport is a file (`<project>.vibrix-manifest.json`). No endpoint: the
-  catalogue lives in the browser store, which `backend/server` never sees.
+- Transport is a file. The current producer emits `<project>.vibrix-authoring`
+  with schema v2 manifest, snapshots and previews; the loose
+  `<project>.vibrix-manifest.json` remains a legacy input. No endpoint exists:
+  the catalogue lives in the browser store, which `backend/server` never sees.
 - Contract: [docs/features/VIBRIX_AUTHORING_CONTRACT.md](../features/VIBRIX_AUTHORING_CONTRACT.md).
-  **Not implemented:** evaluating a score (`resolveVisualStateAt(base, score, T)`),
-  which needs visual state at an instant to stop depending on the path taken.
+- `features/composition/resolveVisualStateAt.ts` evaluates schema v1/v2 scores
+  deterministically from a frozen base. **Not implemented:** feeding that
+  result into live Play/seek and the offline exporter.
 
 ---
 
@@ -401,10 +407,9 @@ Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 
 ## Immediate priorities
 
-1. Offline video export QA (a full track, end to end) + OBS workflow documentation
-2. `resolveVisualStateAt(base, score, T)` — the stateless refactor that lets a
-   Lyrixa score actually drive the frame (own window, from the freeze tag)
-3. Pixel Art visual polish and performance measurement (manual baselines)
-4. Public alpha documentation freeze (`docs:check` in CI)
+1. Persist the imported score and Compose session with store v153 + migration.
+2. Wire the evaluator to live Play/seek and then to offline export.
+3. Import Lyrixa's `.vibrix-score` package and pass the cross-app exit fixture.
+4. Resume long-video export QA and public-alpha polish after Compose parity.
 
 See deliverable “next three sprints” in sprint summary.

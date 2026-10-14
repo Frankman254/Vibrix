@@ -1,72 +1,110 @@
 # Vibrix — qué hacer ahora
 
-> Fuente: [plan maestro](../docs/plans/PLAN_MAESTRO_LANZAMIENTO.md) §Fase 1 y
-> [diseño as-built del export](../docs/architecture/OFFLINE_VIDEO_RENDERER_DESIGN.md).
-> Actualiza este archivo al cerrar cada sub-fase. Contexto de la suite:
-> [SUITE.md](SUITE.md).
+> Actualizado el 2026-10-13 después de contrastar código, historial y el estado
+> de Lyrixa. Contexto completo:
+> [TAREA_COMPOSE_TIMELINE.md](TAREA_COMPOSE_TIMELINE.md) y
+> [PLAN_ATAQUE_CONGELACION_Y_LYRIXA.md](../docs/plans/PLAN_ATAQUE_CONGELACION_Y_LYRIXA.md).
 
-## Fase 1 · Export de vídeo offline — **en curso**
+## Objetivo activo: cerrar Compose con Lyrixa
 
-| Sub-fase | Qué                                                                                       | Estado                                                                                             |
-| -------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| 1A       | Fondo + spectrum + logo + audio → MP4, progreso, cancelar                                 | Implementado, **falta la prueba real del usuario** (canción de 3 min en VLC / QuickTime / YouTube) |
-| 1B       | Letras Lyrixa en el export                                                                | Implementado (subsistema `lyrics`), falta verificar sincronía ±1 frame con un bundle real          |
-| 1C       | Partículas, lluvia, Stage FX, Camera FX, overlays, fondo global, slideshow/escenas, Looks | **Implementado** — auditados los bordes bajo Camera FX; falta verificar letras y la paridad 1E     |
-| 1D       | Presets YouTube/Shorts/Instagram, rango in/out                                            | Pendiente (ya hay selector de resolución y fps)                                                    |
-| 1E       | Test de paridad offline vs preview                                                        | Pendiente                                                                                          |
+Vibrix es el **preparador y renderer**: guarda imágenes, escenas, slots,
+transiciones y efectos, publica esos objetos y reproduce el resultado. Lyrixa
+es el **secuenciador**: decide qué objeto se activa y en qué instante.
+
+El trabajo de bugs y export offline de las últimas semanas fue útil, pero dejó
+este circuito a medio conectar. Desde ahora Compose vuelve a ser la prioridad.
+Sólo interrumpe esta cola una regresión que impida editar, reproducir, importar
+o exportar el caso de integración.
+
+## Estado real
+
+| Pieza                                                              | Estado                                |
+| ------------------------------------------------------------------ | ------------------------------------- |
+| Export `.vibrix-authoring` con manifiesto v2, snapshots y previews | Hecho                                 |
+| Parser/revisión de scores v1 y v2                                  | Hecho                                 |
+| Activaciones `scene`, `image`, `feature-slot` e `inherit`          | Hecho en dominio puro                 |
+| `resolveVisualStateAt(base, score, T)` determinista                | Hecho y probado, todavía desconectado |
+| Transición temporal entre imágenes                                 | Hecha en el evaluador puro            |
+| Score persistido y modo Compose                                    | Pendiente                             |
+| Preview, Play y seek consumiendo el score                          | Pendiente                             |
+| Export offline consumiendo el mismo estado                         | Pendiente                             |
+| Import del contenedor `.vibrix-score`                              | Pendiente; sólo JSON legacy           |
+
+`STORE_PERSIST_VERSION` está en **152**. El paso que añada el score al store
+debe subirlo a 153 y añadir su migración en el mismo cambio.
+
+## Orden de implementación en Vibrix
+
+Un dominio y un commit por paso:
+
+1. ✅ **W1 · Transición de imagen pura.** El evaluador usa la transición de la
+   imagen saliente, el tiempo absoluto del cue y un id determinista. Hay casos
+   de seek dentro y fuera de la transición.
+2. **W2 · Sesión Compose persistida.** Guardar score, base congelada y estado
+   enabled/disabled; bump 152→153 y migración. Activar Compose pide confirmación
+   porque sustituye el control temporal manual.
+3. **W3 · Preview, Play y seek.** Conectar `resolveVisualStateAt` al viewport sin
+   encadenar mutaciones históricas del store. El mismo `T` debe producir el
+   mismo estado después de seek y de reproducción continua.
+4. **W4 · Export offline.** Alimentar `renderFrameAt` con el mismo estado
+   resuelto. No crear un segundo evaluador dentro de `features/export`.
+5. **W5 · Paquete de score.** Abrir `.vibrix-score`, conservar
+   `.vibrix-score.json` como compatibilidad y revisar dependencias antes de
+   habilitar Compose.
+6. **Integración real.** Importar un score producido por Lyrixa con dos
+   imágenes, dos escenas, Spectrum 2 y un `inherit`; comprobar cortes,
+   transiciones, seek, Play y export.
 
 ### Siguiente paso concreto
 
-> **Compose / Lyrixa:** el modelo v2 acordado (imágenes como objetos,
-> activaciones sostenidas por carril y modo Compose determinista) está en
-> [TAREA_COMPOSE_TIMELINE.md](TAREA_COMPOSE_TIMELINE.md). Sustituye el bloque
-> automático de ocho segundos del primer corte de Lyrixa y amplía el manifiesto
-> v1, que sólo publica slots. **Vibrix ya exporta el paquete v2, valida scores
-> v1/v2 y resuelve el estado puro en T.** Falta conectar ese evaluador a
-> Play/seek y al export offline.
+Empieza por **W2**: modela la sesión Compose (score, base congelada y estado
+enabled/disabled) en el store, sube `STORE_PERSIST_VERSION` de 152 a 153 y añade
+la migración. La activación debe esperar `useDialog().confirm()`. No conectes
+preview/Play todavía; ése es W3.
 
-0. **[TAREA_EXPORT_RAPIDO_AISLADO.md](TAREA_EXPORT_RAPIDO_AISLADO.md)**
-   (fases A→F, un commit por fase, auditoría de Claude entre fases).
-   **Fase A commiteada (`76e9d981`), Fase A.bis commiteada (`d9809cc6`),
-   Fase C (audio por ventanas, §1.4) y el punto B.2 de Fase B (bitrate
-   explícito en tabla + gate de almacenamiento honesto) commiteados en esta
-   sesión** — todas esperan la auditoría de Claude. De Fase B quedan B.1
-   (instrumentación/tabla), B.3 (`powerPreference` + `webglcontextlost` en
-   `sceneGl.ts`) y B.4 (diagnóstico GPU/encoder en la tab). Sigue Fase D
-   (tramos con pausa/reanudación, que reusa el sink OPFS).
+## Trabajo que queda en Lyrixa, en paralelo
 
-1. Pedir al usuario el resultado de la prueba de 3 min (tiempo, peso, si
-   reproduce, si el audio va sincronizado). Si falla, arreglar antes de 1C.
-2. Medir el criterio "≤ 1,5× la duración" y apuntarlo aquí.
-3. Verificar letras con un bundle Lyrixa real (sincronía ±1 frame y estilos).
-4. ~~Memoria de 1 h: decodificar/analizar el audio por ventanas~~ — **hecho
-   (Fase C)**: `video/offlineAudioTrack.ts`; el `AudioBuffer` entero se borró.
-5. **Hecho (2026-09-16): "cámara lenta / duración alterada".** Los archivos
-   terminados estaban sanos (AVPlayer los reproduce a 1,0×; stts CFR;
-   duración exacta 266,28 s). El defecto real era del sink de stream:
-   `fastStart: false` ponía el `moov` al final, así que QuickTime tardaba
-   ~2 min en abrir 1,3 GB y un archivo _aún en escritura_ se reproducía con
-   duración y velocidad bogus. `offlineVideoEncoder.ts` ahora escribe MP4
-   fragmentado en el sink de stream (`'in-memory'` solo en buffer). Verificado
-   con el encoder real de la app en Chrome + AVPlayer a 1,0×.
+Lyrixa ya tiene el corte v1: manifiesto JSON, catálogo Scene, una pista y export
+`.vibrix-score.json`. Su siguiente cola es importar `.vibrix-authoring`, adoptar
+score v2 sin `endTimeMs`, añadir Image y carriles granulares, `inherit`,
+miniaturas y exportar `.vibrix-score` con sólo las dependencias usadas.
 
-### Propuesta pendiente de aprobar · looks "Showcase" de fábrica
+La coordinación entre repos se hace por el contrato
+[VIBRIX_AUTHORING_CONTRACT.md](../docs/features/VIBRIX_AUTHORING_CONTRACT.md) y
+sus fixtures. No se copian tipos a mano sin actualizar contrato y tests.
 
-Auditoría web ↔ producto del 2026-09-13
-(`vibrix-web/.agents/AJUSTES_ALINEACION_VIBRIX.md`).
+## Trabajo en pausa
 
-- Las 8 capturas del showcase de la web son renders reales de Vibrix, pero
-  ningún preset ni slot de fábrica las reproduce.
-- Propuesta: 8 slots de espectro de fábrica "Showcase · …" con los mismos
-  ajustes: radial, scope, tunnel, liquid, orbital, spiral, linear blocks y
-  pixel LED.
-- Así la web puede prometer "a un clic" y regenerar las capturas o vídeos
-  desde ahí.
-- **No empezar sin el OK del usuario:** es contenido nuevo, no parte de la
-  Fase 1.
+- Fases restantes de `TAREA_EXPORT_RAPIDO_AISLADO.md` que no bloqueen W1–W5.
+- Presets de plataforma, polish Pixel Art y contenido Showcase.
+- Transporte HTTP, nube, cuentas y colaboración.
+- Nuevos efectos que no formen parte del score actual.
 
-### No hacer
+La QA de export de larga duración sigue pendiente, pero no vuelve a desplazar
+Compose. Se retoma después de W4, cuando el export ya consuma el score real.
 
-- No subir a `0.5.0-alpha` hasta cumplir los criterios de salida del plan.
-- No meter watermark ni licencias aquí: eso es Fase 4.
-- No usar `getDisplayMedia` como atajo en este flujo.
+## Puerta de salida
+
+No declarar cerrado hasta que un score real de Lyrixa cumpla todo esto:
+
+1. Image A en `00:00`, Image B en `03:00`.
+2. Scene A en `00:00`, Scene B en `01:00`.
+3. Spectrum 2 en `01:30`, `inherit` en `02:00`.
+4. Seek a cada corte produce el mismo frame que reproducir desde cero.
+5. Preview y export offline coinciden en cortes y transiciones.
+6. El paquete se puede volver a abrir sin depender de URLs `blob:` ni del store
+   del navegador que lo creó.
+
+## Antes de cerrar cada paso
+
+```bash
+pnpm format
+pnpm lint
+pnpm architecture:check
+pnpm structure:check
+pnpm docs:check
+pnpm i18n:check
+pnpm test:types
+pnpm test:run
+pnpm build
+```
