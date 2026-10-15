@@ -83,6 +83,7 @@ export function useAudioSnapshotRuntime({
 				return;
 			}
 			lastBroadcastMsRef.current = now;
+			const hasEngine = engineRef.current?.hasActive() ?? false;
 
 			// `timeDomain` is intentionally NOT cloned into the cross-tab
 			// payload — only the local oscilloscope renderer consumes it
@@ -99,13 +100,20 @@ export function useAudioSnapshotRuntime({
 				isPaused,
 				fileName: analyzerRef.current?.getFileName?.() ?? '',
 				fileVolume,
-				fileLoop
+				fileLoop,
+				currentTime: hasEngine
+					? (engineRef.current?.getCurrentTime() ?? 0)
+					: (analyzerRef.current?.getCurrentTime?.() ?? 0),
+				duration: hasEngine
+					? (engineRef.current?.getDuration() ?? 0)
+					: (analyzerRef.current?.getDuration?.() ?? 0)
 			} satisfies AudioSyncMessage);
 		},
 		[
 			analyzerRef,
 			captureMode,
 			channelRef,
+			engineRef,
 			fileLoop,
 			fileVolume,
 			isPaused,
@@ -133,7 +141,9 @@ export function useAudioSnapshotRuntime({
 			isPaused: true,
 			fileName: '',
 			fileVolume,
-			fileLoop
+			fileLoop,
+			currentTime: 0,
+			duration: 0
 		} satisfies AudioSyncMessage);
 	}, [captureMode, channelRef, fileLoop, fileVolume, sourceIdRef]);
 
@@ -158,7 +168,9 @@ export function useAudioSnapshotRuntime({
 				isPaused: payload.isPaused,
 				fileName: payload.fileName,
 				fileVolume: payload.fileVolume,
-				fileLoop: payload.fileLoop
+				fileLoop: payload.fileLoop,
+				currentTime: payload.currentTime,
+				duration: payload.duration
 			};
 		};
 

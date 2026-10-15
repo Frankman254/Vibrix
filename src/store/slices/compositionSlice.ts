@@ -3,6 +3,10 @@ import type { VibrixScoreEnvelope } from '@/features/composition/vibrixScore';
 import { FACTORY_DEFAULT_STATE } from '@/store/factoryDefaults';
 import type { WallpaperStore } from '@/store/wallpaperStoreTypes';
 import type { WallpaperState } from '@/types/wallpaper';
+import {
+	hydrateComposeBaseState,
+	selectComposeRuntimeState
+} from '@/store/compositionRuntimeState';
 
 type WallpaperSet = Parameters<StateCreator<WallpaperStore>>[0];
 type WallpaperGet = Parameters<StateCreator<WallpaperStore>>[1];
@@ -54,23 +58,60 @@ export function createCompositionSlice(
 		composeBaseState: null,
 		composeEnabled: false,
 		stageComposeScore: (score: VibrixScoreEnvelope) =>
-			set(state => ({
-				composeScore: cloneValue(score),
-				composeBaseState: captureComposeBaseState(state),
-				composeEnabled: false
-			})),
+			set(state => {
+				const source =
+					state.composeEnabled && state.composeBaseState
+						? {
+								...state,
+								...selectComposeRuntimeState(
+									hydrateComposeBaseState(
+										state.composeBaseState,
+										state
+									)
+								)
+							}
+						: state;
+				return {
+					...selectComposeRuntimeState(source),
+					composeScore: cloneValue(score),
+					composeBaseState: captureComposeBaseState(source),
+					composeEnabled: false
+				};
+			}),
 		setComposeEnabled: (enabled: boolean) =>
-			set(state => ({
-				composeEnabled:
-					enabled && state.composeScore && state.composeBaseState
-						? true
-						: false
-			})),
+			set(state => {
+				if (enabled) {
+					return {
+						composeEnabled: Boolean(
+							state.composeScore && state.composeBaseState
+						)
+					};
+				}
+				return {
+					...(state.composeBaseState
+						? selectComposeRuntimeState(
+								hydrateComposeBaseState(
+									state.composeBaseState,
+									state
+								)
+							)
+						: {}),
+					composeEnabled: false
+				};
+			}),
 		clearComposeSession: () =>
-			set({
+			set(state => ({
+				...(state.composeBaseState
+					? selectComposeRuntimeState(
+							hydrateComposeBaseState(
+								state.composeBaseState,
+								state
+							)
+						)
+					: {}),
 				composeScore: null,
 				composeBaseState: null,
 				composeEnabled: false
-			})
+			}))
 	} satisfies Partial<WallpaperStore>;
 }

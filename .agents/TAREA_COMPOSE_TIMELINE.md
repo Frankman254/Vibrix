@@ -165,9 +165,10 @@ sostenidas ni `inherit`. Su orden ejecutable vive en
    `buildActiveImageSelectionPatch`; no duplicar sus reglas.
 4. ✅ El cambio de imagen usa la transición de la imagen saliente y tiempo
    absoluto.
-5. Conectar el mismo evaluador al preview y al export offline.
-6. La activación de Compose ya confirma antes de sustituir el control temporal
-   manual. Pendiente en W3: que Play y seek sigan el score importado.
+5. 🟡 Conectar el mismo evaluador al preview y al export offline: preview/Play/
+   seek hechos en W3; export pendiente en W4.
+6. ✅ La activación de Compose confirma antes de sustituir el control temporal
+   manual; Play y seek siguen el score importado desde la base congelada.
 7. Tests obligatorios: seek = reproducción desde cero; Spectrum 2 aislado;
    escena seguida de override granular; `inherit`; dos cues en el mismo ms;
    transición de imagen; slot o imagen cambiada/borrada.

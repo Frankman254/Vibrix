@@ -1,7 +1,7 @@
 # Vibrix — qué hacer ahora
 
-> Actualizado el 2026-10-14 después de integrar el contenedor de score de Lyrixa
-> de Lyrixa. Contexto completo:
+> Actualizado el 2026-10-14 después de conectar Compose al viewport. Contexto
+> completo:
 > [TAREA_COMPOSE_TIMELINE.md](TAREA_COMPOSE_TIMELINE.md) y
 > [PLAN_ATAQUE_CONGELACION_Y_LYRIXA.md](../docs/plans/PLAN_ATAQUE_CONGELACION_Y_LYRIXA.md).
 
@@ -18,17 +18,17 @@ o exportar el caso de integración.
 
 ## Estado real
 
-| Pieza                                                              | Estado                                |
-| ------------------------------------------------------------------ | ------------------------------------- |
-| Export `.vibrix-authoring` con manifiesto v2, snapshots y previews | Hecho                                 |
-| Parser/revisión de scores v1 y v2                                  | Hecho                                 |
-| Activaciones `scene`, `image`, `feature-slot` e `inherit`          | Hecho en dominio puro                 |
-| `resolveVisualStateAt(base, score, T)` determinista                | Hecho y probado, todavía desconectado |
-| Transición temporal entre imágenes                                 | Hecha en el evaluador puro            |
-| Score persistido y modo Compose                                    | Hecho; store v153 + confirmación      |
-| Preview, Play y seek consumiendo el score                          | Pendiente                             |
-| Export offline consumiendo el mismo estado                         | Pendiente                             |
-| Import del contenedor `.vibrix-score`                              | Hecho; conserva JSON legacy           |
+| Pieza                                                              | Estado                           |
+| ------------------------------------------------------------------ | -------------------------------- |
+| Export `.vibrix-authoring` con manifiesto v2, snapshots y previews | Hecho                            |
+| Parser/revisión de scores v1 y v2                                  | Hecho                            |
+| Activaciones `scene`, `image`, `feature-slot` e `inherit`          | Hecho en dominio puro            |
+| `resolveVisualStateAt(base, score, T)` determinista                | Hecho y conectado al viewport    |
+| Transición temporal entre imágenes                                 | Hecha en el evaluador puro       |
+| Score persistido y modo Compose                                    | Hecho; store v153 + confirmación |
+| Preview, Play y seek consumiendo el score                          | Hecho                            |
+| Export offline consumiendo el mismo estado                         | Pendiente                        |
+| Import del contenedor `.vibrix-score`                              | Hecho; conserva JSON legacy      |
 
 `STORE_PERSIST_VERSION` está en **153**. La migración abre proyectos anteriores
 sin score y bajo control temporal manual.
@@ -46,7 +46,7 @@ Un dominio y un commit por paso:
 3. ✅ **V2.2b · Paquete de score.** Abrir `.vibrix-score`, usar snapshots y
    previews autocontenidos, conservar `.vibrix-score.json` y excluir cues de
    carriles apagados durante revisión y cierre.
-4. **W3 · Preview, Play y seek.** Conectar `resolveVisualStateAt` al viewport sin
+4. ✅ **W3 · Preview, Play y seek.** Conecta `resolveVisualStateAt` al viewport sin
    encadenar mutaciones históricas del store. El mismo `T` debe producir el
    mismo estado después de seek y de reproducción continua.
 5. **W4 · Export offline.** Alimentar `renderFrameAt` con el mismo estado
@@ -57,10 +57,9 @@ Un dominio y un commit por paso:
 
 ### Siguiente paso concreto
 
-Empieza por **W3** en el runtime del viewport: hidrata los asset URLs de la base
-congelada desde el proyecto vivo y resuelve el estado con el reloj de audio para
-Play y seek. No encadenes parches sobre el estado anterior; cada instante parte
-de `composeBaseState` y `composeScore`.
+Empieza por **W4** en el export offline: entrega a `renderFrameAt` el resultado
+de `resolveVisualStateAt(composeBaseState, composeScore, timeMs)` cuando Compose
+esté activo. Hidrata los mismos assets y no dupliques el evaluador.
 
 ## Trabajo que queda en Lyrixa, en paralelo
 

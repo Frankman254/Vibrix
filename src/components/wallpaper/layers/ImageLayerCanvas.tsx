@@ -4,6 +4,7 @@ import { useAudioData } from '@/hooks/useAudioData';
 import { createAudioEnvelope } from '@/utils/audioEnvelope';
 import { useWallpaperStore } from '@/store/wallpaperStore';
 import {
+	getCachedImage,
 	getCanvasBlendMode,
 	type ImageLayer
 } from '@/features/background/imageLayerGeometry';
@@ -62,7 +63,72 @@ export default function ImageLayerCanvas({
 		imageRef,
 		backgroundTransitionRefs
 	} = useImageCanvasSource(layer, effectiveTimeRef);
+	const composeTransition = useWallpaperStore(state =>
+		state.composeEnabled &&
+		state.visualTransition?.id.startsWith('compose-')
+			? state.visualTransition
+			: null
+	);
+	const composeOutgoingImage = useWallpaperStore(state => {
+		const id =
+			state.composeEnabled &&
+			state.visualTransition?.id.startsWith('compose-')
+				? state.visualTransition.fromImageId
+				: null;
+		return id
+			? (state.backgroundImages.find(image => image.assetId === id) ??
+					null)
+			: null;
+	});
 	const { getAudioSnapshot } = useAudioData();
+
+	useEffect(() => {
+		if (
+			layer.type !== 'background-image' ||
+			!composeTransition ||
+			!composeOutgoingImage?.url ||
+			composeTransition.fromImageId === composeTransition.toImageId
+		) {
+			return;
+		}
+		const transitionId = composeTransition.id;
+		getCachedImage(composeOutgoingImage.url, outgoing => {
+			if (
+				useWallpaperStore.getState().visualTransition?.id !==
+				transitionId
+			) {
+				return;
+			}
+			backgroundTransitionRefs.previousBackgroundImageRef.current =
+				outgoing;
+			backgroundTransitionRefs.previousBackgroundParamsRef.current = {
+				scale: composeOutgoingImage.scale,
+				positionX: composeOutgoingImage.positionX,
+				positionY: composeOutgoingImage.positionY,
+				fitMode: composeOutgoingImage.fitMode,
+				keepCovered: !composeOutgoingImage.framingManual,
+				focusX: composeOutgoingImage.focusX,
+				focusY: composeOutgoingImage.focusY,
+				mirror: composeOutgoingImage.mirror,
+				mirrorFill: composeOutgoingImage.mirrorFill,
+				mirrorFillInvert: composeOutgoingImage.mirrorFillInvert,
+				mirrorFillCount: composeOutgoingImage.mirrorFillCount,
+				rotation: composeOutgoingImage.rotation
+			};
+			backgroundTransitionRefs.previousBackgroundTransitionRef.current = {
+				transitionType: composeOutgoingImage.transitionType,
+				transitionDuration: composeOutgoingImage.transitionDuration,
+				transitionIntensity: composeOutgoingImage.transitionIntensity,
+				transitionAudioDrive: composeOutgoingImage.transitionAudioDrive
+			};
+			wakeRenderRef.current?.();
+		});
+	}, [
+		backgroundTransitionRefs,
+		composeOutgoingImage,
+		composeTransition,
+		layer.type
+	]);
 
 	useEffect(() => {
 		layerRef.current = layer;

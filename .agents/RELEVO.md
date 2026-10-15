@@ -37,8 +37,8 @@ y previews del paquete sin depender del proyecto vivo.
 `src/features/composition/resolveVisualStateAt.ts` ya resuelve de forma pura el
 estado visual en un instante. Sus tests cubren orden, overrides sostenidos,
 `inherit`, transición de imagen y seek determinista. El score y su base
-congelada ya se guardan como sesión Compose, pero ningún runtime consume aún
-esa sesión: todavía no dirige el viewport ni el export offline.
+congelada se guardan como sesión Compose. W3 conecta el viewport al reloj
+absoluto de audio para Play y seek; el export offline todavía no la consume.
 
 El historial posterior se concentró en bugs, slideshow, storage, WebGL, Stage
 FX, proyecto demo y export. Esos cambios no cierran Compose. La tarea activa es
@@ -46,13 +46,13 @@ conectar el dominio ya construido, no volver a diseñarlo.
 
 ## Próximo movimiento
 
-**W1, W2 y V2.2b están implementados:** la transición es determinista, la sesión
-Compose persiste score, base congelada y estado enabled bajo store v153. El
-siguiente paso es **W3**: conectar esa sesión al preview, Play y seek sin
-encadenar mutaciones históricas del store.
+**W1, W2, V2.2b y W3 están implementados:** la transición es determinista, la
+sesión persiste bajo store v153 y el viewport resuelve desde la base congelada
+con el reloj de audio. El siguiente paso es **W4**: alimentar el export offline
+con el mismo evaluador.
 
 Lyrixa completó L1–L5 y ya produce el paquete v2 autocontenido. Queda ejecutar
-la fixture cruzada real cuando W3 conecte el score al viewport.
+la fixture cruzada real cuando W4 cierre la paridad con export.
 
 ## Reglas técnicas que no se negocian
 

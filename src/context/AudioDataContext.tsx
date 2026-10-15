@@ -36,7 +36,9 @@ export function AudioDataProvider({ children }: { children: ReactNode }) {
 		isPaused: false,
 		fileName: '',
 		fileVolume: 1,
-		fileLoop: true
+		fileLoop: true,
+		currentTime: 0,
+		duration: 0
 	});
 	const channelRef = useRef<BroadcastChannel | null>(null);
 	const sourceIdRef = useRef(

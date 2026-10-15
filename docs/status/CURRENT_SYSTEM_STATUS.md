@@ -141,8 +141,13 @@ Does **not** include an internal video encoder — see Recording subsystem.
   transition state as continuous playback.
 - The score, a transport-safe frozen visual base and the Compose enabled flag
   persist in store v153. Import stages Compose disabled; activation requires a
-  confirmation. The session does not drive the live viewport or offline export
-  yet.
+  confirmation.
+- The live viewport resolves Compose from that frozen base and the absolute
+  audio playhead. Seek and continuous Play use the same evaluator; image
+  transitions use score time, restored asset URLs are runtime-only, and the
+  slideshow is inert while Compose owns Image. Project persistence substitutes
+  the frozen base instead of saving a transient playback frame.
+- Offline export does not consume the Compose session yet.
 
 ---
 
@@ -411,9 +416,8 @@ Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 
 ## Immediate priorities
 
-1. Wire the persisted Compose session to live Play/seek.
-2. Feed the same resolved state into offline export.
-3. Pass the cross-app exit fixture with a real Lyrixa package.
-4. Resume long-video export QA and public-alpha polish after Compose parity.
+1. Feed the same Compose-resolved state into offline export.
+2. Pass the cross-app exit fixture with a real Lyrixa package.
+3. Resume long-video export QA and public-alpha polish after Compose parity.
 
 See deliverable “next three sprints” in sprint summary.

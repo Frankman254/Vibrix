@@ -366,9 +366,12 @@ export function useAudioCaptureController({
 			if (engineRef.current?.hasActive()) {
 				return engineRef.current.getCurrentTime();
 			}
-			return analyzerRef.current?.getCurrentTime?.() ?? 0;
+			return (
+				analyzerRef.current?.getCurrentTime?.() ??
+				remoteMetaRef.current.currentTime
+			);
 		},
-		[analyzerRef, engineRef]
+		[analyzerRef, engineRef, remoteMetaRef]
 	);
 
 	const getDuration = useCallback(
@@ -376,9 +379,12 @@ export function useAudioCaptureController({
 			if (engineRef.current?.hasActive()) {
 				return engineRef.current.getDuration();
 			}
-			return analyzerRef.current?.getDuration?.() ?? 0;
+			return (
+				analyzerRef.current?.getDuration?.() ??
+				remoteMetaRef.current.duration
+			);
 		},
-		[analyzerRef, engineRef]
+		[analyzerRef, engineRef, remoteMetaRef]
 	);
 
 	const setFileVolume = useCallback(

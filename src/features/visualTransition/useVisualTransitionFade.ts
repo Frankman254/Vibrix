@@ -27,6 +27,7 @@ import {
 	type CrossfadeGateOptions
 } from '@/features/visualTransition/visualTransitionCrossfade';
 import type { VisualTransitionSubsystem } from '@/types/wallpaper';
+import { visualTransitionClockMs } from '@/features/composition/composePlaybackClock';
 
 export { transitionSubsystemsForLayerType };
 
@@ -80,6 +81,7 @@ export function useVisualTransitionFade(
 		let safety = 0;
 		let activeId: string | null = null;
 		let handledId: string | null = null;
+		let handledProgress = -1;
 		let frame: FrozenLayerFrame | null = null;
 		const selection = createAudioChannelSelectionState();
 
@@ -137,15 +139,14 @@ export function useVisualTransitionFade(
 				finish();
 				return;
 			}
-			// `startedAtMs` is wall-clock (`Date.now()`); progress MUST use the
-			// same clock. `performance.now()` is a different epoch and would clamp
-			// progress to 0 forever, freezing the layer at opacity 0 (invisible).
+			const clockMs = visualTransitionClockMs(transition);
 			const progress = linkedImageTransition(
 				transition,
 				imageTransitionTarget
 			)
-				? linkedTransitionProgress(transition, Date.now())
-				: visualTransitionProgress(transition, Date.now());
+				? linkedTransitionProgress(transition, clockMs)
+				: visualTransitionProgress(transition, clockMs);
+			handledProgress = progress;
 			if (progress >= 1) {
 				finish();
 				return;
@@ -156,15 +157,23 @@ export function useVisualTransitionFade(
 
 		const maybeStart = () => {
 			const transition = useWallpaperStore.getState().visualTransition;
-			if (!transition || transition.id === handledId) return;
-			handledId = transition.id;
+			if (!transition) return;
 			const linked = linkedImageTransition(
 				transition,
 				imageTransitionTarget
 			);
+			const clockMs = visualTransitionClockMs(transition);
 			const progress = linked
-				? linkedTransitionProgress(transition, Date.now())
-				: visualTransitionProgress(transition, Date.now());
+				? linkedTransitionProgress(transition, clockMs)
+				: visualTransitionProgress(transition, clockMs);
+			if (
+				transition.id === handledId &&
+				progress >= handledProgress - 0.001
+			) {
+				return;
+			}
+			handledId = transition.id;
+			handledProgress = progress;
 			if (progress >= 1) {
 				finish();
 				return;

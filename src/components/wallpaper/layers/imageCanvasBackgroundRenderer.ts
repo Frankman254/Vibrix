@@ -52,7 +52,8 @@ export function renderBackgroundFrame({
 	previousBackgroundTransitionRef,
 	renderedBackgroundParamsRef,
 	renderedBackgroundTransitionRef,
-	transitionStartRef
+	transitionStartRef,
+	composeTransitionProgress
 }: RenderBackgroundFrameParams): void {
 	const activeImage = loadedImage ? loadedImage : null;
 	const transitionSettings = previousBackgroundTransitionRef.current;
@@ -61,7 +62,8 @@ export function renderBackgroundFrame({
 		transitionSettings.transitionDuration * 1000
 	);
 	const progress =
-		activeImage &&
+		composeTransitionProgress ??
+		(activeImage &&
 		previousBackgroundImageRef.current &&
 		transitionStartRef.current !== null
 			? clamp(
@@ -69,7 +71,7 @@ export function renderBackgroundFrame({
 					0,
 					1
 				)
-			: 1;
+			: 1);
 	const easedProgress = progress * progress * (3 - 2 * progress);
 	const transitionForce = clamp(
 		transitionSettings.transitionIntensity +
@@ -145,6 +147,10 @@ export function renderBackgroundFrame({
 		}
 	} else if (activeImage) {
 		drawBackgroundImageDirect(dc, activeImage, activeSnapshot, 1);
+		if (composeTransitionProgress !== null && progress >= 1) {
+			previousBackgroundImageRef.current = null;
+			transitionStartRef.current = null;
+		}
 	} else if (previousBackgroundImageRef.current) {
 		drawBackgroundImageDirect(
 			dc,

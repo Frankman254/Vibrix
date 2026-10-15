@@ -35,6 +35,7 @@ import {
 } from '@/features/stageFx/flashEdgeDrive';
 import { syncOutputCanvasBacking } from '@/runtime/outputRenderQuality';
 import { isVisualTransitionActive } from '@/features/visualTransition/visualTransitionCoordinator';
+import { visualTransitionClockMs } from '@/features/composition/composePlaybackClock';
 
 type MousePositionRef = MutableRefObject<{ x: number; y: number }>;
 
@@ -173,8 +174,27 @@ export function renderImageCanvasFrame(params: {
 			Math.max(100, state.slideshowTransitionDuration * 1000);
 	const visualTransitionActive = isVisualTransitionActive(
 		state.visualTransition,
-		Date.now()
+		state.visualTransition
+			? visualTransitionClockMs(state.visualTransition)
+			: Date.now()
 	);
+	const composeTransitionProgress =
+		state.composeEnabled &&
+		state.visualTransition?.id.startsWith('compose-')
+			? Math.max(
+					0,
+					Math.min(
+						1,
+						(visualTransitionClockMs(state.visualTransition) -
+							state.visualTransition.startedAtMs) /
+							Math.max(
+								1,
+								(state.visualTransition.imageTransition
+									?.transitionDuration ?? 0) * 1000
+							)
+					)
+				)
+			: null;
 	const {
 		bassBoost,
 		envelopeNormalized: bgEnvelopeNormalized,
@@ -337,7 +357,8 @@ export function renderImageCanvasFrame(params: {
 			previousBackgroundTransitionRef,
 			renderedBackgroundParamsRef,
 			renderedBackgroundTransitionRef,
-			transitionStartRef
+			transitionStartRef,
+			composeTransitionProgress
 		});
 
 		// Reactive Neon Edge — usa driver compartido del Flash Light.

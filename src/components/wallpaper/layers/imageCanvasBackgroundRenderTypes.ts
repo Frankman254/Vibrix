@@ -71,4 +71,6 @@ export type RenderBackgroundFrameParams = {
 	renderedBackgroundParamsRef: MutableRefObject<BackgroundImageSnapshot>;
 	renderedBackgroundTransitionRef: MutableRefObject<BackgroundTransitionSnapshot>;
 	transitionStartRef: MutableRefObject<number | null>;
+	/** Absolute score-clock progress while Compose owns the image lane. */
+	composeTransitionProgress: number | null;
 };

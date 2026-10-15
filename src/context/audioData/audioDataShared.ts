@@ -20,6 +20,8 @@ export type AudioSyncMessage = {
 	fileName: string;
 	fileVolume: number;
 	fileLoop: boolean;
+	currentTime: number;
+	duration: number;
 };
 
 export type RemoteAudioMeta = {
@@ -28,6 +30,8 @@ export type RemoteAudioMeta = {
 	fileName: string;
 	fileVolume: number;
 	fileLoop: boolean;
+	currentTime: number;
+	duration: number;
 };
 
 export interface AudioDataContextValue {

@@ -87,6 +87,16 @@ function activeCues(envelope: VibrixScoreEnvelope, timeMs: number) {
 		});
 }
 
+/** Stable key for deciding whether a new playhead position changes the frame. */
+export function compositionActivationKeyAt(
+	envelope: VibrixScoreEnvelope,
+	timeMs: number
+): string {
+	return activeCues(envelope, Math.max(0, timeMs))
+		.map(activation => activation.cue.id)
+		.join('|');
+}
+
 function applyPatch(
 	state: Readonly<WallpaperState>,
 	patch: Partial<WallpaperState>

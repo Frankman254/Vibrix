@@ -64,7 +64,7 @@ export type MarkNextSwitchResult = {
 };
 
 export type WallpaperStore = WallpaperState & {
-	// Lyrixa Compose session. Persisted, but inert until W3 reads it.
+	// Lyrixa Compose session. The runtime projects it from the absolute audio clock.
 	composeScore: VibrixScoreEnvelope | null;
 	composeBaseState: WallpaperState | null;
 	composeEnabled: boolean;

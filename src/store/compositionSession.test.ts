@@ -104,4 +104,16 @@ describe('Compose session store', () => {
 		expect(useWallpaperStore.getState().composeBaseState).toBeNull();
 		expect(useWallpaperStore.getState().activeImageId).toBe('image-a');
 	});
+
+	it('restores the frozen visual base without rewinding audio transport', () => {
+		useWallpaperStore.setState({ logoBaseSize: 24, audioPaused: false });
+		useWallpaperStore.getState().stageComposeScore(score());
+		useWallpaperStore.getState().setComposeEnabled(true);
+		useWallpaperStore.setState({ logoBaseSize: 90, audioPaused: true });
+
+		useWallpaperStore.getState().setComposeEnabled(false);
+		const restored = useWallpaperStore.getState();
+		expect(restored.logoBaseSize).toBe(24);
+		expect(restored.audioPaused).toBe(true);
+	});
 });

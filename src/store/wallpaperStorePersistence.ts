@@ -1,8 +1,10 @@
 import type { WallpaperStore } from '@/store/wallpaperStoreTypes';
+import { restoreComposeBaseForPersistence } from '@/store/compositionRuntimeState';
 
 export function partializeWallpaperStore(
 	state: WallpaperStore
 ): Partial<WallpaperStore> {
+	state = restoreComposeBaseForPersistence(state);
 	const {
 		audioCaptureState,
 		imageUrl,

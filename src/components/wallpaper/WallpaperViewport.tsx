@@ -30,6 +30,7 @@ import DragInteractionLayer from '@/components/wallpaper/DragInteractionLayer';
 import { SpectrumManualKeyboardGate } from '@/features/spectrum/ui';
 import type { WallpaperState } from '@/types/wallpaper';
 import type { OverlayLayer } from '@/types/layers';
+import { useComposePlaybackRuntime } from '@/runtime/useComposePlaybackRuntime';
 
 function isAudioOverlayLayer(
 	layer: OverlayLayer
@@ -49,14 +50,19 @@ export default function WallpaperViewport({
 	editorMode = false,
 	outputMode = false,
 	interactionVisible = false,
-	sceneVisible = true
+	sceneVisible = true,
+	composePlayback = true
 }: {
 	editorMode?: boolean;
 	outputMode?: boolean;
 	interactionVisible?: boolean;
 	sceneVisible?: boolean;
+	/** False in a mirror window that receives already-resolved editor state. */
+	composePlayback?: boolean;
 }) {
+	useComposePlaybackRuntime(composePlayback);
 	const showEditorChrome = editorMode && !outputMode;
+	const composeEnabled = useWallpaperStore(state => state.composeEnabled);
 	const linkedLayerTargets = useWallpaperStore(
 		useShallow(state => [
 			...new Set(
@@ -225,7 +231,7 @@ export default function WallpaperViewport({
 	return (
 		<>
 			<SpectrumManualKeyboardGate enabled={showEditorChrome} />
-			<SlideshowManager />
+			{!composeEnabled && <SlideshowManager />}
 			<main
 				style={{
 					position: 'fixed',

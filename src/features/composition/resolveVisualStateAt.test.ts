@@ -9,7 +9,10 @@ import type {
 	CompositionTrack,
 	VibrixScoreEnvelope
 } from './vibrixScore';
-import { resolveVisualStateAt } from './resolveVisualStateAt';
+import {
+	compositionActivationKeyAt,
+	resolveVisualStateAt
+} from './resolveVisualStateAt';
 
 function scene(id: string, logoSlotId: string): SceneSlot {
 	return {
@@ -88,6 +91,29 @@ function score(
 }
 
 describe('resolveVisualStateAt', () => {
+	it('changes its activation key only when the effective cue set changes', () => {
+		const envelope = score(
+			[track('image')],
+			[
+				cue('a', 0, {
+					kind: 'image',
+					family: 'image',
+					id: 'image-a',
+					revision: 'a'
+				}),
+				cue('b', 180000, {
+					kind: 'image',
+					family: 'image',
+					id: 'image-b',
+					revision: 'b'
+				})
+			]
+		);
+		expect(compositionActivationKeyAt(envelope, 1000)).toBe('a');
+		expect(compositionActivationKeyAt(envelope, 179999)).toBe('a');
+		expect(compositionActivationKeyAt(envelope, 180000)).toBe('a|b');
+	});
+
 	it('holds an image activation until the next image cue', () => {
 		const envelope = score(
 			[track('image')],
