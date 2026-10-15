@@ -1,14 +1,29 @@
 import { useWallpaperStore } from '@/store/wallpaperStore';
+import { hydrateComposeBaseState } from '@/store/compositionRuntimeState';
+import type { VibrixScoreEnvelope } from '@/features/composition/vibrixScore';
 import type { WallpaperState } from '@/types/wallpaper';
 import {
 	getEditorThemePalette,
 	type BackgroundPalette
 } from '@/lib/backgroundPalette';
 
+/**
+ * The Compose session captured for one export: the score envelope and the
+ * frozen base it resolves against, with session-local URLs restored from the
+ * live project. The frame loop re-resolves this at every boundary instead of
+ * trusting the playhead position the editor happens to be parked on.
+ */
+export type ComposeExportSession = {
+	envelope: VibrixScoreEnvelope;
+	base: Readonly<WallpaperState>;
+};
+
 export type RenderStateSnapshot = {
 	state: Readonly<WallpaperState>;
 	palette: BackgroundPalette;
 	capturedAtMs: number;
+	/** Non-null only when Compose mode was on at capture time. */
+	composition: ComposeExportSession | null;
 };
 
 function pickStateFields(
@@ -50,6 +65,27 @@ export function getRenderStateSnapshot(
 	const state = withExportQuality(pickStateFields(store));
 	const palette =
 		overrides?.palette ?? getEditorThemePalette(state.editorTheme);
+	const composition =
+		overrides?.composition !== undefined
+			? overrides.composition
+			: store.composeEnabled &&
+				  store.composeScore &&
+				  store.composeBaseState
+				? Object.freeze({
+						envelope: store.composeScore,
+						// Same hydration the live runtime does, then the same
+						// export-quality pass: the offline evaluator must start
+						// from exactly the document the preview resolves against.
+						base: Object.freeze(
+							withExportQuality(
+								hydrateComposeBaseState(
+									store.composeBaseState,
+									state
+								)
+							)
+						)
+					})
+				: null;
 	const snapshot: RenderStateSnapshot = {
 		state: Object.freeze(state),
 		palette,
@@ -57,7 +93,8 @@ export function getRenderStateSnapshot(
 			overrides?.capturedAtMs ??
 			(typeof performance !== 'undefined'
 				? performance.now()
-				: Date.now())
+				: Date.now()),
+		composition
 	};
 	return Object.freeze(snapshot);
 }

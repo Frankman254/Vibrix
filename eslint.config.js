@@ -19,7 +19,10 @@ export default tseslint.config(
 			'coverage/**',
 			// Claude Code worktrees are full copies of the repo; linting them
 			// double-reports every file and can explode into thousands of errors.
-			'.claude/worktrees/**'
+			'.claude/worktrees/**',
+			// Agent scratch working dirs; gitignored, never shipped, and linting
+			// them turns tool output into red build gates.
+			'.work/**'
 		]
 	},
 	eslint.configs.recommended,

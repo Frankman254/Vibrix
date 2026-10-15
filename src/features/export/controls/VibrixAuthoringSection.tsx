@@ -12,6 +12,7 @@ import {
 	type DroppedBindingWarning
 } from '@/features/scenes/authoringManifest';
 import { createAuthoringPackageBlob } from '@/features/export/authoringPackageExport';
+import { renderSlotThumbnails } from '@/features/export/slotThumbnails';
 import {
 	reviewVibrixScore,
 	type ScoreCueStatus,
@@ -166,14 +167,26 @@ export default function VibrixAuthoringSection() {
 		setBusy(true);
 		try {
 			const projectName = resolveProjectName();
+			// One render pass over the live look (slot previews for Lyrixa's
+			// catalogue), then the same map feeds the manifest and the package
+			// so the warnings shown and the file published never disagree. The
+			// renderer draws the full store state, not the `source` Pick.
+			const slotThumbnails = await renderSlotThumbnails(
+				useWallpaperStore.getState()
+			);
 			const { manifest, droppedBindings } = buildAuthoringManifestReport(
 				source,
-				{ exportedAt: new Date().toISOString(), projectName }
+				{
+					exportedAt: new Date().toISOString(),
+					projectName,
+					slotThumbnails
+				}
 			);
 			setDropped(droppedBindings);
 			const { blob } = await createAuthoringPackageBlob(source, {
 				exportedAt: manifest.exportedAt,
-				projectName
+				projectName,
+				slotThumbnails
 			});
 			const fileName = `${sanitize(projectName)}.vibrix-authoring`;
 			const saved = await saveBlobWithPicker(blob, fileName, {

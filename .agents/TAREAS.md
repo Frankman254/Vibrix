@@ -1,8 +1,17 @@
 # Vibrix — qué hacer ahora
 
-> Actualizado el 2026-10-14 después de conectar Compose al viewport. Contexto
-> completo:
-> [TAREA_COMPOSE_TIMELINE.md](TAREA_COMPOSE_TIMELINE.md) y
+> Actualizado el 2026-10-15 tras cerrar W4 y V2.4a. **W4 · export offline**
+> (`buildCompositionSegments` reusa `resolveVisualStateAt`) y **V2.4a · miniatura
+> de slot** (`src/features/export/slotThumbnails.ts` publica `thumbnailDataUrl`
+> con el mismo pipeline, aditivo y sin bump de versión) quedaron hechos. El
+> siguiente paso es **Integración real**: importar un score de Lyrixa y verificar
+> seek/Play/preview/export con miniaturas legibles. Decisión tomada con el
+> usuario: el secuenciador se queda en Lyrixa; el preview en vivo llegará después
+> por live-seek (V2.4b) sobre el mismo `.vibrix-score`, sin contrato nuevo.
+> Contexto completo: [TAREA_COMPOSE_TIMELINE.md](TAREA_COMPOSE_TIMELINE.md)
+> (cola larga, §V2.4),
+> [VIBRIX_AUTHORING_CONTRACT.md](../docs/features/VIBRIX_AUTHORING_CONTRACT.md)
+> (§«Miniaturas de slot», §«Preview del score en vivo») y
 > [PLAN_ATAQUE_CONGELACION_Y_LYRIXA.md](../docs/plans/PLAN_ATAQUE_CONGELACION_Y_LYRIXA.md).
 
 ## Objetivo activo: cerrar Compose con Lyrixa
@@ -27,7 +36,8 @@ o exportar el caso de integración.
 | Transición temporal entre imágenes                                 | Hecha en el evaluador puro       |
 | Score persistido y modo Compose                                    | Hecho; store v153 + confirmación |
 | Preview, Play y seek consumiendo el score                          | Hecho                            |
-| Export offline consumiendo el mismo estado                         | Pendiente                        |
+| Export offline consumiendo el mismo estado                         | Hecho (`compositionSegments`)    |
+| Miniatura de slot en el manifiesto (`thumbnailDataUrl`, V2.4a)     | Hecho (aditivo, sin bump)        |
 | Import del contenedor `.vibrix-score`                              | Hecho; conserva JSON legacy      |
 
 `STORE_PERSIST_VERSION` está en **153**. La migración abre proyectos anteriores
@@ -49,23 +59,41 @@ Un dominio y un commit por paso:
 4. ✅ **W3 · Preview, Play y seek.** Conecta `resolveVisualStateAt` al viewport sin
    encadenar mutaciones históricas del store. El mismo `T` debe producir el
    mismo estado después de seek y de reproducción continua.
-5. **W4 · Export offline.** Alimentar `renderFrameAt` con el mismo estado
-   resuelto. No crear un segundo evaluador dentro de `features/export`.
+5. ✅ **W4 · Export offline.** `buildCompositionSegments` entrega a
+   `renderFrameAt` el resultado de `resolveVisualStateAt` cuando Compose está
+   activo; sin segundo evaluador en `features/export`.
 6. **Integración real.** Importar un score producido por Lyrixa con dos
    imágenes, dos escenas, Spectrum 2 y un `inherit`; comprobar cortes,
    transiciones, seek, Play y export.
 
 ### Siguiente paso concreto
 
-Empieza por **W4** en el export offline: entrega a `renderFrameAt` el resultado
-de `resolveVisualStateAt(composeBaseState, composeScore, timeMs)` cuando Compose
-esté activo. Hidrata los mismos assets y no dupliques el evaluador.
+**W4 y V2.4a quedaron hechos.** El export offline ya reusa
+`resolveVisualStateAt` vía `buildCompositionSegments`, y cada export
+`.vibrix-authoring` publica `thumbnailDataUrl` por slot con el mismo pipeline de
+render (`src/features/export/slotThumbnails.ts`). Nada de esto sube
+`schemaVersion` ni `STORE_PERSIST_VERSION`.
+
+El siguiente paso concreto es **Integración real** (punto 6): importar un score
+producido por Lyrixa con dos imágenes, dos escenas, Spectrum 2 y un `inherit`;
+comprobar que seek, Play, preview y export coinciden, y que los slots del
+catálogo llegan con miniatura legible. Cola larga y detalles en
+[TAREA_COMPOSE_TIMELINE.md](TAREA_COMPOSE_TIMELINE.md) §V2.4.
 
 ## Trabajo que queda en Lyrixa, en paralelo
 
 Lyrixa completó L1–L5: importa `.vibrix-authoring`, secuencia score v2 con Image,
 carriles granulares e `inherit`, y exporta `.vibrix-score` autocontenido con sólo
-las dependencias usadas.
+las dependencias usadas. Añadió además **L4.1** (navegación del catálogo para
+paquetes grandes: pestañas Images/Scenes/Slots, acordeones por familia y render
+por ventanas).
+
+**Decisión de arquitectura 2026-10-14 (con el usuario):** el secuenciador **se
+queda en Lyrixa**; no se traslada a Vibrix. El preview fiel se consigue con el
+flujo por archivo ya existente (score → Compose → play/seek, W3) y, en una fase
+posterior no bloqueante, con un **live-seek por bridge** (V2.4b) que sirve el
+mismo `.vibrix-score` por HTTP, sin contrato nuevo. Lyrixa entrega mientras
+tanto un panel orientativo «Visual at playhead» con los datos que ya tiene.
 
 La coordinación entre repos se hace por el contrato
 [VIBRIX_AUTHORING_CONTRACT.md](../docs/features/VIBRIX_AUTHORING_CONTRACT.md) y

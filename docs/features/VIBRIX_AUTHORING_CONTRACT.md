@@ -111,6 +111,71 @@ La miniatura es opcional para que un manifiesto siga siendo válido si el asset
 no se puede leer. Cuando exista debe ser autocontenida y pequeña; una `blob:` URL
 no sirve porque Lyrixa corre en otro origen y no puede abrirla.
 
+## Miniaturas de slot (alineación con Lyrixa, 2026-10-14)
+
+**Problema que resuelve.** En el catálogo de Lyrixa los slots salían con dos
+iniciales y un nombre de banco no descriptivo (`Horizontal Bars`, `Astroid Bars`,
+`id` interno). Para un usuario final eso es ilegible, y en audios largos no hay
+forma de reconocer un efecto sin colocarlo a ciegas en la timeline. Los slots no
+tenían representación visual porque el contrato **nunca les dio campo**: sólo las
+imágenes llevaban `thumbnailDataUrl`.
+
+**Qué hace Vibrix.** Al exportar `.vibrix-authoring`, Vibrix renderiza cada slot
+cueable (y `scene`) a una miniatura y la publica en `VibrixManifestSlot.thumbnailDataUrl`:
+
+1. Reutiliza el mismo pipeline del snapshot visual del slot sobre su `values`
+   (un canvas offscreen pequeño, ~96–128 px, `data:image/...`), igual que la
+   miniatura de imagen; **no** inventa una segunda forma de dibujar el efecto.
+2. `intro-window` (no cueable) y un slot con `revision: 'empty'` se publican sin
+   miniatura: Lyrixa muestra el placeholder con nombre que ya tiene.
+3. La miniatura **no entra en `slotRevision`** ni en `manifest.revision`: es
+   presentación, no contenido visual editable (misma regla que excluir `url`,
+   `thumbnailUrl` y `name` de la revisión de una imagen). Renombrar o re-miniaturizar
+   no mueve la revisión; cambiar un `value` que altera el render sí, y ahí la
+   miniatura se regenera porque cambia `values`.
+
+**Contrato: es aditivo, no sube versión.** `thumbnailDataUrl` en un slot es
+opcional; un lector viejo que no lo conoce lo ignora. Lyrixa, cuando el campo
+existe, lo usa como thumbnail del slot (igual que hace con las imágenes); cuando
+falta, conserva el placeholder. Por eso **no** hace falta bump de `schemaVersion`
+ni migración de store.
+
+## Preview del score en vivo durante la edición (alineación con Lyrixa, 2026-10-14)
+
+**Decisión de arquitectura tomada con el usuario.** El secuenciador se queda en
+Lyrixa (L1–L5 y la navegación del catálogo ya están hechas y verificadas allí).
+**No** se mueve el editor a Vibrix: reconstruiría en Vibrix la persistencia, el
+undo, los carriles sostenidos y el catálogo que Lyrixa ya tiene, duplicando el
+motor visual en dos codebases.
+
+El «preview mientras edito la timeline» que quiere el usuario **no es un canvas
+de Lyrixa** (Lyrixa no renderiza shaders por diseño: Vibrix es la autoridad
+visual). Se consigue por el puente que **ya existe**, sin mover el editor:
+
+- Lyrixa ya importa `.vibrix-score` y Vibrix ya resuelve `resolveVisualStateAt`
+  en su viewport (W3 hecho). El flujo normal sigue siendo **archivo primero**:
+  Lyrixa exporta `.vibrix-score` → Vibrix lo importa → modo Compose → play/seek/
+  export offline coinciden.
+- Para un preview en vivo **mientras se edita** en Lyrixa, la fase siguiente
+  (no bloqueante) es un **live-seek por bridge**: Lyrixa, al mover el playhead,
+  envía `{ score, timeMs }` a un endpoint de Vibrix; Vibrix contesta el frame
+  resuelto (o un `iframe`/ventana del viewport en modo Compose sincronizada) y
+  Lyrixa lo muestra en un panel. Esto es **transporte HTTP con los mismos bytes**
+  que ya promete `liveWallpaperTarget.ts`; no cambia ningún contrato de
+  archivo, sólo lo sirve por red.
+- Por eso **no** se abre hoy un segundo contrato de «preview»: el formato
+  `.vibrix-score` + `resolveVisualStateAt` ya es suficiente; el live-seek es una
+  _entrega_ nueva encima del mismo payload. Cuando exista, se documenta aquí
+  (path y forma de la respuesta) y en el lado Lyrixa, en el mismo día (regla 1 de
+  SUITE).
+
+**Qué le toca a Lyrixa ahora (Fase 0, sin tocar contrato):** un panel «Visual
+at playhead» que, con `currentTime` + score + manifiesto que **ya** recibe, usa
+`resolveVisualStateAt`-equivalente puro en Lyrixa para decir qué imagen/escena/
+override están activos en el playhead y pintar sus `thumbnailDataUrl` (imágenes
+hoy; slots en cuanto Vibrix publique el campo de arriba). Es orientativo, no el
+render de Vibrix, y deja la ceguera en cero hasta que llegue el live-seek.
+
 ## `slotRevision` — derivado, no persistido
 
 Un hash del **contenido** de un slot, para que Lyrixa pueda decir
@@ -207,6 +272,13 @@ interface VibrixManifestSlot {
 	sceneBindable: boolean;
 	/** Falso para `intro-window`: no se puede poner en un cue. */
 	cueable: boolean;
+	/**
+	 * Miniatura transportable del efecto del slot, generada por Vibrix al
+	 * exportar (render offscreen de `values`, igual que la de imágenes).
+	 * Opcional: un manifiesto sigue siendo válido si el slot no se puede
+	 * renderizar. Nunca una `blob:` URL: Lyrixa corre en otro origen.
+	 */
+	thumbnailDataUrl?: string;
 }
 ```
 

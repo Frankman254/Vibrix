@@ -49,10 +49,13 @@ import {
 	type OfflineVideoExportProgress
 } from './offlineVideoFormat';
 import { createOfflineCameraFx } from './offlineCameraFx';
+import { buildCompositionSegments } from './compositionSegments';
+import { setComposePlaybackClock } from '@/features/composition/composePlaybackClock';
 import {
 	buildSlideshowSegments,
 	findSlideshowSegmentAt,
-	prepareSlideshowSegments
+	prepareSlideshowSegments,
+	type PreparedSlideshowSegment
 } from './slideshowSegments';
 
 export type RunOfflineVideoExportOptions = {
@@ -142,10 +145,17 @@ export async function runOfflineVideoExport(
 	}
 
 	const frozen = options.frozen ?? getRenderStateSnapshot();
-	const segments = await prepareSlideshowSegments(
-		buildSlideshowSegments(frozen.state, durationMs, fps),
-		frozen.state
-	);
+	const segments: PreparedSlideshowSegment[] = frozen.composition
+		? await buildCompositionSegments(
+				frozen.composition,
+				frozen.state,
+				durationMs,
+				fps
+			)
+		: await prepareSlideshowSegments(
+				buildSlideshowSegments(frozen.state, durationMs, fps),
+				frozen.state
+			);
 	// Lyrics and the track title paint web fonts on frame 0: load every face
 	// first, or the opening frames fall back to system fonts.
 	await loadTrackFonts(
@@ -225,8 +235,11 @@ export async function runOfflineVideoExport(
 				resolution: { width, height }
 			});
 			// Pinned only while the frame draws: the live preview keeps real
-			// time across the awaits below.
+			// time across the awaits below. The compose clock matters the same
+			// way — a `compose-` image transition times its crossfade from the
+			// playhead, so offline must feed it the frame time, not the wall.
 			pinRenderClock(timeMs);
+			if (frozen.composition) setComposePlaybackClock(true, timeMs);
 			try {
 				renderFrameAt(
 					buildOfflineContext({
@@ -247,6 +260,7 @@ export async function runOfflineVideoExport(
 				);
 			} finally {
 				pinRenderClock(null);
+				if (frozen.composition) setComposePlaybackClock(false, 0);
 			}
 
 			await encoder.addFrame(timeMs / 1000, frameDurationSec);

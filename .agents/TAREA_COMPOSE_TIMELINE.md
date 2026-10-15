@@ -173,6 +173,55 @@ sostenidas ni `inherit`. Su orden ejecutable vive en
    escena seguida de override granular; `inherit`; dos cues en el mismo ms;
    transición de imagen; slot o imagen cambiada/borrada.
 
+## V2.4 · Miniaturas de slot y preview en vivo (alineación con Lyrixa, 2026-10-14)
+
+Decisión del usuario 2026-10-14: **el secuenciador se queda en Lyrixa** (allí
+están L1–L5 y la navegación del catálogo, ya verificados). No se traslada el
+editor a Vibrix. Contrato de referencia:
+[docs/features/VIBRIX_AUTHORING_CONTRACT.md](../docs/features/VIBRIX_AUTHORING_CONTRACT.md),
+§«Miniaturas de slot» y §«Preview del score en vivo durante la edición».
+
+El dolor que motiva esto: en el catálogo de Lyrixa los slots salen con iniciales
+y nombre de banco ilegible; sin una imagen del efecto, secuenciar un audio largo
+es trabajar a ciegas.
+
+**Hecho 2026-10-15 — V2.4a · miniatura de slot en el manifiesto (aditivo, sin bump):**
+
+1. Añadir `thumbnailDataUrl?: string` a `VibrixManifestSlot` (ya documentado en
+   el contrato). Opcional; no sube `schemaVersion`.
+2. ✅ En `src/features/export/slotThumbnails.ts` (`renderSlotThumbnails`) cada
+   slot cueable (y `scene`) se renderiza con el **mismo** pipeline del export:
+   `resolveVisualStateAt` proyecta el slot sobre el snapshot de export,
+   `renderFrameAt` dibuja un frame 128 px con una señal de audio demo
+   determinista. `VibrixAuthoringSection` lo llama al exportar y pasa el mapa al
+   manifiesto y al paquete. No hay segundo dibujador.
+3. ✅ El guard de `thumbnailFor` omite `intro-window` y `revision: 'empty'`; el
+   renderer además los filtra antes de dibujar (no gasta un frame en ellos).
+4. ✅ La miniatura entra por la opción `slotThumbnails`, fuera de
+   `slotRevision`/`manifest.revision`. Test en `authoringManifest.test.ts`
+   ('keeps the catalogue revision stable across thumbnails').
+5. El manifiesto sin la opción sale byte-idéntico al anterior (`thumbnailFor`
+   devuelve `undefined`), así que `CONTRACT_FIXTURE_STATE` y el ejemplo literal
+   del contrato **no** se regeneran — verificado por `docs:check`. La compat
+   hacia atrás (un lector viejo ignora el campo) la confirma la suite de Lyrixa.
+6. ✅ Test de guardado en `authoringManifest.test.ts`; el formato `data:image/…`
+   sin `blob:` lo garantiza el renderer por construcción (`canvas.toDataURL`).
+
+**Después — V2.4b · live-seek por bridge (opcional, no bloqueante):**
+
+Para que el usuario vea el render de Vibrix **mientras** mueve el playhead en
+Lyrixa, servir por HTTP el mismo payload `.vibrix-score`, no un contrato nuevo:
+
+1. Endpoint en el backend de Vibrix (los paths que ya propone el doc de Lyrixa,
+   p. ej. `POST /api/composition-frame`) que reciba `{ score, timeMs }`, corra
+   `resolveVisualStateAt(composeBaseState, score, timeMs)` y devuelva el estado
+   resuelto (o un `iframe`/ventana del viewport sincronizada).
+2. Lyrixa lo llama al mover el playhead y pinta el frame en su panel de preview.
+   Con el servicio abajo, degrada al panel orientativo Fase 0 de Lyrixa y al
+   flujo por archivo. **Nada de esto cambia el formato del archivo.**
+3. Antes de abrirlo, documentar la forma de la respuesta aquí y en
+   `Lyrixa/docs/03-vibrix-composition-sequencer.md` el mismo día (regla 1 de SUITE).
+
 ## Puerta de salida
 
 Con un score real de Lyrixa:

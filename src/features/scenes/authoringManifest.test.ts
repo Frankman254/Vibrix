@@ -338,6 +338,51 @@ describe('image authoring objects', () => {
 	});
 });
 
+describe('slot thumbnails', () => {
+	const thumbnails = new Map([
+		['spec-1', 'data:image/webp;base64,AAA'],
+		['bgz-1', 'data:image/webp;base64,BBB'],
+		['intro-1', 'data:image/webp;base64,CCC'],
+		['scene-c', 'data:image/webp;base64,DDD'],
+		['scene-a', 'data:image/webp;base64,EEE']
+	]);
+	const withThumbs = buildAuthoringManifest(
+		CONTRACT_FIXTURE_STATE as unknown as WallpaperState,
+		{
+			...OPTIONS,
+			slotThumbnails: thumbnails
+		}
+	);
+	const slot = (id: string) =>
+		withThumbs.slots.find(entry => entry.id === id);
+
+	it('publishes a preview for a cueable, non-empty slot', () => {
+		expect(slot('spec-1')?.thumbnailDataUrl).toBe(
+			'data:image/webp;base64,AAA'
+		);
+		expect(slot('scene-a')?.thumbnailDataUrl).toBe(
+			'data:image/webp;base64,EEE'
+		);
+	});
+
+	it('never publishes an intro-window or an empty-binding scene', () => {
+		// The renderer skips both, but the guard lives here too so a map that
+		// mistakenly carries them cannot leak an unusable preview.
+		expect(slot('intro-1')).not.toHaveProperty('thumbnailDataUrl');
+		expect(slot('scene-c')).not.toHaveProperty('thumbnailDataUrl');
+	});
+
+	it('leaves a slot without an entry bare, not broken', () => {
+		expect(slot('spec-2')).not.toHaveProperty('thumbnailDataUrl');
+	});
+
+	it('keeps the catalogue revision stable across thumbnails', () => {
+		// Re-minaturising or adding previews must not move the revision Lyrixa
+		// diffs against, or every export would look like a content change.
+		expect(withThumbs.revision).toBe(build().revision);
+	});
+});
+
 describe('bindings that no longer resolve', () => {
 	const stale = {
 		...CONTRACT_FIXTURE_STATE,

@@ -97,6 +97,15 @@ export interface VibrixManifestSlot {
 	/** False for `intro-window`: it covers the head of the track by design, so
 	 *  it cannot be placed at an arbitrary instant. */
 	cueable: boolean;
+	/**
+	 * Transportable preview of the slot's effect, rendered by Vibrix at export
+	 * time (offscreen render of `values`, same rule as image previews).
+	 * Optional: the manifest stays valid when a slot cannot be rendered —
+	 * empty slots, `intro-window`, or a failed draw. Never a `blob:` URL:
+	 * Lyrixa runs on another origin. Presentation only — it never enters
+	 * `slotRevision` nor `manifest.revision`.
+	 */
+	thumbnailDataUrl?: string;
 }
 
 export interface VibrixManifestImage {
@@ -153,6 +162,13 @@ export interface AuthoringManifestOptions {
 	exportedAt: string;
 	/** Vibrix keeps no project name in the store, so the caller supplies it. */
 	projectName: string;
+	/**
+	 * Pre-rendered slot thumbnails by slot id (`data:image/...`), computed at
+	 * export time. Absent or missing ids publish without a thumbnail. Kept
+	 * out of every revision hash: renaming or re-miniaturising must not
+	 * move the catalogue revision.
+	 */
+	slotThumbnails?: ReadonlyMap<string, string>;
 }
 
 /** A binding the scene still names but that resolves to nothing. */
@@ -271,6 +287,23 @@ function sceneRevision(
 }
 
 /**
+ * A thumbnail only reaches the manifest when the slot is renderable:
+ * `intro-window` is not cueable and `revision: 'empty'` has no values to
+ * draw, so both publish without one even if the caller supplied a preview
+ * by mistake.
+ */
+function thumbnailFor(
+	options: AuthoringManifestOptions,
+	slotId: string,
+	revision: string,
+	family: VibrixSlotFamily
+): string | undefined {
+	if (family === 'intro-window') return undefined;
+	if (revision === EMPTY_REVISION) return undefined;
+	return options.slotThumbnails?.get(slotId);
+}
+
+/**
  * The stable, visual part of an image. URLs are browser transport, the file
  * name is presentation, and `playbackSwitchAt` belongs to the legacy
  * slideshow timeline that Compose replaces. Everything else can change the
@@ -329,13 +362,15 @@ export function buildAuthoringManifestReport(
 		for (const slot of slotArrayFor(state, family)) {
 			const revision = revisionOf(slot.values);
 			revisionBySlotId.set(slot.id, revision);
+			const thumbnail = thumbnailFor(options, slot.id, revision, family);
 			granularSlots.push({
 				id: slot.id,
 				family,
 				name: slot.name,
 				revision,
 				sceneBindable: isSceneBindable(family),
-				cueable: isCueable(family)
+				cueable: isCueable(family),
+				...(thumbnail ? { thumbnailDataUrl: thumbnail } : {})
 			});
 		}
 	}
@@ -366,14 +401,17 @@ export function buildAuthoringManifestReport(
 			bindings[family] = normalized;
 		}
 		const hasBindings = Object.keys(bindings).length > 0;
+		const revision = sceneRevision(bindings, revisionBySlotId);
+		const thumbnail = thumbnailFor(options, scene.id, revision, 'scene');
 		return {
 			id: scene.id,
 			family: 'scene' as const,
 			name: scene.name,
-			revision: sceneRevision(bindings, revisionBySlotId),
+			revision,
 			sceneBindable: false,
 			cueable: true,
-			...(hasBindings ? { bindings } : {})
+			...(hasBindings ? { bindings } : {}),
+			...(thumbnail ? { thumbnailDataUrl: thumbnail } : {})
 		};
 	});
 
