@@ -1,6 +1,6 @@
 # Relevo de Vibrix
 
-> Actualizado el 2026-10-13. Empieza aquí, sigue con
+> Actualizado el 2026-10-14. Empieza aquí, sigue con
 > [TAREAS.md](TAREAS.md) y después lee
 > [TAREA_COMPOSE_TIMELINE.md](TAREA_COMPOSE_TIMELINE.md).
 
@@ -30,8 +30,9 @@ mantiene hasta la siguiente activación del carril o hasta el final del audio.
 ## Estado comprobado
 
 Vibrix ya exporta `.vibrix-authoring` con manifiesto schema v2, snapshots de
-slots e imágenes y previews transportables. El parser de score lee v1 y v2 y
-revisa dependencias de escenas, imágenes, slots granulares e `inherit`.
+slots e imágenes y previews transportables. El lector acepta el contenedor
+`.vibrix-score` autocontenido y el sobre JSON legacy; revisa v1/v2 con snapshots
+y previews del paquete sin depender del proyecto vivo.
 
 `src/features/composition/resolveVisualStateAt.ts` ya resuelve de forma pura el
 estado visual en un instante. Sus tests cubren orden, overrides sostenidos,
@@ -45,15 +46,13 @@ conectar el dominio ya construido, no volver a diseñarlo.
 
 ## Próximo movimiento
 
-**W1 y W2 están implementados:** la transición es determinista y la sesión
+**W1, W2 y V2.2b están implementados:** la transición es determinista, la sesión
 Compose persiste score, base congelada y estado enabled bajo store v153. El
 siguiente paso es **W3**: conectar esa sesión al preview, Play y seek sin
 encadenar mutaciones históricas del store.
 
-Lyrixa avanza en paralelo desde su propio repo. Su código actual sigue en v1:
-manifiesto JSON, pista Scene y bloques con `endTimeMs`. Sus documentos ya deben
-apuntar a la migración v2; no asumas que el paquete de score existe hasta
-probarlo con un archivo real.
+Lyrixa completó L1–L5 y ya produce el paquete v2 autocontenido. Queda ejecutar
+la fixture cruzada real cuando W3 conecte el score al viewport.
 
 ## Reglas técnicas que no se negocian
 

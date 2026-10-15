@@ -49,6 +49,39 @@ export const VIBRIX_SLOT_FAMILIES = [
 
 export type VibrixSlotFamily = (typeof VIBRIX_SLOT_FAMILIES)[number];
 
+/** Families Lyrixa may place on the sustained composition timeline. */
+export const VIBRIX_CUEABLE_SLOT_FAMILIES = [
+	'scene',
+	'spectrum',
+	'spectrum-second',
+	'looks',
+	'particles',
+	'rain',
+	'lights',
+	'camera-fx',
+	'logo',
+	'track-title',
+	'background-zoom'
+] as const;
+
+export type VibrixCueableSlotFamily =
+	(typeof VIBRIX_CUEABLE_SLOT_FAMILIES)[number];
+
+export const VIBRIX_GRANULAR_FAMILIES = [
+	'spectrum',
+	'spectrum-second',
+	'looks',
+	'particles',
+	'rain',
+	'lights',
+	'camera-fx',
+	'logo',
+	'track-title',
+	'background-zoom'
+] as const;
+
+export type VibrixGranularFamily = (typeof VIBRIX_GRANULAR_FAMILIES)[number];
+
 export interface VibrixManifestSlot {
 	id: string;
 	family: VibrixSlotFamily;

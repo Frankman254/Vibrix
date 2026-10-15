@@ -3,6 +3,7 @@ import type { WallpaperState } from '@/types/wallpaper';
 import { buildAuthoringManifest } from '@/features/scenes/authoringManifest';
 import { CONTRACT_FIXTURE_STATE } from '@/features/scenes/authoringManifestFixture';
 import { parseVibrixScoreEnvelope, reviewVibrixScore } from './vibrixScore';
+import { parseVibrixScoreDocument } from './vibrixScorePackage';
 import {
 	VibrixScoreLoadError,
 	loadVibrixScoreFromFile,
@@ -181,6 +182,39 @@ function scoreV2Fixture() {
 	};
 }
 
+function scorePackageFixture() {
+	const envelope = scoreV2Fixture();
+	const image = IMAGE_MANIFEST.images[0];
+	return {
+		format: 'vibrix-score',
+		packageVersion: 1,
+		exportedAt: envelope.exportedAt,
+		envelope,
+		snapshots: [
+			{
+				kind: 'image',
+				id: image.id,
+				name: image.name,
+				revision: image.revision,
+				values: {
+					assetId: image.id,
+					originalFileName: image.name,
+					enabled: true
+				}
+			}
+		],
+		previews: [
+			{
+				imageId: image.id,
+				name: image.name,
+				revision: image.revision,
+				thumbnailDataUrl: 'data:image/png;base64,aGVsbG8='
+			}
+		],
+		selfContained: true
+	};
+}
+
 describe('parseVibrixScoreEnvelope', () => {
 	it('accepts v2 sustained image and inherit activations without end times', () => {
 		const result = parseVibrixScoreEnvelope(scoreV2Fixture());
@@ -198,6 +232,39 @@ describe('parseVibrixScoreEnvelope', () => {
 		expect(result.ok).toBe(false);
 		if (result.ok) return;
 		expect(result.errors.join('\n')).toContain('does not match track');
+	});
+
+	it('rejects intro-window as a timeline track', () => {
+		const fixture = scoreV2Fixture();
+		fixture.score.tracks[0].kind = 'intro-window';
+		const result = parseVibrixScoreEnvelope(fixture);
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.errors.join('\n')).toContain(
+			'"intro-window" is not a Vibrix timeline kind'
+		);
+	});
+
+	it('rejects intro-window as a direct target family', () => {
+		const fixture = scoreV2Fixture();
+		fixture.score.cues[0].target.family = 'intro-window';
+		const result = parseVibrixScoreEnvelope(fixture);
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.errors.join('\n')).toContain(
+			'target.family is not a Vibrix timeline kind'
+		);
+	});
+
+	it('rejects intro-window as an inherit family', () => {
+		const fixture = scoreV2Fixture();
+		fixture.score.cues[1].target.family = 'intro-window';
+		const result = parseVibrixScoreEnvelope(fixture);
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.errors.join('\n')).toContain(
+			'target inherit is only valid on granular tracks'
+		);
 	});
 
 	it('accepts the envelope Lyrixa produces', () => {
@@ -419,7 +486,75 @@ describe('loading a score', () => {
 			label: 'inline'
 		});
 		expect(result.score.projectName).toBe('Demo');
+		expect(result.scorePackage).toBeNull();
 		expect(result.origin.label).toBe('inline');
+	});
+
+	it('loads and reviews a self-contained package without a live project', () => {
+		const result = loadVibrixScoreFromText(
+			JSON.stringify(scorePackageFixture()),
+			{ kind: 'text', label: 'package' }
+		);
+		expect(result.scorePackage?.selfContained).toBe(true);
+		const review = reviewVibrixScore(
+			result.score,
+			null,
+			result.scorePackage
+		);
+		expect(review.readyCount).toBe(2);
+		expect(review.catalogMatches).toBe(true);
+		expect(review.cues[0].thumbnailDataUrl).toMatch(/^data:image\//);
+	});
+
+	it('rejects a package version this build cannot read', () => {
+		const fixture = scorePackageFixture();
+		fixture.packageVersion = 2;
+		const result = parseVibrixScoreDocument(fixture);
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.errors.join('\n')).toContain(
+			'package.packageVersion 2 is not supported; expected 1'
+		);
+	});
+
+	it('rejects non-transportable image previews', () => {
+		const fixture = scorePackageFixture();
+		fixture.previews[0].thumbnailDataUrl = 'blob:local-preview';
+		const result = parseVibrixScoreDocument(fixture);
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.errors.join('\n')).toContain(
+			'thumbnailDataUrl must be an image data URL'
+		);
+	});
+
+	it('requires snapshots for active direct cues', () => {
+		const fixture = scorePackageFixture();
+		fixture.snapshots = [];
+		const result = parseVibrixScoreDocument(fixture);
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.errors.join('\n')).toContain(
+			'package.snapshots is missing direct cue target image:'
+		);
+	});
+
+	it('ignores direct cues on disabled tracks when checking package closure', () => {
+		const fixture = scorePackageFixture();
+		fixture.envelope.score.tracks[0].enabled = false;
+		fixture.snapshots = [];
+		fixture.previews = [];
+		const result = parseVibrixScoreDocument(fixture);
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		const review = reviewVibrixScore(
+			result.score,
+			null,
+			result.scorePackage
+		);
+		expect(review.cues.map(cue => cue.cueId)).toEqual([
+			'inherit-spectrum-two'
+		]);
 	});
 
 	it('reports unparseable bytes as a parse failure, not a crash', () => {

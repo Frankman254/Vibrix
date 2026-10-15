@@ -31,8 +31,7 @@ const FAMILY_ORDER: Record<VibrixTimelineKind, number> = {
 	'camera-fx': 8,
 	logo: 9,
 	'track-title': 10,
-	'background-zoom': 11,
-	'intro-window': 12
+	'background-zoom': 11
 };
 
 function normalizedActivation(cue: CompositionCue): NormalizedActivation {
@@ -122,7 +121,6 @@ function granularPatch(
 				?.values ?? {}
 		);
 	}
-	if (family === 'intro-window') return {};
 	const scene = blankScene();
 	switch (family) {
 		case 'spectrum':

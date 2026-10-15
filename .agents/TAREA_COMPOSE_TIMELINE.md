@@ -4,7 +4,7 @@
 > [docs/features/VIBRIX_AUTHORING_CONTRACT.md](../docs/features/VIBRIX_AUTHORING_CONTRACT.md),
 > sección «Versión 2 — activaciones sostenidas».
 
-> **Estado Vibrix, revisado el 2026-10-13:** V2.1, V2.1b y V2.2 implementadas. De V2.3
+> **Estado Vibrix, revisado el 2026-10-14:** V2.1, V2.1b, V2.2 y V2.2b implementadas. De V2.3
 > están implementados y probados el evaluador puro, la transición temporal de
 > imagen y la sesión Compose persistida (store v153). Falta conectarla al
 > preview/Play y al export offline.
@@ -96,8 +96,41 @@ muestra la secuencia durante Play y quien la renderiza en el export offline.
 4. ✅ Revisar dependencias tanto de slots como de imágenes y reportar `ready`,
    `updated`, `missing`, `empty` o `disabled` según corresponda.
 5. ✅ Persistir score, base congelada y estado Compose; store v153 con migración.
-6. Importar el contenedor `.vibrix-score` producido por Lyrixa y conservar el
+6. ✅ Importar el contenedor `.vibrix-score` producido por Lyrixa y conservar el
    JSON suelto como compatibilidad legacy.
+
+### V2.2b · Leer el contenedor `.vibrix-score` (hecho, 2026-10-14)
+
+Lyrixa ya lo emite (L5, `scorePackage.ts`; formato documentado arriba en el
+contrato, §Transporte). Vibrix lo lee mediante `vibrixScorePackage.ts`, y el
+loader conserva el sobre plano como compatibilidad. Implementado:
+
+1. En `vibrixScoreLoader`/parser: si el JSON trae
+   `format === 'vibrix-score' && packageVersion === 1`, leer el sobre desde
+   `.envelope`; si no, tratarlo como sobre plano igual que hoy. Rechazar
+   `packageVersion > 1` con error legible, no con `undefined`.
+2. Resolver dependencias con `snapshots` cuando `selfContained === true`: mapa
+   `kind:id` → snapshot; `reviewVibrixScore` debe poder informar sin el store
+   vivo (la revisión `updated` contra snapshot compara `revision`, no vuelve a
+   hashear `values`). Con `snapshots: null`, comportamiento actual (store).
+3. `previews[].thumbnailDataUrl` alimentan la miniatura del objeto en el modo
+   Compose; verificar que el valor empieza por `data:` antes de usarlo como
+   `src` (defensa, el escritor nunca manda `blob:`).
+4. Endurecer el vocabulario del parser: un track `kind: 'intro-window'`, un
+   target `family: 'intro-window'` o un `inherit.family: 'intro-window'` deben
+   errorar — el escritor honesto nunca los emite (no es cueable), y aceptarlos
+   abre la puerta a un archivo que silencia una pista informativa por error.
+5. Aplicar la regla compartida de carril apagado (§El score): cues bajo
+   `track.enabled === false` no generan `missing`/`updated` ni demandan
+   snapshot — Lyrixa ya los excluye del cierre y de `dependencies`; si el
+   lector los tratara activos, rechazaría archivos válidos.
+
+Criterio de salida cumplido: un `.vibrix-score` self-contained importa
+con informe correcto sin tener el proyecto Vibrix abierto en el store de ese
+navegador, y el mismo archivo sobre el proyecto vivo da el mismo frame que el
+modo Compose actual. Suite verde sin bump de store: el contenedor se parsea, no
+se persiste nada nuevo todavía. Hay cobertura de versión futura, previews no
+transportables, cierre de snapshots y cues en carriles apagados.
 
 ## L2.1 · Timeline de Lyrixa
 

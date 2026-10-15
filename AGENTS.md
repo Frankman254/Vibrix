@@ -34,6 +34,10 @@ Proyectos vecinos (solo docs; no modificar su código desde aquí):
    — where things live today.
 3. [docs/status/CURRENT_SYSTEM_STATUS.md](docs/status/CURRENT_SYSTEM_STATUS.md)
    — as-built status.
+4. [docs/architecture/DESIGN_PATTERNS.md](docs/architecture/DESIGN_PATTERNS.md)
+   — module-shape rules for new features (reactivity seam, knob ownership,
+   pre-PR checklist). Audit evidence:
+   [docs/audits/AUDITA_REACTIVIDAD_Y_CONTROLES_2026-10-14.md](docs/audits/AUDITA_REACTIVIDAD_Y_CONTROLES_2026-10-14.md).
 
 ## Hard rules
 

@@ -18,14 +18,15 @@
 
 ## Architecture
 
-| Doc                                                                                | Topic                                                  |
-| ---------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| [architecture/ARCHITECTURE.md](architecture/ARCHITECTURE.md)                       | **The contract** — layers, dependency rules, ownership |
-| [architecture/CODEBASE_STRUCTURE.md](architecture/CODEBASE_STRUCTURE.md)           | Where things live / "where do I edit X?"               |
-| [architecture/OUTPUT_MODES.md](architecture/OUTPUT_MODES.md)                       | Output shells, providers, OBS                          |
-| [architecture/LIVE_OUTPUT_SYNC_DESIGN.md](architecture/LIVE_OUTPUT_SYNC_DESIGN.md) | Future sync design (not implemented)                   |
-| [architecture/CLOUD_READINESS.md](architecture/CLOUD_READINESS.md)                 | Cloud readiness assessment                             |
-| [architecture/BACKEND_OPTIONS.md](architecture/BACKEND_OPTIONS.md)                 | Backend options (deferred)                             |
+| Doc                                                                                | Topic                                                        |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| [architecture/ARCHITECTURE.md](architecture/ARCHITECTURE.md)                       | **The contract** — layers, dependency rules, ownership       |
+| [architecture/CODEBASE_STRUCTURE.md](architecture/CODEBASE_STRUCTURE.md)           | Where things live / "where do I edit X?"                     |
+| [architecture/DESIGN_PATTERNS.md](architecture/DESIGN_PATTERNS.md)                 | **Patrones quemados** — forma de módulo para features nuevas |
+| [architecture/OUTPUT_MODES.md](architecture/OUTPUT_MODES.md)                       | Output shells, providers, OBS                                |
+| [architecture/LIVE_OUTPUT_SYNC_DESIGN.md](architecture/LIVE_OUTPUT_SYNC_DESIGN.md) | Future sync design (not implemented)                         |
+| [architecture/CLOUD_READINESS.md](architecture/CLOUD_READINESS.md)                 | Cloud readiness assessment                                   |
+| [architecture/BACKEND_OPTIONS.md](architecture/BACKEND_OPTIONS.md)                 | Backend options (deferred)                                   |
 
 ## Features
 
@@ -38,12 +39,13 @@
 
 ## Guides & audits
 
-| Doc                                                                                          | Topic                                           |
-| -------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| [audits/AUDITORIA_CONGELACION_2026-09-30.md](audits/AUDITORIA_CONGELACION_2026-09-30.md)     | Auditoría de congelación + traspaso a Lyrixa    |
-| [audits/AUDITORIA_VENTANA_INTRO_2026-09-30.md](audits/AUDITORIA_VENTANA_INTRO_2026-09-30.md) | Auditoría y pulido de la ventana Intro & ending |
-| [guides/OBS_PRESENTATION_MODE.md](guides/OBS_PRESENTATION_MODE.md)                           | OBS workflow                                    |
-| [performance/PERFORMANCE_BASELINE.md](performance/PERFORMANCE_BASELINE.md)                   | FPS measurement methodology                     |
+| Doc                                                                                                        | Topic                                                   |
+| ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| [audits/AUDITORIA_CONGELACION_2026-09-30.md](audits/AUDITORIA_CONGELACION_2026-09-30.md)                   | Auditoría de congelación + traspaso a Lyrixa            |
+| [audits/AUDITORIA_VENTANA_INTRO_2026-09-30.md](audits/AUDITORIA_VENTANA_INTRO_2026-09-30.md)               | Auditoría y pulido de la ventana Intro & ending         |
+| [audits/AUDITA_REACTIVIDAD_Y_CONTROLES_2026-10-14.md](audits/AUDITA_REACTIVIDAD_Y_CONTROLES_2026-10-14.md) | Auditoría de reactividad de audio + controles mezclados |
+| [guides/OBS_PRESENTATION_MODE.md](guides/OBS_PRESENTATION_MODE.md)                                         | OBS workflow                                            |
+| [performance/PERFORMANCE_BASELINE.md](performance/PERFORMANCE_BASELINE.md)                                 | FPS measurement methodology                             |
 
 ## Onboarding (developer)
 

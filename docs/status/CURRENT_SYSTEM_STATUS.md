@@ -213,9 +213,10 @@ See `docs/features/SPECTRUM_ENGINE.md` (ownership model) and
   Lyrixa's parser rejects a whole file for one.
 - `features/scenes/authoringManifestFixture.ts` — the declared input the
   contract's literal fixture is derived from.
-- `features/composition/vibrixScore.ts` + `vibrixScoreLoader.ts` — parse and
-  review a Lyrixa score: collects every readable error, never throws, and reports
-  per-cue `ready` / `updated` / `missing` / `empty` / `not-cueable`.
+- `features/composition/vibrixScore.ts` + `vibrixScorePackage.ts` +
+  `vibrixScoreLoader.ts` — parse and review Lyrixa's self-contained container or
+  legacy envelope. Package snapshots are authoritative without a live project,
+  image previews are restricted to data URLs, and disabled tracks are inert.
 - UI: `features/export/controls/VibrixAuthoringSection.tsx` in the Export tab.
   Importing a score confirms first and **does not touch the project**; the review
   is the deliverable.
@@ -412,7 +413,7 @@ Recent schema steps (full history in `src/lib/version.ts` and `CHANGELOG.md`):
 
 1. Wire the persisted Compose session to live Play/seek.
 2. Feed the same resolved state into offline export.
-3. Import Lyrixa's `.vibrix-score` package and pass the cross-app exit fixture.
+3. Pass the cross-app exit fixture with a real Lyrixa package.
 4. Resume long-video export QA and public-alpha polish after Compose parity.
 
 See deliverable “next three sprints” in sprint summary.

@@ -1,7 +1,5 @@
-import {
-	parseVibrixScoreEnvelope,
-	type VibrixScoreEnvelope
-} from './vibrixScore';
+import type { VibrixScoreEnvelope, VibrixScorePackage } from './vibrixScore';
+import { parseVibrixScoreDocument } from './vibrixScorePackage';
 
 /**
  * Getting a Lyrixa score in, without the UI knowing where it came from.
@@ -32,6 +30,8 @@ export interface VibrixScoreOrigin {
 
 export interface VibrixScoreLoadResult {
 	score: VibrixScoreEnvelope;
+	/** Present only when Lyrixa supplied the v1 self-contained container. */
+	scorePackage: VibrixScorePackage | null;
 	origin: VibrixScoreOrigin;
 }
 
@@ -90,7 +90,7 @@ export function loadVibrixScoreFromText(
 			{ cause: error }
 		);
 	}
-	const result = parseVibrixScoreEnvelope(raw);
+	const result = parseVibrixScoreDocument(raw);
 	if (!result.ok) {
 		throw new VibrixScoreLoadError(
 			'invalid',
@@ -99,7 +99,11 @@ export function loadVibrixScoreFromText(
 			{ issues: result.errors }
 		);
 	}
-	return { score: result.score, origin };
+	return {
+		score: result.score,
+		scorePackage: result.scorePackage,
+		origin
+	};
 }
 
 /** Read a picked or dropped file. */

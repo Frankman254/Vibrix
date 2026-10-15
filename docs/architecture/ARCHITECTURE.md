@@ -13,6 +13,11 @@
 > posiciones de tipo que se borran en build: **en runtime no queda ninguna**.
 > Lo verifica `pnpm architecture:check` en CI.
 
+> Para la **forma de los módulos** (costuras de reactividad, pertenencia de
+> knobs, checks previos al PR), véase
+> [DESIGN_PATTERNS.md](DESIGN_PATTERNS.md) — Patrones P1–P12 quemados tras la
+> auditoría de 2026-10.
+
 ---
 
 ## 1. El sistema en 60 segundos

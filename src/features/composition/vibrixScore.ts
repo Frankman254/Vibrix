@@ -1,6 +1,9 @@
 import {
-	VIBRIX_SLOT_FAMILIES,
+	VIBRIX_CUEABLE_SLOT_FAMILIES,
+	VIBRIX_GRANULAR_FAMILIES,
 	type VibrixAuthoringManifest,
+	type VibrixCueableSlotFamily,
+	type VibrixGranularFamily,
 	type VibrixManifestImage,
 	type VibrixSlotFamily
 } from '@/features/scenes/authoringManifest';
@@ -29,7 +32,7 @@ export type CompositionEasing =
 	| 'ease-out'
 	| 'ease-in-out';
 
-export type VibrixTimelineKind = VibrixSlotFamily | 'image';
+export type VibrixTimelineKind = VibrixCueableSlotFamily | 'image';
 
 export interface CompositionTrack {
 	id: string;
@@ -47,7 +50,7 @@ export interface CompositionCueV1 {
 	endTimeMs: number;
 	target: {
 		kind: 'scene' | 'feature-slot';
-		family?: VibrixSlotFamily;
+		family?: VibrixCueableSlotFamily;
 		slotId: string;
 		/** The revision the slot had when the cue was authored. */
 		slotRevision: string;
@@ -62,14 +65,15 @@ export interface CompositionCueV1 {
 }
 
 export type CompositionTargetV2 =
+	| { kind: 'scene'; family: 'scene'; id: string; revision: string }
 	| {
-			kind: 'scene' | 'feature-slot';
-			family: VibrixSlotFamily;
+			kind: 'feature-slot';
+			family: VibrixGranularFamily;
 			id: string;
 			revision: string;
 	  }
 	| { kind: 'image'; family: 'image'; id: string; revision: string }
-	| { kind: 'inherit'; family: VibrixSlotFamily };
+	| { kind: 'inherit'; family: VibrixGranularFamily };
 
 export interface CompositionCueV2 {
 	id: string;
@@ -91,7 +95,7 @@ export interface CompositionScore {
 
 export interface VibrixScoreDependencyV1 {
 	slotId: string;
-	family: VibrixSlotFamily;
+	family: VibrixCueableSlotFamily;
 	name: string;
 	revision: string;
 }
@@ -128,12 +132,49 @@ export interface VibrixScoreEnvelope {
 	dependencies: VibrixScoreDependency[];
 }
 
+export type VibrixScoreSnapshot =
+	| {
+			kind: 'slot';
+			id: string;
+			family: VibrixSlotFamily;
+			name: string;
+			revision: string;
+			values: unknown;
+	  }
+	| {
+			kind: 'image';
+			id: string;
+			name: string;
+			revision: string;
+			values: unknown;
+	  };
+
+export interface VibrixScorePreview {
+	imageId: string;
+	revision: string;
+	name: string;
+	thumbnailDataUrl: string;
+}
+
+export interface VibrixScorePackage {
+	format: 'vibrix-score';
+	packageVersion: 1;
+	exportedAt: string;
+	envelope: VibrixScoreEnvelope;
+	snapshots: VibrixScoreSnapshot[] | null;
+	previews: VibrixScorePreview[] | null;
+	selfContained: boolean;
+}
+
 export type VibrixScoreParseResult =
 	| { ok: true; score: VibrixScoreEnvelope; errors: [] }
 	| { ok: false; score: null; errors: string[] };
 
-const FAMILIES = new Set<string>(VIBRIX_SLOT_FAMILIES);
-const TIMELINE_KINDS = new Set<string>([...VIBRIX_SLOT_FAMILIES, 'image']);
+const TIMELINE_KINDS = new Set<string>([
+	...VIBRIX_CUEABLE_SLOT_FAMILIES,
+	'image'
+]);
+const GRANULAR_FAMILIES = new Set<string>(VIBRIX_GRANULAR_FAMILIES);
 const TRANSITION_TYPES = new Set(['cut', 'crossfade', 'morph']);
 const EASINGS = new Set(['linear', 'ease-in', 'ease-out', 'ease-in-out']);
 
@@ -247,9 +288,7 @@ export function parseVibrixScoreEnvelope(
 				requireString(raw, 'revision', errors, path);
 				if (
 					typeof raw.family !== 'string' ||
-					!(schemaVersion === 1 ? FAMILIES : TIMELINE_KINDS).has(
-						raw.family
-					)
+					!TIMELINE_KINDS.has(raw.family)
 				) {
 					errors.push(
 						`${path}.family is not a Vibrix timeline kind.`
@@ -259,15 +298,25 @@ export function parseVibrixScoreEnvelope(
 				if (schemaVersion === 1) {
 					dependencies.push({
 						slotId: raw.slotId as string,
-						family: raw.family as VibrixSlotFamily,
+						family: raw.family as VibrixCueableSlotFamily,
 						name: raw.name as string,
 						revision: raw.revision as string
 					});
 				} else {
-					const kind = raw.kind === 'image' ? 'image' : 'slot';
+					if (raw.kind !== 'slot' && raw.kind !== 'image') {
+						errors.push(`${path}.kind must be "slot" or "image".`);
+						return;
+					}
+					const kind = raw.kind;
 					if (kind === 'image' && raw.family !== 'image') {
 						errors.push(
 							`${path}.kind image requires family image.`
+						);
+						return;
+					}
+					if (kind === 'slot' && raw.family === 'image') {
+						errors.push(
+							`${path}.kind slot cannot use family image.`
 						);
 						return;
 					}
@@ -336,8 +385,7 @@ function parseTracks(
 		const before = errors.length;
 		requireString(entry, 'id', errors, path);
 		requireString(entry, 'name', errors, path);
-		const allowedKinds = schemaVersion === 1 ? FAMILIES : TIMELINE_KINDS;
-		if (typeof entry.kind !== 'string' || !allowedKinds.has(entry.kind)) {
+		if (typeof entry.kind !== 'string' || !TIMELINE_KINDS.has(entry.kind)) {
 			// The honest failure mode for a family this build does not know —
 			// `motion`, for instance, which no longer exists.
 			errors.push(
@@ -426,7 +474,7 @@ function parseCues(
 							? 'feature-slot'
 							: 'scene',
 					...(typeof target.family === 'string'
-						? { family: target.family as VibrixSlotFamily }
+						? { family: target.family as VibrixCueableSlotFamily }
 						: {}),
 					slotId: target.slotId as string,
 					slotRevision: target.slotRevision as string
@@ -460,7 +508,7 @@ function buildV2Target(target: Record<string, unknown>): CompositionTargetV2 {
 	if (target.kind === 'inherit') {
 		return {
 			kind: 'inherit',
-			family: target.family as VibrixSlotFamily
+			family: target.family as VibrixGranularFamily
 		};
 	}
 	if (target.kind === 'image') {
@@ -471,12 +519,19 @@ function buildV2Target(target: Record<string, unknown>): CompositionTargetV2 {
 			revision: target.revision as string
 		};
 	}
-	return {
-		kind: target.kind === 'feature-slot' ? 'feature-slot' : 'scene',
-		family: target.family as VibrixSlotFamily,
-		id: target.id as string,
-		revision: target.revision as string
-	};
+	return target.kind === 'feature-slot'
+		? {
+				kind: 'feature-slot',
+				family: target.family as VibrixGranularFamily,
+				id: target.id as string,
+				revision: target.revision as string
+			}
+		: {
+				kind: 'scene',
+				family: 'scene',
+				id: target.id as string,
+				revision: target.revision as string
+			};
 }
 
 function validateV1Target(
@@ -487,7 +542,7 @@ function validateV1Target(
 	requireString(target, 'slotId', errors, `${path}.target`);
 	requireString(target, 'slotRevision', errors, `${path}.target`);
 	const family = target.family;
-	if (family !== undefined && !FAMILIES.has(String(family))) {
+	if (family !== undefined && !TIMELINE_KINDS.has(String(family))) {
 		errors.push(
 			`${path}.target.family "${String(family)}" is not a Vibrix slot family.`
 		);
@@ -515,7 +570,7 @@ function validateV2Target(
 		errors.push(`${path}.target.family is not a Vibrix timeline kind.`);
 	}
 	if (kind === 'inherit') {
-		if (target.family === 'image' || target.family === 'scene') {
+		if (!GRANULAR_FAMILIES.has(String(target.family))) {
 			errors.push(
 				`${path}.target inherit is only valid on granular tracks.`
 			);
@@ -532,7 +587,7 @@ function validateV2Target(
 	}
 	if (
 		kind === 'feature-slot' &&
-		(target.family === 'image' || target.family === 'scene')
+		!GRANULAR_FAMILIES.has(String(target.family))
 	) {
 		errors.push(`${path}.target feature-slot requires a granular family.`);
 	}
@@ -569,13 +624,15 @@ export type ScoreCueStatus =
 export interface ScoreCueReview {
 	cueId: string;
 	trackName: string;
-	family: VibrixTimelineKind | null;
+	family: VibrixSlotFamily | 'image' | null;
 	slotId: string;
 	/** The name in this project, falling back to the one the score recorded. */
 	slotName: string;
 	status: ScoreCueStatus;
 	startTimeMs: number;
 	endTimeMs: number | null;
+	/** Transportable image preview supplied by a self-contained score package. */
+	thumbnailDataUrl?: string;
 }
 
 export interface VibrixScoreReview {
@@ -591,30 +648,81 @@ export interface VibrixScoreReview {
 
 export function reviewVibrixScore(
 	envelope: VibrixScoreEnvelope,
-	manifest: VibrixAuthoringManifest
+	manifest: VibrixAuthoringManifest | null,
+	scorePackage: VibrixScorePackage | null = null
 ): VibrixScoreReview {
-	type PublishedItem =
-		| (VibrixManifestImage & { family: 'image'; cueable: true })
-		| (VibrixAuthoringManifest['slots'][number] & { enabled?: true });
-	const publishedItems: PublishedItem[] = [
-		...manifest.slots,
-		...manifest.images.map(image => ({
-			...image,
-			family: 'image' as const,
-			cueable: true as const
-		}))
-	];
-	const itemById = new Map(publishedItems.map(item => [item.id, item]));
+	type PublishedItem = {
+		kind: 'slot' | 'image';
+		id: string;
+		family: VibrixSlotFamily | 'image';
+		name: string;
+		revision: string;
+		cueable: boolean;
+		enabled?: boolean;
+	};
+	const authoritativePackage =
+		scorePackage?.selfContained === true && scorePackage.snapshots !== null
+			? scorePackage
+			: null;
+	const publishedItems: PublishedItem[] = authoritativePackage
+		? authoritativePackage.snapshots!.map(snapshot => ({
+				kind: snapshot.kind,
+				id: snapshot.id,
+				family: snapshot.kind === 'image' ? 'image' : snapshot.family,
+				name: snapshot.name,
+				revision: snapshot.revision,
+				cueable:
+					snapshot.kind === 'image' ||
+					snapshot.family !== 'intro-window',
+				enabled: true
+			}))
+		: [
+				...(manifest?.slots.map(slot => ({
+					...slot,
+					kind: 'slot' as const
+				})) ?? []),
+				...(manifest?.images.map((image: VibrixManifestImage) => ({
+					...image,
+					kind: 'image' as const,
+					family: 'image' as const,
+					cueable: true
+				})) ?? [])
+			];
+	const itemByKey = new Map(
+		publishedItems.map(item => [reviewItemKey(item.kind, item.id), item])
+	);
 	const trackById = new Map(
 		envelope.score.tracks.map(track => [track.id, track])
 	);
-	const dependencyById = new Map(
-		envelope.dependencies.map(entry => [dependencyId(entry), entry])
+	const enabledTrackIds = new Set(
+		envelope.score.tracks
+			.filter(track => track.enabled)
+			.map(track => track.id)
 	);
-	const publishedFamilies = new Set<VibrixTimelineKind>([
-		...manifest.slots.map(slot => slot.family),
-		'image'
-	]);
+	const dependencyByKey = new Map(
+		envelope.dependencies.map(entry => [dependencyKey(entry), entry])
+	);
+	const previewByImageId = new Map(
+		authoritativePackage?.previews?.map(preview => [
+			preview.imageId,
+			preview
+		]) ?? []
+	);
+	const publishedFamilies = authoritativePackage
+		? new Set<VibrixTimelineKind>(
+				envelope.score.tracks
+					.filter(track => track.enabled)
+					.map(track => track.kind)
+			)
+		: new Set<VibrixTimelineKind>([
+				...(manifest?.slots
+					.map(slot => slot.family)
+					.filter(
+						(family): family is VibrixCueableSlotFamily =>
+							family !== 'intro-window'
+					) ?? []),
+				'image'
+			]);
 	const counts: Record<ScoreCueStatus, number> = {
 		ready: 0,
 		updated: 0,
@@ -624,51 +732,65 @@ export function reviewVibrixScore(
 		'not-cueable': 0
 	};
 
-	const cues = envelope.score.cues.map<ScoreCueReview>(cue => {
-		const track = trackById.get(cue.trackId);
-		const target = cueTarget(cue);
-		if (target.kind === 'inherit') {
-			counts.ready += 1;
+	const cues = envelope.score.cues
+		.filter(cue => cue.enabled && enabledTrackIds.has(cue.trackId))
+		.map<ScoreCueReview>(cue => {
+			const track = trackById.get(cue.trackId);
+			const target = cueTarget(cue);
+			if (target.kind === 'inherit') {
+				counts.ready += 1;
+				return {
+					cueId: cue.id,
+					trackName: track?.name ?? cue.trackId,
+					family: target.family,
+					slotId: 'inherit',
+					slotName: 'Inherit scene/image',
+					status: 'ready',
+					startTimeMs: cue.startTimeMs,
+					endTimeMs: cueEndTime(cue)
+				};
+			}
+			const published = itemByKey.get(
+				reviewItemKey(target.itemKind, target.id)
+			);
+			const recorded = dependencyByKey.get(
+				reviewItemKey(target.itemKind, target.id)
+			);
+			const status: ScoreCueStatus = !published
+				? 'missing'
+				: !published.cueable
+					? 'not-cueable'
+					: published.revision === 'empty'
+						? 'empty'
+						: 'enabled' in published && published.enabled === false
+							? 'disabled'
+							: published.revision === target.revision
+								? 'ready'
+								: 'updated';
+			counts[status] += 1;
 			return {
 				cueId: cue.id,
 				trackName: track?.name ?? cue.trackId,
-				family: target.family,
-				slotId: 'inherit',
-				slotName: 'Inherit scene/image',
-				status: 'ready',
+				family: published?.family ?? target.family,
+				slotId: target.id,
+				slotName: published?.name ?? recorded?.name ?? target.id,
+				status,
 				startTimeMs: cue.startTimeMs,
-				endTimeMs: cueEndTime(cue)
+				endTimeMs: cueEndTime(cue),
+				...(target.itemKind === 'image' &&
+				previewByImageId.get(target.id)?.thumbnailDataUrl
+					? {
+							thumbnailDataUrl: previewByImageId.get(target.id)!
+								.thumbnailDataUrl
+						}
+					: {})
 			};
-		}
-		const published = itemById.get(target.id);
-		const recorded = dependencyById.get(target.id);
-		const status: ScoreCueStatus = !published
-			? 'missing'
-			: !published.cueable
-				? 'not-cueable'
-				: published.revision === 'empty'
-					? 'empty'
-					: 'enabled' in published && published.enabled === false
-						? 'disabled'
-						: published.revision === target.revision
-							? 'ready'
-							: 'updated';
-		counts[status] += 1;
-		return {
-			cueId: cue.id,
-			trackName: track?.name ?? cue.trackId,
-			family: published?.family ?? target.family,
-			slotId: target.id,
-			slotName: published?.name ?? recorded?.name ?? target.id,
-			status,
-			startTimeMs: cue.startTimeMs,
-			endTimeMs: cueEndTime(cue)
-		};
-	});
+		});
 
 	const unpublishedFamilies = [
 		...new Set(
 			envelope.score.tracks
+				.filter(track => track.enabled)
 				.map(track => track.kind)
 				.filter(kind => !publishedFamilies.has(kind))
 		)
@@ -679,16 +801,25 @@ export function reviewVibrixScore(
 		counts,
 		unpublishedFamilies,
 		catalogMatches:
-			envelope.renderer.catalogRevision === undefined
-				? false
-				: envelope.renderer.catalogRevision === manifest.revision,
+			authoritativePackage !== null
+				? true
+				: envelope.renderer.catalogRevision !== undefined &&
+					  manifest !== null
+					? envelope.renderer.catalogRevision === manifest.revision
+					: false,
 		readyCount: counts.ready,
 		totalCount: cues.length
 	};
 }
 
-function dependencyId(dependency: VibrixScoreDependency): string {
-	return 'slotId' in dependency ? dependency.slotId : dependency.id;
+function reviewItemKey(kind: 'slot' | 'image', id: string): string {
+	return `${kind}:${id}`;
+}
+
+function dependencyKey(dependency: VibrixScoreDependency): string {
+	return 'slotId' in dependency
+		? reviewItemKey('slot', dependency.slotId)
+		: reviewItemKey(dependency.kind, dependency.id);
 }
 
 function cueEndTime(cue: CompositionCue): number | null {
@@ -698,14 +829,16 @@ function cueEndTime(cue: CompositionCue): number | null {
 function cueTarget(cue: CompositionCue):
 	| {
 			kind: 'item';
+			itemKind: 'slot' | 'image';
 			id: string;
 			revision: string;
 			family: VibrixTimelineKind | null;
 	  }
-	| { kind: 'inherit'; family: VibrixSlotFamily } {
+	| { kind: 'inherit'; family: VibrixGranularFamily } {
 	if ('slotId' in cue.target) {
 		return {
 			kind: 'item',
+			itemKind: 'slot',
 			id: cue.target.slotId,
 			revision: cue.target.slotRevision,
 			family: cue.target.family ?? null
@@ -714,6 +847,7 @@ function cueTarget(cue: CompositionCue):
 	if (cue.target.kind === 'inherit') return cue.target;
 	return {
 		kind: 'item',
+		itemKind: cue.target.kind === 'image' ? 'image' : 'slot',
 		id: cue.target.id,
 		revision: cue.target.revision,
 		family: cue.target.family

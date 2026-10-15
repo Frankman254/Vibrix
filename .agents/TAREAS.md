@@ -1,6 +1,6 @@
 # Vibrix — qué hacer ahora
 
-> Actualizado el 2026-10-13 después de contrastar código, historial y el estado
+> Actualizado el 2026-10-14 después de integrar el contenedor de score de Lyrixa
 > de Lyrixa. Contexto completo:
 > [TAREA_COMPOSE_TIMELINE.md](TAREA_COMPOSE_TIMELINE.md) y
 > [PLAN_ATAQUE_CONGELACION_Y_LYRIXA.md](../docs/plans/PLAN_ATAQUE_CONGELACION_Y_LYRIXA.md).
@@ -28,7 +28,7 @@ o exportar el caso de integración.
 | Score persistido y modo Compose                                    | Hecho; store v153 + confirmación      |
 | Preview, Play y seek consumiendo el score                          | Pendiente                             |
 | Export offline consumiendo el mismo estado                         | Pendiente                             |
-| Import del contenedor `.vibrix-score`                              | Pendiente; sólo JSON legacy           |
+| Import del contenedor `.vibrix-score`                              | Hecho; conserva JSON legacy           |
 
 `STORE_PERSIST_VERSION` está en **153**. La migración abre proyectos anteriores
 sin score y bajo control temporal manual.
@@ -43,14 +43,14 @@ Un dominio y un commit por paso:
 2. ✅ **W2 · Sesión Compose persistida.** Score, base congelada y estado
    enabled/disabled; store 152→153 con migración. Activar Compose pide
    confirmación porque sustituye el control temporal manual.
-3. **W3 · Preview, Play y seek.** Conectar `resolveVisualStateAt` al viewport sin
+3. ✅ **V2.2b · Paquete de score.** Abrir `.vibrix-score`, usar snapshots y
+   previews autocontenidos, conservar `.vibrix-score.json` y excluir cues de
+   carriles apagados durante revisión y cierre.
+4. **W3 · Preview, Play y seek.** Conectar `resolveVisualStateAt` al viewport sin
    encadenar mutaciones históricas del store. El mismo `T` debe producir el
    mismo estado después de seek y de reproducción continua.
-4. **W4 · Export offline.** Alimentar `renderFrameAt` con el mismo estado
+5. **W4 · Export offline.** Alimentar `renderFrameAt` con el mismo estado
    resuelto. No crear un segundo evaluador dentro de `features/export`.
-5. **W5 · Paquete de score.** Abrir `.vibrix-score`, conservar
-   `.vibrix-score.json` como compatibilidad y revisar dependencias antes de
-   habilitar Compose.
 6. **Integración real.** Importar un score producido por Lyrixa con dos
    imágenes, dos escenas, Spectrum 2 y un `inherit`; comprobar cortes,
    transiciones, seek, Play y export.
@@ -64,10 +64,9 @@ de `composeBaseState` y `composeScore`.
 
 ## Trabajo que queda en Lyrixa, en paralelo
 
-Lyrixa ya tiene el corte v1: manifiesto JSON, catálogo Scene, una pista y export
-`.vibrix-score.json`. Su siguiente cola es importar `.vibrix-authoring`, adoptar
-score v2 sin `endTimeMs`, añadir Image y carriles granulares, `inherit`,
-miniaturas y exportar `.vibrix-score` con sólo las dependencias usadas.
+Lyrixa completó L1–L5: importa `.vibrix-authoring`, secuencia score v2 con Image,
+carriles granulares e `inherit`, y exporta `.vibrix-score` autocontenido con sólo
+las dependencias usadas.
 
 La coordinación entre repos se hace por el contrato
 [VIBRIX_AUTHORING_CONTRACT.md](../docs/features/VIBRIX_AUTHORING_CONTRACT.md) y

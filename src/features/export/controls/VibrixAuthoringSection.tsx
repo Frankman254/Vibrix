@@ -15,6 +15,7 @@ import { createAuthoringPackageBlob } from '@/features/export/authoringPackageEx
 import {
 	reviewVibrixScore,
 	type ScoreCueStatus,
+	type VibrixScorePackage,
 	type VibrixScoreReview
 } from '@/features/composition/vibrixScore';
 import {
@@ -83,6 +84,11 @@ export default function VibrixAuthoringSection() {
 	const [tone, setTone] = useState<'muted' | 'ok' | 'error'>('muted');
 	const [dropped, setDropped] = useState<DroppedBindingWarning[]>([]);
 	const [issues, setIssues] = useState<string[]>([]);
+	// Package assets are review-only until W3 defines their playback lifetime.
+	// Keeping them outside the persisted store avoids a migration and stale data.
+	const [scorePackage, setScorePackage] = useState<VibrixScorePackage | null>(
+		null
+	);
 	const {
 		composeScore,
 		composeEnabled,
@@ -139,9 +145,13 @@ export default function VibrixAuthoringSection() {
 	const review = useMemo<VibrixScoreReview | null>(
 		() =>
 			composeScore
-				? reviewVibrixScore(composeScore, catalogue.manifest)
+				? reviewVibrixScore(
+						composeScore,
+						catalogue.manifest,
+						scorePackage
+					)
 				: null,
-		[catalogue.manifest, composeScore]
+		[catalogue.manifest, composeScore, scorePackage]
 	);
 
 	function resolveProjectName(): string {
@@ -198,8 +208,14 @@ export default function VibrixAuthoringSection() {
 		setBusy(true);
 		setIssues([]);
 		try {
-			const { score } = await loadVibrixScoreFromFile(file);
-			const result = reviewVibrixScore(score, catalogue.manifest);
+			const { score, scorePackage: importedPackage } =
+				await loadVibrixScoreFromFile(file);
+			const result = reviewVibrixScore(
+				score,
+				catalogue.manifest,
+				importedPackage
+			);
+			setScorePackage(importedPackage);
 			stageComposeScore(score);
 			setTone(result.readyCount === result.totalCount ? 'ok' : 'muted');
 			setMessage(
@@ -288,7 +304,7 @@ export default function VibrixAuthoringSection() {
 				<input
 					ref={scoreInputRef}
 					type="file"
-					accept=".vibrix-score,.json,application/json"
+					accept=".vibrix-score,.vibrix-score.json,.json,application/json"
 					className="hidden"
 					onChange={event => void handleScoreFile(event)}
 				/>
@@ -346,11 +362,20 @@ export default function VibrixAuthoringSection() {
 						{review.cues.map(cue => (
 							<div
 								key={cue.cueId}
-								className="flex flex-wrap items-baseline justify-between gap-2 text-[11px]"
+								className="flex flex-wrap items-center justify-between gap-2 text-[11px]"
 							>
-								<span className="text-gray-300">
-									{formatTime(cue.startTimeMs)} ·{' '}
-									{cue.slotName}
+								<span className="flex items-center gap-2 text-gray-300">
+									{cue.thumbnailDataUrl ? (
+										<img
+											src={cue.thumbnailDataUrl}
+											alt=""
+											className="h-8 w-8 rounded object-cover"
+										/>
+									) : null}
+									<span>
+										{formatTime(cue.startTimeMs)} ·{' '}
+										{cue.slotName}
+									</span>
 								</span>
 								<span
 									style={{ color: statusColor(cue.status) }}

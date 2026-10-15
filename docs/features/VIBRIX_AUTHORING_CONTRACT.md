@@ -10,9 +10,9 @@
 > letras. Diseño del secuenciador, en Lyrixa:
 > `Lyrixa/docs/03-vibrix-composition-sequencer.md`.
 >
-> **Estado:** Vibrix ya produce el paquete de autoría v2, lee scores v1/v2 y
-> evalúa activaciones de forma pura. Lyrixa conserva todavía su primer corte v1
-> y debe migrar al paquete, las imágenes y las activaciones sostenidas. Falta
+> **Estado:** Vibrix produce el paquete de autoría v2, lee el contenedor de score
+> autocontenido y el sobre legacy, y evalúa activaciones de forma pura. Lyrixa
+> ya produce el paquete v2 con imágenes, carriles granulares e `inherit`. Falta
 > conectar el evaluador de Vibrix a Play/seek y al export offline. La tarea
 > ejecutable está en
 > [.agents/TAREA_COMPOSE_TIMELINE.md](../../.agents/TAREA_COMPOSE_TIMELINE.md).
@@ -470,6 +470,23 @@ Los lectores v2 deben seguir aceptando score v1. Para un cue v1, su activación
 empieza en `startTimeMs`; `endTimeMs` conserva su semántica histórica durante la
 migración, pero Lyrixa guarda los proyectos nuevos como v2.
 
+### Un carril apagado apaga sus cues (regla compartida)
+
+`track.enabled === false` retira todos los cues de ese carril, igual que
+`cue.enabled === false`. Es la misma regla en los dos lados y no es negociable,
+porque si no, los paquetes divergen:
+
+- En reproducción, `resolveVisualStateAt` ya descarta el cue cuyo `trackId` no
+  está entre los tracks `enabled`.
+- En export, Lyrixa tampoco mete ese cue ni en `dependencies` ni en el cierre de
+  snapshots, y una referencia rota bajo un carril apagado **no bloquea** el
+  export (nunca se reproduciría). Verificado en
+  `Lyrixa/src/core/composition/scorePackage.ts` y `score.ts`.
+
+Cualquier lector del lado Vibrix que reconstruya dependencias o valide un score
+debe aplicar el mismo filtro; de lo contrario rechazaría un archivo que Lyrixa
+exportó a propósito.
+
 ## Transporte: archivo primero, y por qué
 
 Verificado, para que nadie construya contra algo que no responde:
@@ -569,6 +586,60 @@ interface VibrixAuthoringPackage {
 El archivo se llama `<proyecto>.vibrix-authoring`. Las previews transportables
 viven en `manifest.images[].thumbnailDataUrl`; los snapshots nunca llevan
 `blob:` URLs ni timestamps del slideshow anterior.
+
+El paquete que vuelve de Lyrixa ya es JSON autocontenido (implementado y
+verificado el 2026-10-14 en `Lyrixa/src/core/composition/scorePackage.ts`). Su
+forma exacta:
+
+```ts
+interface VibrixScorePackage {
+	format: 'vibrix-score';
+	packageVersion: 1;
+	exportedAt: string;
+	/** El sobre plano de siempre: app/exportKind/schemaVersion/score/dependencies + metadatos. */
+	envelope: VibrixScoreEnvelope;
+	/** null ⇒ manifiesto suelto sin `snapshots`: resolver contra el store vivo por id+revisión. */
+	snapshots: Array<
+		| {
+				kind: 'slot';
+				id: string;
+				family: VibrixSlotFamily;
+				name: string;
+				revision: string;
+				values: unknown;
+		  }
+		| {
+				kind: 'image';
+				id: string;
+				name: string;
+				revision: string;
+				values: unknown;
+		  }
+	> | null;
+	/** Miniaturas transportables de las imágenes del cierre; null igual que arriba. */
+	previews: Array<{
+		imageId: string;
+		revision: string;
+		name: string;
+		thumbnailDataUrl: string;
+	}> | null;
+	selfContained: boolean; // true ⇔ snapshots y previews poblados
+}
+```
+
+Reglas de lectura del lado Vibrix:
+
+- `format: 'vibrix-score'` + `packageVersion: 1` ⇒ contenedor; sin `format` ⇒
+  sobre plano legacy (`<proyecto>.vibrix-score.json`), que sigue siendo válido.
+- `snapshots` cubre **exactamente el cierre** de los cues reproducidos: targets
+  directos + `bindings` transitivos de escena + `sceneSlotId` de imagen; `off`,
+  `inherit` y carriles/cues apagados no aparecen. Resolver cada referencia por
+  `kind:id`; si `selfContained` es `true`, los `values` del snapshot son la
+  verdad para ese score (no el store actual).
+- `previews[].thumbnailDataUrl` son `data:` URL — nunca `blob:` — para mostrar
+  el catálogo sin el proyecto original.
+- Los originales de imagen NO viajan; la variante portable binaria llega cuando
+  haya assets, sin cambiar estos JSON.
 
 ## Estado del runtime de Vibrix
 
