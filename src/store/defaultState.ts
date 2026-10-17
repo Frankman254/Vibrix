@@ -258,7 +258,7 @@ const BASE_STATE: Omit<
 	audioLyricsLayoutMode: 'centered',
 	audioLyricsUppercase: false,
 	audioLyricsPositionX: 0,
-	audioLyricsPositionY: 0.58,
+	audioLyricsPositionY: 0,
 	audioLyricsWidth: 0.62,
 	audioLyricsFontStyle: 'clean',
 	audioLyricsFontSize: 34,

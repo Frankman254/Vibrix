@@ -1,3 +1,4 @@
+import { resolveLyricsLaneCenters } from '../domain/lyricsLaneLayout';
 import type {
 	LyrixaLyricClip,
 	LyrixaLyricLayer
@@ -503,6 +504,11 @@ function collectRenderableLines(
 		)
 		.sort((a, b) => a.order - b.order);
 	const lines: RenderableBundleLine[] = [];
+	const laneCenters = resolveLyricsLaneCenters(
+		envelope,
+		currentTimeSec,
+		layerOverrides
+	);
 
 	layers.forEach(layer => {
 		const layerOverride = layerOverrides[layer.id];
@@ -511,6 +517,7 @@ function collectRenderableLines(
 			.filter(
 				clip =>
 					clip.layerId === layer.id &&
+					clip.text.trim().length > 0 &&
 					!clip.muted &&
 					(!layer.renderSettings?.suppressClipText ||
 						clip.forceTextRender) &&
@@ -540,14 +547,25 @@ function collectRenderableLines(
 					fontSizePx
 				)
 			);
+			const laneCenter = laneCenters.get(layer.id);
 			const anchor = applyAnchorOverride(
-				resolveLineAnchor(
-					layer,
-					clip,
-					canvas,
-					index,
-					fontSizePx * lineHeightMultiplier
-				),
+				laneCenter !== undefined
+					? {
+							x: canvas.width / 2,
+							y:
+								laneCenter * canvas.height +
+								(index - (layerClips.length - 1) / 2) *
+									fontSizePx *
+									lineHeightMultiplier,
+							align: 'center'
+						}
+					: resolveLineAnchor(
+							layer,
+							clip,
+							canvas,
+							index,
+							fontSizePx * lineHeightMultiplier
+						),
 				layerOverride,
 				canvas
 			);

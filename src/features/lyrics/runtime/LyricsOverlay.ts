@@ -1,3 +1,4 @@
+import { resolveLyricsLaneCenters } from '../domain/lyricsLaneLayout';
 import type { WallpaperState } from '@/types/wallpaper';
 import { getCachedLyricsDocument } from '@/features/lyrics/domain/cache';
 import { findActiveLyricsLineIndex } from '@/features/lyrics/domain/parser';
@@ -876,6 +877,7 @@ export function drawLyricsOverlay(
 				const layer = visibleLayers.get(clip.layerId);
 				return (
 					layer &&
+					clip.text.trim().length > 0 &&
 					!clip.muted &&
 					adjustedTime >= clip.startTime &&
 					adjustedTime <= clip.endTime &&
@@ -1030,6 +1032,13 @@ export function drawLyricsOverlay(
 		return;
 	}
 
+	const laneCenters = entry?.lyrixaBundle
+		? resolveLyricsLaneCenters(
+				entry.lyrixaBundle,
+				adjustedTime,
+				layerOverrides
+			)
+		: new Map<string, number>();
 	// Split each layer's lines by anchor: a clip carrying its own coords or
 	// position preset renders at ITS anchor (mirroring the bundle
 	// renderer's resolveLineAnchor), not the layer's shared one. Lines that
@@ -1039,11 +1048,13 @@ export function drawLyricsOverlay(
 		{ layerId: string; lines: typeof physicalLines }
 	>();
 	for (const line of physicalLines) {
-		const anchorKey = line.coords
-			? `@${line.coords.x.toFixed(4)},${line.coords.y.toFixed(4)}`
-			: line.clipPosition && line.clipPosition !== 'center'
-				? `#${line.clipPosition}`
-				: '';
+		const anchorKey = laneCenters.has(line.layerId)
+			? 'lane'
+			: line.coords
+				? `@${line.coords.x.toFixed(4)},${line.coords.y.toFixed(4)}`
+				: line.clipPosition && line.clipPosition !== 'center'
+					? `#${line.clipPosition}`
+					: '';
 		const groupKey = `${line.layerId}|${anchorKey}`;
 		const group = groupedLines.get(groupKey) ?? {
 			layerId: line.layerId,
@@ -1064,17 +1075,22 @@ export function drawLyricsOverlay(
 		const layerScale = clamp(layerOverride?.scale ?? 1, 0.2, 4);
 		const groupLineHeightPx = lineHeightPx * layerScale;
 		const first = lines[0];
-		const baseAnchor = first?.coords
-			? {
-					x: first.coords.x * canvas.width,
-					y: first.coords.y * canvas.height
-				}
-			: (resolveAnchorFromLyrixaPreset(
-					first?.clipPosition && first.clipPosition !== 'center'
-						? first.clipPosition
-						: layer?.renderSettings?.positionPreset,
-					canvas
-				) ?? null);
+		const laneCenter = laneCenters.get(layerId);
+		const baseAnchor =
+			laneCenter !== undefined
+				? { x: canvas.width / 2, y: laneCenter * canvas.height }
+				: first?.coords
+					? {
+							x: first.coords.x * canvas.width,
+							y: first.coords.y * canvas.height
+						}
+					: (resolveAnchorFromLyrixaPreset(
+							first?.clipPosition &&
+								first.clipPosition !== 'center'
+								? first.clipPosition
+								: layer?.renderSettings?.positionPreset,
+							canvas
+						) ?? null);
 		const layerAnchor = baseAnchor
 			? {
 					x: baseAnchor.x + globalOffsetX,

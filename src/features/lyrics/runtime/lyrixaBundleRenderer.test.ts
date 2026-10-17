@@ -5,7 +5,13 @@ import type { LyrixaLyricsBundleEnvelope } from '@/features/lyrics/domain/lyrixa
 import type { LyrixaLayerOverrideMap } from '@/features/lyrics/domain/types';
 
 type GradientRecord = { stops: Array<[number, string]> };
-type FillCall = { text: string; style: unknown; filter: string };
+type FillCall = {
+	text: string;
+	style: unknown;
+	filter: string;
+	x: number;
+	y: number;
+};
 
 /**
  * Records what the renderer paints with. Only the handful of 2D-context
@@ -52,11 +58,13 @@ function createRecordingCtx() {
 				__record: record
 			};
 		},
-		fillText: (text: string) => {
+		fillText: (text: string, x: number, y: number) => {
 			fills.push({
 				text,
 				style: ctx.fillStyle,
-				filter: ctx.filter
+				filter: ctx.filter,
+				x,
+				y
 			});
 		}
 	};
@@ -306,4 +314,28 @@ describe('drawLyrixaLyricsBundle — color sources', () => {
 			[1, '#00aa00']
 		]);
 	});
+});
+
+it('draws active lanes at block centers and applies manual offsets afterwards', () => {
+	const envelope = createEnvelope();
+	const baseLayer = envelope.project.layers[0]!;
+	const baseClip = envelope.project.clips[0]!;
+	envelope.project.layers = (
+		['translation', 'primary', 'romanization'] as const
+	).map((role, order) => ({ ...baseLayer, id: role, role, order }));
+	envelope.project.clips = envelope.project.layers.map(layer => ({
+		...baseClip,
+		id: layer.id,
+		layerId: layer.id,
+		text: layer.id
+	}));
+	const recorder = createRecordingCtx();
+	drawLyrixaLyricsBundle(recorder.ctx, CANVAS, envelope, 1, {
+		layerOverrides: { primary: { positionOffsetY: 0.05 } }
+	});
+	expect(recorder.fills.map(({ text, x, y }) => ({ text, x, y }))).toEqual([
+		{ text: 'translation', x: 960, y: 900 },
+		{ text: 'primary', x: 960, y: 126 },
+		{ text: 'romanization', x: 960, y: 540 }
+	]);
 });

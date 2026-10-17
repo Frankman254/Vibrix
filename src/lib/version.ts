@@ -212,4 +212,5 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // v153: sesión Compose persistida: score de Lyrixa, base visual congelada y
 // estado enabled. Los proyectos anteriores arrancan sin sesión y bajo control
 // temporal manual.
-export const STORE_PERSIST_VERSION = 153;
+// v154: center lyrics by default; active bundle lanes share equal vertical blocks.
+export const STORE_PERSIST_VERSION = 154;

@@ -1601,7 +1601,7 @@ export const es: Record<TranslationKey, string> = {
 		'Nativo del Editor usa los tiempos y texto del bundle con los estilos globales de esta tab. Look de Lyrixa respeta el estilo original exportado desde Lyrixa.',
 	section_lyrics_layers: 'Ajustes por Capa',
 	hint_lyrics_layers:
-		'Ajustes por capa encima del bundle. Aplican en los dos modos de render; los sliders de arriba mueven todas las capas a la vez.',
+		'Los carriles con texto se reparten en bloques iguales: original → romaji → traducción. Con uno solo, queda centrado. X/Y desplazan cada capa desde su centro automático; los controles globales mueven el conjunto.',
 	hint_lyrics_layers_empty: 'Este bundle no tiene capas.',
 	label_lyrics_layer_reset: 'Resetear capa',
 	hint_lyrics_style_bundle_mode:

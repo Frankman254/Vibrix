@@ -1587,7 +1587,7 @@ export const en = {
 		"Editor Native uses the bundle's timing and text with this tab's global styles. Lyrixa Look keeps the original styling exported from Lyrixa.",
 	section_lyrics_layers: 'Per-Layer Overrides',
 	hint_lyrics_layers:
-		'Per-layer overrides on top of the bundle. They apply in both render modes; the tab sliders above move every layer at once.',
+		'Lanes with text share equal blocks: original → romaji → translation. A single lane is centered. X/Y move each layer from its automatic center; global controls move the whole group.',
 	hint_lyrics_layers_empty: 'This bundle has no layers.',
 	label_lyrics_layer_reset: 'Reset layer',
 	hint_lyrics_style_bundle_mode:

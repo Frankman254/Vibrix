@@ -3180,6 +3180,9 @@ export function migrateWallpaperStore(
 		// their next export looking like their last one.
 		migratedState.offlineExportQualityId ??= 'original';
 	}
+	if (fromVersion < 154 && state.audioLyricsPositionY === 0.58) {
+		migratedState.audioLyricsPositionY = 0;
+	}
 	if (fromVersion < 153) {
 		// Compose did not exist in persisted projects. An old project always
 		// opens under manual control until the user imports and explicitly

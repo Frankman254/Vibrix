@@ -855,3 +855,20 @@ describe('v153 Compose session defaults', () => {
 		expect(migrated.composeEnabled).toBe(true);
 	});
 });
+
+describe('v154 centered lyrics defaults', () => {
+	it('centers the former factory position and preserves custom positions', () => {
+		expect(
+			migrateWallpaperStore({ audioLyricsPositionY: 0.58 } as never, 153)
+				.audioLyricsPositionY
+		).toBe(0);
+		expect(
+			migrateWallpaperStore({ audioLyricsPositionY: -0.2 } as never, 153)
+				.audioLyricsPositionY
+		).toBe(-0.2);
+		expect(
+			migrateWallpaperStore({ audioLyricsPositionY: 0.58 } as never, 154)
+				.audioLyricsPositionY
+		).toBe(0.58);
+	});
+});

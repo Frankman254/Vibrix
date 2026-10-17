@@ -150,9 +150,6 @@ export default function LyricsLayersPanel({
 					>
 						<Caption as="p">
 							{t.label_lyrics_bundle_clips}: {clipCount}
-							{layer.renderSettings?.positionPreset
-								? ` • ${layer.renderSettings.positionPreset}`
-								: ''}
 							{roleLabel ? ` • ${roleLabel}` : ''}
 							{layer.language ? ` (${layer.language})` : ''}
 						</Caption>
