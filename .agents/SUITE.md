@@ -8,7 +8,7 @@ vídeo musical**. Todos viven en esta máquina, uno al lado del otro:
 
 ```
 /Users/frankman254/Desktop/Personal-Projects/
-├── transcriptor/              IA: saca la letra del audio      (Python)
+├── transcriptor/              Scribix: saca la letra del audio (Python, IA local)
 ├── Lyrixa/                    Edita y sincroniza la letra      (React)
 ├── LiveWallpaperAnimeGlitch/  Vibrix: la convierte en vídeo    (React)
 └── vibrix-web/                Web que vende la suite           (Next.js, por crear)
@@ -46,6 +46,7 @@ web tienen el suyo propio.
 | Contrato Transcriptor → Lyrixa                          | `transcriptor/docs/contrato-lyrixa.md`                                                                              |
 | Lenguaje de efectos (capa 3)                            | `transcriptor/docs/contrato-capa-fx.md`                                                                             |
 | Arquitectura de cada app                                | Vibrix `docs/architecture/ARCHITECTURE.md` · Lyrixa `docs/01-architecture.md` · Transcriptor `docs/arquitectura.md` |
+| **Línea visual** (nombres, iconos, colores)             | `.agents/MARCA.md` (copia idéntica en los cuatro repos)                                                             |
 
 Todos los paths de esta tabla son relativos a
 `/Users/frankman254/Desktop/Personal-Projects/`.
