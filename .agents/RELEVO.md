@@ -58,8 +58,8 @@ que 3440×1440 sigue siendo ultrawide 1440p. La calidad enseña además el peso
 estimado con el bitrate que aceptó el codificador. El preflight del 2026-10-29
 parte de los fotogramas enteros, muestra reserva con 10 % de margen y obtiene la
 duración del audio cargado aunque no venga de playlist. En Motion, los destinos
-de Camera Motion quedan junto a la capa activa y los de Screen Shake al inicio
-del efecto, no al fondo de Avanzado.
+de Camera Motion viven dentro de la tarjeta activa y los de Screen Shake al
+inicio del efecto, no al fondo de Avanzado.
 
 Lyrixa completó L1–L5 y ya produce el paquete v2 autocontenido. Queda ejecutar
 la fixture cruzada real cuando W4 cierre la paridad con export.

@@ -230,12 +230,16 @@ export function CameraMotionSection() {
 		>
 			{s.enabled ? (
 				<div className="flex flex-col gap-3">
-					{/* Layer and ownership stay together: selecting a row and
-					    assigning what it moves are one editing operation. */}
+					{/* In Advanced, ownership is embedded in the active layer card;
+					    Simple has no layer stack, so it stays at the block start. */}
 					{s.advanced ? (
-						<MotionLayerStack targetLabels={targetLabels} />
-					) : null}
-					{affectedLayersControl}
+						<MotionLayerStack
+							targetLabels={targetLabels}
+							activeLayerTargetsEditor={affectedLayersControl}
+						/>
+					) : (
+						affectedLayersControl
+					)}
 					<SegmentedControl<CameraMotionMode>
 						value={s.mode}
 						onChange={set.mode}

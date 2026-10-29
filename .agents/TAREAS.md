@@ -113,8 +113,8 @@ Compose. Se retoma después de W4, cuando el export ya consuma el score real.
 El bloqueo detectado en Windows quedó cubierto: en fullscreen, Auto neutraliza
 el zoom del navegador y un monitor 3440×1440 se exporta con esa misma geometría;
 la UI muestra además fotogramas totales, peso aproximado y reserva de disco
-según el bitrate negociado. Camera Motion y Screen Shake ya no esconden sus
-capas afectadas al final de Avanzado.
+según el bitrate negociado. Camera Motion edita sus capas afectadas dentro de la
+tarjeta activa y Screen Shake ya no las esconde al final de Avanzado.
 
 ## Puerta de salida
 

@@ -238,9 +238,10 @@ the version scheme in `src/lib/version.ts`.
 - **Motion mantiene juntas la selección y su alcance.** En Camera Motion, la
   lista de movimientos estaba al principio, pero «Capas afectadas» vivía al
   final de un acordeón Avanzado, después de todos los diales. Ahora aparece
-  inmediatamente debajo de la capa seleccionada; cambiar de movimiento y
+  **dentro de la propia tarjeta seleccionada**; cambiar de movimiento y
   asignarle Background, Logo, Spectrum, partículas, etc. es una sola operación
-  local. Screen Shake repetía el mismo alejamiento y también muestra sus capas
+  local. Las tarjetas inactivas conservan sólo su resumen para no crecer.
+  Screen Shake repetía el mismo alejamiento y también muestra sus capas
   afectadas arriba, antes del modo y la intensidad. Ambos selectores quedan
   disponibles además en UI Simple; Avanzado conserva sólo los ajustes finos.
   `STORE_PERSIST_VERSION` is at **151**.

@@ -7,6 +7,7 @@
  * highlighted layer. Same component shape as `EffectLayerStack` in the Looks
  * tab on purpose: it is the same idea applied to movement.
  */
+import type { ReactNode } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import {
 	ArrowDown,
@@ -32,9 +33,11 @@ import {
 import { useDialog } from '@/editor/DialogProvider';
 
 export default function MotionLayerStack({
-	targetLabels
+	targetLabels,
+	activeLayerTargetsEditor
 }: {
 	targetLabels: Record<CameraMotionTarget, string>;
+	activeLayerTargetsEditor?: ReactNode;
 }) {
 	const t = useT();
 	const { confirm } = useDialog();
@@ -220,13 +223,25 @@ export default function MotionLayerStack({
 									}}
 								/>
 							</div>
-							<Caption>
-								{targets.length === 0
-									? t.motion_layers_no_targets
-									: targets
-											.map(target => targetLabels[target])
-											.join(' · ')}
-							</Caption>
+							{isActive && activeLayerTargetsEditor ? (
+								<div
+									className="mt-1 border-t pt-1.5"
+									style={{ borderColor: UI_COLORS.hairline }}
+								>
+									{activeLayerTargetsEditor}
+								</div>
+							) : (
+								<Caption>
+									{targets.length === 0
+										? t.motion_layers_no_targets
+										: targets
+												.map(
+													target =>
+														targetLabels[target]
+												)
+												.join(' · ')}
+								</Caption>
+							)}
 						</div>
 					);
 				})}
