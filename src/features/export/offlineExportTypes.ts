@@ -35,6 +35,41 @@ export type ScreenMetrics = {
 	devicePixelRatio: number;
 };
 
+export type ScreenMetricsEnvironment = {
+	screenWidth: number;
+	screenHeight: number;
+	viewportWidth: number;
+	viewportHeight: number;
+	devicePixelRatio: number;
+	fullscreen: boolean;
+};
+
+/**
+ * Choose the CSS geometry whose DPR conversion describes the real display.
+ *
+ * Browser zoom changes `devicePixelRatio` but does not change `screen.width`,
+ * so `screen.width * DPR` can count zoom twice on Windows. In fullscreen the
+ * layout viewport shrinks by the same zoom factor that DPR grows by, making
+ * `innerWidth * DPR` the stable physical-pixel measurement.
+ */
+export function resolveScreenMetrics(
+	environment: ScreenMetricsEnvironment
+): ScreenMetrics | null {
+	const width = environment.fullscreen
+		? environment.viewportWidth
+		: environment.screenWidth;
+	const height = environment.fullscreen
+		? environment.viewportHeight
+		: environment.screenHeight;
+	if (!(width > 0) || !(height > 0)) return null;
+	return {
+		width,
+		height,
+		devicePixelRatio:
+			environment.devicePixelRatio > 0 ? environment.devicePixelRatio : 1
+	};
+}
+
 /**
  * How far below a preset's height a screen may fall and still pick it. A
  * 1392-pixel-tall panel is a 1440p screen with the taskbar taken out (96.7% of
@@ -46,13 +81,22 @@ const SCREEN_MATCH_TOLERANCE = 0.95;
 
 export function readScreenMetrics(): ScreenMetrics | null {
 	if (typeof window === 'undefined' || !window.screen) return null;
-	const { width, height } = window.screen;
-	if (!(width > 0) || !(height > 0)) return null;
-	return {
-		width,
-		height,
-		devicePixelRatio: window.devicePixelRatio || 1
-	};
+	const browserFullscreen =
+		Math.abs(window.outerWidth - window.screen.width) <= 1 &&
+		Math.abs(window.outerHeight - window.screen.height) <= 1;
+	const fullscreen =
+		(typeof document !== 'undefined' &&
+			Boolean(document.fullscreenElement)) ||
+		window.matchMedia?.('(display-mode: fullscreen)').matches === true ||
+		browserFullscreen;
+	return resolveScreenMetrics({
+		screenWidth: window.screen.width,
+		screenHeight: window.screen.height,
+		viewportWidth: window.innerWidth,
+		viewportHeight: window.innerHeight,
+		devicePixelRatio: window.devicePixelRatio || 1,
+		fullscreen
+	});
 }
 
 /**

@@ -1,6 +1,7 @@
 # Vibrix — qué hacer ahora
 
-> Actualizado el 2026-10-15 tras cerrar W4 y V2.4a. **W4 · export offline**
+> Actualizado el 2026-10-28 tras corregir la medición Auto y la estimación de
+> peso del export en Windows. **W4 · export offline**
 > (`buildCompositionSegments` reusa `resolveVisualStateAt`) y **V2.4a · miniatura
 > de slot** (`src/features/export/slotThumbnails.ts` publica `thumbnailDataUrl`
 > con el mismo pipeline, aditivo y sin bump de versión) quedaron hechos. El
@@ -40,7 +41,7 @@ o exportar el caso de integración.
 | Miniatura de slot en el manifiesto (`thumbnailDataUrl`, V2.4a)     | Hecho (aditivo, sin bump)        |
 | Import del contenedor `.vibrix-score`                              | Hecho; conserva JSON legacy      |
 
-`STORE_PERSIST_VERSION` está en **153**. La migración abre proyectos anteriores
+`STORE_PERSIST_VERSION` está en **154**. La migración abre proyectos anteriores
 sin score y bajo control temporal manual.
 
 ## Orden de implementación en Vibrix
@@ -108,6 +109,9 @@ sus fixtures. No se copian tipos a mano sin actualizar contrato y tests.
 
 La QA de export de larga duración sigue pendiente, pero no vuelve a desplazar
 Compose. Se retoma después de W4, cuando el export ya consuma el score real.
+El bloqueo detectado en Windows quedó cubierto: en fullscreen, Auto neutraliza
+el zoom del navegador y un monitor 3440×1440 se exporta con esa misma geometría;
+la UI muestra además el peso aproximado según el bitrate negociado.
 
 ## Puerta de salida
 

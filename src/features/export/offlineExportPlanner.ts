@@ -30,6 +30,8 @@ export type OfflineExportAudioAssetRef = {
 	name: string;
 	mimeType: string;
 	source: 'playlist' | 'single-file';
+	/** Known playlist duration; absent until metadata has been measured. */
+	durationMs?: number;
 };
 
 function hasGlobalConstructor(name: string): boolean {
@@ -102,7 +104,8 @@ export function resolveOfflineExportAudioAsset(
 			assetId: track.assetId,
 			name: track.name || 'playlist-track',
 			mimeType: track.mimeType || 'audio/mpeg',
-			source: 'playlist'
+			source: 'playlist',
+			durationMs: track.durationMs
 		};
 	}
 

@@ -1,6 +1,6 @@
 # Relevo de Vibrix
 
-> Actualizado el 2026-10-14. Empieza aquí, sigue con
+> Actualizado el 2026-10-28. Empieza aquí, sigue con
 > [TAREAS.md](TAREAS.md) y después lee
 > [TAREA_COMPOSE_TIMELINE.md](TAREA_COMPOSE_TIMELINE.md).
 
@@ -37,8 +37,9 @@ y previews del paquete sin depender del proyecto vivo.
 `src/features/composition/resolveVisualStateAt.ts` ya resuelve de forma pura el
 estado visual en un instante. Sus tests cubren orden, overrides sostenidos,
 `inherit`, transición de imagen y seek determinista. El score y su base
-congelada se guardan como sesión Compose. W3 conecta el viewport al reloj
-absoluto de audio para Play y seek; el export offline todavía no la consume.
+congelada se guardan como sesión Compose. Preview, Play, seek y export offline
+ya consumen el mismo evaluador; queda la integración cruzada con un score real
+de Lyrixa.
 
 El historial posterior se concentró en bugs, slideshow, storage, WebGL, Stage
 FX, proyecto demo y export. Esos cambios no cierran Compose. La tarea activa es
@@ -46,10 +47,15 @@ conectar el dominio ya construido, no volver a diseñarlo.
 
 ## Próximo movimiento
 
-**W1, W2, V2.2b y W3 están implementados:** la transición es determinista, la
-sesión persiste bajo store v153 y el viewport resuelve desde la base congelada
-con el reloj de audio. El siguiente paso es **W4**: alimentar el export offline
-con el mismo evaluador.
+**W1–W4, V2.2b y V2.4a están implementados:** la transición es determinista, la
+sesión persiste bajo store v153, el viewport y el export resuelven desde la
+misma base congelada, y los slots publican miniatura. El siguiente paso es la
+**integración real** descrita en `TAREAS.md`.
+
+El incidente de export de Windows del 2026-10-28 quedó corregido: fullscreen
+Auto usa viewport × DPR para no contar dos veces el zoom del navegador, de modo
+que 3440×1440 sigue siendo ultrawide 1440p. La calidad enseña además el peso
+estimado con el bitrate que aceptó el codificador.
 
 Lyrixa completó L1–L5 y ya produce el paquete v2 autocontenido. Queda ejecutar
 la fixture cruzada real cuando W4 cierre la paridad con export.
@@ -59,7 +65,7 @@ la fixture cruzada real cuando W4 cierre la paridad con export.
 - `types/`, `ui/` y `lib/` son hojas; `features/*` no importa `components/` ni
   `pages/`; `store/` no importa presentación.
 - Toda clave persistida nueva exige bump de `STORE_PERSIST_VERSION` y migración.
-  El valor actual es 153.
+  El valor actual es 154.
 - Toda acción destructiva espera `useDialog().confirm()`.
 - Los textos visibles pasan por i18n.
 - Preview y export offline deben consumir el mismo evaluador y la misma base.

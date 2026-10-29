@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+	resolveExportDimensions,
+	resolveScreenMetrics,
 	resolutionPresetForScreen,
 	type ScreenMetrics
 } from '@/features/export/offlineExportTypes';
@@ -57,5 +59,35 @@ describe('resolutionPresetForScreen', () => {
 
 	it('treats a nonsense device pixel ratio as 1 instead of collapsing', () => {
 		expect(resolutionPresetForScreen(screen(2560, 1440, 0))).toBe('1440p');
+	});
+
+	it('cancels Windows browser zoom with the fullscreen viewport', () => {
+		const metrics = resolveScreenMetrics({
+			// The screen API remains at native-looking CSS geometry while page
+			// zoom raises DPR. Multiplying these would falsely produce 5160×2160.
+			screenWidth: 3440,
+			screenHeight: 1440,
+			viewportWidth: 3440 / 1.5,
+			viewportHeight: 1440 / 1.5,
+			devicePixelRatio: 1.5,
+			fullscreen: true
+		});
+		expect(resolutionPresetForScreen(metrics)).toBe('1440p');
+		expect(
+			resolveExportDimensions(resolutionPresetForScreen(metrics), metrics)
+		).toEqual({ width: 3440, height: 1440 });
+	});
+
+	it('keeps screen geometry outside fullscreen', () => {
+		expect(
+			resolveScreenMetrics({
+				screenWidth: 2560,
+				screenHeight: 1440,
+				viewportWidth: 1280,
+				viewportHeight: 720,
+				devicePixelRatio: 1,
+				fullscreen: false
+			})
+		).toEqual(screen(2560, 1440));
 	});
 });

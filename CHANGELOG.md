@@ -214,12 +214,21 @@ the version scheme in `src/lib/version.ts`.
   significa 3440×1440, no un recorte 16:9. El cuadro entero se reescala si un
   lado pasa del límite que aceptan los codificadores (4096), nunca se recorta,
   y la sección de Export dice qué tamaño se va a codificar.
+    - En Windows, el zoom del navegador podía sumarse por segunda vez al
+      escalado del monitor: un 3440×1440 al 150 % acababa medido como
+      5160×2160 y Auto elegía 4K. En pantalla completa la medición usa ahora el
+      viewport por DPR, cuya multiplicación cancela el zoom, y conserva
+      3440×1440 / 1440p.
 - **La calidad es un control aparte: baja / media / original.** Solo toca el
   bitrate — fichero más pequeño y escritura más rápida — y se dice en claro que
   el render tarda lo mismo, porque dibujar los fotogramas lo decide la
   resolución. `original` es la tabla completa de siempre, así que un proyecto
   guardado exporta exactamente igual que antes.
-  `STORE_PERSIST_VERSION` is at **151**.
+    - La interfaz muestra ahora el peso aproximado que resulta del codificador
+      y bitrate realmente negociados: total cuando la playlist conoce la
+      duración, o por hora cuando el audio todavía no la conoce. Así un ajuste
+      de decenas de GB deja de quedar escondido detrás de «Original».
+      `STORE_PERSIST_VERSION` is at **151**.
 - **El render congela todo al empezar.** El estado se leía después del selector
   de guardado, del barrido de OPFS y de la decodificación del audio: segundos
   de reloj en los que mover un slider todavía entraba en el vídeo. Ahora se

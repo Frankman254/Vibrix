@@ -272,6 +272,9 @@ export default function ExportTabBody() {
 				plan={videoExport.plan}
 				planChecked={videoExport.planChecked}
 				platformLabel={videoExport.platformLabel}
+				estimatedBytesPerHour={videoExport.estimatedBytesPerHour}
+				estimatedTotalBytes={videoExport.estimatedTotalBytes}
+				estimatedDurationSec={videoExport.estimatedDurationSec}
 				progress={videoExport.progress}
 				error={videoExport.error}
 				storageHint={videoExport.storageHint}

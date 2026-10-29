@@ -1326,6 +1326,10 @@ export const es: Record<TranslationKey, string> = {
 	offline_quality_original: 'Original',
 	offline_quality_hint:
 		'Solo el bitrate. Archivo m\u00e1s peque\u00f1o y escritura m\u00e1s r\u00e1pida; el render tarda lo mismo, eso lo decide la resoluci\u00f3n.',
+	offline_quality_estimated_hour:
+		'Con el codificador detectado: aproximadamente {size} por hora.',
+	offline_quality_estimated_total:
+		'Con el codificador detectado: aproximadamente {size} para {duration}.',
 	offline_label_render_quality: 'Calidad del render',
 	offline_render_quality_value: 'Máxima · editor en {mode}',
 	offline_render_quality_mismatch:

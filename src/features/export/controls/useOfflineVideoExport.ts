@@ -16,6 +16,7 @@ import {
 	negotiateOfflineVideoEncoder,
 	type OfflineVideoEncoderPlan
 } from '@/features/export/video/offlineEncoderNegotiation';
+import { estimateOfflineVideoBytes } from '@/features/export/video/offlineVideoFormat';
 import { resolvePlatformLabel } from '@/lib/env/platform';
 import { flushPersistedState } from '@/store/persistedStateStorage';
 import {
@@ -87,7 +88,11 @@ export function useOfflineVideoExport({
 	useEffect(() => {
 		const onResize = () => setScreen(readScreenMetrics());
 		window.addEventListener('resize', onResize);
-		return () => window.removeEventListener('resize', onResize);
+		document.addEventListener('fullscreenchange', onResize);
+		return () => {
+			window.removeEventListener('resize', onResize);
+			document.removeEventListener('fullscreenchange', onResize);
+		};
 	}, []);
 	const screenResolutionId = resolutionPresetForScreen(screen);
 	// Auto is the default, so a 1440p screen exports at 1440p without anybody
@@ -151,6 +156,29 @@ export function useOfflineVideoExport({
 	}, [resolution.width, resolution.height, fps, qualityScale]);
 
 	const busy = isOfflineVideoExportBusyPhase(run.progress.phase);
+	const knownDurationSec =
+		offlineAudioAsset?.durationMs && offlineAudioAsset.durationMs > 0
+			? offlineAudioAsset.durationMs / 1000
+			: null;
+	const estimatedBytesPerHour = plan
+		? estimateOfflineVideoBytes({
+				width: resolution.width,
+				height: resolution.height,
+				fps,
+				durationSec: 3600,
+				videoBitsPerSecond: plan.video.bitrate
+			})
+		: null;
+	const estimatedTotalBytes =
+		plan && knownDurationSec
+			? estimateOfflineVideoBytes({
+					width: resolution.width,
+					height: resolution.height,
+					fps,
+					durationSec: knownDurationSec,
+					videoBitsPerSecond: plan.video.bitrate
+				})
+			: null;
 
 	function startExport() {
 		// Spend the pending debounced write before the export starts competing
@@ -180,7 +208,7 @@ export function useOfflineVideoExport({
 		setQualityId,
 		/** `3440\u00d71440`, what the encoder was actually negotiated for. */
 		dimensionsLabel: `${resolution.width}\u00d7${resolution.height}`,
-		/** `2560\u00d71440`, the display's real pixels, for the Auto hint. */
+		/** The display's physical pixels, for the Auto hint. */
 		screenLabel: screen
 			? `${Math.round(screen.width * (screen.devicePixelRatio || 1))}\u00d7${Math.round(
 					screen.height * (screen.devicePixelRatio || 1)
@@ -192,6 +220,9 @@ export function useOfflineVideoExport({
 		plan,
 		planChecked,
 		platformLabel,
+		estimatedBytesPerHour,
+		estimatedTotalBytes,
+		estimatedDurationSec: knownDurationSec,
 		progress: run.progress,
 		error: run.error,
 		storageHint: run.storageHint,

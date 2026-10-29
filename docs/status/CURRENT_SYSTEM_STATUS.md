@@ -17,6 +17,11 @@ This document describes the product **as implemented in code**, not aspirational
 | Cloud / login / backend                | **Planned / not implemented**            |
 | Electron desktop                       | **Not implemented**                      |
 
+En Export, Auto conserva la geometría física del monitor también con zoom de
+navegador en pantalla completa (por ejemplo, 3440×1440 sigue siendo 1440p
+ultrawide en Windows). La calidad controla el bitrate y enseña el peso estimado
+con el codificador negociado, total si se conoce la duración o por hora si no.
+
 ---
 
 ## Runtime architecture
