@@ -75,6 +75,48 @@ export function ScreenShakeSection() {
 		set.targets(allTargetsEnabled ? ['background'] : [...availableTargets]);
 	}
 
+	const affectedLayersControl = (
+		<div className="flex flex-col gap-1.5">
+			<div className="flex items-center justify-between gap-2">
+				<span className="text-xs text-[var(--editor-text-muted)]">
+					{t.sfx_affected_layers}
+				</span>
+				<Button
+					type="button"
+					onClick={toggleAllTargets}
+					size="sm"
+					density="compact"
+					variant={allTargetsEnabled ? 'primary' : 'secondary'}
+				>
+					{t.sfx_all}
+				</Button>
+			</div>
+			<div className="flex flex-wrap gap-1">
+				{CAMERA_FX_TARGETS.map(target => {
+					const disabled = !isCameraFxTargetAvailable(
+						target,
+						availability
+					);
+					const active = s.targets.includes(target);
+					return (
+						<Button
+							key={target}
+							type="button"
+							onClick={() => toggleTarget(target)}
+							disabled={disabled}
+							variant={active ? 'primary' : 'secondary'}
+							size="sm"
+							density="compact"
+							active={active}
+						>
+							{targetLabels[target]}
+						</Button>
+					);
+				})}
+			</div>
+		</div>
+	);
+
 	return (
 		<SectionCard
 			title={t.sfx_screen_shake_title}
@@ -91,6 +133,7 @@ export function ScreenShakeSection() {
 		>
 			{s.enabled ? (
 				<div className="flex flex-col gap-3">
+					{affectedLayersControl}
 					<SegmentedControl<ScreenShakeMode>
 						value={s.mode}
 						onChange={set.mode}
@@ -217,57 +260,6 @@ export function ScreenShakeSection() {
 									}
 									onChange={set.bandThreshold}
 								/>
-								<div className="flex flex-col gap-1.5">
-									<div className="flex items-center justify-between gap-2">
-										<span className="text-xs text-[var(--editor-text-muted)]">
-											{t.sfx_affected_layers}
-										</span>
-										<Button
-											type="button"
-											onClick={toggleAllTargets}
-											size="sm"
-											density="compact"
-											variant={
-												allTargetsEnabled
-													? 'primary'
-													: 'secondary'
-											}
-										>
-											{t.sfx_all}
-										</Button>
-									</div>
-									<div className="flex flex-wrap gap-1">
-										{CAMERA_FX_TARGETS.map(target => {
-											const disabled =
-												!isCameraFxTargetAvailable(
-													target,
-													availability
-												);
-											const active =
-												s.targets.includes(target);
-											return (
-												<Button
-													key={target}
-													type="button"
-													onClick={() =>
-														toggleTarget(target)
-													}
-													disabled={disabled}
-													variant={
-														active
-															? 'primary'
-															: 'secondary'
-													}
-													size="sm"
-													density="compact"
-													active={active}
-												>
-													{targetLabels[target]}
-												</Button>
-											);
-										})}
-									</div>
-								</div>
 							</div>
 						</CollapsibleSection>
 					) : null}

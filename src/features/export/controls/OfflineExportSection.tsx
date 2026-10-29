@@ -10,7 +10,10 @@ import {
 	type OfflineExportQualityId,
 	type OfflineExportResolutionPresetId
 } from '@/features/export/offlineExportTypes';
-import type { OfflineVideoExportProgress } from '@/features/export/video/offlineVideoFormat';
+import type {
+	OfflineVideoExportProgress,
+	OfflineVideoSizeEstimate
+} from '@/features/export/video/offlineVideoFormat';
 import type { OfflineVideoEncoderPlan } from '@/features/export/video/offlineEncoderNegotiation';
 import type {
 	OfflineStorageHint,
@@ -54,9 +57,8 @@ type OfflineExportSectionProps = {
 	plan: OfflineVideoEncoderPlan | null;
 	planChecked: boolean;
 	platformLabel: string;
-	estimatedBytesPerHour: number | null;
-	estimatedTotalBytes: number | null;
-	estimatedDurationSec: number | null;
+	sizeEstimatePerHour: OfflineVideoSizeEstimate | null;
+	totalSizeEstimate: OfflineVideoSizeEstimate | null;
 	progress: OfflineVideoExportProgress;
 	error: OfflineVideoExportError | null;
 	storageHint: OfflineStorageHint | null;
@@ -108,9 +110,8 @@ export default function OfflineExportSection({
 	plan,
 	planChecked,
 	platformLabel,
-	estimatedBytesPerHour,
-	estimatedTotalBytes,
-	estimatedDurationSec,
+	sizeEstimatePerHour,
+	totalSizeEstimate,
 	progress,
 	error,
 	storageHint,
@@ -134,20 +135,40 @@ export default function OfflineExportSection({
 			? `${plan.format.container.toUpperCase()} · ${plan.format.videoCodec.toUpperCase()} + ${plan.format.audioCodec.toUpperCase()}`
 			: t.offline_error_no_encoder;
 	const currentPhaseLabel = offlineExportPhaseLabel(t, progress);
-	const estimatedSizeLabel =
-		estimatedTotalBytes !== null && estimatedDurationSec !== null
-			? t.offline_quality_estimated_total
-					.replace('{size}', formatBytes(estimatedTotalBytes))
+	const activeSizeEstimate = totalSizeEstimate ?? sizeEstimatePerHour;
+	const estimatedSizeLabel = totalSizeEstimate
+		? t.offline_quality_estimated_total
+				.replace(
+					'{frames}',
+					new Intl.NumberFormat().format(totalSizeEstimate.frameCount)
+				)
+				.replace(
+					'{size}',
+					formatBytes(totalSizeEstimate.estimatedBytes)
+				)
+				.replace(
+					'{duration}',
+					formatDuration(Math.round(totalSizeEstimate.durationSec))
+				)
+		: sizeEstimatePerHour
+			? t.offline_quality_estimated_hour
 					.replace(
-						'{duration}',
-						formatDuration(Math.round(estimatedDurationSec))
+						'{frames}',
+						new Intl.NumberFormat().format(
+							sizeEstimatePerHour.frameCount
+						)
 					)
-			: estimatedBytesPerHour !== null
-				? t.offline_quality_estimated_hour.replace(
+					.replace(
 						'{size}',
-						formatBytes(estimatedBytesPerHour)
+						formatBytes(sizeEstimatePerHour.estimatedBytes)
 					)
-				: null;
+			: null;
+	const recommendedSpaceLabel = activeSizeEstimate
+		? t.offline_quality_recommended_space.replace(
+				'{size}',
+				formatBytes(activeSizeEstimate.recommendedFreeBytes)
+			)
+		: null;
 
 	return (
 		<div className="flex flex-col gap-2">
@@ -248,12 +269,16 @@ export default function OfflineExportSection({
 					{t.offline_quality_hint}
 				</span>
 				{estimatedSizeLabel ? (
-					<span
-						className="text-[11px]"
-						style={{ color: 'var(--editor-accent-soft)' }}
-					>
-						{estimatedSizeLabel}
-					</span>
+					<div className="flex flex-col gap-0.5 text-[11px]">
+						<span style={{ color: 'var(--editor-accent-soft)' }}>
+							{estimatedSizeLabel}
+						</span>
+						{recommendedSpaceLabel ? (
+							<span className="text-gray-400">
+								{recommendedSpaceLabel}
+							</span>
+						) : null}
+					</div>
 				) : null}
 			</div>
 

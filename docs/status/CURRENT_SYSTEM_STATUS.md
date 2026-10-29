@@ -21,6 +21,10 @@ En Export, Auto conserva la geometría física del monitor también con zoom de
 navegador en pantalla completa (por ejemplo, 3440×1440 sigue siendo 1440p
 ultrawide en Windows). La calidad controla el bitrate y enseña el peso estimado
 con el codificador negociado, total si se conoce la duración o por hora si no.
+El preflight parte del número total de fotogramas y muestra también una reserva
+de disco con 10 % de margen. Motion coloca las capas afectadas de Camera Motion
+junto a la capa activa y las de Screen Shake al inicio del bloque, fuera del
+acordeón de ajustes finos.
 
 ---
 

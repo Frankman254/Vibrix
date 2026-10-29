@@ -155,6 +155,65 @@ export function CameraMotionSection() {
 		set.targets(allTargetsEnabled ? ['background'] : [...availableTargets]);
 	}
 
+	const affectedLayersControl = (
+		<div className="flex flex-col gap-1.5">
+			<div className="flex items-center justify-between gap-2">
+				<span className="text-xs text-[var(--editor-text-muted)]">
+					{t.sfx_affected_layers}
+				</span>
+				<Button
+					type="button"
+					onClick={toggleAllTargets}
+					size="sm"
+					density="compact"
+					variant={allTargetsEnabled ? 'primary' : 'secondary'}
+				>
+					{t.sfx_all}
+				</Button>
+			</div>
+			<div className="flex flex-wrap gap-1">
+				{CAMERA_FX_TARGETS.map(target => {
+					const disabled = !isCameraFxTargetAvailable(
+						target,
+						availability
+					);
+					const owner = disabled ? null : targetOwner(target);
+					const active = s.targets.includes(target) && !owner;
+					return (
+						<Button
+							key={target}
+							type="button"
+							// Never a hard block: pressing a taken chip steals
+							// the target instead of doing nothing.
+							onClick={() =>
+								owner ? set.claim(target) : toggleTarget(target)
+							}
+							disabled={disabled}
+							title={
+								owner
+									? t.motion_target_claim.replace(
+											'{name}',
+											owner.name
+										)
+									: undefined
+							}
+							variant={active ? 'primary' : 'secondary'}
+							size="sm"
+							density="compact"
+							active={active}
+							style={owner ? { opacity: 0.55 } : undefined}
+						>
+							{owner
+								? `${targetLabels[target]} · ${t.motion_target_owner.replace('{name}', owner.name)}`
+								: targetLabels[target]}
+						</Button>
+					);
+				})}
+			</div>
+			<Caption>{t.motion_targets_owner_hint}</Caption>
+		</div>
+	);
+
 	return (
 		<SectionCard
 			title={t.sfx_camera_motion_title}
@@ -171,11 +230,12 @@ export function CameraMotionSection() {
 		>
 			{s.enabled ? (
 				<div className="flex flex-col gap-3">
-					{/* Above the dials because the dials belong to whichever
-					    layer is selected here. */}
+					{/* Layer and ownership stay together: selecting a row and
+					    assigning what it moves are one editing operation. */}
 					{s.advanced ? (
 						<MotionLayerStack targetLabels={targetLabels} />
 					) : null}
+					{affectedLayersControl}
 					<SegmentedControl<CameraMotionMode>
 						value={s.mode}
 						onChange={set.mode}
@@ -447,87 +507,6 @@ export function CameraMotionSection() {
 										full
 									/>
 								) : null}
-								<div className="flex flex-col gap-1.5">
-									<div className="flex items-center justify-between gap-2">
-										<span className="text-xs text-[var(--editor-text-muted)]">
-											{t.sfx_affected_layers}
-										</span>
-										<Button
-											type="button"
-											onClick={toggleAllTargets}
-											size="sm"
-											density="compact"
-											variant={
-												allTargetsEnabled
-													? 'primary'
-													: 'secondary'
-											}
-										>
-											{t.sfx_all}
-										</Button>
-									</div>
-									<div className="flex flex-wrap gap-1">
-										{CAMERA_FX_TARGETS.map(target => {
-											const disabled =
-												!isCameraFxTargetAvailable(
-													target,
-													availability
-												);
-											const owner = disabled
-												? null
-												: targetOwner(target);
-											const active =
-												s.targets.includes(target) &&
-												!owner;
-											return (
-												<Button
-													key={target}
-													type="button"
-													// Never a hard block:
-													// pressing a taken chip
-													// steals the target instead
-													// of doing nothing.
-													onClick={() =>
-														owner
-															? set.claim(target)
-															: toggleTarget(
-																	target
-																)
-													}
-													disabled={disabled}
-													title={
-														owner
-															? t.motion_target_claim.replace(
-																	'{name}',
-																	owner.name
-																)
-															: undefined
-													}
-													variant={
-														active
-															? 'primary'
-															: 'secondary'
-													}
-													size="sm"
-													density="compact"
-													active={active}
-													style={
-														owner
-															? { opacity: 0.55 }
-															: undefined
-													}
-												>
-													{owner
-														? `${targetLabels[target]} · ${t.motion_target_owner.replace('{name}', owner.name)}`
-														: targetLabels[target]}
-												</Button>
-											);
-										})}
-									</div>
-									<Caption>
-										{t.motion_targets_owner_hint}
-									</Caption>
-								</div>
 							</div>
 						</CollapsibleSection>
 					) : null}

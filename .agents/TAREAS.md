@@ -1,7 +1,8 @@
 # Vibrix — qué hacer ahora
 
-> Actualizado el 2026-10-28 tras corregir la medición Auto y la estimación de
-> peso del export en Windows. **W4 · export offline**
+> Actualizado el 2026-10-29 tras completar el preflight por fotogramas y
+> acercar los destinos de Camera Motion / Screen Shake a su selector.
+> **W4 · export offline**
 > (`buildCompositionSegments` reusa `resolveVisualStateAt`) y **V2.4a · miniatura
 > de slot** (`src/features/export/slotThumbnails.ts` publica `thumbnailDataUrl`
 > con el mismo pipeline, aditivo y sin bump de versión) quedaron hechos. El
@@ -111,7 +112,9 @@ La QA de export de larga duración sigue pendiente, pero no vuelve a desplazar
 Compose. Se retoma después de W4, cuando el export ya consuma el score real.
 El bloqueo detectado en Windows quedó cubierto: en fullscreen, Auto neutraliza
 el zoom del navegador y un monitor 3440×1440 se exporta con esa misma geometría;
-la UI muestra además el peso aproximado según el bitrate negociado.
+la UI muestra además fotogramas totales, peso aproximado y reserva de disco
+según el bitrate negociado. Camera Motion y Screen Shake ya no esconden sus
+capas afectadas al final de Avanzado.
 
 ## Puerta de salida
 

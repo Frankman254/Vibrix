@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	computeOfflineExportRatio,
 	computeOfflineFrameCount,
+	buildOfflineVideoSizeEstimate,
 	estimateOfflineExportEtaMs,
 	estimateOfflineVideoBytes,
 	recommendedVideoBitrateFor
@@ -98,5 +99,38 @@ describe('estimateOfflineVideoBytes', () => {
 		expect(doubleDuration).toBeGreaterThan(base);
 		expect(halfPixels).toBeLessThan(base);
 		expect(doubleFps).toBeGreaterThan(base);
+	});
+});
+
+describe('buildOfflineVideoSizeEstimate', () => {
+	it('derives duration and storage from the total rendered frames', () => {
+		const estimate = buildOfflineVideoSizeEstimate({
+			width: 3440,
+			height: 1440,
+			fps: 60,
+			durationSec: 3600,
+			videoBitsPerSecond: 84_300_000
+		});
+
+		expect(estimate.frameCount).toBe(216_000);
+		expect(estimate.durationSec).toBe(3600);
+		expect(estimate.estimatedBytes).toBe(38_050_200_000);
+		expect(estimate.recommendedFreeBytes).toBe(41_855_220_000);
+	});
+
+	it('rounds a partial last frame up before estimating bytes', () => {
+		const estimate = buildOfflineVideoSizeEstimate({
+			width: 1920,
+			height: 1080,
+			fps: 30,
+			durationSec: 1.01,
+			videoBitsPerSecond: 28_000_000
+		});
+
+		expect(estimate.frameCount).toBe(31);
+		expect(estimate.durationSec).toBeCloseTo(31 / 30);
+		expect(estimate.recommendedFreeBytes).toBeGreaterThan(
+			estimate.estimatedBytes
+		);
 	});
 });

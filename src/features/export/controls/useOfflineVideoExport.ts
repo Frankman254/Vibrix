@@ -16,7 +16,10 @@ import {
 	negotiateOfflineVideoEncoder,
 	type OfflineVideoEncoderPlan
 } from '@/features/export/video/offlineEncoderNegotiation';
-import { estimateOfflineVideoBytes } from '@/features/export/video/offlineVideoFormat';
+import {
+	buildOfflineVideoSizeEstimate,
+	type OfflineVideoSizeEstimate
+} from '@/features/export/video/offlineVideoFormat';
 import { resolvePlatformLabel } from '@/lib/env/platform';
 import { flushPersistedState } from '@/store/persistedStateStorage';
 import {
@@ -40,6 +43,7 @@ type UseOfflineVideoExportArgs = {
 	audioSmoothing: number;
 	extraSubsystems: RenderSubsystem[];
 	canExport: boolean;
+	getAudioDurationSec: () => number;
 };
 
 export function useOfflineVideoExport({
@@ -49,7 +53,8 @@ export function useOfflineVideoExport({
 	fftSize,
 	audioSmoothing,
 	extraSubsystems,
-	canExport
+	canExport,
+	getAudioDurationSec
 }: UseOfflineVideoExportArgs) {
 	// Resolution and fps are a standing preference, not a per-visit choice:
 	// they live in the persisted store so a reload (or a tab switch) keeps
@@ -156,29 +161,44 @@ export function useOfflineVideoExport({
 	}, [resolution.width, resolution.height, fps, qualityScale]);
 
 	const busy = isOfflineVideoExportBusyPhase(run.progress.phase);
-	const knownDurationSec =
-		offlineAudioAsset?.durationMs && offlineAudioAsset.durationMs > 0
+	const [loadedAudioDurationSec, setLoadedAudioDurationSec] = useState(() =>
+		Math.max(0, getAudioDurationSec())
+	);
+	useEffect(() => {
+		const readDuration = () => {
+			const duration = getAudioDurationSec();
+			setLoadedAudioDurationSec(
+				Number.isFinite(duration) && duration > 0 ? duration : 0
+			);
+		};
+		readDuration();
+		if (!offlineAudioAsset) return;
+		const intervalId = window.setInterval(readDuration, 1000);
+		return () => window.clearInterval(intervalId);
+	}, [getAudioDurationSec, offlineAudioAsset]);
+	const knownDurationSec = !offlineAudioAsset
+		? null
+		: offlineAudioAsset.durationMs && offlineAudioAsset.durationMs > 0
 			? offlineAudioAsset.durationMs / 1000
-			: null;
-	const estimatedBytesPerHour = plan
-		? estimateOfflineVideoBytes({
-				width: resolution.width,
-				height: resolution.height,
-				fps,
-				durationSec: 3600,
-				videoBitsPerSecond: plan.video.bitrate
-			})
-		: null;
-	const estimatedTotalBytes =
-		plan && knownDurationSec
-			? estimateOfflineVideoBytes({
+			: loadedAudioDurationSec > 0
+				? loadedAudioDurationSec
+				: null;
+	const buildSizeEstimate = (
+		durationSec: number
+	): OfflineVideoSizeEstimate | null =>
+		plan
+			? buildOfflineVideoSizeEstimate({
 					width: resolution.width,
 					height: resolution.height,
 					fps,
-					durationSec: knownDurationSec,
+					durationSec,
 					videoBitsPerSecond: plan.video.bitrate
 				})
 			: null;
+	const sizeEstimatePerHour = buildSizeEstimate(3600);
+	const totalSizeEstimate = knownDurationSec
+		? buildSizeEstimate(knownDurationSec)
+		: null;
 
 	function startExport() {
 		// Spend the pending debounced write before the export starts competing
@@ -220,9 +240,8 @@ export function useOfflineVideoExport({
 		plan,
 		planChecked,
 		platformLabel,
-		estimatedBytesPerHour,
-		estimatedTotalBytes,
-		estimatedDurationSec: knownDurationSec,
+		sizeEstimatePerHour,
+		totalSizeEstimate,
 		progress: run.progress,
 		error: run.error,
 		storageHint: run.storageHint,

@@ -1,6 +1,6 @@
 # Relevo de Vibrix
 
-> Actualizado el 2026-10-28. Empieza aquí, sigue con
+> Actualizado el 2026-10-29. Empieza aquí, sigue con
 > [TAREAS.md](TAREAS.md) y después lee
 > [TAREA_COMPOSE_TIMELINE.md](TAREA_COMPOSE_TIMELINE.md).
 
@@ -55,7 +55,11 @@ misma base congelada, y los slots publican miniatura. El siguiente paso es la
 El incidente de export de Windows del 2026-10-28 quedó corregido: fullscreen
 Auto usa viewport × DPR para no contar dos veces el zoom del navegador, de modo
 que 3440×1440 sigue siendo ultrawide 1440p. La calidad enseña además el peso
-estimado con el bitrate que aceptó el codificador.
+estimado con el bitrate que aceptó el codificador. El preflight del 2026-10-29
+parte de los fotogramas enteros, muestra reserva con 10 % de margen y obtiene la
+duración del audio cargado aunque no venga de playlist. En Motion, los destinos
+de Camera Motion quedan junto a la capa activa y los de Screen Shake al inicio
+del efecto, no al fondo de Avanzado.
 
 Lyrixa completó L1–L5 y ya produce el paquete v2 autocontenido. Queda ejecutar
 la fixture cruzada real cuando W4 cierre la paridad con export.

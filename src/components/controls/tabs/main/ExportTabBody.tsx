@@ -36,7 +36,7 @@ const OFFLINE_EXPORT_SUBSYSTEMS = [createOfflineBackgroundSubsystem()];
 export default function ExportTabBody() {
 	const t = useT();
 	const { confirm } = useDialog();
-	const { stopCapture } = useAudioContext();
+	const { stopCapture, getDuration } = useAudioContext();
 	const importRef = useRef<HTMLInputElement | null>(null);
 	const projectImportRef = useRef<HTMLInputElement | null>(null);
 
@@ -154,7 +154,8 @@ export default function ExportTabBody() {
 		fftSize: offlineExportState.fftSize,
 		audioSmoothing: offlineExportState.audioSmoothing,
 		extraSubsystems: OFFLINE_EXPORT_SUBSYSTEMS,
-		canExport: offlineExportPlan.status !== 'blocked'
+		canExport: offlineExportPlan.status !== 'blocked',
+		getAudioDurationSec: getDuration
 	});
 
 	const settingsLabel = {
@@ -272,9 +273,8 @@ export default function ExportTabBody() {
 				plan={videoExport.plan}
 				planChecked={videoExport.planChecked}
 				platformLabel={videoExport.platformLabel}
-				estimatedBytesPerHour={videoExport.estimatedBytesPerHour}
-				estimatedTotalBytes={videoExport.estimatedTotalBytes}
-				estimatedDurationSec={videoExport.estimatedDurationSec}
+				sizeEstimatePerHour={videoExport.sizeEstimatePerHour}
+				totalSizeEstimate={videoExport.totalSizeEstimate}
 				progress={videoExport.progress}
 				error={videoExport.error}
 				storageHint={videoExport.storageHint}

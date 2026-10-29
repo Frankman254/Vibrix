@@ -1320,9 +1320,11 @@ export const en = {
 	offline_quality_hint:
 		'Bitrate only. Smaller file and a faster write; the render itself takes the same time, which is set by the resolution.',
 	offline_quality_estimated_hour:
-		'With the detected encoder: approximately {size} per hour.',
+		'Per hour: {frames} frames · approximately {size}.',
 	offline_quality_estimated_total:
-		'With the detected encoder: approximately {size} for {duration}.',
+		'{frames} frames · {duration} · approximately {size}.',
+	offline_quality_recommended_space:
+		'Recommended free space: {size} (includes a 10% margin).',
 	offline_label_render_quality: 'Render quality',
 	offline_render_quality_value: 'Maximum · editor on {mode}',
 	offline_render_quality_mismatch:

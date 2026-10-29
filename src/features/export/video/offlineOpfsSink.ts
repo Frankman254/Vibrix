@@ -11,6 +11,7 @@
  */
 import type { StreamTargetChunk } from 'mediabunny';
 import { createCancellableFileWritable } from './offlineVideoEncoder';
+import { OFFLINE_EXPORT_STORAGE_MARGIN } from './offlineVideoFormat';
 
 /** Files this module creates; the sweep deletes anything older under it. */
 const OPFS_FILE_PREFIX = 'vibrix-export-';
@@ -259,9 +260,12 @@ export async function createOpfsVideoSink(options: {
 	await sweepStaleOpfsExports();
 	await ensurePersistentStorage();
 	const free = await opfsFreeBytes();
-	if (free && free.freeBytes < options.estimatedBytes * 1.1) {
+	const neededBytes = Math.ceil(
+		options.estimatedBytes * OFFLINE_EXPORT_STORAGE_MARGIN
+	);
+	if (free && free.freeBytes < neededBytes) {
 		throw new OfflineStorageError({
-			neededBytes: options.estimatedBytes,
+			neededBytes,
 			freeBytes: free.freeBytes,
 			quotaBytes: free.quotaBytes,
 			usageBytes: free.usageBytes

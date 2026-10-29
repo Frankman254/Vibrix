@@ -228,7 +228,22 @@ the version scheme in `src/lib/version.ts`.
       y bitrate realmente negociados: total cuando la playlist conoce la
       duración, o por hora cuando el audio todavía no la conoce. Así un ajuste
       de decenas de GB deja de quedar escondido detrás de «Original».
-      `STORE_PERSIST_VERSION` is at **151**.
+    - El preflight cuenta ahora los mismos fotogramas enteros que renderizará
+      el export (`ceil(duración × FPS)`), deriva de ellos la duración codificada
+      y enseña **fotogramas, peso estimado y espacio libre recomendado** antes
+      de empezar. La reserva añade el mismo margen de seguridad del 10 % que
+      exige el guardado en OPFS. Para un archivo cargado directamente también
+      lee la duración viva del reproductor; ya no queda limitado a «por hora».
+
+- **Motion mantiene juntas la selección y su alcance.** En Camera Motion, la
+  lista de movimientos estaba al principio, pero «Capas afectadas» vivía al
+  final de un acordeón Avanzado, después de todos los diales. Ahora aparece
+  inmediatamente debajo de la capa seleccionada; cambiar de movimiento y
+  asignarle Background, Logo, Spectrum, partículas, etc. es una sola operación
+  local. Screen Shake repetía el mismo alejamiento y también muestra sus capas
+  afectadas arriba, antes del modo y la intensidad. Ambos selectores quedan
+  disponibles además en UI Simple; Avanzado conserva sólo los ajustes finos.
+  `STORE_PERSIST_VERSION` is at **151**.
 - **El render congela todo al empezar.** El estado se leía después del selector
   de guardado, del barrido de OPFS y de la decodificación del audio: segundos
   de reloj en los que mover un slider todavía entraba en el vídeo. Ahora se

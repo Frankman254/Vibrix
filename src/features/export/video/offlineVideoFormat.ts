@@ -153,3 +153,44 @@ export function estimateOfflineVideoBytes(options: {
 		((videoBitsPerSecond + audioBitsPerSecond) / 8) * options.durationSec
 	);
 }
+
+export const OFFLINE_EXPORT_STORAGE_MARGIN = 1.1;
+
+export type OfflineVideoSizeEstimate = {
+	frameCount: number;
+	durationSec: number;
+	estimatedBytes: number;
+	recommendedFreeBytes: number;
+};
+
+/**
+ * Preflight estimate from the exact number of frames the export will render.
+ * The frame count is rounded up first, just like the renderer, then converted
+ * back to duration for the bitrate calculation. This avoids showing a smaller
+ * file than the frame loop can actually produce at a fractional end frame.
+ */
+export function buildOfflineVideoSizeEstimate(options: {
+	width: number;
+	height: number;
+	fps: number;
+	durationSec: number;
+	videoBitsPerSecond?: number;
+}): OfflineVideoSizeEstimate {
+	const frameCount = computeOfflineFrameCount(
+		options.durationSec * 1000,
+		options.fps
+	);
+	const durationSec = frameCount > 0 ? frameCount / options.fps : 0;
+	const estimatedBytes = estimateOfflineVideoBytes({
+		...options,
+		durationSec
+	});
+	return {
+		frameCount,
+		durationSec,
+		estimatedBytes,
+		recommendedFreeBytes: Math.ceil(
+			estimatedBytes * OFFLINE_EXPORT_STORAGE_MARGIN
+		)
+	};
+}
