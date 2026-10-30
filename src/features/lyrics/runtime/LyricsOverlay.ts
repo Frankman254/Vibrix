@@ -21,6 +21,7 @@ import {
 	resolveLyricsRotationStep,
 	rotationStepToPhase
 } from '@/features/lyrics/domain/lyricsColorModes';
+import { resolveAudioLyricsEntry } from '@/features/lyrics/domain/trackAssociation';
 import type {
 	LyricsPalettes,
 	ResolvedLyricsColorSlot
@@ -814,7 +815,7 @@ export function drawLyricsOverlay(
 	palettes?: LyricsPalettes
 ) {
 	if (!state.audioLyricsEnabled || !activeTrackAssetId) return;
-	const entry = state.audioLyricsByTrackAssetId[activeTrackAssetId];
+	const entry = resolveAudioLyricsEntry(state, activeTrackAssetId);
 	const adjustedTime = Math.max(
 		0,
 		currentTimeSec + state.audioLyricsTimeOffsetMs / 1000

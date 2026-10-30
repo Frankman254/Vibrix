@@ -17,6 +17,8 @@ function mergeTrackEntry(
 	return {
 		mode: patch.mode ?? current?.mode ?? 'auto',
 		rawText: patch.rawText ?? current?.rawText ?? '',
+		targetTrack:
+			'targetTrack' in patch ? patch.targetTrack : current?.targetTrack,
 		lyrixaBundle:
 			'lyrixaBundle' in patch
 				? (patch.lyrixaBundle ?? null)

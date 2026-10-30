@@ -1,6 +1,6 @@
 # Current System Status
 
-**As of:** `main` · App `0.7.0-alpha` · Store persist **v154**
+**As of:** `main` · App `0.7.0-alpha` · Store persist **v155**
 
 This document describes the product **as implemented in code**, not aspirational roadmaps.
 
@@ -34,7 +34,7 @@ del acordeón de ajustes finos.
 | ------------------------------ | ------ | ----------------------------------------------------------- |
 | Vite + React 19 SPA            | Stable | HashRouter (`#/edit`, `#/present`, `#/record`, `#/preview`) |
 | Shared `WallpaperAppProviders` | Stable | Single `AudioDataProvider` above route shells               |
-| Zustand + IndexedDB persist    | Stable | `STORE_PERSIST_VERSION = 154`                               |
+| Zustand + IndexedDB persist    | Stable | `STORE_PERSIST_VERSION = 155`                               |
 | IndexedDB assets               | Stable | Images, audio blobs; las 5 bases abren por `openStoreDb`    |
 | Vitest + GitHub Actions CI     | Stable | format, lint, types, tests, docs:check, build               |
 
@@ -289,7 +289,7 @@ See `docs/features/SPECTRUM_ENGINE.md` (ownership model) and
 | Constant                  | Value         | Location                                    |
 | ------------------------- | ------------- | ------------------------------------------- |
 | `APP_VERSION`             | `0.7.0-alpha` | `src/lib/version.ts`, `package.json`        |
-| `STORE_PERSIST_VERSION`   | **154**       | Migrations in `wallpaperStoreMigrations.ts` |
+| `STORE_PERSIST_VERSION`   | **155**       | Migrations in `wallpaperStoreMigrations.ts` |
 | `PROJECT_SCHEMA_VERSION`  | 1             |                                             |
 | `SETTINGS_SCHEMA_VERSION` | 1             |                                             |
 
@@ -439,3 +439,7 @@ el cálculo; el export usa el mismo overlay. Las posiciones importadas de estos
 carriles se sustituyen por centros automáticos; los offsets manuales se conservan.
 Las capas FX/anotaciones conservan sus posiciones importadas. Store v154 centra
 el desplazamiento global de fábrica (0.58 → 0), conservando valores personalizados.
+
+Store v155 conserva junto a cada letra una identidad ligera de su canción. Los
+proyectos pueden omitir el audio pesado sin perder el binding, estilos u offsets,
+y reconectan el mismo archivo al volver a añadirlo.

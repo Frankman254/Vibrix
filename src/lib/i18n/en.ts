@@ -1567,6 +1567,10 @@ export const en = {
 	label_lyrics_track_target: 'Lyrics Track Target',
 	label_lyrics_selected_track: 'Editing Track',
 	label_lyrics_no_track_selected: 'No track selected',
+	hint_lyrics_saved_without_audio:
+		'Lyrics and styling are saved; the audio file was intentionally not included. Add the same song again to reconnect it automatically.',
+	warning_lyrics_duration_mismatch:
+		'Timing warning: the selected song is {track}, but the lyrics reference is {lyrics}. Check that this bundle belongs to this song before exporting.',
 	section_lyrics_bundle: 'Lyrixa Bundle',
 	label_import_lyrixa_bundle: 'Import from Lyrixa',
 	label_clear_lyrixa_bundle: 'Clear Bundle',

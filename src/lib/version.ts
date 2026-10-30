@@ -213,4 +213,6 @@ export const LEGACY_PROJECT_FILE_EXTENSIONS = ['lwag'] as const;
 // estado enabled. Los proyectos anteriores arrancan sin sesión y bajo control
 // temporal manual.
 // v154: center lyrics by default; active bundle lanes share equal vertical blocks.
-export const STORE_PERSIST_VERSION = 154;
+// v155: each lyrics entry carries a lightweight song identity so lyrics can
+// survive project packages that deliberately omit the heavy audio bytes.
+export const STORE_PERSIST_VERSION = 155;

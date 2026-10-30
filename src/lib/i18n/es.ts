@@ -1581,6 +1581,10 @@ export const es: Record<TranslationKey, string> = {
 	label_lyrics_track_target: 'Pista Objetivo de Lyrics',
 	label_lyrics_selected_track: 'Pista en Edicion',
 	label_lyrics_no_track_selected: 'Ninguna pista seleccionada',
+	hint_lyrics_saved_without_audio:
+		'La letra y sus estilos estan guardados; el archivo de audio no se incluyo a proposito. Agrega la misma cancion para reconectarla automaticamente.',
+	warning_lyrics_duration_mismatch:
+		'Aviso de tiempo: la cancion seleccionada dura {track}, pero la referencia de la letra dura {lyrics}. Verifica que este bundle pertenezca a esta cancion antes de exportar.',
 	section_lyrics_bundle: 'Bundle de Lyrixa',
 	label_import_lyrixa_bundle: 'Importar desde Lyrixa',
 	label_clear_lyrixa_bundle: 'Quitar Bundle',

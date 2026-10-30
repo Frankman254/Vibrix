@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
 	PROJECT_EXPORT_SECTION_KEYS,
 	PROJECT_EXPORT_SECTION_ORDER,
+	DEFAULT_PROJECT_EXPORT_SELECTION,
+	filterWallpaperStateForProjectExport,
 	isProjectExportRuntimeKey
 } from '@/features/export/projectExportSelection';
 import { isWorkspaceOnlyKey } from '@/lib/workspaceKeys';
@@ -73,5 +75,47 @@ describe('every live state key is claimed by the project export', () => {
 			'introProfileSlots',
 			'setlistIntroFallback'
 		]);
+	});
+});
+
+describe('lyrics-only project export', () => {
+	it('keeps song identity with lyrics while removing the audio payload', () => {
+		const source = {
+			...DEFAULT_STATE,
+			audioTracks: [
+				{
+					id: 'track-1',
+					assetId: 'asset-1',
+					name: 'Artist - Song.mp3',
+					mimeType: 'audio/mpeg',
+					volume: 1,
+					loop: false,
+					enabled: true,
+					fileKey: 'song::100::200',
+					durationMs: 180_000
+				}
+			],
+			audioLyricsByTrackAssetId: {
+				'asset-1': { mode: 'lrc' as const, rawText: '[00:01]Hi' }
+			}
+		};
+		const selection = {
+			...DEFAULT_PROJECT_EXPORT_SELECTION,
+			audio: false
+		};
+
+		const exported = filterWallpaperStateForProjectExport(
+			source,
+			selection
+		);
+
+		expect(exported.audioTracks).toEqual([]);
+		expect(
+			exported.audioLyricsByTrackAssetId['asset-1']?.targetTrack
+		).toEqual({
+			name: 'Artist - Song.mp3',
+			fileKey: 'song::100::200',
+			durationMs: 180_000
+		});
 	});
 });

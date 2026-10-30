@@ -662,6 +662,29 @@ function normalizeAudioLyricsTrackEntries(
 			continue;
 		}
 		const entry = rawEntry as Record<string, unknown>;
+		const rawTargetTrack =
+			entry.targetTrack &&
+			typeof entry.targetTrack === 'object' &&
+			!Array.isArray(entry.targetTrack)
+				? (entry.targetTrack as Record<string, unknown>)
+				: null;
+		const targetTrack =
+			rawTargetTrack && typeof rawTargetTrack.name === 'string'
+				? {
+						name: rawTargetTrack.name,
+						...(typeof rawTargetTrack.fileKey === 'string'
+							? { fileKey: rawTargetTrack.fileKey }
+							: {}),
+						...(finiteNumber(rawTargetTrack.durationMs) !==
+						undefined
+							? {
+									durationMs: finiteNumber(
+										rawTargetTrack.durationMs
+									)
+								}
+							: {})
+					}
+				: undefined;
 		const lyrixaLayerOverrides = normalizeLyrixaLayerOverrides(
 			entry.lyrixaLayerOverrides
 		);
@@ -673,6 +696,7 @@ function normalizeAudioLyricsTrackEntries(
 					? entry.mode
 					: 'auto',
 			rawText: typeof entry.rawText === 'string' ? entry.rawText : '',
+			...(targetTrack ? { targetTrack } : {}),
 			lyrixaBundle:
 				entry.lyrixaBundle &&
 				typeof entry.lyrixaBundle === 'object' &&

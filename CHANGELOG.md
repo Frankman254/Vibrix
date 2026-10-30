@@ -15,12 +15,18 @@ the version scheme in `src/lib/version.ts`.
 
 ## [Unreleased]
 
-`STORE_PERSIST_VERSION` is at **154**; `PROJECT_SCHEMA_VERSION` and
+`STORE_PERSIST_VERSION` is at **155**; `PROJECT_SCHEMA_VERSION` and
 `SETTINGS_SCHEMA_VERSION` remain at **1**. `APP_VERSION` / `package.json`:
 **0.7.0-alpha**.
 
 - **Lyrics:** reparto dinámico de carriles activos en bloques iguales, con
   offsets manuales conservados. Store v154 centra la posición global de fábrica.
+
+- **Lyrics sin audio pesado:** cada entrada conserva nombre, huella y duración
+  de su canción. Un `.vibrix` puede excluir los bytes de audio sin perder la
+  asignación, estilos u offsets; al volver a añadir el mismo archivo, la letra
+  se reconecta automáticamente. La UI avisa si la duración de pista y bundle
+  difieren. Store v155 normaliza esta identidad ligera.
 
 - **Compose ya tiene una sesión persistida para el score de Lyrixa.** Importar
   un score guarda una copia independiente del archivo y congela la base visual

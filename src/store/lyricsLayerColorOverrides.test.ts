@@ -25,6 +25,33 @@ function migrateOverrides(override: Record<string, unknown>) {
 }
 
 describe('lyrics layer color overrides persistence', () => {
+	it('keeps the lightweight song identity across a rehydrate', () => {
+		const migrated = migrateWallpaperStore(
+			{
+				audioLyricsByTrackAssetId: {
+					'asset-1': {
+						mode: 'lrc',
+						rawText: '[00:01]Hi',
+						targetTrack: {
+							name: 'Artist - Song.mp3',
+							fileKey: 'song::100::200',
+							durationMs: 180_000
+						}
+					}
+				}
+			},
+			STORE_PERSIST_VERSION
+		);
+
+		expect(
+			migrated.audioLyricsByTrackAssetId['asset-1']?.targetTrack
+		).toEqual({
+			name: 'Artist - Song.mp3',
+			fileKey: 'song::100::200',
+			durationMs: 180_000
+		});
+	});
+
 	it('keeps the color modes and secondary colors across a rehydrate', () => {
 		expect(
 			migrateOverrides({

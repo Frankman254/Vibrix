@@ -51,9 +51,21 @@ export interface LyrixaLayerOverride {
 
 export type LyrixaLayerOverrideMap = Record<string, LyrixaLayerOverride>;
 
+/**
+ * Lightweight identity kept with the lyrics, independently from the audio
+ * bytes. A project can therefore omit a multi-gigabyte song and still retain
+ * which song owns the bundle; adding that file again can reconnect it.
+ */
+export interface LyricsTrackReference {
+	name: string;
+	fileKey?: string;
+	durationMs?: number;
+}
+
 export interface AudioLyricsTrackEntry {
 	mode: AudioLyricsSourceMode;
 	rawText: string;
+	targetTrack?: LyricsTrackReference;
 	lyrixaBundle?: LyrixaLyricsBundleEnvelope | null;
 	lyrixaRenderMode?: LyrixaRenderMode;
 	lyrixaLayerOverrides?: LyrixaLayerOverrideMap;

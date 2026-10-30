@@ -4,6 +4,7 @@ import {
 	MAX_SPECTRUM_SLOT_COUNT
 } from '@/store/featureProfiles';
 import { DEFAULT_STATE } from '@/store/defaultState';
+import { createLyricsTrackReference } from '@/features/lyrics/domain/trackAssociation';
 import type {
 	ProfileSlot,
 	SpectrumProfileSettings,
@@ -555,6 +556,22 @@ export function filterWallpaperStateForProjectExport(
 			...scene,
 			trackTitleSlotId: null
 		}));
+	}
+
+	// Audio is the expensive payload; the song identity is not. When Lyrics is
+	// exported without Audio, enrich every bound entry before the playlist is
+	// stripped so the imported project can still display the assignment and
+	// reconnect the same file later (even if IndexedDB gives it a new asset id).
+	if (selection.lyrics && !selection.audio) {
+		for (const track of sourceState.audioTracks) {
+			const entry = nextState.audioLyricsByTrackAssetId[track.assetId];
+			if (!entry) continue;
+			nextState.audioLyricsByTrackAssetId[track.assetId] = {
+				...entry,
+				targetTrack:
+					entry.targetTrack ?? createLyricsTrackReference(track)
+			};
+		}
 	}
 	// Camera FX and Lights have no export section of their own, so — exactly
 	// like `cameraFxSlotId` / `lightsSlotId` on a scene — the per-image

@@ -38,6 +38,11 @@ import {
 	translationLanguages
 } from '@/features/lyrics/domain/lyrixaBundle';
 import { loadLyricsBundleFromFile } from '@/features/lyrics/domain/lyricsBundleLoader';
+import {
+	compareLyricsTrackDuration,
+	createLyricsTrackReference,
+	resolveAudioLyricsBinding
+} from '@/features/lyrics/domain/trackAssociation';
 import ToggleControl from '@/editor/ToggleControl';
 import SliderControl from '@/editor/SliderControl';
 import LabeledSection from '@/editor/LabeledSection';
@@ -88,9 +93,18 @@ const LYRICS_ACTIVE_ANIMATIONS: LyricsActiveAnimation[] = [
 type LyricsTrackTarget = {
 	assetId: string;
 	name: string;
-	source: 'playlist' | 'file';
+	source: 'playlist' | 'file' | 'saved';
 	trackId: string | null;
+	fileKey?: string;
+	durationMs?: number;
 };
+
+function formatDurationMs(value: number): string {
+	const totalSeconds = Math.round(value / 1_000);
+	const minutes = Math.floor(totalSeconds / 60);
+	const seconds = totalSeconds % 60;
+	return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
 
 /**
  * Switching a global color slot to Gradient seeds its second stop when the user
@@ -234,7 +248,8 @@ export default function LyricsTabBody(_props: { onReset?: () => void }) {
 		[backgroundPalette, store.editorTheme]
 	);
 	const fullStore = useWallpaperStore.getState() as WallpaperState;
-	const { captureMode, getCurrentTime, getFileName } = useAudioContext();
+	const { captureMode, getCurrentTime, getDuration, getFileName } =
+		useAudioContext();
 	const lyrixaImportInputRef = useRef<HTMLInputElement>(null);
 	const playlistTracks = store.audioTracks;
 	const activeTrack = resolveActiveAudioTrack(fullStore);
@@ -251,7 +266,9 @@ export default function LyricsTabBody(_props: { onReset?: () => void }) {
 				assetId: track.assetId,
 				name: track.name,
 				source: 'playlist',
-				trackId: track.id
+				trackId: track.id,
+				fileKey: track.fileKey,
+				durationMs: track.durationMs
 			});
 		}
 		if (fallbackAssetId && !seen.has(fallbackAssetId)) {
@@ -259,14 +276,48 @@ export default function LyricsTabBody(_props: { onReset?: () => void }) {
 				assetId: fallbackAssetId,
 				name: standaloneFileName || t.label_now_playing,
 				source: 'file',
-				trackId: null
+				trackId: null,
+				durationMs: Math.max(0, getDuration() * 1_000) || undefined
+			});
+		}
+		for (const [assetId, entry] of Object.entries(
+			store.audioLyricsByTrackAssetId
+		)) {
+			if (seen.has(assetId)) continue;
+			const alreadyReconnected = playlistTracks.some(track => {
+				const binding = resolveAudioLyricsBinding(
+					{
+						audioTracks: playlistTracks,
+						audioLyricsByTrackAssetId:
+							store.audioLyricsByTrackAssetId
+					},
+					track.assetId
+				);
+				return binding?.assetId === assetId;
+			});
+			if (alreadyReconnected) continue;
+			const targetReference = entry.targetTrack;
+			const sourceReference = entry.lyrixaBundle?.sourceTrack;
+			const savedName =
+				targetReference?.name ?? sourceReference?.fileName;
+			if (!savedName) continue;
+			nextTargets.push({
+				assetId,
+				name: savedName,
+				source: 'saved',
+				trackId: null,
+				fileKey: targetReference?.fileKey ?? sourceReference?.fileKey,
+				durationMs:
+					targetReference?.durationMs ?? sourceReference?.durationMs
 			});
 		}
 		return nextTargets;
 	}, [
 		fallbackAssetId,
+		getDuration,
 		playlistTracks,
 		standaloneFileName,
+		store.audioLyricsByTrackAssetId,
 		t.label_now_playing
 	]);
 	const [selectedAssetId, setSelectedAssetId] = useState<string | null>(
@@ -288,9 +339,15 @@ export default function LyricsTabBody(_props: { onReset?: () => void }) {
 	const selectedTrack =
 		availableTracks.find(track => track.assetId === selectedAssetId) ??
 		null;
-	const selectedEntry = selectedAssetId
-		? store.audioLyricsByTrackAssetId[selectedAssetId]
-		: undefined;
+	const selectedBinding = resolveAudioLyricsBinding(
+		{
+			audioTracks: playlistTracks,
+			audioLyricsByTrackAssetId: store.audioLyricsByTrackAssetId
+		},
+		selectedAssetId
+	);
+	const selectedEntry = selectedBinding?.entry;
+	const selectedEntryAssetId = selectedBinding?.assetId ?? selectedAssetId;
 	const selectedLyrixaBundle = selectedEntry?.lyrixaBundle ?? null;
 	const hasImportedLyrixaBundle = selectedLyrixaBundle !== null;
 	const bundleHasTranslation = hasTranslationLayer(selectedLyrixaBundle);
@@ -300,6 +357,10 @@ export default function LyricsTabBody(_props: { onReset?: () => void }) {
 		selectedEntry?.lyrixaRenderMode ?? 'editor';
 	const [lyrixaImportError, setLyrixaImportError] = useState<string | null>(
 		null
+	);
+	const durationMismatch = compareLyricsTrackDuration(
+		selectedTrack?.durationMs,
+		selectedLyrixaBundle
 	);
 
 	useEffect(() => {
@@ -332,6 +393,9 @@ export default function LyricsTabBody(_props: { onReset?: () => void }) {
 			store.upsertAudioLyricsTrackEntry(selectedAssetId, {
 				mode: 'lrc',
 				rawText: '',
+				targetTrack: selectedTrack
+					? createLyricsTrackReference(selectedTrack)
+					: undefined,
 				lyrixaBundle: bundle,
 				lyrixaRenderMode: 'editor',
 				lyrixaLayerOverrides: defaultTranslationLayerOffsets(bundle)
@@ -352,8 +416,8 @@ export default function LyricsTabBody(_props: { onReset?: () => void }) {
 	}
 
 	function handleClearLyrixaBundle() {
-		if (!selectedAssetId || !hasImportedLyrixaBundle) return;
-		store.updateAudioLyricsTrackEntry(selectedAssetId, {
+		if (!selectedEntryAssetId || !hasImportedLyrixaBundle) return;
+		store.updateAudioLyricsTrackEntry(selectedEntryAssetId, {
 			lyrixaBundle: null,
 			lyrixaRenderMode: 'editor',
 			lyrixaLayerOverrides: {}
@@ -362,8 +426,8 @@ export default function LyricsTabBody(_props: { onReset?: () => void }) {
 	}
 
 	function setLyrixaRenderMode(mode: 'bundle' | 'editor') {
-		if (!selectedAssetId || !hasImportedLyrixaBundle) return;
-		store.updateAudioLyricsTrackEntry(selectedAssetId, {
+		if (!selectedEntryAssetId || !hasImportedLyrixaBundle) return;
+		store.updateAudioLyricsTrackEntry(selectedEntryAssetId, {
 			lyrixaRenderMode: mode
 		});
 	}
@@ -371,8 +435,8 @@ export default function LyricsTabBody(_props: { onReset?: () => void }) {
 	const selectedLayerOverrides = selectedEntry?.lyrixaLayerOverrides ?? {};
 
 	function handleLayerOverridesChange(next: LyrixaLayerOverrideMap) {
-		if (!selectedAssetId) return;
-		store.updateAudioLyricsTrackEntry(selectedAssetId, {
+		if (!selectedEntryAssetId) return;
+		store.updateAudioLyricsTrackEntry(selectedEntryAssetId, {
 			lyrixaLayerOverrides: next
 		});
 	}
@@ -571,7 +635,34 @@ export default function LyricsTabBody(_props: { onReset?: () => void }) {
 							? formatTrackTitle(selectedTrack.name)
 							: t.label_lyrics_no_track_selected}
 					</div>
+					{selectedTrack?.source === 'saved' ? (
+						<div>{t.hint_lyrics_saved_without_audio}</div>
+					) : null}
 				</div>
+				{durationMismatch ? (
+					<div
+						className="mt-2 rounded border px-2.5 py-2 text-[11px] leading-snug"
+						style={{
+							borderColor:
+								'var(--editor-warning-border, #a16207)',
+							color: 'var(--editor-warning-text, #fde68a)'
+						}}
+					>
+						{t.warning_lyrics_duration_mismatch
+							.replace(
+								'{track}',
+								formatDurationMs(
+									durationMismatch.trackDurationMs
+								)
+							)
+							.replace(
+								'{lyrics}',
+								formatDurationMs(
+									durationMismatch.lyricsDurationMs
+								)
+							)}
+					</div>
+				) : null}
 			</div>
 
 			<LabeledSection label={t.section_lyrics_bundle} defaultOpen={true}>
