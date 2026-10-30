@@ -123,20 +123,29 @@ export default function MotionLayerStack({
 							}}
 						>
 							<div className="flex min-w-0 items-center gap-1">
-								<button
-									type="button"
-									onClick={() =>
+								<input
+									type="text"
+									value={layer.name}
+									placeholder={fallbackName}
+									aria-label={fallbackName}
+									onFocus={() =>
 										store.selectMotionLayer(layer.id)
 									}
-									className="min-w-0 flex-1 truncate text-left text-[11px]"
+									onChange={event =>
+										store.renameMotionLayer(
+											layer.id,
+											event.target.value
+										)
+									}
+									className="min-w-0 flex-1 bg-transparent px-1 py-0.5 text-[11px] outline-none"
 									style={{
+										borderRadius: 'var(--editor-radius-sm)',
+										border: `1px solid ${UI_COLORS.border}`,
 										color: isActive
 											? UI_COLORS.accent
 											: UI_COLORS.fg
 									}}
-								>
-									{name}
-								</button>
+								/>
 								<IconButton
 									type="button"
 									aria-label={
@@ -203,25 +212,6 @@ export default function MotionLayerStack({
 								>
 									<Trash2 size={ICON_SIZE.xs} />
 								</IconButton>
-							</div>
-							<div className="flex min-w-0 items-center gap-1">
-								<input
-									type="text"
-									value={layer.name}
-									placeholder={fallbackName}
-									onChange={event =>
-										store.renameMotionLayer(
-											layer.id,
-											event.target.value
-										)
-									}
-									className="min-w-0 flex-1 bg-transparent px-1 py-0.5 text-[10px] outline-none"
-									style={{
-										borderRadius: 'var(--editor-radius-sm)',
-										border: `1px solid ${UI_COLORS.border}`,
-										color: UI_COLORS.fg
-									}}
-								/>
 							</div>
 							{isActive && activeLayerTargetsEditor ? (
 								<div

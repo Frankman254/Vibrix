@@ -677,28 +677,33 @@ export default function MotionTab({
 			}
 			savedProfiles={motionSavedProfiles}
 			footer={
-				isSimple ? undefined : (
+				isSimple ||
+				(motionView !== 'particles' &&
+					motionView !== 'rain') ? undefined : (
 					<EditorTabFooter title={t.label_reset}>
-						<Button
-							type="button"
-							onClick={onResetParticles}
-							size="sm"
-							density="compact"
-							variant="secondary"
-							icon={<RotateCcw size={ICON_SIZE.xs} />}
-						>
-							{t.tab_particles}
-						</Button>
-						<Button
-							type="button"
-							onClick={onResetRain}
-							size="sm"
-							density="compact"
-							variant="secondary"
-							icon={<RotateCcw size={ICON_SIZE.xs} />}
-						>
-							{t.tab_rain}
-						</Button>
+						{motionView === 'particles' ? (
+							<Button
+								type="button"
+								onClick={onResetParticles}
+								size="sm"
+								density="compact"
+								variant="secondary"
+								icon={<RotateCcw size={ICON_SIZE.xs} />}
+							>
+								{t.tab_particles}
+							</Button>
+						) : (
+							<Button
+								type="button"
+								onClick={onResetRain}
+								size="sm"
+								density="compact"
+								variant="secondary"
+								icon={<RotateCcw size={ICON_SIZE.xs} />}
+							>
+								{t.tab_rain}
+							</Button>
+						)}
 					</EditorTabFooter>
 				)
 			}

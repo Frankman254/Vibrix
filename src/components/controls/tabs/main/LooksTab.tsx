@@ -227,6 +227,66 @@ export default function LooksTab({ onReset }: { onReset: () => void }) {
 		store.setFilterTargets([...availableTargets]);
 	}
 
+	const filterTargetsEditor = (
+		<div className="flex flex-col gap-1.5">
+			<div className="flex items-center justify-between gap-2">
+				<span className="text-xs text-[var(--editor-text-muted)]">
+					{t.label_filter_target}
+				</span>
+				<Button
+					type="button"
+					onClick={toggleAllTargets}
+					size="sm"
+					density="compact"
+					variant={allTargetsEnabled ? 'primary' : 'secondary'}
+				>
+					{t.label_all_layers}
+				</Button>
+			</div>
+			<Caption>{t.hint_filter_target}</Caption>
+			<div className="flex flex-wrap gap-1">
+				{FILTER_TARGETS.map(target => {
+					const disabled =
+						target === 'selected-overlay' && !selectedOverlay;
+					const owner = disabled ? null : targetOwner(target);
+					const active =
+						store.filterTargets.includes(target) && !owner;
+					return (
+						<Button
+							key={target}
+							type="button"
+							// Taken targets can be claimed directly by the active layer.
+							onClick={() =>
+								owner
+									? store.claimFilterTarget(target)
+									: toggleTarget(target)
+							}
+							disabled={disabled}
+							title={
+								owner
+									? t.looks_target_claim.replace(
+											'{name}',
+											owner.name
+										)
+									: undefined
+							}
+							variant={active ? 'primary' : 'secondary'}
+							size="sm"
+							density="compact"
+							active={active}
+							style={owner ? { opacity: 0.55 } : undefined}
+						>
+							{owner
+								? `${filterTargetLabels[target]} · ${t.looks_target_owner.replace('{name}', owner.name)}`
+								: filterTargetLabels[target]}
+						</Button>
+					);
+				})}
+			</div>
+			<Caption>{t.looks_targets_owner_hint}</Caption>
+		</div>
+	);
+
 	function saveCurrentAsSlot() {
 		const emptyIndex = store.looksProfileSlots.findIndex(
 			slot => slot.values === null
@@ -501,85 +561,10 @@ export default function LooksTab({ onReset }: { onReset: () => void }) {
 			</SectionCard>
 
 			<AdvancedOnly>
-				<EffectLayerStack targetLabels={filterTargetLabels} />
-			</AdvancedOnly>
-
-			<AdvancedOnly>
-				<SectionCard
-					title={t.label_filter_target}
-					subtitle={t.hint_filter_target}
-					density="compact"
-					action={
-						<Button
-							type="button"
-							onClick={toggleAllTargets}
-							size="sm"
-							density="compact"
-							variant={
-								allTargetsEnabled ? 'primary' : 'secondary'
-							}
-						>
-							{t.label_all_layers}
-						</Button>
-					}
-				>
-					<div className="flex flex-col gap-1">
-						<div className="flex flex-wrap gap-1">
-							{FILTER_TARGETS.map(target => {
-								const disabled =
-									target === 'selected-overlay' &&
-									!selectedOverlay;
-								const owner = disabled
-									? null
-									: targetOwner(target);
-								const active =
-									store.filterTargets.includes(target) &&
-									!owner;
-								return (
-									<Button
-										key={target}
-										type="button"
-										// Never a hard block: pressing a taken
-										// chip steals the target instead of
-										// doing nothing.
-										onClick={() =>
-											owner
-												? store.claimFilterTarget(
-														target
-													)
-												: toggleTarget(target)
-										}
-										disabled={disabled}
-										title={
-											owner
-												? t.looks_target_claim.replace(
-														'{name}',
-														owner.name
-													)
-												: undefined
-										}
-										variant={
-											active ? 'primary' : 'secondary'
-										}
-										size="sm"
-										density="compact"
-										active={active}
-										style={
-											owner
-												? { opacity: 0.55 }
-												: undefined
-										}
-									>
-										{owner
-											? `${filterTargetLabels[target]} · ${t.looks_target_owner.replace('{name}', owner.name)}`
-											: filterTargetLabels[target]}
-									</Button>
-								);
-							})}
-						</div>
-						<Caption>{t.looks_targets_owner_hint}</Caption>
-					</div>
-				</SectionCard>
+				<EffectLayerStack
+					targetLabels={filterTargetLabels}
+					activeLayerTargetsEditor={filterTargetsEditor}
+				/>
 			</AdvancedOnly>
 
 			<SectionCard

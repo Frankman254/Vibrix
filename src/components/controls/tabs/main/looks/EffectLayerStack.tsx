@@ -6,6 +6,7 @@
  * what the rest of the tab edits — the sliders below always belong to the
  * highlighted layer.
  */
+import type { ReactNode } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import {
 	ArrowDown,
@@ -31,9 +32,11 @@ import {
 import { useDialog } from '@/editor/DialogProvider';
 
 export default function EffectLayerStack({
-	targetLabels
+	targetLabels,
+	activeLayerTargetsEditor
 }: {
 	targetLabels: Record<FilterTarget, string>;
+	activeLayerTargetsEditor?: ReactNode;
 }) {
 	const t = useT();
 	const { confirm } = useDialog();
@@ -119,20 +122,29 @@ export default function EffectLayerStack({
 							}}
 						>
 							<div className="flex min-w-0 items-center gap-1">
-								<button
-									type="button"
-									onClick={() =>
+								<input
+									type="text"
+									value={layer.name}
+									placeholder={fallbackName}
+									aria-label={fallbackName}
+									onFocus={() =>
 										store.selectEffectLayer(layer.id)
 									}
-									className="min-w-0 flex-1 truncate text-left text-[11px]"
+									onChange={event =>
+										store.renameEffectLayer(
+											layer.id,
+											event.target.value
+										)
+									}
+									className="min-w-0 flex-1 bg-transparent px-1 py-0.5 text-[11px] outline-none"
 									style={{
+										borderRadius: 'var(--editor-radius-sm)',
+										border: `1px solid ${UI_COLORS.border}`,
 										color: isActive
 											? UI_COLORS.accent
 											: UI_COLORS.fg
 									}}
-								>
-									{name}
-								</button>
+								/>
 								<IconButton
 									type="button"
 									aria-label={
@@ -200,32 +212,25 @@ export default function EffectLayerStack({
 									<Trash2 size={ICON_SIZE.xs} />
 								</IconButton>
 							</div>
-							<div className="flex min-w-0 items-center gap-1">
-								<input
-									type="text"
-									value={layer.name}
-									placeholder={fallbackName}
-									onChange={event =>
-										store.renameEffectLayer(
-											layer.id,
-											event.target.value
-										)
-									}
-									className="min-w-0 flex-1 bg-transparent px-1 py-0.5 text-[10px] outline-none"
-									style={{
-										borderRadius: 'var(--editor-radius-sm)',
-										border: `1px solid ${UI_COLORS.border}`,
-										color: UI_COLORS.fg
-									}}
-								/>
-							</div>
-							<Caption>
-								{targets.length === 0
-									? t.looks_layers_no_targets
-									: targets
-											.map(target => targetLabels[target])
-											.join(' · ')}
-							</Caption>
+							{isActive && activeLayerTargetsEditor ? (
+								<div
+									className="mt-1 border-t pt-1.5"
+									style={{ borderColor: UI_COLORS.hairline }}
+								>
+									{activeLayerTargetsEditor}
+								</div>
+							) : (
+								<Caption>
+									{targets.length === 0
+										? t.looks_layers_no_targets
+										: targets
+												.map(
+													target =>
+														targetLabels[target]
+												)
+												.join(' · ')}
+								</Caption>
+							)}
 						</div>
 					);
 				})}
