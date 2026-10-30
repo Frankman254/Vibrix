@@ -146,9 +146,11 @@ LWAG_AI_PROVIDER=ollama OLLAMA_MODEL=qwen3:8b node --env-file=.env backend/serve
 npm run dev
 ```
 
-Para sacar imágenes reales de un `.lwag` sin cargar el archivo entero: la
-cabecera son las primeras ~109 600 líneas (settings) y después va un asset JSON
-por línea con `{id, kind, path, mimeType, base64}`.
+Los `.lwag`/`.vibrix` antiguos conservan la cabecera JSON seguida de un asset
+Base64 por línea. Los `.vibrix` nuevos usan el contenedor binario v2: magic
+`VIBRIXPKG2`, longitud de cabecera, manifiesto JSON y después los bytes crudos de
+cada asset en el orden declarado. Así se inspeccionan o extraen sin convertir
+gigabytes a Base64.
 
 ---
 

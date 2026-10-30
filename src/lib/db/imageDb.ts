@@ -7,13 +7,18 @@ const STORE = 'images';
 
 interface ImageRecord {
 	id: string;
-	data: ArrayBuffer;
+	data: ArrayBuffer | Blob;
 	type: string;
 }
 
 export interface StoredImageAsset {
 	id: string;
 	data: ArrayBuffer;
+	type: string;
+}
+
+export interface StoredImageAssetInfo {
+	bytes: number;
 	type: string;
 }
 
@@ -28,13 +33,12 @@ function openDb(): Promise<IDBDatabase> {
 
 export async function saveImage(file: File): Promise<string> {
 	const id = `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-	const data = await file.arrayBuffer();
-	return saveImageAsset(id, data, file.type);
+	return saveImageAsset(id, file, file.type);
 }
 
 export async function saveImageAsset(
 	id: string,
-	data: ArrayBuffer,
+	data: ArrayBuffer | Blob,
 	type: string
 ): Promise<string> {
 	const db = await openDb();
@@ -61,7 +65,7 @@ async function getFromIDB(id: string): Promise<StoredImageAsset | null> {
 	return new Promise(resolve => {
 		const tx = db.transaction(STORE, 'readonly');
 		const req = tx.objectStore(STORE).get(id);
-		req.onsuccess = () => {
+		req.onsuccess = async () => {
 			db.close();
 			if (!req.result) {
 				resolve(null);
@@ -70,7 +74,10 @@ async function getFromIDB(id: string): Promise<StoredImageAsset | null> {
 			const rec = req.result as ImageRecord;
 			resolve({
 				id: rec.id,
-				data: rec.data.slice(0),
+				data:
+					rec.data instanceof Blob
+						? await rec.data.arrayBuffer()
+						: rec.data.slice(0),
 				type: rec.type
 			});
 		};
@@ -104,10 +111,9 @@ export async function loadImageAsset(
 
 /**
  * Byte size of a stored asset without materializing a copy. Used by the
- * project exporter to reject oversized assets before loading/encoding them
- * (which would OOM-crash the tab). Virtual files report `Blob.size` for free;
- * IndexedDB records return `byteLength` of the deserialized buffer without the
- * defensive `.slice()` copy that `loadImageAsset` makes.
+ * project exporter and storage diagnostics to inspect size without decoding
+ * media. Virtual files and current IndexedDB records report `Blob.size`;
+ * legacy ArrayBuffer records remain readable via `byteLength`.
  */
 export async function getImageAssetByteLength(
 	id: string
@@ -128,7 +134,52 @@ export async function getImageAssetByteLength(
 		req.onsuccess = () => {
 			db.close();
 			const rec = req.result as ImageRecord | undefined;
-			resolve(rec?.data ? rec.data.byteLength : null);
+			resolve(
+				rec?.data
+					? rec.data instanceof Blob
+						? rec.data.size
+						: rec.data.byteLength
+					: null
+			);
+		};
+		req.onerror = () => {
+			db.close();
+			resolve(null);
+		};
+	});
+}
+
+/** Metadata-only read used to lay out a binary project package before any
+ * asset bytes are streamed to disk. */
+export async function getImageAssetInfo(
+	id: string
+): Promise<StoredImageAssetInfo | null> {
+	if (id.startsWith('virtual://')) {
+		const parts = id.substring('virtual://'.length).split('/');
+		const folderId = parts[0] as 'audio' | 'image';
+		const fileName = parts.slice(1).join('/');
+		const file = await getVirtualFileBlob(folderId, fileName);
+		if (file) return { bytes: file.size, type: file.type };
+	}
+
+	const db = await openDb();
+	return new Promise(resolve => {
+		const tx = db.transaction(STORE, 'readonly');
+		const req = tx.objectStore(STORE).get(id);
+		req.onsuccess = () => {
+			db.close();
+			const rec = req.result as ImageRecord | undefined;
+			resolve(
+				rec?.data
+					? {
+							bytes:
+								rec.data instanceof Blob
+									? rec.data.size
+									: rec.data.byteLength,
+							type: rec.type
+						}
+					: null
+			);
 		};
 		req.onerror = () => {
 			db.close();
@@ -147,9 +198,26 @@ export async function loadImageBlob(id: string): Promise<Blob | null> {
 		// Fallback to indexedDB if virtual file not available
 	}
 
-	const asset = await getFromIDB(id);
-	if (!asset) return null;
-	return new Blob([asset.data], { type: asset.type });
+	const db = await openDb();
+	return new Promise(resolve => {
+		const tx = db.transaction(STORE, 'readonly');
+		const req = tx.objectStore(STORE).get(id);
+		req.onsuccess = () => {
+			db.close();
+			const rec = req.result as ImageRecord | undefined;
+			resolve(
+				rec?.data
+					? rec.data instanceof Blob
+						? rec.data
+						: new Blob([rec.data], { type: rec.type })
+					: null
+			);
+		};
+		req.onerror = () => {
+			db.close();
+			resolve(null);
+		};
+	});
 }
 
 export async function loadImage(id: string): Promise<string | null> {

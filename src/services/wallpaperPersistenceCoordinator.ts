@@ -6,10 +6,9 @@ import {
 } from '@/services/projectSettings';
 import {
 	clearAllImages,
-	getImageAssetByteLength,
-	loadImageAsset,
-	saveImageAsset,
-	type StoredImageAsset
+	getImageAssetInfo,
+	loadImageBlob,
+	saveImageAsset
 } from '@/lib/db/imageDb';
 import {
 	DEFAULT_PROJECT_EXPORT_SELECTION,
@@ -37,14 +36,36 @@ type ProjectAssetKind =
 	| 'cover'
 	| 'audio';
 
-type ProjectAssetRecord = {
+export type BinaryProjectAssetRecord = {
 	id: string;
 	kind: ProjectAssetKind;
 	path: string;
 	mimeType: string;
-	base64: string;
+	byteLength: number;
 	originalName?: string;
 };
+
+export type BinaryProjectHeader = {
+	containerVersion: 2;
+	format: string;
+	version: number;
+	exportedAt: string;
+	exportSelection: ProjectExportSelection;
+	audioIncluded: boolean;
+	settings: ReturnType<typeof buildWallpaperSettingsExport>;
+	assets: BinaryProjectAssetRecord[];
+};
+
+export type ProjectPackageWritable = {
+	write(data: Blob): Promise<void>;
+};
+
+const BINARY_PROJECT_MAGIC = 'VIBRIXPKG2\n';
+const BINARY_PROJECT_MAGIC_BYTES = new TextEncoder().encode(
+	BINARY_PROJECT_MAGIC
+);
+const BINARY_PROJECT_LENGTH_BYTES = 4;
+const MAX_BINARY_PROJECT_HEADER_BYTES = 64 * 1024 * 1024;
 
 export type ProjectPackageProgress = {
 	phase:
@@ -61,11 +82,6 @@ export type ProjectPackageProgress = {
 	total: number;
 	percent: number;
 	message: string;
-};
-
-type CollectedProjectAsset = StoredImageAsset & {
-	kind: ProjectAssetKind;
-	originalName: string | undefined;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -100,19 +116,6 @@ async function hardResetProjectState() {
 	await yieldToUi();
 }
 
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-	const bytes = new Uint8Array(buffer);
-	const chunkSize = 0x8000;
-	let binary = '';
-
-	for (let index = 0; index < bytes.length; index += chunkSize) {
-		const chunk = bytes.subarray(index, index + chunkSize);
-		binary += String.fromCharCode(...chunk);
-	}
-
-	return btoa(binary);
-}
-
 function base64ToArrayBuffer(base64: string): ArrayBuffer {
 	const binary = atob(base64);
 	const bytes = new Uint8Array(binary.length);
@@ -122,23 +125,6 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
 	}
 
 	return bytes.buffer;
-}
-
-// Hard limits for the legacy base64-in-JSON package format.
-// - Per asset: base64 of a single file >~400MB exceeds V8's max string length
-//   (~512MB chars) and cannot be encoded at all. 350MB is a safe ceiling.
-// - Total: large projects exhaust the tab heap while holding the binary +
-//   base64 + JSON copies at once. 4GB is generous (a ~1.5GB project has worked
-//   in practice); past it we first drop audios without lyrics, then refuse.
-// The binary container format would lift both limits entirely.
-const MAX_BASE64_ASSET_BYTES = 350 * 1024 * 1024;
-const MAX_PROJECT_ASSET_TOTAL_BYTES = 4 * 1024 * 1024 * 1024;
-
-function formatBytes(bytes: number): string {
-	if (bytes >= 1024 * 1024 * 1024)
-		return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-	if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(0)} MB`;
-	return `${(bytes / 1024).toFixed(0)} KB`;
 }
 
 function dedupeAssets<T extends { id: string }>(assets: T[]) {
@@ -271,19 +257,7 @@ type RequestedProjectAsset = {
 	id: string;
 	kind: ProjectAssetKind;
 	originalName?: string;
-	/** Audio without lyrics — sacrificial when the package is too large. */
-	droppable: boolean;
 };
-
-type MeasuredProjectAsset = { asset: RequestedProjectAsset; bytes: number };
-
-function audioAssetHasLyrics(state: WallpaperState, assetId: string): boolean {
-	const entry = state.audioLyricsByTrackAssetId?.[assetId];
-	if (!entry) return false;
-	return (
-		(entry.rawText?.trim().length ?? 0) > 0 || Boolean(entry.lyrixaBundle)
-	);
-}
 
 function buildRequestedProjectAssets(
 	state: WallpaperState
@@ -293,33 +267,29 @@ function buildRequestedProjectAssets(
 	for (const image of state.backgroundImages) {
 		requested.push({
 			id: image.assetId,
-			kind: 'background',
-			droppable: false
+			kind: 'background'
 		});
 	}
 	for (const overlay of state.overlays) {
 		requested.push({
 			id: overlay.assetId,
-			kind: 'overlay',
-			droppable: false
+			kind: 'overlay'
 		});
 	}
 	if (state.globalBackgroundId) {
 		requested.push({
 			id: state.globalBackgroundId,
-			kind: 'global-background',
-			droppable: false
+			kind: 'global-background'
 		});
 	}
 	if (state.logoId) {
-		requested.push({ id: state.logoId, kind: 'logo', droppable: false });
+		requested.push({ id: state.logoId, kind: 'logo' });
 	}
 	if (state.audioFileAssetId) {
 		requested.push({
 			id: state.audioFileAssetId,
 			kind: 'audio',
-			originalName: state.audioFileName || undefined,
-			droppable: !audioAssetHasLyrics(state, state.audioFileAssetId)
+			originalName: state.audioFileName || undefined
 		});
 	}
 	for (const track of state.audioTracks ?? []) {
@@ -327,158 +297,146 @@ function buildRequestedProjectAssets(
 			requested.push({
 				id: track.assetId,
 				kind: 'audio',
-				originalName: track.name || undefined,
-				droppable: !audioAssetHasLyrics(state, track.assetId)
+				originalName: track.name || undefined
 			});
 		}
 		if (track.coverAssetId) {
 			requested.push({
 				id: track.coverAssetId,
 				kind: 'cover',
-				originalName: `${track.name || 'track'} cover`,
-				droppable: false
+				originalName: `${track.name || 'track'} cover`
 			});
 		}
 	}
 	return requested;
 }
 
-// Read sizes without copying any buffer, so budgeting never loads multi-GB
-// data into the heap (an OOM during load/encode is uncatchable; this lets us
-// surface a recoverable error or drop assets instead).
-async function measureRequestedAssets(
-	requested: RequestedProjectAsset[]
-): Promise<MeasuredProjectAsset[]> {
-	const measured: MeasuredProjectAsset[] = [];
-	const seen = new Set<string>();
-	for (const asset of requested) {
-		if (seen.has(asset.id)) continue;
-		seen.add(asset.id);
-		const bytes = await getImageAssetByteLength(asset.id);
-		if (bytes == null) continue;
-		measured.push({ asset, bytes });
-		await yieldToUi();
-	}
-	return measured;
-}
-
-function sumMeasuredBytes(measured: MeasuredProjectAsset[]): number {
-	let total = 0;
-	for (const item of measured) total += item.bytes;
-	return total;
-}
-
-function assertAssetsFitPackageLimits(measured: MeasuredProjectAsset[]): void {
-	for (const { asset, bytes } of measured) {
-		if (bytes > MAX_BASE64_ASSET_BYTES) {
-			const label = asset.originalName ?? `${asset.kind} asset`;
-			throw new Error(
-				`asset-too-large: "${label}" is ${formatBytes(bytes)}, over the ${formatBytes(MAX_BASE64_ASSET_BYTES)} per-file limit of the current package format. Split that file or remove it, then export again.`
-			);
-		}
-	}
-}
-
-// Strip audio tracks (and the legacy single audio file) that have no lyrics —
-// the graceful fallback when the full project exceeds the package limits.
-function dropNonLyricAudio(state: WallpaperState): {
-	state: WallpaperState;
-	dropped: number;
-} {
-	let dropped = 0;
-	const keptTracks = (state.audioTracks ?? []).filter(track => {
-		const keep =
-			!track.assetId || audioAssetHasLyrics(state, track.assetId);
-		if (!keep) dropped += 1;
-		return keep;
-	});
-	let audioFileAssetId = state.audioFileAssetId;
-	let audioFileName = state.audioFileName;
-	if (audioFileAssetId && !audioAssetHasLyrics(state, audioFileAssetId)) {
-		audioFileAssetId = null;
-		audioFileName = '';
-		dropped += 1;
-	}
-	if (dropped === 0) return { state, dropped: 0 };
-	return {
-		state: {
-			...state,
-			audioTracks: keptTracks,
-			audioFileAssetId,
-			audioFileName
-		},
-		dropped
-	};
-}
-
-async function collectProjectAssets(
+async function buildBinaryProjectHeader(
 	state: WallpaperState,
+	selection: ProjectExportSelection,
 	onProgress?: (progress: ProjectPackageProgress) => void
-): Promise<ProjectAssetRecord[]> {
-	const requestedAssets = buildRequestedProjectAssets(state);
-
-	const loadedAssets: CollectedProjectAsset[] = [];
-	for (let index = 0; index < requestedAssets.length; index += 1) {
-		const asset = requestedAssets[index];
+): Promise<BinaryProjectHeader> {
+	const requested = dedupeAssets(buildRequestedProjectAssets(state));
+	const assets: BinaryProjectAssetRecord[] = [];
+	for (let index = 0; index < requested.length; index += 1) {
+		const asset = requested[index];
 		emitProjectProgress(onProgress, {
 			phase: 'collecting-assets',
 			current: index + 1,
-			total: requestedAssets.length,
+			total: requested.length,
 			percent:
-				requestedAssets.length > 0
-					? (index + 1) / requestedAssets.length
-					: 1,
-			message: `Collecting assets ${index + 1}/${requestedAssets.length}`
+				requested.length > 0
+					? ((index + 1) / requested.length) * 0.15
+					: 0.15,
+			message: `Indexing assets ${index + 1}/${requested.length}`
 		});
-		const stored = await loadImageAsset(asset.id);
-		if (stored) {
-			loadedAssets.push({
-				...stored,
-				kind: asset.kind,
-				originalName: asset.originalName
-			});
-		}
-		await yieldToUi();
-	}
-
-	const storedAssets = dedupeAssets(loadedAssets);
-	const resolved: ProjectAssetRecord[] = [];
-	for (let index = 0; index < storedAssets.length; index += 1) {
-		const asset = storedAssets[index];
-		emitProjectProgress(onProgress, {
-			phase: 'encoding-assets',
-			current: index + 1,
-			total: storedAssets.length,
-			percent:
-				storedAssets.length > 0 ? (index + 1) / storedAssets.length : 1,
-			message: `Encoding assets ${index + 1}/${storedAssets.length}`
-		});
-		resolved.push({
+		const info = await getImageAssetInfo(asset.id);
+		if (!info) continue;
+		assets.push({
 			id: asset.id,
 			kind: asset.kind,
 			path: buildProjectAssetPath(
 				asset.kind,
-				index,
+				assets.length,
 				asset.id,
-				asset.type,
+				info.type,
 				asset.originalName
 			),
-			mimeType: asset.type,
-			base64: arrayBufferToBase64(asset.data),
+			mimeType: info.type,
+			byteLength: info.bytes,
 			originalName: asset.originalName
 		});
 		await yieldToUi();
 	}
 
-	return resolved;
+	return {
+		containerVersion: 2,
+		format: PROJECT_FORMAT,
+		version: PROJECT_SCHEMA_VERSION,
+		exportedAt: new Date().toISOString(),
+		exportSelection: selection,
+		audioIncluded: assets.some(asset => asset.kind === 'audio'),
+		settings: buildWallpaperSettingsExport(state),
+		assets
+	};
 }
 
-export async function createWallpaperProjectPackageJson(options?: {
-	onProgress?: (progress: ProjectPackageProgress) => void;
-	selection?: ProjectExportSelection;
-}): Promise<string> {
-	const { blob } = await createWallpaperProjectPackageBlob(options);
-	return await blob.text();
+export function createBinaryProjectHeaderBlob(
+	header: BinaryProjectHeader
+): Blob {
+	const encodedHeader = new TextEncoder().encode(JSON.stringify(header));
+	if (encodedHeader.byteLength > MAX_BINARY_PROJECT_HEADER_BYTES) {
+		throw new Error('project-header-too-large');
+	}
+	const length = new Uint8Array(BINARY_PROJECT_LENGTH_BYTES);
+	new DataView(length.buffer).setUint32(0, encodedHeader.byteLength, true);
+	return new Blob([BINARY_PROJECT_MAGIC_BYTES, length, encodedHeader], {
+		type: 'application/x-vibrix-project'
+	});
+}
+
+/**
+ * Writes the v2 binary container one asset at a time. There is no aggregate
+ * heap copy, Base64 expansion, per-file ceiling or total-size ceiling: with a
+ * file-system writer the practical limit is the destination disk.
+ */
+export async function writeWallpaperProjectPackage(
+	writable: ProjectPackageWritable,
+	options?: {
+		onProgress?: (progress: ProjectPackageProgress) => void;
+		selection?: ProjectExportSelection;
+	}
+): Promise<{ bytesWritten: number }> {
+	const onProgress = options?.onProgress;
+	const selection = options?.selection ?? DEFAULT_PROJECT_EXPORT_SELECTION;
+	emitProjectProgress(onProgress, {
+		phase: 'validating',
+		current: 0,
+		total: 1,
+		percent: 0,
+		message: 'Preparing binary project package'
+	});
+	const normalizedState = buildWallpaperSettingsExport().state;
+	const exportState = filterWallpaperStateForProjectExport(
+		normalizedState,
+		selection
+	);
+	const header = await buildBinaryProjectHeader(
+		exportState,
+		selection,
+		onProgress
+	);
+	const headerBlob = createBinaryProjectHeaderBlob(header);
+	await writable.write(headerBlob);
+	let bytesWritten = headerBlob.size;
+
+	for (let index = 0; index < header.assets.length; index += 1) {
+		const asset = header.assets[index];
+		emitProjectProgress(onProgress, {
+			phase: 'encoding-assets',
+			current: index + 1,
+			total: header.assets.length,
+			percent:
+				0.15 + 0.85 * ((index + 1) / Math.max(1, header.assets.length)),
+			message: `Writing assets ${index + 1}/${header.assets.length}`
+		});
+		const blob = await loadImageBlob(asset.id);
+		if (!blob || blob.size !== asset.byteLength) {
+			throw new Error(`project-asset-changed-during-export:${asset.id}`);
+		}
+		await writable.write(blob);
+		bytesWritten += blob.size;
+		await yieldToUi();
+	}
+
+	emitProjectProgress(onProgress, {
+		phase: 'done',
+		current: 1,
+		total: 1,
+		percent: 1,
+		message: 'Project package ready'
+	});
+	return { bytesWritten };
 }
 
 /** Projects exported before the Vibrix rename carry the old tag. Reads accept
@@ -494,106 +452,205 @@ function isReadableProjectFormat(format: unknown): boolean {
 	);
 }
 
-function createProjectEnvelopeBlobParts(
-	settings: ReturnType<typeof buildWallpaperSettingsExport>,
-	assets: ProjectAssetRecord[],
-	selection: ProjectExportSelection
-) {
-	const exportedAt = new Date().toISOString();
-	const header =
-		'{\n' +
-		`  "format": ${JSON.stringify(PROJECT_FORMAT)},\n` +
-		`  "version": ${PROJECT_SCHEMA_VERSION},\n` +
-		`  "exportedAt": ${JSON.stringify(exportedAt)},\n` +
-		`  "exportSelection": ${JSON.stringify(selection)},\n` +
-		`  "audioIncluded": ${JSON.stringify(
-			assets.some(asset => asset.kind === 'audio')
-		)},\n` +
-		'  "settings": ';
-	const footer = '\n}';
-	const parts: BlobPart[] = [header, JSON.stringify(settings, null, 2)];
-
-	if (assets.length === 0) {
-		parts.push(',\n  "assets": []', footer);
-		return parts;
-	}
-
-	parts.push(',\n  "assets": [\n');
-	for (let index = 0; index < assets.length; index += 1) {
-		parts.push('    ');
-		parts.push(JSON.stringify(assets[index]));
-		parts.push(index < assets.length - 1 ? ',\n' : '\n');
-	}
-	parts.push('  ]', footer);
-	return parts;
-}
-
 export async function createWallpaperProjectPackageBlob(options?: {
 	onProgress?: (progress: ProjectPackageProgress) => void;
 	selection?: ProjectExportSelection;
-}): Promise<{ blob: Blob; droppedAudioWithoutLyrics: number }> {
-	const onProgress = options?.onProgress;
-	const selection = options?.selection ?? DEFAULT_PROJECT_EXPORT_SELECTION;
-	emitProjectProgress(onProgress, {
-		phase: 'validating',
-		current: 0,
-		total: 1,
-		percent: 0,
-		message: 'Preparing project package'
-	});
-	const normalizedState = buildWallpaperSettingsExport().state;
-	const filteredState = filterWallpaperStateForProjectExport(
-		normalizedState,
-		selection
+}): Promise<{ blob: Blob }> {
+	const parts: Blob[] = [];
+	await writeWallpaperProjectPackage(
+		{
+			write: async data => {
+				parts.push(data);
+			}
+		},
+		options
 	);
+	return { blob: new Blob(parts, { type: 'application/x-vibrix-project' }) };
+}
 
-	// Budget against the legacy base64-in-JSON limits using copy-free size
-	// reads. If the full selection doesn't fit, drop audios without lyrics and
-	// retry; only refuse if even that (or a single oversized essential file)
-	// can't fit.
-	let exportState = filteredState;
-	let droppedAudioWithoutLyrics = 0;
-	const measured = await measureRequestedAssets(
-		buildRequestedProjectAssets(exportState)
+function isProjectAssetKind(value: unknown): value is ProjectAssetKind {
+	return (
+		value === 'background' ||
+		value === 'global-background' ||
+		value === 'logo' ||
+		value === 'overlay' ||
+		value === 'cover' ||
+		value === 'audio'
 	);
-	const fitsFull =
-		sumMeasuredBytes(measured) <= MAX_PROJECT_ASSET_TOTAL_BYTES &&
-		measured.every(item => item.bytes <= MAX_BASE64_ASSET_BYTES);
-	if (!fitsFull) {
-		const reduced = dropNonLyricAudio(exportState);
-		droppedAudioWithoutLyrics = reduced.dropped;
-		exportState = reduced.state;
-		const reducedMeasured = await measureRequestedAssets(
-			buildRequestedProjectAssets(exportState)
-		);
-		// Images, logo and lyric'd audios are never dropped — if any single one
-		// still exceeds the per-file limit, fail with a clear message.
-		assertAssetsFitPackageLimits(reducedMeasured);
-		const reducedTotal = sumMeasuredBytes(reducedMeasured);
-		if (reducedTotal > MAX_PROJECT_ASSET_TOTAL_BYTES) {
-			throw new Error(
-				`project-too-large: even with only the audios that have lyrics, the package is ${formatBytes(reducedTotal)} (limit ${formatBytes(MAX_PROJECT_ASSET_TOTAL_BYTES)}). Deselect some backgrounds, or export part of the project separately.`
-			);
+}
+
+export async function readBinaryProjectHeader(file: Blob): Promise<{
+	header: BinaryProjectHeader;
+	assetsOffset: number;
+} | null> {
+	if (file.size < BINARY_PROJECT_MAGIC_BYTES.byteLength + 4) return null;
+	const magic = await file
+		.slice(0, BINARY_PROJECT_MAGIC_BYTES.byteLength)
+		.text();
+	if (magic !== BINARY_PROJECT_MAGIC) return null;
+	const lengthOffset = BINARY_PROJECT_MAGIC_BYTES.byteLength;
+	const lengthBuffer = await file
+		.slice(lengthOffset, lengthOffset + BINARY_PROJECT_LENGTH_BYTES)
+		.arrayBuffer();
+	const headerLength = new DataView(lengthBuffer).getUint32(0, true);
+	if (
+		headerLength <= 0 ||
+		headerLength > MAX_BINARY_PROJECT_HEADER_BYTES ||
+		lengthOffset + BINARY_PROJECT_LENGTH_BYTES + headerLength > file.size
+	) {
+		throw new Error('invalid-binary-project-header');
+	}
+	const assetsOffset =
+		lengthOffset + BINARY_PROJECT_LENGTH_BYTES + headerLength;
+	const parsed: unknown = JSON.parse(
+		await file.slice(assetsOffset - headerLength, assetsOffset).text()
+	);
+	if (
+		!isRecord(parsed) ||
+		parsed.containerVersion !== 2 ||
+		!isReadableProjectFormat(parsed.format) ||
+		parsed.version !== PROJECT_SCHEMA_VERSION ||
+		!Array.isArray(parsed.assets)
+	) {
+		throw new Error('invalid-binary-project-header');
+	}
+	const assets: BinaryProjectAssetRecord[] = [];
+	for (const rawAsset of parsed.assets) {
+		if (
+			!isRecord(rawAsset) ||
+			typeof rawAsset.id !== 'string' ||
+			!isProjectAssetKind(rawAsset.kind) ||
+			typeof rawAsset.path !== 'string' ||
+			typeof rawAsset.mimeType !== 'string' ||
+			typeof rawAsset.byteLength !== 'number' ||
+			!Number.isSafeInteger(rawAsset.byteLength) ||
+			rawAsset.byteLength < 0
+		) {
+			throw new Error('invalid-binary-project-asset');
 		}
+		assets.push({
+			id: rawAsset.id,
+			kind: rawAsset.kind,
+			path: rawAsset.path,
+			mimeType: rawAsset.mimeType,
+			byteLength: rawAsset.byteLength,
+			...(typeof rawAsset.originalName === 'string'
+				? { originalName: rawAsset.originalName }
+				: {})
+		});
+	}
+	return {
+		header: {
+			containerVersion: 2,
+			format: parsed.format as string,
+			version: parsed.version as number,
+			exportedAt:
+				typeof parsed.exportedAt === 'string' ? parsed.exportedAt : '',
+			exportSelection: normalizeProjectExportSelection(
+				parsed.exportSelection
+			),
+			audioIncluded: Boolean(parsed.audioIncluded),
+			settings: parsed.settings as ReturnType<
+				typeof buildWallpaperSettingsExport
+			>,
+			assets
+		},
+		assetsOffset
+	};
+}
+
+async function applyImportedProjectSettings(
+	parsedSettings: unknown,
+	projectSelection: ProjectExportSelection
+) {
+	const settingsToApply = isFullProjectExportSelection(projectSelection)
+		? parsedSettings
+		: buildWallpaperSettingsExport(
+				mergeWallpaperStateForProjectImport(
+					useWallpaperStore.getState(),
+					parseWallpaperSettingsJson(JSON.stringify(parsedSettings)),
+					projectSelection
+				)
+			);
+	return applyWallpaperSettingsJson(JSON.stringify(settingsToApply));
+}
+
+async function applyBinaryWallpaperProjectPackage(
+	file: File,
+	parsed: Awaited<ReturnType<typeof readBinaryProjectHeader>> & {},
+	options?: {
+		onProgress?: (progress: ProjectPackageProgress) => void;
+		hardReset?: boolean;
+	}
+) {
+	const onProgress = options?.onProgress;
+	const { header } = parsed;
+	if (
+		options?.hardReset !== false &&
+		isFullProjectExportSelection(header.exportSelection)
+	) {
+		emitProjectProgress(onProgress, {
+			phase: 'clearing',
+			current: 0,
+			total: 1,
+			percent: 0.05,
+			message: 'Clearing current project'
+		});
+		await hardResetProjectState();
 	}
 
-	const settings = buildWallpaperSettingsExport(exportState);
-	const assets = await collectProjectAssets(exportState, onProgress);
+	let offset = parsed.assetsOffset;
+	let expectedAssets = 0;
+	let importedAssets = 0;
+	for (let index = 0; index < header.assets.length; index += 1) {
+		const asset = header.assets[index];
+		const end = offset + asset.byteLength;
+		if (end > file.size) throw new Error('truncated-binary-project');
+		const shouldImport =
+			asset.kind === 'cover' ||
+			shouldImportProjectAssetKind(header.exportSelection, asset.kind);
+		if (shouldImport) {
+			expectedAssets += 1;
+			emitProjectProgress(onProgress, {
+				phase: 'saving-assets',
+				current: index + 1,
+				total: header.assets.length,
+				percent:
+					0.1 +
+					0.8 * ((index + 1) / Math.max(1, header.assets.length)),
+				message: `Importing asset ${index + 1}/${header.assets.length}`
+			});
+			await saveImageAsset(
+				asset.id,
+				file.slice(offset, end, asset.mimeType),
+				asset.mimeType
+			);
+			importedAssets += 1;
+			await yieldToUi();
+		}
+		offset = end;
+	}
+
+	if (offset !== file.size) throw new Error('invalid-binary-project-size');
+	emitProjectProgress(onProgress, {
+		phase: 'applying-state',
+		current: 1,
+		total: 1,
+		percent: 0.95,
+		message: 'Applying project state'
+	});
+	const result = await applyImportedProjectSettings(
+		header.settings,
+		header.exportSelection
+	);
 	emitProjectProgress(onProgress, {
 		phase: 'done',
 		current: 1,
 		total: 1,
 		percent: 1,
-		message: 'Project package ready'
+		message: 'Project imported'
 	});
-
-	return {
-		blob: new Blob(
-			createProjectEnvelopeBlobParts(settings, assets, selection),
-			{ type: 'application/x-live-wallpaper-project+json' }
-		),
-		droppedAudioWithoutLyrics
-	};
+	return { ...result, importedAssets, expectedAssets };
 }
 
 export async function applyWallpaperProjectPackage(
@@ -615,6 +672,10 @@ export async function applyWallpaperProjectPackage(
 		percent: 0,
 		message: 'Validating project package'
 	});
+	const binaryHeader = await readBinaryProjectHeader(file);
+	if (binaryHeader) {
+		return applyBinaryWallpaperProjectPackage(file, binaryHeader, options);
+	}
 
 	let envelopeContent = '';
 	let parsedSettings: unknown = null;
@@ -756,17 +817,9 @@ export async function applyWallpaperProjectPackage(
 		message: 'Applying project state'
 	});
 
-	const settingsToApply = isFullProjectExportSelection(projectSelection)
-		? parsedSettings
-		: buildWallpaperSettingsExport(
-				mergeWallpaperStateForProjectImport(
-					useWallpaperStore.getState(),
-					parseWallpaperSettingsJson(JSON.stringify(parsedSettings)),
-					projectSelection
-				)
-			);
-	const result = await applyWallpaperSettingsJson(
-		JSON.stringify(settingsToApply)
+	const result = await applyImportedProjectSettings(
+		parsedSettings,
+		projectSelection
 	);
 
 	emitProjectProgress(onProgress, {

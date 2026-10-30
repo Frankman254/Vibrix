@@ -19,6 +19,12 @@ the version scheme in `src/lib/version.ts`.
 `SETTINGS_SCHEMA_VERSION` remain at **1**. `APP_VERSION` / `package.json`:
 **0.7.0-alpha**.
 
+- **Proyectos grandes sin límite artificial:** `.vibrix` usa ahora un
+  contenedor binario v2. En navegadores con selector de archivo, los assets se
+  escriben uno a uno directamente al disco, sin Base64, sin el techo de 350 MB
+  por asset y sin el techo total de 4 GB. El importador conserva compatibilidad
+  con los paquetes JSON/Base64 anteriores y con `.lwag`.
+
 - **Lyrics:** reparto dinámico de carriles activos en bloques iguales, con
   offsets manuales conservados. Store v154 centra la posición global de fábrica.
 

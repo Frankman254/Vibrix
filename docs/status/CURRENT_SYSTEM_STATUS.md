@@ -206,7 +206,10 @@ See `docs/features/SPECTRUM_ENGINE.md` (ownership model) and
 **Status: Stable**
 
 - Scenes, setlists, profile slots (looks, spectrum, logo, etc.)
-- Project package `.vibrix` export/import (reads `.lwag` too) (`PROJECT_SCHEMA_VERSION = 1`)
+- Project package `.vibrix` export/import (reads `.lwag` too)
+  (`PROJECT_SCHEMA_VERSION = 1`): binary container v2 streams assets directly
+  to disk, without Base64 or artificial per-asset/total size ceilings; legacy
+  JSON/Base64 packages remain readable.
 - Settings JSON (`SETTINGS_SCHEMA_VERSION = 1`)
 - Feature profiles round-trip spectrum pixel settings (v96 keys)
 

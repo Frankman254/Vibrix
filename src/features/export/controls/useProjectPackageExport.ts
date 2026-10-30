@@ -1,7 +1,8 @@
 import { useState, type ChangeEvent } from 'react';
 import {
 	applyWallpaperProjectPackage,
-	createWallpaperProjectPackageBlob
+	createWallpaperProjectPackageBlob,
+	writeWallpaperProjectPackage
 } from '@/services/wallpaperPersistenceCoordinator';
 import {
 	DEFAULT_PROJECT_EXPORT_SELECTION,
@@ -13,9 +14,50 @@ import {
 	buildDescriptiveExportFileName,
 	downloadBlobFallback,
 	formatProgressLabel,
-	saveBlobWithPicker,
+	type SaveFileHandleLike,
+	type SaveFilePickerOptions,
 	type ExportNamingState
 } from '@/features/export/exportFileUtils';
+
+type ProjectWritableResult =
+	| {
+			kind: 'writer';
+			writer: Awaited<ReturnType<SaveFileHandleLike['createWritable']>>;
+	  }
+	| { kind: 'unavailable' }
+	| { kind: 'cancelled' };
+
+async function pickProjectWritable(
+	fileName: string
+): Promise<ProjectWritableResult> {
+	const picker = (
+		window as Window & {
+			showSaveFilePicker?: (
+				options?: SaveFilePickerOptions
+			) => Promise<SaveFileHandleLike>;
+		}
+	).showSaveFilePicker;
+	if (!picker) return { kind: 'unavailable' };
+	try {
+		const handle = await picker({
+			suggestedName: fileName,
+			types: [
+				{
+					description: 'Vibrix project package',
+					accept: {
+						'application/x-vibrix-project': ['.vibrix']
+					}
+				}
+			]
+		});
+		return { kind: 'writer', writer: await handle.createWritable() };
+	} catch (error) {
+		if (error instanceof DOMException && error.name === 'AbortError') {
+			return { kind: 'cancelled' };
+		}
+		throw error;
+	}
+}
 
 export type ProjectStatus = 'idle' | 'saved' | 'imported' | 'warning' | 'error';
 export type ProjectBusyMode = 'idle' | 'exporting' | 'importing';
@@ -62,39 +104,42 @@ export function useProjectPackageExport({
 			setProjectBusyMode('exporting');
 			setProjectProgress(0);
 			setProjectProgressLabel(labels.statusProjectExporting);
-			const { blob, droppedAudioWithoutLyrics } =
-				await createWallpaperProjectPackageBlob({
-					selection: projectExportSelection,
-					onProgress: progress => {
-						setProjectProgress(progress.percent);
-						setProjectProgressLabel(formatProgressLabel(progress));
-					}
-				});
 			const fileName = buildDescriptiveExportFileName({
 				kind: 'project',
 				state: exportNamingState,
 				selection: projectExportSelection,
 				extension: PROJECT_FILE_EXTENSION
 			});
-			const savedWithPicker = await saveBlobWithPicker(blob, fileName, {
-				description: 'Vibrix project package',
-				mimeType: 'application/x-vibrix-project+json'
-			});
-			if (!savedWithPicker) {
+			const picked = await pickProjectWritable(fileName);
+			if (picked.kind === 'cancelled') return;
+			if (picked.kind === 'writer') {
+				try {
+					await writeWallpaperProjectPackage(picked.writer, {
+						selection: projectExportSelection,
+						onProgress: progress => {
+							setProjectProgress(progress.percent);
+							setProjectProgressLabel(
+								formatProgressLabel(progress)
+							);
+						}
+					});
+					await picked.writer.close();
+				} catch (error) {
+					await picked.writer.abort?.().catch(() => undefined);
+					throw error;
+				}
+			} else {
+				const { blob } = await createWallpaperProjectPackageBlob({
+					selection: projectExportSelection,
+					onProgress: progress => {
+						setProjectProgress(progress.percent);
+						setProjectProgressLabel(formatProgressLabel(progress));
+					}
+				});
 				downloadBlobFallback(blob, fileName);
 			}
-			if (droppedAudioWithoutLyrics > 0) {
-				// Project was too large to fit everything; we kept only the
-				// audios that have lyrics. Surface it instead of silently
-				// shipping a smaller package.
-				setProjectStatus('warning');
-				setProjectMessage(
-					`Project too large — exported without ${droppedAudioWithoutLyrics} audio track(s) that have no lyrics.`
-				);
-			} else {
-				setProjectStatus('saved');
-				setProjectMessage('');
-			}
+			setProjectStatus('saved');
+			setProjectMessage('');
 		} catch (error) {
 			setProjectStatus('error');
 			setProjectMessage(

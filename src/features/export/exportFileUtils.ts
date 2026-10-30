@@ -15,6 +15,7 @@ export type SaveFileHandleLike = {
 	createWritable: () => Promise<{
 		write: (data: Blob) => Promise<void>;
 		close: () => Promise<void>;
+		abort?: () => Promise<void>;
 	}>;
 };
 
